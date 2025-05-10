@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// This example is used in readme.md
+// This example is used in fmesh repo readme.md
 func main() {
 	fm := fmesh.NewWithConfig("hello world", &fmesh.Config{
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
