@@ -11,13 +11,25 @@ The list of examples:
 - [Electric circuit](https://github.com/hovsep/fmesh-examples/blob/main/electric_circuit/main.go)  ([play](https://go.dev/play/p/bibZTWhIbR8))
 - [Fibonacci](https://github.com/hovsep/fmesh-examples/blob/main/fibonacci/main.go)  ([play](https://go.dev/play/p/VmLIh6tOsvo))
 - [Filter](https://github.com/hovsep/fmesh-examples/blob/main/filter/main.go)  ([play](https://go.dev/play/p/NDBcOZ5f0E1))
+- [Graphviz](https://github.com/hovsep/fmesh-examples/blob/main/graphviz/main.go)  ([play](https://go.dev/play/p/ef0X3oMSHhi))
 - [Load balancer](https://github.com/hovsep/fmesh-examples/blob/main/load_balancer/main.go)  ([play](https://go.dev/play/p/s1ETIrgo7pp))
 - [Nesting](https://github.com/hovsep/fmesh-examples/blob/main/nesting/main.go)  ([play](https://go.dev/play/p/GW1HNKZeMzR))
-- [Pipeline](https://github.com/hovsep/fmesh-examples/blob/main/pipeline/main.go)  (can not be run in the Go playground as it uses local I/O)
+- [Pipeline](https://github.com/hovsep/fmesh-examples/blob/main/pipeline/main.go)  (can not be run in the Go playground as it reads from STDIN)
 - [String processing](https://github.com/hovsep/fmesh-examples/blob/main/string_processing/main.go)  ([play](https://go.dev/play/p/Yf_29d6vs68))
 
 
 All examples are using the same [latest version of FMesh](https://github.com/hovsep/fmesh/releases/latest).
+
+## Quick start
+Most of the examples can be run directly in the Go Playground. Use the provided links or copy the code manually.
+
+However, some examples require local execution due to limitations of the Go Playground (e.g., file system access, network operations, or system-level commands).
+
+To run examples locally:
+- Clone this repo `git clone github.com/hovsep/fmesh-examples`
+- Ensure Go 1.24 or later is installed. You can check your version with: `go version`
+- Install dependencies with `go mod tidy`
+- Navigate to the example directory (e.g. `cd ./fibonacci`) and run the code `go run .`
 
 ## Contributions
 
