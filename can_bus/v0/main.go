@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
-	"time"
 )
 
 const (
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	// Initialize the mesh with the central CAN bus component
-	fm := fmesh.New("can_bus_sim").WithComponents(getBus())
+	fm := fmesh.New("can_bus_sim_v0").WithComponents(getBus())
 
 	// Create and connect all CAN nodes to the bus
 	for id, name := range canNodes {
