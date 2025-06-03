@@ -1,7 +1,7 @@
-package main
+package can
 
-// CanFrame represents a simplified CAN frame
-type CanFrame struct {
+// Frame represents a simplified CAN frame
+type Frame struct {
 	// SOF
 	Id uint32 // CAN node ID (11 bits)
 	// RTR
@@ -16,16 +16,7 @@ type CanFrame struct {
 	// IFS
 }
 
-var (
-	// Some pre-defined frames
-	startEngine = &CanFrame{
-		Id:   0x100,
-		DLC:  1,
-		Data: [8]byte{0x01},
-	}
-)
-
-func (frame *CanFrame) isValid() bool {
+func (frame *Frame) isValid() bool {
 	// Check that ID is 11 bits max
 	if frame.Id > 0x7FF {
 		return false
@@ -41,7 +32,7 @@ func (frame *CanFrame) isValid() bool {
 
 // toBits encodes the CAN frame into a slice of bits (bools)
 // Format: 11 bits ID | 4 bits DLC | DLC * 8 bits Data
-func (frame *CanFrame) toBits() Bits {
+func (frame *Frame) toBits() Bits {
 	var bits []bool
 
 	// 1. Encode 11-bit CAN ID (MSB first)
@@ -50,17 +41,18 @@ func (frame *CanFrame) toBits() Bits {
 	}
 
 	// 2. Encode 4-bit DLC (Data Length Code)
-	for i := 3; i >= 0; i-- {
-		bits = append(bits, (frame.DLC>>i)&1 == 1)
-	}
+	/*todo:uncomment when debugging is finished
+	  for i := 3; i >= 0; i-- {
+	  		bits = append(bits, (frame.DLC>>i)&1 == 1)
+	  	}
 
-	// 3. Encode each data byte (DLC * 8 bits)
-	for i := 0; i < int(frame.DLC); i++ {
-		b := frame.Data[i]
-		for j := 7; j >= 0; j-- {
-			bits = append(bits, (b>>j)&1 == 1)
-		}
-	}
+	  	// 3. Encode each data byte (DLC * 8 bits)
+	  	for i := 0; i < int(frame.DLC); i++ {
+	  		b := frame.Data[i]
+	  		for j := 7; j >= 0; j-- {
+	  			bits = append(bits, (b>>j)&1 == 1)
+	  		}
+	  	}*/
 
 	return bits
 }

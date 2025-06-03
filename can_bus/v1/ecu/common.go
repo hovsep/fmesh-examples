@@ -1,4 +1,4 @@
-package main
+package ecu
 
 const (
 	// Common ECU memory keys

@@ -14,7 +14,7 @@ const (
 	labelUSB           = "usb"
 )
 
-func getComputer(name string) *component.Component {
+func NewComputer(name string) *component.Component {
 	return component.New(name).
 		WithInputs(portUSBIn, portProgrammaticIn).
 		WithOutputs(portUSBOut).
@@ -38,7 +38,7 @@ func getComputer(name string) *component.Component {
 		})
 }
 
-func sendSignalToUSBPort(computer *component.Component, payload any) {
+func sendPayloadToUSBPort(computer *component.Component, payload any) {
 	computer.InputByName(portProgrammaticIn).
 		PutSignals(signal.New(payload).
 			WithLabels(common.LabelsCollection{

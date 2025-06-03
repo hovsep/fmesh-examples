@@ -4,35 +4,36 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
+	"github.com/hovsep/fmesh-examples/can_bus/v1/ecu"
 )
 
 func main() {
-
-	// Create needed components:
-	canBus := getBus()
-	laptop := getComputer("laptop")
+	// Create components:
+	canBus := can.NewBus("main")
+	laptop := NewComputer("laptop")
 
 	// Build CAN nodes:
-	obdDevice := getOBD(canBus)
-	allCanNodes := CanNodesSlice{
-		getECM(canBus), // Engine Control Module
-		getTCM(canBus), // Transmission Control Module
-		getHU(canBus),  // Infotainment Head Unit
-		getACU(canBus), // Airbag Control Unit
-		obdDevice,      // On Board Diagnostics
+	obdDevice := ecu.NewOBD(canBus) // put this into variable, so we can connect it to laptop
+	allCanNodes := can.Nodes{
+		ecu.NewECM(canBus), // Engine Control Module
+		ecu.NewTCM(canBus), // Transmission Control Module
+		ecu.NewHU(canBus),  // Infotainment Head Unit
+		ecu.NewACU(canBus), // Airbag Control Unit
+		obdDevice,          // On Board Diagnostics
 	}
 
 	// Connect usb-obd cable:
-	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(portOBDIn))
-	obdDevice.MCU.OutputByName(portOBDOut).PipeTo(laptop.InputByName(portUSBIn))
+	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(ecu.PortOBDIn))
+	obdDevice.MCU.OutputByName(ecu.PortOBDOut).PipeTo(laptop.InputByName(portUSBIn))
 
 	// Build the mesh
 	fm := fmesh.New("can_bus_sim_v1").
 		WithComponents(canBus, laptop).
-		WithComponents(allCanNodes.getAllComponents()...)
+		WithComponents(allCanNodes.GetAllComponents()...)
 
-	// Send some signals into the system
-	sendSignalToUSBPort(laptop, startEngine)
+	// Send initial frames
+	sendPayloadToUSBPort(laptop, frameStartEngine)
 
 	runResult, err := fm.Run()
 	if err != nil {
