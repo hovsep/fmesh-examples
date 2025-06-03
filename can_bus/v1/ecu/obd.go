@@ -13,8 +13,8 @@ const (
 	OBDNodeID   = 0x7DF
 )
 
-func NewOBD(bus *component.Component) *can.Node {
-	obdDevice := can.NewNode(OBDUnitName, bus, func(state component.State) {
+func NewOBD() *can.Node {
+	obdDevice := can.NewNode(OBDUnitName, func(state component.State) {
 		state.Set(ecuMemCanID, OBDNodeID)
 	},
 		func(this *component.Component) error {

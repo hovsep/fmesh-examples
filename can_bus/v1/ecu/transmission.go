@@ -10,8 +10,8 @@ const (
 	TCMNodeID   = 0x120
 )
 
-func NewTCM(bus *component.Component) *can.Node {
-	return can.NewNode(TCMUnitName, bus, func(state component.State) {
+func NewTCM() *can.Node {
+	return can.NewNode(TCMUnitName, func(state component.State) {
 		state.Set(ecuMemCanID, TCMNodeID)
 		state.Set(ecuMemLog, []string{})
 	},

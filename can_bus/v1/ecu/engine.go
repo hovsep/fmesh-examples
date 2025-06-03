@@ -12,8 +12,8 @@ const (
 	ecmMemOxygenSensorAdaptive = "oxsa"
 )
 
-func NewECM(bus *component.Component) *can.Node {
-	return can.NewNode(ECMUnitName, bus, func(state component.State) {
+func NewECM() *can.Node {
+	return can.NewNode(ECMUnitName, func(state component.State) {
 		state.Set(ecuMemCanID, ECMNodeID)
 		state.Set(ecuMemSerial, "1995-00-BB-LE")
 		state.Set(ecuMemLog, []string{})

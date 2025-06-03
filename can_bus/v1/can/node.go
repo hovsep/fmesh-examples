@@ -13,13 +13,13 @@ type Node struct {
 type Nodes []*Node
 
 // NewNode creates a new CAN node
-func NewNode(unitName string, bus *component.Component, initState func(state component.State), mcuLogic component.ActivationFunc) *Node {
+func NewNode(unitName string, initState func(state component.State), mcuLogic component.ActivationFunc) *Node {
 	// Create electronic components
 	mcu := NewMCU(unitName, initState, mcuLogic)
 	controller := NewController(unitName)
 	transceiver := NewTransceiver(unitName)
 
-	// Wiring : mcu <--> controller <--> transceiver <--> bus
+	// Wiring : mcu <--> controller <--> transceiver
 
 	// mcu -> controller:
 	mcu.OutputByName(PortCANTx).PipeTo(controller.InputByName(PortCANTx))
@@ -31,13 +31,6 @@ func NewNode(unitName string, bus *component.Component, initState func(state com
 	// controller <- transceiver
 	transceiver.OutputByName(PortCANRx).PipeTo(controller.InputByName(PortCANRx))
 
-	// transceiver -> bus:
-	transceiver.OutputByName(PortCANL).PipeTo(bus.InputByName(PortCANL))
-	transceiver.OutputByName(PortCANH).PipeTo(bus.InputByName(PortCANH))
-	// transceiver <- bus:
-	bus.OutputByName(PortCANL).PipeTo(transceiver.InputByName(PortCANL))
-	bus.OutputByName(PortCANH).PipeTo(transceiver.InputByName(PortCANH))
-
 	return &Node{
 		MCU:         mcu,
 		Controller:  controller,
@@ -48,8 +41,20 @@ func NewNode(unitName string, bus *component.Component, initState func(state com
 // GetAllComponents returns all fmesh components of which the group of nodes consists
 func (nodes Nodes) GetAllComponents() []*component.Component {
 	var all []*component.Component
-	for _, ecu := range nodes {
-		all = append(all, ecu.MCU, ecu.Controller, ecu.Transceiver)
+	for _, node := range nodes {
+		all = append(all, node.MCU, node.Controller, node.Transceiver)
 	}
 	return all
+}
+
+// ConnectToBus connect all nodes to the given bus
+func (nodes Nodes) ConnectToBus(bus *component.Component) {
+	for _, node := range nodes {
+		// transceiver -> bus:
+		node.Transceiver.OutputByName(PortCANL).PipeTo(bus.InputByName(PortCANL))
+		node.Transceiver.OutputByName(PortCANH).PipeTo(bus.InputByName(PortCANH))
+		// transceiver <- bus:
+		bus.OutputByName(PortCANL).PipeTo(node.Transceiver.InputByName(PortCANL))
+		bus.OutputByName(PortCANH).PipeTo(node.Transceiver.InputByName(PortCANH))
+	}
 }

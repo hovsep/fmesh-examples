@@ -6,22 +6,24 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
 	"github.com/hovsep/fmesh-examples/can_bus/v1/ecu"
+	"github.com/hovsep/fmesh-graphviz/dot"
 )
 
 func main() {
 	// Create components:
-	canBus := can.NewBus("main")
-	laptop := NewComputer("laptop")
+	bus := can.NewBus("PT-CAN")     // Modern vehicles have multiple buses, this one is called "powertrain bus"
+	laptop := NewComputer("laptop") // Laptop running diagnostic software and connected to vehicle via OBD socket
 
 	// Build CAN nodes:
-	obdDevice := ecu.NewOBD(canBus) // put this into variable, so we can connect it to laptop
+	obdDevice := ecu.NewOBD() // put this into variable, so we can connect it to laptop
 	allCanNodes := can.Nodes{
-		ecu.NewECM(canBus), // Engine Control Module
-		ecu.NewTCM(canBus), // Transmission Control Module
-		ecu.NewHU(canBus),  // Infotainment Head Unit
-		ecu.NewACU(canBus), // Airbag Control Unit
-		obdDevice,          // On Board Diagnostics
+		ecu.NewECM(), // Engine Control Module
+		ecu.NewTCM(), // Transmission Control Module
+		ecu.NewACU(), // Airbag Control Unit
+		obdDevice,    // On Board Diagnostics
 	}
+
+	allCanNodes.ConnectToBus(bus)
 
 	// Connect usb-obd cable:
 	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(ecu.PortOBDIn))
@@ -29,11 +31,16 @@ func main() {
 
 	// Build the mesh
 	fm := fmesh.New("can_bus_sim_v1").
-		WithComponents(canBus, laptop).
+		WithComponents(bus, laptop).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
 	// Send initial frames
-	sendPayloadToUSBPort(laptop, frameStartEngine)
+	sendPayloadToUSBPort(laptop, frameDiagnosticRequest)
+
+	// TODO: remove after debugged
+	exporter := dot.NewDotExporter()
+	data, _ := exporter.Export(fm)
+	_ = data
 
 	runResult, err := fm.Run()
 	if err != nil {
