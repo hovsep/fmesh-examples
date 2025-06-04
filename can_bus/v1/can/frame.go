@@ -33,7 +33,7 @@ func (frame *Frame) isValid() bool {
 // toBits encodes the CAN frame into a slice of bits (bools)
 // Format: 11 bits ID | 4 bits DLC | DLC * 8 bits Data
 func (frame *Frame) toBits() Bits {
-	var bits []bool
+	var bits Bits
 
 	// 1. Encode 11-bit CAN ID (MSB first)
 	for i := 10; i >= 0; i-- {

@@ -2,16 +2,20 @@ package can
 
 import "strings"
 
-type Bits []bool
+type Bit bool
+type Bits []Bit
 
-func (b Bits) String() string {
+func (bits Bits) String() string {
 	var sb strings.Builder
-	for _, bit := range b {
-		if bit {
-			sb.WriteByte('1')
-		} else {
-			sb.WriteByte('0')
-		}
+	for _, bit := range bits {
+		sb.WriteString(bit.String())
 	}
 	return sb.String()
+}
+
+func (bit Bit) String() string {
+	if bit {
+		return "1"
+	}
+	return "0"
 }
