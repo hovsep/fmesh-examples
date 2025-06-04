@@ -2,13 +2,15 @@ package can
 
 import (
 	"errors"
-	"github.com/hovsep/fmesh/component"
 	"slices"
+
+	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	MinValidVoltage = Voltage(1.0)
-	MaxValidVoltage = Voltage(4.0)
+	MinValidVoltage = Voltage(0.5)
+	MaxValidVoltage = Voltage(4.5)
 )
 
 // NewBus creates a new CAN bus
@@ -21,7 +23,6 @@ func NewBus(name string) *component.Component {
 				allLow  []Voltage
 				allHigh []Voltage
 			)
-			// TODO: add in-place noise generator
 
 			busLow, busHigh := RecessiveVoltage, RecessiveVoltage
 
@@ -45,7 +46,15 @@ func NewBus(name string) *component.Component {
 				allHigh = append(allHigh, v)
 			}
 
-			// Basic validations
+			// Basic validations:
+			if len(allLow) == 0 {
+				return errors.New("no voltage on L")
+			}
+
+			if len(allHigh) == 0 {
+				return errors.New("no voltage on H")
+			}
+
 			if len(allLow) != len(allHigh) {
 				return errors.New("voltages count mismatch")
 			}
@@ -53,24 +62,27 @@ func NewBus(name string) *component.Component {
 			// Detect faulty transceivers
 			for i := 0; i < len(allLow); i++ {
 				if allLow[i] > allHigh[i] {
-					return errors.New("voltage on CAN_L is higher than on CAN_H")
+					return errors.New("voltage on L is higher than on H")
 				}
 
 				if allLow[i] < MinValidVoltage {
-					return errors.New("voltage on CAN_L is lower than minimum valid")
+					return errors.New("voltage on L is lower than minimum valid")
 				}
 
 				if allHigh[i] > MaxValidVoltage {
-					return errors.New("voltage on CAN_H is higher than maximum valid")
+					return errors.New("voltage on H is higher than maximum valid")
 				}
 			}
 
-			// Calculate bus voltage using min(CAN_L)\max(CAN_H) approximation
+			// Simulate wired-AND logic by deriving the bus voltages from voltages on all connected transceivers
+			// for simplicity we use min(CAN_L)\max(CAN_H) approximation
 			busLow = slices.Min(allLow)
 			busHigh = slices.Max(allHigh)
 
-			this.Logger().Printf("bus voltage is now %v / %v", busLow, busHigh)
+			this.Logger().Printf("bus voltage is L:%v / H:%v", busLow, busHigh)
 
+			this.OutputByName(PortCANL).PutSignals(signal.New(busLow))
+			this.OutputByName(PortCANH).PutSignals(signal.New(busHigh))
 			return nil
 		})
 }
