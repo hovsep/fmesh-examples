@@ -2,7 +2,6 @@ package can
 
 import (
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
 )
 
 // NewBus creates a new CAN bus
@@ -11,16 +10,13 @@ func NewBus(name string) *component.Component {
 		WithInputs(PortCANL, PortCANH).
 		WithOutputs(PortCANL, PortCANH).
 		WithActivationFunc(func(this *component.Component) error {
-			errL := port.ForwardSignals(this.InputByName(PortCANL), this.OutputByName(PortCANL))
-			errH := port.ForwardSignals(this.InputByName(PortCANH), this.OutputByName(PortCANH))
 
-			if errL != nil {
-				return errL
-			}
+			// TODO: add in-place noise generator
 
-			if errH != nil {
-				return errH
-			}
+			// TODO resolve resulting voltages:
+			// add validation: drop any pair of voltages if H < L, and set MIN_VALID and MAX_VALID voltages
+
+			// use min(CAN_L)\max(CAN_H) approximation
 
 			return nil
 		})
