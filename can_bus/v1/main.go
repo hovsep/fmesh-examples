@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
@@ -44,7 +45,8 @@ func main() {
 
 	runResult, err := fm.Run()
 	if err != nil {
-		panic("Error running mesh: " + err.Error())
+		fmt.Println("The mesh finished with error: ", err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("Mesh stopped after %d cycles", runResult.Cycles.Len())

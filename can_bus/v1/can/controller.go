@@ -49,7 +49,7 @@ func NewController(unitName string) *component.Component {
 				buffer := txQueue[0]
 
 				// Write next bit
-				if buffer.Pos < len(buffer.Bits) {
+				if buffer.Pos < len(buffer.Bits)-1 {
 					this.OutputByName(PortCANTx).PutSignals(signal.New(buffer.Bits[buffer.Pos+1]))
 					buffer.Pos++
 				}
