@@ -21,10 +21,10 @@ func NewTransceiver(unitName string) *component.Component {
 			for _, sig := range this.InputByName(PortCANTx).AllSignalsOrNil() {
 				bit, ok := sig.PayloadOrNil().(Bit)
 				if !ok {
-					this.Logger().Println("transceiver received corrupted bit")
+					this.Logger().Println("received corrupted bit")
 				}
 
-				this.Logger().Println("transceiver received bit", bit.String())
+				this.Logger().Println("writing bit", bit.String())
 
 				if bit == DominantBit {
 					// Drive dominant
@@ -41,20 +41,21 @@ func NewTransceiver(unitName string) *component.Component {
 			if this.InputByName(PortCANL).HasSignals() && this.InputByName(PortCANH).HasSignals() {
 				vLow, err := this.InputByName(PortCANL).FirstSignalPayload()
 				if err != nil {
-					return errors.New("transceiver failed to read voltage from L")
+					return errors.New("failed to read voltage from L")
 				}
 
 				vHigh, err := this.InputByName(PortCANH).FirstSignalPayload()
 				if err != nil {
-					return errors.New("transceiver failed to read voltage from H")
+					return errors.New("failed to read voltage from H")
 				}
 
 				if vLow == nil || vHigh == nil {
-					return errors.New("transceiver received invalid voltage")
+					return errors.New("received invalid voltage")
 				}
 
-				bitOnBus := voltageToBit(vLow.(Voltage), vHigh.(Voltage))
-				this.Logger().Println("read bit from bus: ", bitOnBus.String())
+				bitRead := voltageToBit(vLow.(Voltage), vHigh.(Voltage))
+				this.Logger().Println("read bit from bus: ", bitRead.String())
+				this.OutputByName(PortCANRx).PutSignals(signal.New(bitRead))
 			}
 
 			return nil
