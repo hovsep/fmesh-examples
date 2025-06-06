@@ -11,16 +11,10 @@ import (
 // TxQueue represents the queue of frames (in the form of bit buffers) to be transmitted
 type TxQueue []*BitBuffer
 
-type ArbitrationState byte
-
 const (
 	stateKeyTxQueue          = "tx_queue"
 	stateKeyRxBuffer         = "rx_buffer"
 	stateKeyArbitrationState = "arbitration_state"
-
-	arbitrationStateIn   ArbitrationState = iota // Controller is still competing with others
-	arbitrationStateLost                         // Dominant bit took over, this controller needs to stop transmitting
-	arbitrationStateWon                          // This controller won the arbitration, it is now the only writer, so no need to perform arbitration check (but still need to check for errors)
 )
 
 // NewController creates a CAN controller
@@ -44,19 +38,19 @@ func NewController(unitName string) *component.Component {
 				this.State().Set(stateKeyArbitrationState, arbitrationState)
 			}()
 
-			// Handle new frames coming from MCU
+			// Enqueue new frames coming from MCU
 			for _, sig := range this.InputByName(PortCANTx).AllSignalsOrNil() {
 				frame, ok := sig.PayloadOrNil().(*Frame)
 				if !ok || !frame.isValid() {
 					return errors.New("received corrupted frame")
 				}
 
-				frameBits := frame.ToBits()
+				frameBits := frame.ToBits().WithStuffing(protocolBitStuffingStep)
 				txQueue = append(txQueue, NewBitBuffer(frameBits))
 				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
 			}
 
-			// Get current bit on the bus
+			// Get current bit set on the bus
 			var currentBit Bit
 			currentBitIsSet := this.InputByName(PortCANRx).HasSignals()
 			if currentBitIsSet {
@@ -72,7 +66,7 @@ func NewController(unitName string) *component.Component {
 				bbToProcess := txQueue[0]
 
 				if bbToProcess.Available() == 0 {
-					this.Logger().Println("error: processed buffer is still in tx-queue")
+					panic("processed buffer is still in tx-queue")
 				}
 
 				if !currentBitIsSet && bbToProcess.Offset == 0 {
@@ -87,7 +81,7 @@ func NewController(unitName string) *component.Component {
 				if currentBitIsSet && bbToProcess.Offset > 0 {
 
 					// Check arbitration state (only while sending ID)
-					if bbToProcess.Offset < IDBitsCount {
+					if bbToProcess.Offset < protocolIDBitsCount {
 						this.Logger().Println("in arbitration")
 						arbitrationState = arbitrationStateIn
 					} else {
@@ -95,19 +89,19 @@ func NewController(unitName string) *component.Component {
 						arbitrationState = arbitrationStateWon
 					}
 
-					// Perform check if still in arbitration
+					// Perform arbitration check if still in arbitration
 					if arbitrationState == arbitrationStateIn {
 						if currentBit != bbToProcess.PreviousBit() {
 							// Lost arbitration
 							arbitrationState = arbitrationStateLost
 
-							if currentBit == DominantBit && bbToProcess.PreviousBit() == RecessiveBit {
+							if currentBit == protocolDominantBit && bbToProcess.PreviousBit() == protocolRecessiveBit {
 								this.Logger().Println("lost arbitration. backoff")
 								bbToProcess.ResetOffset()
 							}
 
 							// Also check for transmitting errors
-							if currentBit == RecessiveBit && bbToProcess.PreviousBit() == DominantBit {
+							if currentBit == protocolRecessiveBit && bbToProcess.PreviousBit() == protocolDominantBit {
 								panic("bus error, recessive bit won arbitration. backoff")
 							}
 						}

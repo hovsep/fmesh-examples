@@ -13,8 +13,8 @@ const (
 func voltageToBit(vLow, vHigh Voltage) Bit {
 	// TODO: make it less strict, use thresholds instead of exact matching
 	if vLow == DominantLowVoltage && vHigh == DominantHighVoltage {
-		return DominantBit
+		return protocolDominantBit
 	}
 
-	return RecessiveBit
+	return protocolRecessiveBit
 }

@@ -35,6 +35,87 @@ func (bits Bits) String() string {
 	return sb.String()
 }
 
+func (bits Bits) WithStuffing(afterEach int) Bits {
+	if afterEach <= 0 {
+		panic("afterEach must be > 0")
+	}
+
+	var stuffed Bits
+	var count int
+	var last Bit
+	first := true
+
+	for _, b := range bits {
+		stuffed = append(stuffed, b)
+
+		if first {
+			last = b
+			count = 1
+			first = false
+			continue
+		}
+
+		if b == last {
+			count++
+			if count == afterEach {
+				// Insert the opposite bit
+				stuffed = append(stuffed, !b)
+				count = 0    // Reset count after stuffing
+				first = true // Restart tracking from next bit
+			}
+		} else {
+			last = b
+			count = 1
+		}
+	}
+
+	return stuffed
+}
+
+func (bits Bits) WithoutStuffing(afterEach int) Bits {
+	if afterEach <= 0 {
+		panic("afterEach must be > 0")
+	}
+
+	var unstuffed Bits
+	var count int
+	var last Bit
+	first := true
+
+	i := 0
+	for i < len(bits) {
+		b := bits[i]
+		unstuffed = append(unstuffed, b)
+
+		if first {
+			last = b
+			count = 1
+			first = false
+			i++
+			continue
+		}
+
+		if b == last {
+			count++
+			if count == afterEach {
+				// Skip the next bit (stuffed bit)
+				i += 2 // skip current + stuffed
+				if i <= len(bits) {
+					first = true // restart tracking after stuffed bit
+				}
+				continue
+			}
+		} else {
+			last = b
+			count = 1
+		}
+
+		i++
+	}
+
+	return unstuffed
+}
+
 func NewBitBuffer(bits Bits) *BitBuffer {
 	return &BitBuffer{
 		Bits:   bits,

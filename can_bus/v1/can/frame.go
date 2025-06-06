@@ -5,13 +5,6 @@ import (
 	"fmt"
 )
 
-const (
-	maxDataLen   = 8     // In bytes
-	maxFrameID   = 0x7FF // 11-bit max
-	IDBitsCount  = 11
-	DLCBitsCount = 4
-)
-
 // Frame represents a simplified CAN frame (no memory optimizations)
 type Frame struct {
 	// SOF
@@ -20,8 +13,8 @@ type Frame struct {
 	// IDE
 	// r0
 	// r1
-	DLC  uint8            // Data length code (4 bits)
-	Data [maxDataLen]byte // Payload
+	DLC  uint8                    // Data length code (4 bits)
+	Data [protocolMaxDataLen]byte // Payload
 	// CRC
 	// ACK
 	// EOF
@@ -29,11 +22,11 @@ type Frame struct {
 }
 
 func (frame *Frame) isValid() bool {
-	if frame.Id > maxFrameID {
+	if frame.Id > protocolMaxFrameID {
 		return false
 	}
 
-	if frame.DLC > maxDataLen {
+	if frame.DLC > protocolMaxDataLen {
 		return false
 	}
 
@@ -68,39 +61,39 @@ func (frame *Frame) ToBits() Bits {
 
 // FromBits decodes a CAN frame from a Bits slice
 func FromBits(bits Bits) (*Frame, error) {
-	if len(bits) < IDBitsCount+DLCBitsCount {
+	if len(bits) < protocolIDBitsCount+protocolDLCBitsCount {
 		return nil, errors.New("bit slice too short to contain a valid CAN frame")
 	}
 
 	// 1. Decode ID
 	var id uint32
-	for i := 0; i < IDBitsCount; i++ {
+	for i := 0; i < protocolIDBitsCount; i++ {
 		if bits[i] {
-			id |= 1 << (IDBitsCount - 1 - i)
+			id |= 1 << (protocolIDBitsCount - 1 - i)
 		}
 	}
 
 	// 2. Decode DLC
 	var dlc uint8
-	for i := 0; i < DLCBitsCount; i++ {
-		if bits[IDBitsCount+i] {
-			dlc |= 1 << (DLCBitsCount - 1 - i)
+	for i := 0; i < protocolDLCBitsCount; i++ {
+		if bits[protocolIDBitsCount+i] {
+			dlc |= 1 << (protocolDLCBitsCount - 1 - i)
 		}
 	}
 
 	// 3. Validate DLC
-	if dlc > maxDataLen {
+	if dlc > protocolMaxDataLen {
 		return nil, fmt.Errorf("invalid DLC: %d", dlc)
 	}
 
 	// 4. Decode Data
-	expectedBits := IDBitsCount + DLCBitsCount + int(dlc)*8
+	expectedBits := protocolIDBitsCount + protocolDLCBitsCount + int(dlc)*8
 	if len(bits) < expectedBits {
 		return nil, fmt.Errorf("not enough bits for data, expected %d, got %d", expectedBits, len(bits))
 	}
 
-	var data [maxDataLen]byte
-	offset := IDBitsCount + DLCBitsCount
+	var data [protocolMaxDataLen]byte
+	offset := protocolIDBitsCount + protocolDLCBitsCount
 	for i := 0; i < int(dlc); i++ {
 		var b byte
 		for j := 0; j < 8; j++ {

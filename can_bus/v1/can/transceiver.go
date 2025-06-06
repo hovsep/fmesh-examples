@@ -7,11 +7,6 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-const (
-	DominantBit  = Bit(false)
-	RecessiveBit = Bit(true)
-)
-
 // NewTransceiver creates a CAN transceiver component
 // which converts bits to voltage and vice versa
 func NewTransceiver(unitName string) *component.Component {
@@ -27,7 +22,7 @@ func NewTransceiver(unitName string) *component.Component {
 				// High impedance by default (recessive bit)
 				resultingLVoltage, resultingHVoltage := RecessiveVoltage, RecessiveVoltage
 
-				if bit == DominantBit {
+				if bit == protocolDominantBit {
 					// Drive dominant
 					resultingLVoltage, resultingHVoltage = DominantLowVoltage, DominantHighVoltage
 				}
