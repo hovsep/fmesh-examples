@@ -2,7 +2,6 @@ package can
 
 import (
 	"errors"
-
 	"github.com/hovsep/fmesh/signal"
 
 	"github.com/hovsep/fmesh/component"
@@ -57,6 +56,7 @@ func NewController(unitName string) *component.Component {
 				currentBit = this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
 				this.Logger().Println("read current bit on bus:", currentBit)
 
+				// Collect bits to potential frame
 				rxBuf.AppendBit(currentBit)
 				this.Logger().Println("rxBuf:", rxBuf.Bits)
 			}
@@ -81,16 +81,15 @@ func NewController(unitName string) *component.Component {
 				if currentBitIsSet && bbToProcess.Offset > 0 {
 
 					// Check arbitration state (only while sending ID)
-					if bbToProcess.Offset < protocolIDBitsCount {
-						this.Logger().Println("in arbitration")
-						arbitrationState = arbitrationStateIn
-					} else {
+					// TODO: check logical bits, not stuffed ones
+					if arbitrationState == arbitrationStateIn && bbToProcess.Offset > protocolIDBitsCount {
 						this.Logger().Println("arbitration won")
 						arbitrationState = arbitrationStateWon
 					}
 
 					// Perform arbitration check if still in arbitration
 					if arbitrationState == arbitrationStateIn {
+						this.Logger().Println("in arbitration")
 						if currentBit != bbToProcess.PreviousBit() {
 							// Lost arbitration
 							arbitrationState = arbitrationStateLost
