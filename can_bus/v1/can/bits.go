@@ -23,6 +23,10 @@ func (bit Bit) String() string {
 	return "0"
 }
 
+func NewBits(len int) Bits {
+	return make(Bits, len)
+}
+
 func (bits Bits) String() string {
 	var sb strings.Builder
 	for _, bit := range bits {
@@ -34,6 +38,13 @@ func (bits Bits) String() string {
 func NewBitBuffer(bits Bits) *BitBuffer {
 	return &BitBuffer{
 		Bits:   bits,
+		Offset: 0,
+	}
+}
+
+func NewEmptyBitBuffer() *BitBuffer {
+	return &BitBuffer{
+		Bits:   NewBits(0),
 		Offset: 0,
 	}
 }
@@ -56,4 +67,8 @@ func (bb *BitBuffer) ResetOffset() {
 
 func (bb *BitBuffer) Available() int {
 	return len(bb.Bits) - bb.Offset
+}
+
+func (bb *BitBuffer) AppendBit(bit Bit) {
+	bb.Bits = append(bb.Bits, bit)
 }

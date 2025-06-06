@@ -8,11 +8,12 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
-// TxQueue represents the queue of frames to be transmitted
+// TxQueue represents the queue of frames (in the form of bit buffers) to be transmitted
 type TxQueue []*BitBuffer
 
 const (
-	StateTxQueue = "tx_queue"
+	stateTxQueue  = "tx_queue"
+	stateRxBuffer = "rx_buffer"
 )
 
 // NewController creates a CAN controller
@@ -20,13 +21,14 @@ const (
 func NewController(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
 		WithInitialState(func(state component.State) {
-			state.Set(StateTxQueue, TxQueue{})
-
+			state.Set(stateTxQueue, TxQueue{})            // Multiple bit buffers we are trying to send to transceiver
+			state.Set(stateRxBuffer, NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
 		}).
 		WithActivationFunc(func(this *component.Component) error {
-			txQueue := this.State().Get(StateTxQueue).(TxQueue)
+			txQueue := this.State().Get(stateTxQueue).(TxQueue)
+			rxBuf := this.State().Get(stateRxBuffer).(*BitBuffer)
 			defer func() {
-				this.State().Set(StateTxQueue, txQueue)
+				this.State().Set(stateTxQueue, txQueue)
 			}()
 
 			// Handle new frames coming from MCU
@@ -37,7 +39,7 @@ func NewController(unitName string) *component.Component {
 				}
 
 				txQueue = append(txQueue, NewBitBuffer(frame.toBits()))
-				this.Logger().Println("got a frame to send:", frame.toBits().String(), " items in tx-queue:", len(txQueue))
+				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frame.toBits(), len(txQueue))
 			}
 
 			// Get current bit on the bus
@@ -46,6 +48,9 @@ func NewController(unitName string) *component.Component {
 			if currentBitIsSet {
 				currentBit = this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
 				this.Logger().Println("read current bit on bus:", currentBit)
+
+				rxBuf.AppendBit(currentBit)
+				this.Logger().Println("rxBuf:", rxBuf)
 			}
 
 			// Check if there are frames to write and pop one
