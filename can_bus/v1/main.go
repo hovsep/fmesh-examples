@@ -31,7 +31,10 @@ func main() {
 	obdDevice.MCU.OutputByName(ecu.PortOBDOut).PipeTo(laptop.InputByName(portUSBIn))
 
 	// Build the mesh
-	fm := fmesh.New("can_bus_sim_v1").
+	fm := fmesh.NewWithConfig("can_bus_sim_v1", &fmesh.Config{
+		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
+		Debug:                 false,
+	}).
 		WithComponents(bus, laptop).
 		WithComponents(allCanNodes.GetAllComponents()...)
 

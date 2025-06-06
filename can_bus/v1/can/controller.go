@@ -36,48 +36,66 @@ func NewController(unitName string) *component.Component {
 					return errors.New("received corrupted frame")
 				}
 
-				txQueue = append(txQueue, &BitBuffer{
-					Bits: frame.toBits(),
-					Pos:  0,
-				})
-				this.Logger().Println("got a frame to send: ", frame.toBits().String(), " tx-queue len=", len(txQueue))
+				txQueue = append(txQueue, NewBitBuffer(frame.toBits()))
+				this.Logger().Println("got a frame to send:", frame.toBits().String(), " items in tx-queue:", len(txQueue))
+			}
+
+			// Get current bit on the bus
+			var currentBit Bit
+			currentBitIsSet := this.InputByName(PortCANRx).HasSignals()
+			if currentBitIsSet {
+				currentBit = this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
+				this.Logger().Println("read current bit on bus:", currentBit)
 			}
 
 			// Check if there are frames to write and pop one
 			if len(txQueue) > 0 {
-				buffer := txQueue[0]
+				bbToProcess := txQueue[0]
 
-				// Just write the first bit
-				if buffer.Pos == 0 {
-					firstBitToTransmit := buffer.Bits[0]
-					this.Logger().Println("write first bit: ", firstBitToTransmit.String())
-					this.OutputByName(PortCANTx).PutSignals(signal.New(firstBitToTransmit))
-					buffer.Pos++
-				} else {
-					// In order to write next bits, need to wait for a bit from can to compare them
-					if this.InputByName(PortCANRx).HasSignals() {
-						bitOnBus := this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
-						this.Logger().Println("bit on bus:", bitOnBus.String())
-
-						// Check if arbitration is lost
-						lastWrittenBit := buffer.Bits[buffer.Pos]
-						if bitOnBus != lastWrittenBit {
-							this.Logger().Println("lost arbitration, bit on bus: ", bitOnBus.String(), " last written bit:", lastWrittenBit.String())
-						} else {
-							this.Logger().Println("in arbitration")
-							if buffer.Pos < len(buffer.Bits)-1 {
-								nextBitToTransmit := buffer.Bits[buffer.Pos+1]
-								this.Logger().Println("write next bit: ", nextBitToTransmit.String())
-								this.OutputByName(PortCANTx).PutSignals(signal.New(nextBitToTransmit))
-								buffer.Pos++
-							} else {
-								this.Logger().Println("all bits are written, removing the frame from queue")
-								txQueue = txQueue[1:]
-							}
-						}
-					}
+				if bbToProcess.Available() == 0 {
+					this.Logger().Println("error: processed buffer is still in tx-queue")
 				}
 
+				if !currentBitIsSet && bbToProcess.Offset == 0 {
+					// We are sending the very first bit on idle bus, no arbitration, just writing the first bit
+					bitToSend := bbToProcess.NextBit()
+
+					this.Logger().Println("write:", bitToSend)
+					this.OutputByName(PortCANTx).PutSignals(signal.New(bitToSend))
+					bbToProcess.IncreaseOffset()
+				}
+
+				if currentBitIsSet && bbToProcess.Offset > 0 {
+					// Check arbitration
+					if currentBit != bbToProcess.PreviousBit() {
+						// Lost arbitration
+						if currentBit == DominantBit && bbToProcess.PreviousBit() == RecessiveBit {
+							this.Logger().Println("lost arbitration. backoff")
+							bbToProcess.ResetOffset()
+						}
+
+						if currentBit == RecessiveBit && bbToProcess.PreviousBit() == DominantBit {
+							panic("bus error, recessive bit won arbitration. backoff")
+						}
+
+					} else {
+						// In arbitration
+						if bbToProcess.Available() > 0 {
+							bitToSend := bbToProcess.NextBit()
+							this.Logger().Println("write:", bitToSend)
+							this.OutputByName(PortCANTx).PutSignals(signal.New(bitToSend))
+							bbToProcess.IncreaseOffset()
+						}
+
+						// Check if we finished processing the buffer
+						if bbToProcess.Available() == 0 {
+							this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
+							txQueue = txQueue[1:]
+						}
+
+					}
+
+				}
 			}
 
 			return nil

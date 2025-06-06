@@ -24,17 +24,18 @@ func NewTransceiver(unitName string) *component.Component {
 					this.Logger().Println("received corrupted bit")
 				}
 
-				this.Logger().Println("writing bit", bit.String())
+				// High impedance by default (recessive bit)
+				resultingLVoltage, resultingHVoltage := RecessiveVoltage, RecessiveVoltage
 
 				if bit == DominantBit {
 					// Drive dominant
-					this.OutputByName(PortCANL).PutSignals(signal.New(DominantLowVoltage))
-					this.OutputByName(PortCANH).PutSignals(signal.New(DominantHighVoltage))
-				} else {
-					// High impedance (recessive bit)
-					this.OutputByName(PortCANL).PutSignals(signal.New(RecessiveVoltage))
-					this.OutputByName(PortCANH).PutSignals(signal.New(RecessiveVoltage))
+					resultingLVoltage, resultingHVoltage = DominantLowVoltage, DominantHighVoltage
 				}
+
+				this.OutputByName(PortCANL).PutSignals(signal.New(resultingLVoltage))
+				this.OutputByName(PortCANH).PutSignals(signal.New(resultingHVoltage))
+
+				this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
 			}
 
 			// Read path: transceiver <- bus (exactly one bit)
@@ -54,7 +55,7 @@ func NewTransceiver(unitName string) *component.Component {
 				}
 
 				bitRead := voltageToBit(vLow.(Voltage), vHigh.(Voltage))
-				this.Logger().Println("read bit from bus: ", bitRead.String())
+				this.Logger().Printf("convert voltages L:%v / H:%v to bit: %s", vLow, vHigh, bitRead)
 				this.OutputByName(PortCANRx).PutSignals(signal.New(bitRead))
 			}
 
