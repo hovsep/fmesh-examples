@@ -2,6 +2,7 @@ package can
 
 import (
 	"errors"
+
 	"github.com/hovsep/fmesh/signal"
 
 	"github.com/hovsep/fmesh/component"
@@ -32,6 +33,7 @@ func NewController(unitName string) *component.Component {
 			arbitrationState := this.State().Get(stateKeyArbitrationState).(ArbitrationState)
 
 			defer func() {
+				// Save latest changes in state
 				this.State().Set(stateKeyTxQueue, txQueue)
 				this.State().Set(stateKeyRxBuffer, rxBuf)
 				this.State().Set(stateKeyArbitrationState, arbitrationState)
@@ -46,7 +48,8 @@ func NewController(unitName string) *component.Component {
 
 				frameBits := frame.ToBits().WithStuffing(protocolBitStuffingStep)
 				txQueue = append(txQueue, NewBitBuffer(frameBits))
-				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
+				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits.WithoutStuffing(protocolBitStuffingStep), len(txQueue))
+				this.Logger().Println("stuffed frame", frameBits)
 			}
 
 			// Get current bit set on the bus
@@ -79,10 +82,9 @@ func NewController(unitName string) *component.Component {
 				}
 
 				if currentBitIsSet && bbToProcess.Offset > 0 {
-
 					// Check arbitration state (only while sending ID)
-					// TODO: check logical bits, not stuffed ones
-					if arbitrationState == arbitrationStateIn && bbToProcess.Offset > protocolIDBitsCount {
+					finishedTransmittingIDField := rxBuf.Bits.WithoutStuffing(protocolBitStuffingStep).Len() >= protocolIDBitsCount
+					if arbitrationState == arbitrationStateIn && finishedTransmittingIDField {
 						this.Logger().Println("arbitration won")
 						arbitrationState = arbitrationStateWon
 					}

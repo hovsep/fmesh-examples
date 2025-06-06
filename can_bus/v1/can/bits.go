@@ -10,10 +10,14 @@ type Bit bool
 // Bits ...
 type Bits []Bit
 
-// BitBuffer represents a buffer of bits with a position indicating how many bits have been read or written.
+// BitBuffer represents a buffer of bits with an offset indicating how many bits have been read or written.
 type BitBuffer struct {
 	Bits   Bits // underlying bit slice
 	Offset int  // how many bits are already processed?
+}
+
+func (bits Bits) Len() int {
+	return len(bits)
 }
 
 func (bit Bit) String() string {
@@ -128,6 +132,10 @@ func NewEmptyBitBuffer() *BitBuffer {
 		Bits:   NewBits(0),
 		Offset: 0,
 	}
+}
+
+func (bb *BitBuffer) Len() int {
+	return bb.Bits.Len()
 }
 
 func (bb *BitBuffer) NextBit() Bit {

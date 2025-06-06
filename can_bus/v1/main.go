@@ -7,7 +7,6 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
 	"github.com/hovsep/fmesh-examples/can_bus/v1/ecu"
-	"github.com/hovsep/fmesh-graphviz/dot"
 )
 
 func main() {
@@ -40,11 +39,6 @@ func main() {
 
 	// Send initial frames
 	sendPayloadToUSBPort(laptop, frameDiagnosticRequest)
-
-	// TODO: remove after debugged
-	exporter := dot.NewDotExporter()
-	data, _ := exporter.Export(fm)
-	_ = data
 
 	runResult, err := fm.Run()
 	if err != nil {
