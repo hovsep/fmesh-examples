@@ -11,9 +11,16 @@ import (
 // TxQueue represents the queue of frames (in the form of bit buffers) to be transmitted
 type TxQueue []*BitBuffer
 
+type ArbitrationState byte
+
 const (
-	stateTxQueue  = "tx_queue"
-	stateRxBuffer = "rx_buffer"
+	stateKeyTxQueue          = "tx_queue"
+	stateKeyRxBuffer         = "rx_buffer"
+	stateKeyArbitrationState = "arbitration_state"
+
+	arbitrationStateIn   ArbitrationState = iota // Controller is still competing with others
+	arbitrationStateLost                         // Dominant bit took over, this controller needs to stop transmitting
+	arbitrationStateWon                          // This controller won the arbitration, it is now the only writer, so no need to perform arbitration check (but still need to check for errors)
 )
 
 // NewController creates a CAN controller
@@ -21,14 +28,20 @@ const (
 func NewController(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
 		WithInitialState(func(state component.State) {
-			state.Set(stateTxQueue, TxQueue{})            // Multiple bit buffers we are trying to send to transceiver
-			state.Set(stateRxBuffer, NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
+			state.Set(stateKeyTxQueue, TxQueue{})            // Multiple bit buffers we are trying to send to transceiver
+			state.Set(stateKeyRxBuffer, NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
+			state.Set(stateKeyArbitrationState, arbitrationStateIn)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
-			txQueue := this.State().Get(stateTxQueue).(TxQueue)
-			rxBuf := this.State().Get(stateRxBuffer).(*BitBuffer)
+			// Extract the state
+			txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
+			rxBuf := this.State().Get(stateKeyRxBuffer).(*BitBuffer)
+			arbitrationState := this.State().Get(stateKeyArbitrationState).(ArbitrationState)
+
 			defer func() {
-				this.State().Set(stateTxQueue, txQueue)
+				this.State().Set(stateKeyTxQueue, txQueue)
+				this.State().Set(stateKeyRxBuffer, rxBuf)
+				this.State().Set(stateKeyArbitrationState, arbitrationState)
 			}()
 
 			// Handle new frames coming from MCU
@@ -38,8 +51,9 @@ func NewController(unitName string) *component.Component {
 					return errors.New("received corrupted frame")
 				}
 
-				txQueue = append(txQueue, NewBitBuffer(frame.toBits()))
-				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frame.toBits(), len(txQueue))
+				frameBits := frame.ToBits()
+				txQueue = append(txQueue, NewBitBuffer(frameBits))
+				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
 			}
 
 			// Get current bit on the bus
@@ -50,7 +64,7 @@ func NewController(unitName string) *component.Component {
 				this.Logger().Println("read current bit on bus:", currentBit)
 
 				rxBuf.AppendBit(currentBit)
-				this.Logger().Println("rxBuf:", rxBuf)
+				this.Logger().Println("rxBuf:", rxBuf.Bits)
 			}
 
 			// Check if there are frames to write and pop one
@@ -71,20 +85,35 @@ func NewController(unitName string) *component.Component {
 				}
 
 				if currentBitIsSet && bbToProcess.Offset > 0 {
-					// Check arbitration
-					if currentBit != bbToProcess.PreviousBit() {
-						// Lost arbitration
-						if currentBit == DominantBit && bbToProcess.PreviousBit() == RecessiveBit {
-							this.Logger().Println("lost arbitration. backoff")
-							bbToProcess.ResetOffset()
-						}
 
-						if currentBit == RecessiveBit && bbToProcess.PreviousBit() == DominantBit {
-							panic("bus error, recessive bit won arbitration. backoff")
-						}
-
+					// Check arbitration state (only while sending ID)
+					if bbToProcess.Offset < IDBitsCount {
+						this.Logger().Println("in arbitration")
+						arbitrationState = arbitrationStateIn
 					} else {
-						// In arbitration
+						this.Logger().Println("arbitration won")
+						arbitrationState = arbitrationStateWon
+					}
+
+					// Perform check if still in arbitration
+					if arbitrationState == arbitrationStateIn {
+						if currentBit != bbToProcess.PreviousBit() {
+							// Lost arbitration
+							arbitrationState = arbitrationStateLost
+
+							if currentBit == DominantBit && bbToProcess.PreviousBit() == RecessiveBit {
+								this.Logger().Println("lost arbitration. backoff")
+								bbToProcess.ResetOffset()
+							}
+
+							// Also check for transmitting errors
+							if currentBit == RecessiveBit && bbToProcess.PreviousBit() == DominantBit {
+								panic("bus error, recessive bit won arbitration. backoff")
+							}
+						}
+					}
+
+					if arbitrationState != arbitrationStateLost {
 						if bbToProcess.Available() > 0 {
 							bitToSend := bbToProcess.NextBit()
 							this.Logger().Println("write:", bitToSend)
@@ -97,9 +126,7 @@ func NewController(unitName string) *component.Component {
 							this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
 							txQueue = txQueue[1:]
 						}
-
 					}
-
 				}
 			}
 
