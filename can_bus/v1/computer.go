@@ -31,7 +31,7 @@ func NewComputer(name string) *component.Component {
 			// Process incoming usb data
 			for _, sig := range this.InputByName(portUSBIn).AllSignalsOrNil() {
 				// Just print everything to STDOUT
-				this.Logger().Printf("Got data on USB port: %v /n", sig.PayloadOrNil())
+				this.Logger().Printf("Got data on USB port: %v", sig.PayloadOrNil())
 			}
 
 			return nil

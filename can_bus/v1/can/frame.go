@@ -14,7 +14,7 @@ type Frame struct {
 	// r0
 	// r1
 	DLC  uint8                    // Data length code (4 bits)
-	Data [protocolMaxDataLen]byte // Payload
+	Data [ProtocolMaxDataLen]byte // Payload
 	// CRC
 	// ACK
 	// EOF
@@ -22,11 +22,11 @@ type Frame struct {
 }
 
 func (frame *Frame) isValid() bool {
-	if frame.Id > protocolMaxFrameID {
+	if frame.Id > ProtocolMaxFrameID {
 		return false
 	}
 
-	if frame.DLC > protocolMaxDataLen {
+	if frame.DLC > ProtocolMaxDataLen {
 		return false
 	}
 
@@ -61,39 +61,39 @@ func (frame *Frame) ToBits() Bits {
 
 // FromBits decodes a CAN frame from a Bits slice
 func FromBits(bits Bits) (*Frame, error) {
-	if len(bits) < protocolIDBitsCount+protocolDLCBitsCount {
+	if len(bits) < ProtocolIDBitsCount+ProtocolDLCBitsCount {
 		return nil, errors.New("bit slice too short to contain a valid CAN frame")
 	}
 
 	// 1. Decode ID
 	var id uint32
-	for i := 0; i < protocolIDBitsCount; i++ {
+	for i := 0; i < ProtocolIDBitsCount; i++ {
 		if bits[i] {
-			id |= 1 << (protocolIDBitsCount - 1 - i)
+			id |= 1 << (ProtocolIDBitsCount - 1 - i)
 		}
 	}
 
 	// 2. Decode DLC
 	var dlc uint8
-	for i := 0; i < protocolDLCBitsCount; i++ {
-		if bits[protocolIDBitsCount+i] {
-			dlc |= 1 << (protocolDLCBitsCount - 1 - i)
+	for i := 0; i < ProtocolDLCBitsCount; i++ {
+		if bits[ProtocolIDBitsCount+i] {
+			dlc |= 1 << (ProtocolDLCBitsCount - 1 - i)
 		}
 	}
 
 	// 3. Validate DLC
-	if dlc > protocolMaxDataLen {
+	if dlc > ProtocolMaxDataLen {
 		return nil, fmt.Errorf("invalid DLC: %d", dlc)
 	}
 
 	// 4. Decode Data
-	expectedBits := protocolIDBitsCount + protocolDLCBitsCount + int(dlc)*8
+	expectedBits := ProtocolIDBitsCount + ProtocolDLCBitsCount + int(dlc)*8
 	if len(bits) < expectedBits {
 		return nil, fmt.Errorf("not enough bits for data, expected %d, got %d", expectedBits, len(bits))
 	}
 
-	var data [protocolMaxDataLen]byte
-	offset := protocolIDBitsCount + protocolDLCBitsCount
+	var data [ProtocolMaxDataLen]byte
+	offset := ProtocolIDBitsCount + ProtocolDLCBitsCount
 	for i := 0; i < int(dlc); i++ {
 		var b byte
 		for j := 0; j < 8; j++ {
@@ -111,7 +111,7 @@ func FromBits(bits Bits) (*Frame, error) {
 	}
 
 	if !frame.isValid() {
-		return nil, errors.New("frame is invalid")
+		return nil, errors.New("decoded frame is invalid")
 	}
 
 	return frame, nil

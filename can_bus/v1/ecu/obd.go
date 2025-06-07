@@ -13,12 +13,15 @@ const (
 	OBDNodeID   = 0x7DF
 )
 
+// NewOBD creates a OBD can node
+// in real life OBD socket is not a can node, but for simplicity
+// we simulate OBD socket with plugged in OBD adapter as a single CAN node
 func NewOBD() *can.Node {
 	obdDevice := can.NewNode(OBDUnitName, func(state component.State) {
 		state.Set(ecuMemCanID, OBDNodeID)
 	},
 		func(this *component.Component) error {
-			// Everything received by OBD interface goes to can bus
+			// Everything received by OBD interface goes to can bus (todo: make it realistic, process only first signal, as OBD can not receive multiple frames at the same time)
 			return port.ForwardSignals(this.InputByName(PortOBDIn), this.OutputByName(can.PortCANTx))
 		})
 

@@ -2,41 +2,47 @@ package can
 
 import (
 	"errors"
-
-	"github.com/hovsep/fmesh/signal"
+	"fmt"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 // TxQueue represents the queue of frames (in the form of bit buffers) to be transmitted
 type TxQueue []*BitBuffer
 
 const (
-	stateKeyTxQueue          = "tx_queue"
-	stateKeyRxBuffer         = "rx_buffer"
-	stateKeyArbitrationState = "arbitration_state"
+	stateKeyTxQueue                          = "tx_queue"
+	stateKeyRxBuffer                         = "rx_buffer"
+	stateKeyControllerState                  = "controller_state"
+	stateKeyConsecutiveRecessiveBitsObserved = "consecutive_recessive_observed"
 )
 
 // NewController creates a CAN controller
 // which converts frames to bits and vice versa
 func NewController(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
+		WithInputs(PortCANTx, PortCANRx).  // Frame in, bits in
+		WithOutputs(PortCANTx, PortCANRx). // Bits out, frame out
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})            // Multiple bit buffers we are trying to send to transceiver
 			state.Set(stateKeyRxBuffer, NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
-			state.Set(stateKeyArbitrationState, arbitrationStateIn)
+			state.Set(stateKeyControllerState, controllerStateIdle)
+			state.Set(stateKeyConsecutiveRecessiveBitsObserved, byte(0))
 		}).
 		WithActivationFunc(func(this *component.Component) error {
 			// Extract the state
 			txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 			rxBuf := this.State().Get(stateKeyRxBuffer).(*BitBuffer)
-			arbitrationState := this.State().Get(stateKeyArbitrationState).(ArbitrationState)
+			currentState := this.State().Get(stateKeyControllerState).(ControllerState)
+			consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(byte)
 
 			defer func() {
 				// Save latest changes in state
 				this.State().Set(stateKeyTxQueue, txQueue)
 				this.State().Set(stateKeyRxBuffer, rxBuf)
-				this.State().Set(stateKeyArbitrationState, arbitrationState)
+				this.State().Set(stateKeyControllerState, currentState)
+				this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, consecutiveRecessiveBitsObserved)
 			}()
 
 			// Enqueue new frames coming from MCU
@@ -46,87 +52,138 @@ func NewController(unitName string) *component.Component {
 					return errors.New("received corrupted frame")
 				}
 
-				frameBits := frame.ToBits().WithStuffing(protocolBitStuffingStep)
+				frameBits := frame.ToBits().WithStuffing(ProtocolBitStuffingStep)
 				txQueue = append(txQueue, NewBitBuffer(frameBits))
-				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits.WithoutStuffing(protocolBitStuffingStep), len(txQueue))
+				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits.WithoutStuffing(ProtocolBitStuffingStep), len(txQueue))
 				this.Logger().Println("stuffed frame", frameBits)
 			}
 
 			// Get current bit set on the bus
-			var currentBit Bit
-			currentBitIsSet := this.InputByName(PortCANRx).HasSignals()
-			if currentBitIsSet {
-				currentBit = this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
-				this.Logger().Println("read current bit on bus:", currentBit)
+			if !this.InputByName(PortCANRx).HasSignals() {
+				return errors.New("unable to read current bit, cannot proceed with protocol decision")
+			}
+			if this.InputByName(PortCANRx).Buffer().Len() > 1 {
+				return errors.New("received more than one bit")
+			}
+			currentBit := this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
+			this.Logger().Println("read current bit on bus:", currentBit)
 
-				// Collect bits to potential frame
-				rxBuf.AppendBit(currentBit)
-				this.Logger().Println("rxBuf:", rxBuf.Bits)
+			if currentBit.IsRecessive() {
+				consecutiveRecessiveBitsObserved++
+			} else {
+				consecutiveRecessiveBitsObserved = 0
 			}
 
-			// Check if there are frames to write and pop one
-			if len(txQueue) > 0 {
-				bbToProcess := txQueue[0]
+			// Main state machine:
+			for {
+				switch currentState {
+				case controllerStateIdle:
+					logCurrentState(this, currentState)
+					// SOF detected, became passive listener
+					if currentBit.IsDominant() {
+						logStateTransition(this, currentState, controllerStateReceive)
+						currentState = controllerStateReceive
+						continue
+					} else {
+						if len(txQueue) > 0 {
+							logStateTransition(this, currentState, controllerStateWaitForBusIdle)
+							currentState = controllerStateWaitForBusIdle
+							continue
+						}
 
-				if bbToProcess.Available() == 0 {
-					panic("processed buffer is still in tx-queue")
-				}
-
-				if !currentBitIsSet && bbToProcess.Offset == 0 {
-					// We are sending the very first bit on idle bus, no arbitration, just writing the first bit
-					bitToSend := bbToProcess.NextBit()
-
-					this.Logger().Println("write:", bitToSend)
-					this.OutputByName(PortCANTx).PutSignals(signal.New(bitToSend))
-					bbToProcess.IncreaseOffset()
-				}
-
-				if currentBitIsSet && bbToProcess.Offset > 0 {
-					// Check arbitration state (only while sending ID)
-					finishedTransmittingIDField := rxBuf.Bits.WithoutStuffing(protocolBitStuffingStep).Len() >= protocolIDBitsCount
-					if arbitrationState == arbitrationStateIn && finishedTransmittingIDField {
-						this.Logger().Println("arbitration won")
-						arbitrationState = arbitrationStateWon
+						// passive-idle situation: controller does not want to write, there is nothing to read
+						this.Logger().Println("exit: passive-idle, recessive bits observed so far:", consecutiveRecessiveBitsObserved)
+						return nil
 					}
 
-					// Perform arbitration check if still in arbitration
-					if arbitrationState == arbitrationStateIn {
-						this.Logger().Println("in arbitration")
-						if currentBit != bbToProcess.PreviousBit() {
+				case controllerStateWaitForBusIdle:
+					logCurrentState(this, currentState)
+					if consecutiveRecessiveBitsObserved > ProtocolEOFBitsCount+ProtocolIFSBitsCount {
+						// The bus looks idle, it's time to start transmitting
+						logStateTransition(this, currentState, controllerStateArbitration)
+						currentState = controllerStateArbitration
+						continue
+					}
+					// Continue waiting
+					this.Logger().Println("exit: waiting for more consecutive recessive bits, seen so far:", consecutiveRecessiveBitsObserved)
+					return nil
+				case controllerStateArbitration:
+					logCurrentState(this, currentState)
+					txBuf := txQueue[0]
+
+					if txBuf.Available() == 0 {
+						return errors.New("already processed buffer is still in tx-queue")
+					}
+
+					// Check if arbitration is won
+					finishedTransmittingIDField := rxBuf.Bits.WithoutStuffing(ProtocolBitStuffingStep).Len() >= ProtocolIDBitsCount
+					if finishedTransmittingIDField {
+						logStateTransition(this, currentState, controllerStateTransmit)
+						currentState = controllerStateTransmit
+						continue
+					}
+
+					// Check if arbitration is lost
+					if txBuf.Offset > 1 {
+						if currentBit != txBuf.PreviousBit() {
 							// Lost arbitration
-							arbitrationState = arbitrationStateLost
-
-							if currentBit == protocolDominantBit && bbToProcess.PreviousBit() == protocolRecessiveBit {
+							if currentBit.IsDominant() && txBuf.PreviousBit().IsRecessive() {
 								this.Logger().Println("lost arbitration. backoff")
-								bbToProcess.ResetOffset()
 							}
 
-							// Also check for transmitting errors
-							if currentBit == protocolRecessiveBit && bbToProcess.PreviousBit() == protocolDominantBit {
-								panic("bus error, recessive bit won arbitration. backoff")
+							// Or bus error happen
+							if currentBit.IsRecessive() && txBuf.PreviousBit().IsDominant() {
+								return errors.New("bus error, recessive bit won arbitration. backoff")
 							}
+
+							txBuf.ResetOffset() // Backoff, retry later
+
+							logStateTransition(this, currentState, controllerStateReceive)
+							currentState = controllerStateReceive
+							continue
 						}
 					}
 
-					if arbitrationState != arbitrationStateLost {
-						if bbToProcess.Available() > 0 {
-							bitToSend := bbToProcess.NextBit()
-							this.Logger().Println("write:", bitToSend)
-							this.OutputByName(PortCANTx).PutSignals(signal.New(bitToSend))
-							bbToProcess.IncreaseOffset()
-						}
+					txBit := txBuf.NextBit()
+					this.Logger().Println("write arbitration (ID) bit:", txBit)
+					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
+					txBuf.IncreaseOffset()
 
-						// Check if we finished processing the buffer
-						if bbToProcess.Available() == 0 {
-							this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
-							txQueue = txQueue[1:]
-						}
+					this.Logger().Println("exit: transmitted ID bit")
+					return nil
+				case controllerStateTransmit:
+					logCurrentState(this, currentState)
+					txBuf := txQueue[0]
+
+					if txBuf.Offset <= ProtocolIDBitsCount {
+						return errors.New("must be in arbitration state")
 					}
+
+					// Check if we finished transmitting the buffer
+					if txBuf.Available() == 0 {
+						this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
+						txQueue = txQueue[1:]
+					}
+
+					txBit := txBuf.NextBit()
+					this.Logger().Println("write frame bit:", txBit)
+					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
+					txBuf.IncreaseOffset()
+
+					logStateTransition(this, currentState, controllerStateIdle)
+					currentState = controllerStateIdle
+					// Todo: build frame and put on out port
+					return nil
+				case controllerStateReceive:
+					logCurrentState(this, currentState)
+					rxBuf.AppendBit(currentBit)
+					this.Logger().Println("rxBuf:", rxBuf.Bits)
+					this.Logger().Println("exit: received bit:", currentBit)
+					return nil
+				default:
+					return fmt.Errorf("end up in incorrect state: %v", currentState)
 				}
 			}
-
-			return nil
-		}).
-		WithInputs(PortCANTx, PortCANRx). // Frame in, bits in
-		WithOutputs(PortCANTx, PortCANRx) // Bits out, frame out
+			return errors.New("did not manage to exit correctly from main state machine loop")
+		})
 }

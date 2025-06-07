@@ -6,9 +6,9 @@ import "github.com/hovsep/fmesh/component"
 // which executes embedded logic operating on frames level
 func NewMCU(name string, initState func(state component.State), logic component.ActivationFunc) *component.Component {
 	return component.New("mcu-" + name).
+		WithInputs(PortCANRx).  // Frame in
+		WithOutputs(PortCANTx). // Frame out
 		WithInitialState(initState).
-		WithActivationFunc(logic).
-		WithInputs(PortCANRx). // Frame in
-		WithOutputs(PortCANTx) // Frame out
+		WithActivationFunc(logic)
 
 }

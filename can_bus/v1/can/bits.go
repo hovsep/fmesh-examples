@@ -16,10 +16,6 @@ type BitBuffer struct {
 	Offset int  // how many bits are already processed?
 }
 
-func (bits Bits) Len() int {
-	return len(bits)
-}
-
 func (bit Bit) String() string {
 	if bit {
 		return "1"
@@ -27,8 +23,20 @@ func (bit Bit) String() string {
 	return "0"
 }
 
+func (bit Bit) IsDominant() bool {
+	return bit == ProtocolDominantBit
+}
+
+func (bit Bit) IsRecessive() bool {
+	return bit == ProtocolRecessiveBit
+}
+
 func NewBits(len int) Bits {
 	return make(Bits, len)
+}
+
+func (bits Bits) Len() int {
+	return len(bits)
 }
 
 func (bits Bits) String() string {

@@ -11,6 +11,8 @@ import (
 // which converts bits to voltage and vice versa
 func NewTransceiver(unitName string) *component.Component {
 	return component.New("can_transceiver-"+unitName).
+		WithInputs(PortCANTx, PortCANH, PortCANL).  // Bits in (write to bus), voltage in (read from bus)
+		WithOutputs(PortCANRx, PortCANH, PortCANL). // Bits out (read from bus), voltage out (write to bus)
 		WithActivationFunc(func(this *component.Component) error {
 			// Write path: transceiver -> bus
 			for _, sig := range this.InputByName(PortCANTx).AllSignalsOrNil() {
@@ -22,7 +24,7 @@ func NewTransceiver(unitName string) *component.Component {
 				// High impedance by default (recessive bit)
 				resultingLVoltage, resultingHVoltage := RecessiveVoltage, RecessiveVoltage
 
-				if bit == protocolDominantBit {
+				if bit == ProtocolDominantBit {
 					// Drive dominant
 					resultingLVoltage, resultingHVoltage = DominantLowVoltage, DominantHighVoltage
 				}
@@ -55,7 +57,5 @@ func NewTransceiver(unitName string) *component.Component {
 			}
 
 			return nil
-		}).
-		WithInputs(PortCANTx, PortCANH, PortCANL). // Bits in (write to bus), voltage in (read from bus)
-		WithOutputs(PortCANRx, PortCANH, PortCANL) // Bits out (read from bus), voltage out (write to bus)
+		})
 }

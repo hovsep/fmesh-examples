@@ -37,7 +37,9 @@ func main() {
 		WithComponents(bus, laptop).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
-	// Send initial frames
+	// Initialize the mesh:
+
+	// send some data through laptop into OBD socket
 	sendPayloadToUSBPort(laptop, frameDiagnosticRequest)
 
 	runResult, err := fm.Run()

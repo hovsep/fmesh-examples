@@ -11,18 +11,32 @@ import (
 const (
 	MinValidVoltage = Voltage(0.5)
 	MaxValidVoltage = Voltage(4.5)
+
+	portInitialRecessiveSignals = "initial_recessive_signals"
 )
 
 // NewBus creates a new CAN bus
 func NewBus(name string) *component.Component {
-	return component.New("can_bus-"+name).
-		WithInputs(PortCANL, PortCANH).
-		WithOutputs(PortCANL, PortCANH).
+	bus := component.New("can_bus-"+name).
+		WithInputs(PortCANL, PortCANH, portInitialRecessiveSignals).
+		WithOutputs(PortCANL, PortCANH, portInitialRecessiveSignals).
 		WithActivationFunc(func(this *component.Component) error {
 			var (
 				allLow  []Voltage
 				allHigh []Voltage
 			)
+
+			// Process init signals (the very first idle state)
+			initialRecessivesCount := this.InputByName(portInitialRecessiveSignals).FirstSignalPayloadOrDefault(0).(int)
+			if initialRecessivesCount > 0 {
+				allLow = append(allLow, RecessiveVoltage)
+				allHigh = append(allHigh, RecessiveVoltage)
+
+				// Self-activate
+				if initialRecessivesCount > 1 {
+					this.OutputByName(portInitialRecessiveSignals).PutSignals(signal.New(initialRecessivesCount - 1))
+				}
+			}
 
 			busLow, busHigh := RecessiveVoltage, RecessiveVoltage
 
@@ -74,8 +88,8 @@ func NewBus(name string) *component.Component {
 				}
 			}
 
-			// Simulate wired-AND logic by deriving the bus voltages from voltages on all connected transceivers
-			// for simplicity we use min(CAN_L)\max(CAN_H) approximation
+			// Simulate wired-AND behavior by deriving the bus voltage levels from all connected transceivers
+			// For simplicity, we approximate this by using min(CAN_L) and max(CAN_H) across all nodes
 			busLow = slices.Min(allLow)
 			busHigh = slices.Max(allHigh)
 
@@ -85,4 +99,13 @@ func NewBus(name string) *component.Component {
 			this.OutputByName(PortCANH).PutSignals(signal.New(busHigh))
 			return nil
 		})
+
+	// Setup self-activation pipe
+	bus.OutputByName(portInitialRecessiveSignals).PipeTo(bus.InputByName(portInitialRecessiveSignals))
+
+	// Drive the bus with 11 recessive bits to simulate passive idle state,
+	// ensuring all CAN controllers detect bus idle condition.
+	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(ProtocolEOFBitsCount + ProtocolIFSBitsCount + 1))
+
+	return bus
 }
