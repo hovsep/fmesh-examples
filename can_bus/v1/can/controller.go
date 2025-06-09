@@ -53,7 +53,8 @@ func NewController(unitName string) *component.Component {
 
 				this.Logger().Println("ID ends at ", lastIDBitIndex)
 				txQueue = append(txQueue, &TxQueueItem{
-					Buf:            NewBitBuffer(frameBits),
+					// Add IFS and 1 extra recessive bit
+					Buf:            NewBitBuffer(frameBits.WithIFS().WithExtraBits(ProtocolRecessiveBit)),
 					LastIDBitIndex: lastIDBitIndex,
 				})
 				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
@@ -184,9 +185,17 @@ func NewController(unitName string) *component.Component {
 					return nil
 				case controllerStateReceive:
 					logCurrentState(this, currentState)
+					this.Logger().Println("recessive bits observed so far:", consecutiveRecessiveBitsObserved)
+
 					rxBuf.AppendBit(currentBit)
 					this.Logger().Println("rxBuf:", rxBuf.Bits)
-					this.Logger().Println("exit: received bit:", currentBit)
+
+					if consecutiveRecessiveBitsObserved == ProtocolEOFBitsCount {
+						this.Logger().Println("EOF, final rxBuf:", rxBuf.Bits)
+						// Build frame and put on port
+						currentState = controllerStateIdle
+						return nil
+					}
 					return nil
 				default:
 					return fmt.Errorf("end up in incorrect state: %v", currentState)

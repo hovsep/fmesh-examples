@@ -72,10 +72,7 @@ func (frame *Frame) ToBits() (Bits, int) {
 		}
 	}
 
-	return bits.WithStuffing(ProtocolBitStuffingStep).
-		WithEOF().
-		WithIFS().
-		WithExtraBits(ProtocolRecessiveBit), lastIDBitIndex
+	return bits.WithStuffing(ProtocolBitStuffingStep).WithEOF(), lastIDBitIndex
 }
 
 // FromBits decodes a CAN frame from a Bits slice
