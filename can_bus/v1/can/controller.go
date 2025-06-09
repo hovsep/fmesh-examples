@@ -52,10 +52,12 @@ func NewController(unitName string) *component.Component {
 					return errors.New("received corrupted frame")
 				}
 
-				frameBits := frame.ToBits().WithStuffing(ProtocolBitStuffingStep)
-				txQueue = append(txQueue, NewBitBuffer(frameBits))
-				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits.WithoutStuffing(ProtocolBitStuffingStep), len(txQueue))
-				this.Logger().Println("stuffed frame", frameBits)
+				frameBits := frame.ToBits()
+				frameBitsStuffed := frameBits.WithStuffing(ProtocolBitStuffingStep)
+
+				txQueue = append(txQueue, NewBitBuffer(frameBitsStuffed))
+				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
+				this.Logger().Println("stuffed frame", frameBitsStuffed)
 			}
 
 			// Get current bit set on the bus
@@ -115,6 +117,7 @@ func NewController(unitName string) *component.Component {
 						return errors.New("already processed buffer is still in tx-queue")
 					}
 
+					rxBuf.AppendBit(currentBit)
 					// Check if arbitration is won
 					finishedTransmittingIDField := rxBuf.Bits.WithoutStuffing(ProtocolBitStuffingStep).Len() >= ProtocolIDBitsCount
 					if finishedTransmittingIDField {
