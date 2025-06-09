@@ -33,30 +33,49 @@ func (frame *Frame) isValid() bool {
 	return true
 }
 
-// ToBits encodes the CAN frame into a slice of bits (bools)
-// Format: 11 bits ID | 4-bit DLC | DLC * 8-bit Data
-func (frame *Frame) ToBits() Bits {
+//    0    1111100111110    0001    000001001    1111111   111
+// SOF   ID     S      S DLC    DATA     S    EOF       IFS
+
+// ToBits encodes the CAN frame into a slice of bits
+// Format: 1 bit SOF| 11 bits ID | 4-bit DLC | DLC * 8-bit Data
+func (frame *Frame) ToBits() (Bits, int) {
 	var bits Bits
 
-	// 1. Encode 11-bit CAN ID (MSB first)
+	// SOF (Start Of the Frame)
+	bits = append(bits, ProtocolDominantBit)
+	fmt.Println("SOF", bits.String())
+
+	// Encode 11-bit CAN ID (MSB first)
 	for i := 10; i >= 0; i-- {
-		bits = append(bits, (frame.Id>>i)&1 == 1)
+		idBit := Bit((frame.Id>>i)&1 == 1)
+		fmt.Println("ID", idBit)
+		bits = append(bits, idBit)
 	}
 
-	// 2. Encode 4-bit DLC (Data Length Code)
+	lastIDBitIndex := bits[1 : ProtocolIDBitsCount+1].WithStuffing(ProtocolBitStuffingStep).Len()
+
+	// Encode 4-bit DLC (Data Length Code)
 	for i := 3; i >= 0; i-- {
-		bits = append(bits, (frame.DLC>>i)&1 == 1)
+		dlcBit := Bit((frame.DLC>>i)&1 == 1)
+		fmt.Println("DLC", dlcBit)
+		bits = append(bits, dlcBit)
 	}
 
-	// 3. Encode each data byte (DLC * 8 bits)
+	// Encode each data byte (DLC * 8 bits)
 	for i := 0; i < int(frame.DLC); i++ {
 		b := frame.Data[i]
+		fmt.Println("DATA BYTE", b)
 		for j := 7; j >= 0; j-- {
-			bits = append(bits, (b>>j)&1 == 1)
+			dataBit := Bit((b>>j)&1 == 1)
+			fmt.Println("DATA BIT", dataBit)
+			bits = append(bits, dataBit)
 		}
 	}
 
-	return bits
+	return bits.WithStuffing(ProtocolBitStuffingStep).
+		WithEOF().
+		WithIFS().
+		WithExtraBits(ProtocolRecessiveBit), lastIDBitIndex
 }
 
 // FromBits decodes a CAN frame from a Bits slice

@@ -1,6 +1,7 @@
 package can
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -33,6 +34,14 @@ func (bit Bit) IsRecessive() bool {
 
 func NewBits(len int) Bits {
 	return make(Bits, len)
+}
+
+func RepeatBit(bit Bit, n int) Bits {
+	bits := NewBits(0)
+	for i := 0; i < n; i++ {
+		bits = append(bits, bit)
+	}
+	return bits
 }
 
 func (bits Bits) Len() int {
@@ -70,10 +79,11 @@ func (bits Bits) WithStuffing(afterEach int) Bits {
 		if b == last {
 			count++
 			if count == afterEach {
-				// Insert the opposite bit
-				stuffed = append(stuffed, !b)
-				count = 0    // Reset count after stuffing
-				first = true // Restart tracking from next bit
+				stuffedBit := !b
+				stuffed = append(stuffed, stuffedBit)
+				// Treat the stuffed bit as a breaker, not part of the run
+				last = stuffedBit
+				count = 1
 			}
 		} else {
 			last = b
@@ -81,6 +91,7 @@ func (bits Bits) WithStuffing(afterEach int) Bits {
 		}
 	}
 
+	fmt.Println("stuffed bits:", stuffed.Len()-bits.Len())
 	return stuffed
 }
 
@@ -126,6 +137,21 @@ func (bits Bits) WithoutStuffing(afterEach int) Bits {
 	}
 
 	return unstuffed
+}
+
+func (bits Bits) WithEOF() Bits {
+	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolEOFBitsCount)...)
+}
+
+func (bits Bits) WithIFS() Bits {
+	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolIFSBitsCount)...)
+}
+
+func (bits Bits) WithExtraBits(extraBits ...Bit) Bits {
+	for _, b := range extraBits {
+		bits = append(bits, b)
+	}
+	return bits
 }
 
 func NewBitBuffer(bits Bits) *BitBuffer {

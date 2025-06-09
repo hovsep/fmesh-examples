@@ -17,7 +17,7 @@ func main() {
 	// Build CAN nodes:
 	obdDevice := ecu.NewOBD() // put this into variable, so we can connect it to laptop
 	allCanNodes := can.Nodes{
-		//ecu.NewECM(), // Engine Control Module
+		ecu.NewECM(), // Engine Control Module
 		//ecu.NewTCM(), // Transmission Control Module
 		//ecu.NewACU(), // Airbag Control Unit
 		obdDevice, // On Board Diagnostics

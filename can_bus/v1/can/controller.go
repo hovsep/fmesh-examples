@@ -8,9 +8,6 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// TxQueue represents the queue of frames (in the form of bit buffers) to be transmitted
-type TxQueue []*BitBuffer
-
 const (
 	stateKeyTxQueue                          = "tx_queue"
 	stateKeyRxBuffer                         = "rx_buffer"
@@ -52,12 +49,14 @@ func NewController(unitName string) *component.Component {
 					return errors.New("received corrupted frame")
 				}
 
-				frameBits := frame.ToBits()
-				frameBitsStuffed := frameBits.WithStuffing(ProtocolBitStuffingStep)
+				frameBits, lastIDBitIndex := frame.ToBits()
 
-				txQueue = append(txQueue, NewBitBuffer(frameBitsStuffed))
+				this.Logger().Println("ID ends at ", lastIDBitIndex)
+				txQueue = append(txQueue, &TxQueueItem{
+					Buf:            NewBitBuffer(frameBits),
+					LastIDBitIndex: lastIDBitIndex,
+				})
 				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
-				this.Logger().Println("stuffed frame", frameBitsStuffed)
 			}
 
 			// Get current bit set on the bus
@@ -68,7 +67,7 @@ func NewController(unitName string) *component.Component {
 				return errors.New("received more than one bit")
 			}
 			currentBit := this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
-			this.Logger().Println("read current bit on bus:", currentBit)
+			this.Logger().Println("observing current bit on bus:", currentBit)
 
 			if currentBit.IsRecessive() {
 				consecutiveRecessiveBitsObserved++
@@ -101,6 +100,7 @@ func NewController(unitName string) *component.Component {
 				case controllerStateWaitForBusIdle:
 					logCurrentState(this, currentState)
 					if consecutiveRecessiveBitsObserved > ProtocolEOFBitsCount+ProtocolIFSBitsCount {
+						this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
 						// The bus looks idle, it's time to start transmitting
 						logStateTransition(this, currentState, controllerStateArbitration)
 						currentState = controllerStateArbitration
@@ -111,35 +111,36 @@ func NewController(unitName string) *component.Component {
 					return nil
 				case controllerStateArbitration:
 					logCurrentState(this, currentState)
-					txBuf := txQueue[0]
+					txItem := txQueue[0]
 
-					if txBuf.Available() == 0 {
+					if txItem.Buf.Available() == 0 {
 						return errors.New("already processed buffer is still in tx-queue")
 					}
 
-					rxBuf.AppendBit(currentBit)
 					// Check if arbitration is won
-					finishedTransmittingIDField := rxBuf.Bits.WithoutStuffing(ProtocolBitStuffingStep).Len() >= ProtocolIDBitsCount
-					if finishedTransmittingIDField {
+					wonArbitration := txItem.IDIsTransmitted()
+					if wonArbitration {
 						logStateTransition(this, currentState, controllerStateTransmit)
 						currentState = controllerStateTransmit
 						continue
 					}
 
-					// Check if arbitration is lost
-					if txBuf.Offset > 1 {
-						if currentBit != txBuf.PreviousBit() {
+					// After SOF
+					if txItem.Buf.Offset > 1 {
+
+						// Check if arbitration is lost
+						if currentBit != txItem.Buf.PreviousBit() {
 							// Lost arbitration
-							if currentBit.IsDominant() && txBuf.PreviousBit().IsRecessive() {
+							if currentBit.IsDominant() && txItem.Buf.PreviousBit().IsRecessive() {
 								this.Logger().Println("lost arbitration. backoff")
 							}
 
 							// Or bus error happen
-							if currentBit.IsRecessive() && txBuf.PreviousBit().IsDominant() {
+							if currentBit.IsRecessive() && txItem.Buf.PreviousBit().IsDominant() {
 								return errors.New("bus error, recessive bit won arbitration. backoff")
 							}
 
-							txBuf.ResetOffset() // Backoff, retry later
+							txItem.Buf.ResetOffset() // Backoff, retry later
 
 							logStateTransition(this, currentState, controllerStateReceive)
 							currentState = controllerStateReceive
@@ -147,34 +148,39 @@ func NewController(unitName string) *component.Component {
 						}
 					}
 
-					txBit := txBuf.NextBit()
-					this.Logger().Println("write arbitration (ID) bit:", txBit)
+					txBit := txItem.Buf.NextBit()
+					if txItem.Buf.Offset == 0 {
+						this.Logger().Println("write SOF bit:", txBit)
+					} else {
+						this.Logger().Println("write arbitration (ID) bit:", txBit)
+					}
+
 					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
-					txBuf.IncreaseOffset()
+					txItem.Buf.IncreaseOffset()
 
 					return nil
 				case controllerStateTransmit:
 					logCurrentState(this, currentState)
-					txBuf := txQueue[0]
+					txItem := txQueue[0]
 
-					if txBuf.Offset <= ProtocolIDBitsCount {
+					if txItem.Buf.Offset <= ProtocolIDBitsCount {
 						return errors.New("must be in arbitration state")
 					}
 
 					// Check if we finished transmitting the buffer
-					if txBuf.Available() == 0 {
+					if txItem.Buf.Available() == 0 {
 						this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
 						txQueue = txQueue[1:]
+						logStateTransition(this, currentState, controllerStateIdle)
+						currentState = controllerStateIdle
+						continue
 					}
 
-					txBit := txBuf.NextBit()
+					txBit := txItem.Buf.NextBit()
 					this.Logger().Println("write frame bit:", txBit)
 					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
-					txBuf.IncreaseOffset()
+					txItem.Buf.IncreaseOffset()
 
-					logStateTransition(this, currentState, controllerStateIdle)
-					currentState = controllerStateIdle
-					// Todo: build frame and put on out port
 					return nil
 				case controllerStateReceive:
 					logCurrentState(this, currentState)
