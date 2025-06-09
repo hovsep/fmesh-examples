@@ -29,5 +29,5 @@ func logCurrentState(controller *component.Component, currentState ControllerSta
 }
 
 func logStateTransition(controller *component.Component, currentState, newState ControllerState) {
-	controller.Logger().Println("state transition from:", currentState, " to:", newState)
+	controller.Logger().Printf("state transition: %s -> %s", currentState, newState)
 }

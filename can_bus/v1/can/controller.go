@@ -149,7 +149,6 @@ func NewController(unitName string) *component.Component {
 					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
 					txBuf.IncreaseOffset()
 
-					this.Logger().Println("exit: transmitted ID bit")
 					return nil
 				case controllerStateTransmit:
 					logCurrentState(this, currentState)

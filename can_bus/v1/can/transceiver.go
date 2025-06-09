@@ -2,7 +2,6 @@ package can
 
 import (
 	"errors"
-
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -13,6 +12,7 @@ func NewTransceiver(unitName string) *component.Component {
 	return component.New("can_transceiver-"+unitName).
 		WithInputs(PortCANTx, PortCANH, PortCANL).  // Bits in (write to bus), voltage in (read from bus)
 		WithOutputs(PortCANRx, PortCANH, PortCANL). // Bits out (read from bus), voltage out (write to bus)
+		WithLogger(NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			// Write path: transceiver -> bus
 			for _, sig := range this.InputByName(PortCANTx).AllSignalsOrNil() {

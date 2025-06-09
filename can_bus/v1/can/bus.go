@@ -20,6 +20,7 @@ func NewBus(name string) *component.Component {
 	bus := component.New("can_bus-"+name).
 		WithInputs(PortCANL, PortCANH, portInitialRecessiveSignals).
 		WithOutputs(PortCANL, PortCANH, portInitialRecessiveSignals).
+		WithLogger(NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			var (
 				allLow  []Voltage
