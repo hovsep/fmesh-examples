@@ -154,6 +154,17 @@ func (bits Bits) WithExtraBits(extraBits ...Bit) Bits {
 	return bits
 }
 
+func (bits Bits) ToInt() uint64 {
+	var result uint64 = 0
+	for _, bit := range bits {
+		result <<= 1
+		if bit {
+			result |= 1
+		}
+	}
+	return result
+}
+
 func NewBitBuffer(bits Bits) *BitBuffer {
 	return &BitBuffer{
 		Bits:   bits,

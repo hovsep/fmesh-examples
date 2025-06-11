@@ -94,7 +94,6 @@ func NewController(unitName string) *component.Component {
 						}
 
 						// passive-idle situation: controller does not want to write, there is nothing to read
-						this.Logger().Println("exit: passive-idle, recessive bits observed so far:", consecutiveRecessiveBitsObserved)
 						return nil
 					}
 
@@ -102,7 +101,7 @@ func NewController(unitName string) *component.Component {
 					logCurrentState(this, currentState)
 					if consecutiveRecessiveBitsObserved > ProtocolEOFBitsCount+ProtocolIFSBitsCount {
 						this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
-						// The bus looks idle, it's time to start transmitting
+						// The bus looks idle. It's time to start transmitting
 						logStateTransition(this, currentState, controllerStateArbitration)
 						currentState = controllerStateArbitration
 						continue
@@ -185,12 +184,37 @@ func NewController(unitName string) *component.Component {
 					return nil
 				case controllerStateReceive:
 					logCurrentState(this, currentState)
-					this.Logger().Println("recessive bits observed so far:", consecutiveRecessiveBitsObserved)
+
+					if rxBuf.Len() == 0 {
+						this.Logger().Println("adding SOF")
+					} else {
+						rxUnstuffed := rxBuf.Bits.WithoutStuffing(ProtocolBitStuffingStep)
+						idUnstuffed := rxUnstuffed[1:]
+
+						if idUnstuffed.Len() == ProtocolIDBitsCount {
+							this.Logger().Print("ID detected:", idUnstuffed.String())
+						}
+
+						if idUnstuffed.Len() < ProtocolIDBitsCount {
+							this.Logger().Println("adding ID:", idUnstuffed.String())
+						} else {
+							if rxUnstuffed.Len() < 1+ProtocolIDBitsCount+ProtocolDLCBitsCount {
+								this.Logger().Println("adding DLC")
+							}
+
+							if rxUnstuffed.Len() == 1+ProtocolIDBitsCount+ProtocolDLCBitsCount {
+								dlcUnstuffed := rxUnstuffed[1+ProtocolIDBitsCount:]
+								this.Logger().Println("DLC detected:", dlcUnstuffed.String(), " expecting ", 8*dlcUnstuffed.ToInt(), " more bits")
+							}
+
+						}
+					}
 
 					rxBuf.AppendBit(currentBit)
 					this.Logger().Println("rxBuf:", rxBuf.Bits)
 
-					if consecutiveRecessiveBitsObserved == ProtocolEOFBitsCount {
+					eofDetected := false // TODO fix this
+					if eofDetected {
 						this.Logger().Println("EOF, final rxBuf:", rxBuf.Bits)
 						// Build frame and put on port
 						currentState = controllerStateIdle
