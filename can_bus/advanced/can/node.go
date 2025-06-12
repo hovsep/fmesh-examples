@@ -1,6 +1,10 @@
 package can
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
+	"github.com/hovsep/fmesh/component"
+)
 
 // Node consists of multiple components
 type Node struct {
@@ -16,20 +20,20 @@ type Nodes []*Node
 func NewNode(unitName string, initState func(state component.State), mcuLogic component.ActivationFunc) *Node {
 	// Create electronic components
 	mcu := NewMCU(unitName, initState, mcuLogic)
-	controller := NewController(unitName)
+	controller := controller.NewController(unitName)
 	transceiver := NewTransceiver(unitName)
 
 	// Wiring : mcu <--> controller <--> transceiver
 
 	// mcu -> controller:
-	mcu.OutputByName(PortCANTx).PipeTo(controller.InputByName(PortCANTx))
+	mcu.OutputByName(common.PortCANTx).PipeTo(controller.InputByName(common.PortCANTx))
 	// mcu <- controller
-	controller.OutputByName(PortCANRx).PipeTo(mcu.InputByName(PortCANRx))
+	controller.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx))
 
 	// controller -> transceiver
-	controller.OutputByName(PortCANTx).PipeTo(transceiver.InputByName(PortCANTx))
+	controller.OutputByName(common.PortCANTx).PipeTo(transceiver.InputByName(common.PortCANTx))
 	// controller <- transceiver
-	transceiver.OutputByName(PortCANRx).PipeTo(controller.InputByName(PortCANRx))
+	transceiver.OutputByName(common.PortCANRx).PipeTo(controller.InputByName(common.PortCANRx))
 
 	return &Node{
 		MCU:         mcu,
@@ -51,10 +55,10 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 func (nodes Nodes) ConnectToBus(bus *component.Component) {
 	for _, node := range nodes {
 		// transceiver -> bus:
-		node.Transceiver.OutputByName(PortCANL).PipeTo(bus.InputByName(PortCANL))
-		node.Transceiver.OutputByName(PortCANH).PipeTo(bus.InputByName(PortCANH))
+		node.Transceiver.OutputByName(common.PortCANL).PipeTo(bus.InputByName(common.PortCANL))
+		node.Transceiver.OutputByName(common.PortCANH).PipeTo(bus.InputByName(common.PortCANH))
 		// transceiver <- bus:
-		bus.OutputByName(PortCANL).PipeTo(node.Transceiver.InputByName(PortCANL))
-		bus.OutputByName(PortCANH).PipeTo(node.Transceiver.InputByName(PortCANH))
+		bus.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
+		bus.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
 	}
 }

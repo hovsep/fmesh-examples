@@ -1,9 +1,11 @@
 package main
 
-import "github.com/hovsep/fmesh-examples/can_bus/v1/can"
+import (
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+)
 
 var (
-	frameDiagnosticRequest = &can.Frame{
+	frameDiagnosticRequest = &codec.Frame{
 		Id:  0x7DF,
 		DLC: 1,
 		Data: [8]byte{

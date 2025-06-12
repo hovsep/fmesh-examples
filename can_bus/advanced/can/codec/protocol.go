@@ -1,4 +1,4 @@
-package can
+package codec
 
 const (
 	ProtocolDominantBit  = Bit(false)
@@ -12,5 +12,5 @@ const (
 	ProtocolIDBitsCount  = 11 // ID field size
 	ProtocolDLCBitsCount = 4  // Data Length Code size
 	ProtocolEOFBitsCount = 7  // End Of Frame marker (all recessive)
-	ProtocolIFSBitsCount = 3  // Inter-Frame Space is the gap between two consecutive CAN frames (all recessive)
+	ProtocolIFSBitsCount = 3  // Inter-Frame Space is the gap between two consecutive CAN-frames (all recessive)
 )

@@ -1,7 +1,8 @@
 package ecu
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
@@ -22,7 +23,7 @@ func NewOBD() *can.Node {
 	},
 		func(this *component.Component) error {
 			// Everything received by OBD interface goes to can bus (todo: make it realistic, process only first signal, as OBD can not receive multiple frames at the same time)
-			return port.ForwardSignals(this.InputByName(PortOBDIn), this.OutputByName(can.PortCANTx))
+			return port.ForwardSignals(this.InputByName(PortOBDIn), this.OutputByName(common.PortCANTx))
 		})
 
 	// Add custom ports

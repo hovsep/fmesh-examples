@@ -1,36 +1,12 @@
-package can
+package codec
 
 import (
 	"fmt"
 	"strings"
 )
 
-// Bit represents a single bit (true = 1, false = 0)
-type Bit bool
-
 // Bits ...
 type Bits []Bit
-
-// BitBuffer represents a buffer of bits with an offset indicating how many bits have been read or written.
-type BitBuffer struct {
-	Bits   Bits // underlying bit slice
-	Offset int  // how many bits are already processed?
-}
-
-func (bit Bit) String() string {
-	if bit {
-		return "1"
-	}
-	return "0"
-}
-
-func (bit Bit) IsDominant() bool {
-	return bit == ProtocolDominantBit
-}
-
-func (bit Bit) IsRecessive() bool {
-	return bit == ProtocolRecessiveBit
-}
 
 func NewBits(len int) Bits {
 	return make(Bits, len)
@@ -163,46 +139,4 @@ func (bits Bits) ToInt() uint64 {
 		}
 	}
 	return result
-}
-
-func NewBitBuffer(bits Bits) *BitBuffer {
-	return &BitBuffer{
-		Bits:   bits,
-		Offset: 0,
-	}
-}
-
-func NewEmptyBitBuffer() *BitBuffer {
-	return &BitBuffer{
-		Bits:   NewBits(0),
-		Offset: 0,
-	}
-}
-
-func (bb *BitBuffer) Len() int {
-	return bb.Bits.Len()
-}
-
-func (bb *BitBuffer) NextBit() Bit {
-	return bb.Bits[bb.Offset]
-}
-
-func (bb *BitBuffer) PreviousBit() Bit {
-	return bb.Bits[bb.Offset-1]
-}
-
-func (bb *BitBuffer) IncreaseOffset() {
-	bb.Offset++
-}
-
-func (bb *BitBuffer) ResetOffset() {
-	bb.Offset = 0
-}
-
-func (bb *BitBuffer) Available() int {
-	return len(bb.Bits) - bb.Offset
-}
-
-func (bb *BitBuffer) AppendBit(bit Bit) {
-	bb.Bits = append(bb.Bits, bit)
 }

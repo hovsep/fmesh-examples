@@ -1,4 +1,4 @@
-package can
+package common
 
 import (
 	"io"

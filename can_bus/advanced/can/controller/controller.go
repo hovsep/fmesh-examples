@@ -1,8 +1,10 @@
-package can
+package controller
 
 import (
 	"errors"
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -19,18 +21,18 @@ const (
 // which converts frames to bits and vice versa
 func NewController(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(PortCANTx, PortCANRx).  // Frame in, bits in
-		WithOutputs(PortCANTx, PortCANRx). // Bits out, frame out
+		WithInputs(common.PortCANTx, common.PortCANRx).  // Frame in, bits in
+		WithOutputs(common.PortCANTx, common.PortCANRx). // Bits out, frame out
 		WithInitialState(func(state component.State) {
-			state.Set(stateKeyTxQueue, TxQueue{})            // Multiple bit buffers we are trying to send to transceiver
-			state.Set(stateKeyRxBuffer, NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
+			state.Set(stateKeyTxQueue, TxQueue{})                  // Multiple bit buffers we are trying to send to transceiver
+			state.Set(stateKeyRxBuffer, codec.NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
 			state.Set(stateKeyControllerState, controllerStateIdle)
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, byte(0))
 		}).
 		WithActivationFunc(func(this *component.Component) error {
 			// Extract the state
 			txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
-			rxBuf := this.State().Get(stateKeyRxBuffer).(*BitBuffer)
+			rxBuf := this.State().Get(stateKeyRxBuffer).(*codec.BitBuffer)
 			currentState := this.State().Get(stateKeyControllerState).(ControllerState)
 			consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(byte)
 
@@ -43,9 +45,9 @@ func NewController(unitName string) *component.Component {
 			}()
 
 			// Enqueue new frames coming from MCU
-			for _, sig := range this.InputByName(PortCANTx).AllSignalsOrNil() {
-				frame, ok := sig.PayloadOrNil().(*Frame)
-				if !ok || !frame.isValid() {
+			for _, sig := range this.InputByName(common.PortCANTx).AllSignalsOrNil() {
+				frame, ok := sig.PayloadOrNil().(*codec.Frame)
+				if !ok || !frame.IsValid() {
 					return errors.New("received corrupted frame")
 				}
 
@@ -54,20 +56,20 @@ func NewController(unitName string) *component.Component {
 				this.Logger().Println("ID ends at ", lastIDBitIndex)
 				txQueue = append(txQueue, &TxQueueItem{
 					// Add IFS and 1 extra recessive bit
-					Buf:            NewBitBuffer(frameBits.WithIFS().WithExtraBits(ProtocolRecessiveBit)),
+					Buf:            codec.NewBitBuffer(frameBits.WithIFS().WithExtraBits(codec.ProtocolRecessiveBit)),
 					LastIDBitIndex: lastIDBitIndex,
 				})
 				this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
 			}
 
 			// Get current bit set on the bus
-			if !this.InputByName(PortCANRx).HasSignals() {
+			if !this.InputByName(common.PortCANRx).HasSignals() {
 				return errors.New("unable to read current bit, cannot proceed with protocol decision")
 			}
-			if this.InputByName(PortCANRx).Buffer().Len() > 1 {
+			if this.InputByName(common.PortCANRx).Buffer().Len() > 1 {
 				return errors.New("received more than one bit")
 			}
-			currentBit := this.InputByName(PortCANRx).FirstSignalPayloadOrNil().(Bit)
+			currentBit := this.InputByName(common.PortCANRx).FirstSignalPayloadOrNil().(codec.Bit)
 			this.Logger().Println("observing current bit on bus:", currentBit)
 
 			if currentBit.IsRecessive() {
@@ -99,7 +101,7 @@ func NewController(unitName string) *component.Component {
 
 				case controllerStateWaitForBusIdle:
 					logCurrentState(this, currentState)
-					if consecutiveRecessiveBitsObserved > ProtocolEOFBitsCount+ProtocolIFSBitsCount {
+					if consecutiveRecessiveBitsObserved > codec.ProtocolEOFBitsCount+codec.ProtocolIFSBitsCount {
 						this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
 						// The bus looks idle. It's time to start transmitting
 						logStateTransition(this, currentState, controllerStateArbitration)
@@ -155,7 +157,7 @@ func NewController(unitName string) *component.Component {
 						this.Logger().Println("write arbitration (ID) bit:", txBit)
 					}
 
-					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
+					this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
 					txItem.Buf.IncreaseOffset()
 
 					return nil
@@ -163,7 +165,7 @@ func NewController(unitName string) *component.Component {
 					logCurrentState(this, currentState)
 					txItem := txQueue[0]
 
-					if txItem.Buf.Offset <= ProtocolIDBitsCount {
+					if txItem.Buf.Offset <= codec.ProtocolIDBitsCount {
 						return errors.New("must be in arbitration state")
 					}
 
@@ -178,7 +180,7 @@ func NewController(unitName string) *component.Component {
 
 					txBit := txItem.Buf.NextBit()
 					this.Logger().Println("write frame bit:", txBit)
-					this.OutputByName(PortCANTx).PutSignals(signal.New(txBit))
+					this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
 					txItem.Buf.IncreaseOffset()
 
 					return nil
@@ -188,22 +190,22 @@ func NewController(unitName string) *component.Component {
 					if rxBuf.Len() == 0 {
 						this.Logger().Println("adding SOF")
 					} else {
-						rxUnstuffed := rxBuf.Bits.WithoutStuffing(ProtocolBitStuffingStep)
+						rxUnstuffed := rxBuf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)
 						idUnstuffed := rxUnstuffed[1:]
 
-						if idUnstuffed.Len() == ProtocolIDBitsCount {
+						if idUnstuffed.Len() == codec.ProtocolIDBitsCount {
 							this.Logger().Print("ID detected:", idUnstuffed.String())
 						}
 
-						if idUnstuffed.Len() < ProtocolIDBitsCount {
+						if idUnstuffed.Len() < codec.ProtocolIDBitsCount {
 							this.Logger().Println("adding ID:", idUnstuffed.String())
 						} else {
-							if rxUnstuffed.Len() < 1+ProtocolIDBitsCount+ProtocolDLCBitsCount {
+							if rxUnstuffed.Len() < 1+codec.ProtocolIDBitsCount+codec.ProtocolDLCBitsCount {
 								this.Logger().Println("adding DLC")
 							}
 
-							if rxUnstuffed.Len() == 1+ProtocolIDBitsCount+ProtocolDLCBitsCount {
-								dlcUnstuffed := rxUnstuffed[1+ProtocolIDBitsCount:]
+							if rxUnstuffed.Len() == 1+codec.ProtocolIDBitsCount+codec.ProtocolDLCBitsCount {
+								dlcUnstuffed := rxUnstuffed[1+codec.ProtocolIDBitsCount:]
 								this.Logger().Println("DLC detected:", dlcUnstuffed.String(), " expecting ", 8*dlcUnstuffed.ToInt(), " more bits")
 							}
 

@@ -1,4 +1,4 @@
-package can
+package codec
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ type Frame struct {
 	// IFS
 }
 
-func (frame *Frame) isValid() bool {
+func (frame *Frame) IsValid() bool {
 	if frame.Id > ProtocolMaxFrameID {
 		return false
 	}
@@ -126,7 +126,7 @@ func FromBits(bits Bits) (*Frame, error) {
 		Data: data,
 	}
 
-	if !frame.isValid() {
+	if !frame.IsValid() {
 		return nil, errors.New("decoded frame is invalid")
 	}
 

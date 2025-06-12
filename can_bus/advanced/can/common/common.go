@@ -1,4 +1,4 @@
-package can
+package common
 
 const (
 	PortCANTx = "can_tx" // Transmit to CAN bus

@@ -1,7 +1,9 @@
-package can
+package bus
 
 import (
 	"errors"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"slices"
 
 	"github.com/hovsep/fmesh/component"
@@ -15,12 +17,12 @@ const (
 	portInitialRecessiveSignals = "initial_recessive_signals"
 )
 
-// NewBus creates a new CAN bus
-func NewBus(name string) *component.Component {
+// New creates a new CAN bus
+func New(name string) *component.Component {
 	bus := component.New("can_bus-"+name).
-		WithInputs(PortCANL, PortCANH, portInitialRecessiveSignals).
-		WithOutputs(PortCANL, PortCANH, portInitialRecessiveSignals).
-		WithLogger(NewNoopLogger()).
+		WithInputs(common.PortCANL, common.PortCANH, portInitialRecessiveSignals).
+		WithOutputs(common.PortCANL, common.PortCANH, portInitialRecessiveSignals).
+		WithLogger(common.NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			var (
 				allLow  []Voltage
@@ -42,7 +44,7 @@ func NewBus(name string) *component.Component {
 			busLow, busHigh := RecessiveVoltage, RecessiveVoltage
 
 			// Collect CAN_L voltages
-			for _, sig := range this.InputByName(PortCANL).AllSignalsOrNil() {
+			for _, sig := range this.InputByName(common.PortCANL).AllSignalsOrNil() {
 				v, ok := sig.PayloadOrNil().(Voltage)
 				if !ok {
 					this.Logger().Println("bus received corrupted voltage on CAN_L wire")
@@ -52,7 +54,7 @@ func NewBus(name string) *component.Component {
 			}
 
 			// Collect CAN_H voltages
-			for _, sig := range this.InputByName(PortCANH).AllSignalsOrNil() {
+			for _, sig := range this.InputByName(common.PortCANH).AllSignalsOrNil() {
 				v, ok := sig.PayloadOrNil().(Voltage)
 				if !ok {
 					this.Logger().Println("bus received corrupted voltage on CAN_H wire")
@@ -96,8 +98,8 @@ func NewBus(name string) *component.Component {
 
 			this.Logger().Printf("bus voltage is L:%v / H:%v", busLow, busHigh)
 
-			this.OutputByName(PortCANL).PutSignals(signal.New(busLow))
-			this.OutputByName(PortCANH).PutSignals(signal.New(busHigh))
+			this.OutputByName(common.PortCANL).PutSignals(signal.New(busLow))
+			this.OutputByName(common.PortCANH).PutSignals(signal.New(busHigh))
 			return nil
 		})
 
@@ -106,7 +108,7 @@ func NewBus(name string) *component.Component {
 
 	// Drive the bus with 11 recessive bits to simulate passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
-	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(ProtocolEOFBitsCount + ProtocolIFSBitsCount + 1))
+	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(codec.ProtocolEOFBitsCount + codec.ProtocolIFSBitsCount + 1))
 
 	return bus
 }

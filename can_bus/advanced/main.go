@@ -2,20 +2,21 @@ package main
 
 import (
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 	"os"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
-	"github.com/hovsep/fmesh-examples/can_bus/v1/ecu"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu"
 )
 
 func main() {
 	// Create components:
-	bus := can.NewBus("PT-CAN")     // Modern vehicles have multiple buses, this one is called "powertrain bus"
+	ptBus := bus.New("PT-CAN")      // Modern vehicles have multiple buses, this one is called "powertrain bus"
 	laptop := NewComputer("laptop") // Laptop running diagnostic software and connected to vehicle via OBD socket
 
 	// Build CAN nodes:
-	obdDevice := ecu.NewOBD() // put this into variable, so we can connect it to laptop
+	obdDevice := ecu.NewOBD() // putting this into a variable, so we can connect it to the laptop
 	allCanNodes := can.Nodes{
 		ecu.NewECM(), // Engine Control Module
 		//ecu.NewTCM(), // Transmission Control Module
@@ -23,7 +24,7 @@ func main() {
 		obdDevice, // On Board Diagnostics
 	}
 
-	allCanNodes.ConnectToBus(bus)
+	allCanNodes.ConnectToBus(ptBus)
 
 	// Connect usb-obd cable:
 	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(ecu.PortOBDIn))
@@ -34,7 +35,7 @@ func main() {
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
-		WithComponents(bus, laptop).
+		WithComponents(ptBus, laptop).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
 	// Initialize the mesh:

@@ -1,0 +1,64 @@
+package can
+
+import (
+	"errors"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
+	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
+)
+
+// NewTransceiver creates a CAN transceiver component
+// which converts bits to voltage and vice versa
+func NewTransceiver(unitName string) *component.Component {
+	return component.New("can_transceiver-"+unitName).
+		WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL).  // Bits in (write to bus), voltage in (read from bus)
+		WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL). // Bits out (read from bus), voltage out (write to bus)
+		WithLogger(common.NewNoopLogger()).
+		WithActivationFunc(func(this *component.Component) error {
+			// Write path: transceiver -> bus
+			for _, sig := range this.InputByName(common.PortCANTx).AllSignalsOrNil() {
+				bit, ok := sig.PayloadOrNil().(codec.Bit)
+				if !ok {
+					this.Logger().Println("received corrupted bit")
+				}
+
+				// High impedance by default (recessive bit)
+				resultingLVoltage, resultingHVoltage := bus.RecessiveVoltage, bus.RecessiveVoltage
+
+				if bit == codec.ProtocolDominantBit {
+					// Drive dominant
+					resultingLVoltage, resultingHVoltage = bus.DominantLowVoltage, bus.DominantHighVoltage
+				}
+
+				this.OutputByName(common.PortCANL).PutSignals(signal.New(resultingLVoltage))
+				this.OutputByName(common.PortCANH).PutSignals(signal.New(resultingHVoltage))
+
+				this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
+			}
+
+			// Read path: transceiver <- bus (exactly one bit)
+			if this.InputByName(common.PortCANL).HasSignals() && this.InputByName(common.PortCANH).HasSignals() {
+				vLow, err := this.InputByName(common.PortCANL).FirstSignalPayload()
+				if err != nil {
+					return errors.New("failed to read voltage from L")
+				}
+
+				vHigh, err := this.InputByName(common.PortCANH).FirstSignalPayload()
+				if err != nil {
+					return errors.New("failed to read voltage from H")
+				}
+
+				if vLow == nil || vHigh == nil {
+					return errors.New("received invalid voltage")
+				}
+
+				bitRead := bus.VoltageToBit(vLow.(bus.Voltage), vHigh.(bus.Voltage))
+				this.Logger().Printf("convert voltages L:%v / H:%v to bit: %s", vLow, vHigh, bitRead)
+				this.OutputByName(common.PortCANRx).PutSignals(signal.New(bitRead))
+			}
+
+			return nil
+		})
+}

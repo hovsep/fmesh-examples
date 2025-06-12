@@ -1,4 +1,6 @@
-package can
+package bus
+
+import "github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
 
 type Voltage float64
 
@@ -9,12 +11,12 @@ const (
 	RecessiveVoltage = Voltage(2.5)
 )
 
-// voltageToBit converts voltages to bit
-func voltageToBit(vLow, vHigh Voltage) Bit {
+// VoltageToBit converts voltages to bit
+func VoltageToBit(vLow, vHigh Voltage) codec.Bit {
 	// TODO: make it less strict, use thresholds instead of exact matching
 	if vLow == DominantLowVoltage && vHigh == DominantHighVoltage {
-		return ProtocolDominantBit
+		return codec.ProtocolDominantBit
 	}
 
-	return ProtocolRecessiveBit
+	return codec.ProtocolRecessiveBit
 }

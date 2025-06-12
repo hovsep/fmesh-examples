@@ -1,7 +1,7 @@
 package ecu
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/v1/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh/component"
 )
 
