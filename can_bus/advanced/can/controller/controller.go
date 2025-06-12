@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 
@@ -26,7 +27,7 @@ func NewController(unitName string) *component.Component {
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})                  // Multiple bit buffers we are trying to send to transceiver
 			state.Set(stateKeyRxBuffer, codec.NewEmptyBitBuffer()) // Single bit buffer we are trying to build from bits coming from transceiver
-			state.Set(stateKeyControllerState, controllerStateIdle)
+			state.Set(stateKeyControllerState, stateIdle)
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, byte(0))
 		}).
 		WithActivationFunc(func(this *component.Component) error {
@@ -81,17 +82,17 @@ func NewController(unitName string) *component.Component {
 			// Main state machine:
 			for {
 				switch currentState {
-				case controllerStateIdle:
+				case stateIdle:
 					logCurrentState(this, currentState)
 					// SOF detected, became passive listener
 					if currentBit.IsDominant() {
-						logStateTransition(this, currentState, controllerStateReceive)
-						currentState = controllerStateReceive
+						logStateTransition(this, currentState, stateReceive)
+						currentState = stateReceive
 						continue
 					} else {
 						if len(txQueue) > 0 {
-							logStateTransition(this, currentState, controllerStateWaitForBusIdle)
-							currentState = controllerStateWaitForBusIdle
+							logStateTransition(this, currentState, stateWaitForBusIdle)
+							currentState = stateWaitForBusIdle
 							continue
 						}
 
@@ -99,19 +100,19 @@ func NewController(unitName string) *component.Component {
 						return nil
 					}
 
-				case controllerStateWaitForBusIdle:
+				case stateWaitForBusIdle:
 					logCurrentState(this, currentState)
 					if consecutiveRecessiveBitsObserved > codec.ProtocolEOFBitsCount+codec.ProtocolIFSBitsCount {
 						this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
 						// The bus looks idle. It's time to start transmitting
-						logStateTransition(this, currentState, controllerStateArbitration)
-						currentState = controllerStateArbitration
+						logStateTransition(this, currentState, stateArbitration)
+						currentState = stateArbitration
 						continue
 					}
 					// Continue waiting
 					this.Logger().Println("exit: waiting for more consecutive recessive bits, seen so far:", consecutiveRecessiveBitsObserved)
 					return nil
-				case controllerStateArbitration:
+				case stateArbitration:
 					logCurrentState(this, currentState)
 					txItem := txQueue[0]
 
@@ -122,8 +123,8 @@ func NewController(unitName string) *component.Component {
 					// Check if arbitration is won
 					wonArbitration := txItem.IDIsTransmitted()
 					if wonArbitration {
-						logStateTransition(this, currentState, controllerStateTransmit)
-						currentState = controllerStateTransmit
+						logStateTransition(this, currentState, stateTransmit)
+						currentState = stateTransmit
 						continue
 					}
 
@@ -144,8 +145,8 @@ func NewController(unitName string) *component.Component {
 
 							txItem.Buf.ResetOffset() // Backoff, retry later
 
-							logStateTransition(this, currentState, controllerStateReceive)
-							currentState = controllerStateReceive
+							logStateTransition(this, currentState, stateReceive)
+							currentState = stateReceive
 							continue
 						}
 					}
@@ -161,7 +162,7 @@ func NewController(unitName string) *component.Component {
 					txItem.Buf.IncreaseOffset()
 
 					return nil
-				case controllerStateTransmit:
+				case stateTransmit:
 					logCurrentState(this, currentState)
 					txItem := txQueue[0]
 
@@ -173,8 +174,8 @@ func NewController(unitName string) *component.Component {
 					if txItem.Buf.Available() == 0 {
 						this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
 						txQueue = txQueue[1:]
-						logStateTransition(this, currentState, controllerStateIdle)
-						currentState = controllerStateIdle
+						logStateTransition(this, currentState, stateIdle)
+						currentState = stateIdle
 						continue
 					}
 
@@ -184,7 +185,7 @@ func NewController(unitName string) *component.Component {
 					txItem.Buf.IncreaseOffset()
 
 					return nil
-				case controllerStateReceive:
+				case stateReceive:
 					logCurrentState(this, currentState)
 
 					if rxBuf.Len() == 0 {
@@ -219,7 +220,7 @@ func NewController(unitName string) *component.Component {
 					if eofDetected {
 						this.Logger().Println("EOF, final rxBuf:", rxBuf.Bits)
 						// Build frame and put on port
-						currentState = controllerStateIdle
+						currentState = stateIdle
 						return nil
 					}
 					return nil
