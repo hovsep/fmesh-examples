@@ -123,7 +123,7 @@ func (bits Bits) WithIFS() Bits {
 	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolIFSBitsCount)...)
 }
 
-func (bits Bits) WithExtraBits(extraBits ...Bit) Bits {
+func (bits Bits) WithBits(extraBits ...Bit) Bits {
 	for _, b := range extraBits {
 		bits = append(bits, b)
 	}

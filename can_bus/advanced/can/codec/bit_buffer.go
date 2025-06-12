@@ -43,7 +43,3 @@ func (bb *BitBuffer) ResetOffset() {
 func (bb *BitBuffer) Available() int {
 	return len(bb.Bits) - bb.Offset
 }
-
-func (bb *BitBuffer) AppendBit(bit Bit) {
-	bb.Bits = append(bb.Bits, bit)
-}

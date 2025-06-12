@@ -20,25 +20,25 @@ type Nodes []*Node
 func NewNode(unitName string, initState func(state component.State), mcuLogic component.ActivationFunc) *Node {
 	// Create electronic components
 	mcu := NewMCU(unitName, initState, mcuLogic)
-	controller := controller.NewController(unitName)
-	transceiver := NewTransceiver(unitName)
+	ctl := controller.New(unitName)
+	trsv := NewTransceiver(unitName)
 
 	// Wiring : mcu <--> controller <--> transceiver
 
 	// mcu -> controller:
-	mcu.OutputByName(common.PortCANTx).PipeTo(controller.InputByName(common.PortCANTx))
+	mcu.OutputByName(common.PortCANTx).PipeTo(ctl.InputByName(common.PortCANTx))
 	// mcu <- controller
-	controller.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx))
+	ctl.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx))
 
 	// controller -> transceiver
-	controller.OutputByName(common.PortCANTx).PipeTo(transceiver.InputByName(common.PortCANTx))
+	ctl.OutputByName(common.PortCANTx).PipeTo(trsv.InputByName(common.PortCANTx))
 	// controller <- transceiver
-	transceiver.OutputByName(common.PortCANRx).PipeTo(controller.InputByName(common.PortCANRx))
+	trsv.OutputByName(common.PortCANRx).PipeTo(ctl.InputByName(common.PortCANRx))
 
 	return &Node{
 		MCU:         mcu,
-		Controller:  controller,
-		Transceiver: transceiver,
+		Controller:  ctl,
+		Transceiver: trsv,
 	}
 }
 
