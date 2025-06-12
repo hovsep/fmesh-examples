@@ -13,5 +13,4 @@ func NewMCU(name string, initState func(state component.State), logic component.
 		WithOutputs(common.PortCANTx). // Frame out
 		WithInitialState(initState).
 		WithActivationFunc(logic)
-
 }
