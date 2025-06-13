@@ -10,11 +10,11 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// ControllerState is the main DFSM of CAN-controller
-type ControllerState byte
+// State is the main DFSM of CAN-controller
+type State byte
 
 const (
-	stateIdle ControllerState = iota
+	stateIdle State = iota
 	stateWaitForBusIdle
 	stateArbitration
 	stateTransmit
@@ -31,12 +31,12 @@ var (
 	}
 )
 
-func (state ControllerState) String() string {
+func (state State) String() string {
 	return controllerStateNames[state]
 }
 
 func runStateMachine(this *component.Component, currentBit codec.Bit) error {
-	currentState := this.State().Get(stateKeyControllerState).(ControllerState)
+	currentState := this.State().Get(stateKeyControllerState).(State)
 	for {
 		this.Logger().Println("current state:", currentState)
 		nextState, err := getNextState(this, currentState, currentBit)
@@ -56,7 +56,7 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 	return errors.New("did not manage to exit correctly from main state machine loop")
 }
 
-func getNextState(this *component.Component, currentState ControllerState, currentBit codec.Bit) (ControllerState, error) {
+func getNextState(this *component.Component, currentState State, currentBit codec.Bit) (State, error) {
 	switch currentState {
 	case stateIdle:
 		return handleIdleState(this, currentBit)
@@ -74,7 +74,7 @@ func getNextState(this *component.Component, currentState ControllerState, curre
 	}
 }
 
-func handleIdleState(this *component.Component, currentBit codec.Bit) (ControllerState, error) {
+func handleIdleState(this *component.Component, currentBit codec.Bit) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 
 	// SOF detected, became passive listener
@@ -90,7 +90,7 @@ func handleIdleState(this *component.Component, currentBit codec.Bit) (Controlle
 	return stateIdle, nil
 }
 
-func handleWaitForBusIdleState(this *component.Component) (ControllerState, error) {
+func handleWaitForBusIdleState(this *component.Component) (State, error) {
 	consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(int)
 
 	if consecutiveRecessiveBitsObserved > codec.ProtocolEOFBitsCount+codec.ProtocolIFSBitsCount {
@@ -103,13 +103,23 @@ func handleWaitForBusIdleState(this *component.Component) (ControllerState, erro
 	return stateWaitForBusIdle, nil
 }
 
-func handleArbitrationState(this *component.Component, currentBit codec.Bit) (ControllerState, error) {
+func handleArbitrationState(this *component.Component, currentBit codec.Bit) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
+	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
+	defer func() {
+		this.State().Set(stateKeyRxBuffer, rxBuf)
+	}()
 
 	txItem := txQueue[0]
 
 	if txItem.Buf.Available() == 0 {
 		return stateArbitration, errors.New("already processed buffer is still in tx-queue")
+	}
+
+	// Receive own sent bits
+	if txItem.Buf.Offset > 0 {
+		rxBuf = rxBuf.WithBits(currentBit)
+		this.Logger().Println("observed rxBuf:", rxBuf)
 	}
 
 	// Check if arbitration is won
@@ -127,7 +137,7 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (Co
 				this.Logger().Println("lost arbitration. backoff")
 			}
 
-			// Or bus error happen
+			// Or bus error happened
 			if currentBit.IsRecessive() && txItem.Buf.PreviousBit().IsDominant() {
 				return stateArbitration, errors.New("bus error, recessive bit won arbitration. backoff")
 			}
@@ -151,7 +161,7 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (Co
 	return stateArbitration, nil
 }
 
-func handleTransmitState(this *component.Component) (ControllerState, error) {
+func handleTransmitState(this *component.Component) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 	defer func() {
 		this.State().Set(stateKeyTxQueue, txQueue)
@@ -178,14 +188,14 @@ func handleTransmitState(this *component.Component) (ControllerState, error) {
 	return stateTransmit, nil
 }
 
-func handleReceiveState(this *component.Component, currentBit codec.Bit) (ControllerState, error) {
+func handleReceiveState(this *component.Component, currentBit codec.Bit) (State, error) {
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
 	defer func() {
 		this.State().Set(stateKeyRxBuffer, rxBuf)
 	}()
 
 	if rxBuf.Len() == 0 {
-		this.Logger().Println("adding SOF")
+		this.Logger().Println("receiving SOF")
 	} else {
 		rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
 		idUnstuffed := rxUnstuffed[1:]
