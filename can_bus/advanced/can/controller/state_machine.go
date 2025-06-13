@@ -118,8 +118,12 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 
 	// Receive own sent bits
 	if txItem.Buf.Offset > 0 {
-		rxBuf = rxBuf.WithBits(currentBit)
-		this.Logger().Println("observed rxBuf:", rxBuf)
+		if !currentBit.IsStuffed(rxBuf, codec.ProtocolBitStuffingStep) {
+			rxBuf = rxBuf.WithBits(currentBit)
+			this.Logger().Println("observed rxBuf while in arbitration:", rxBuf)
+		} else {
+			this.Logger().Println("stuffing bit skipped:", currentBit)
+		}
 	}
 
 	// Check if arbitration is won
@@ -219,8 +223,12 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 		}
 	}
 
-	rxBuf = rxBuf.WithBits(currentBit)
-	this.Logger().Println("rxBuf:", rxBuf)
+	if !currentBit.IsStuffed(rxBuf, codec.ProtocolBitStuffingStep) {
+		rxBuf = rxBuf.WithBits(currentBit)
+		this.Logger().Println("observed rxBuf while receiving:", rxBuf)
+	} else {
+		this.Logger().Println("stuffing bit skipped:", currentBit)
+	}
 
 	eofDetected := false // TODO fix this
 	if eofDetected {
