@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 	"os"
+
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"

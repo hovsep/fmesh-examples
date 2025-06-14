@@ -130,8 +130,8 @@ func (bits Bits) WithBits(extraBits ...Bit) Bits {
 	return bits
 }
 
-func (bits Bits) ToInt() uint64 {
-	var result uint64 = 0
+func (bits Bits) ToInt() int {
+	var result int = 0
 	for _, bit := range bits {
 		result <<= 1
 		if bit {
@@ -139,4 +139,27 @@ func (bits Bits) ToInt() uint64 {
 		}
 	}
 	return result
+}
+
+func (bits Bits) Equals(b Bits) bool {
+	if bits.Len() != b.Len() {
+		return false
+	}
+
+	for i := 0; i < bits.Len()-1; i++ {
+		if bits[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (bits Bits) AllBitsAre(b Bit) bool {
+	for _, bb := range bits {
+		if bb != b {
+			return false
+		}
+	}
+
+	return true
 }
