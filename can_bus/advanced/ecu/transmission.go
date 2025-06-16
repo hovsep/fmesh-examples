@@ -7,13 +7,11 @@ import (
 
 const (
 	TCMUnitName = "tcm"
-	TCMNodeID   = 0x120
 )
 
 func NewTCM() *can.Node {
 	return can.NewNode(TCMUnitName, func(state component.State) {
-		state.Set(ecuMemCanID, TCMNodeID)
-		state.Set(ecuMemLog, []string{})
+		state.Set(EcuMemLog, []string{})
 	},
 		func(this *component.Component) error {
 			return nil

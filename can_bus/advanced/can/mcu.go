@@ -6,7 +6,7 @@ import (
 )
 
 // NewMCU creates a microcontroller unit
-// which executes embedded logic operating on frames level
+// which executes embedded logic operating on frame level
 func NewMCU(name string, initState func(state component.State), logic component.ActivationFunc) *component.Component {
 	return component.New("mcu-" + name).
 		WithInputs(common.PortCANRx).  // Frame in

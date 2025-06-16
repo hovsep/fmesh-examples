@@ -5,14 +5,14 @@ import (
 )
 
 var (
-	frameDiagnosticRequest = &codec.Frame{
+	diagnosticFrameGetRPM = &codec.Frame{
 		Id:  0x7DF,
-		DLC: 1,
+		DLC: 8,
 		Data: [8]byte{
-			0x01,                         // Number of additional data bytes (service + PID)
-			0x00,                         // Service ID: Show Current Data
-			0x00,                         // PID: Engine RPM
-			0x00, 0x00, 0x00, 0x00, 0x00, // Padding (ISO 15765-4)
+			0x02,                         // Number of additional data bytes (service + PID)
+			0x01,                         // Service ID: Show Current Data
+			0x0C,                         // PID: Engine RPM
+			0x00, 0x00, 0x00, 0x00, 0x00, // Padding (ISO-TP)
 		},
 	}
 )

@@ -1,7 +1,6 @@
 package codec
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -67,7 +66,6 @@ func (bits Bits) WithStuffing(afterEach int) Bits {
 		}
 	}
 
-	fmt.Println("stuffed bits:", stuffed.Len()-bits.Len())
 	return stuffed
 }
 

@@ -299,10 +299,10 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 		} else {
 			// Decode data
 			this.Logger().Println("received all expected data and EOF")
-
+			// 0 11111011111 1000 00000010 00000001 00001100 00000000 00000000 00000000 00000000 00000000 1111111
 			// Check for valid EOF
 			firstEOFbitIndex := rxUnstuffed.Len() - codec.ProtocolEOFSize
-			if !rxUnstuffed[firstEOFbitIndex-1:].AllBitsAre(codec.ProtocolRecessiveBit) {
+			if !rxUnstuffed[firstEOFbitIndex:].AllBitsAre(codec.ProtocolRecessiveBit) {
 				return stateReceive, errors.New("received all expected bits, but do not see correct EOF")
 			}
 

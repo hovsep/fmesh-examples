@@ -7,12 +7,10 @@ import (
 
 const (
 	ACUUnitName = "acu"
-	ACUNodeID   = 0x1A0
 )
 
 func NewACU() *can.Node {
 	return can.NewNode(ACUUnitName, func(state component.State) {
-		state.Set(ecuMemCanID, ACUNodeID)
 	},
 		func(this *component.Component) error {
 			return nil

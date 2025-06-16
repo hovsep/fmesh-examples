@@ -1,12 +1,24 @@
 package ecu
 
-// AcceptedIds indicates which frame IDs given ECU listens to and processes
-type AcceptedIds map[uint32]bool
+import (
+	"fmt"
+	"github.com/hovsep/fmesh/component"
+)
 
 const (
-	// Common ECU memory keys
-	ecuMemCanID       = "can_id"       // The ID of given CAN node
-	ecuMemSerial      = "serial_no"    // Device serial number
-	ecuMemLog         = "log"          // Internal log
-	ecuMemAcceptedIds = "accepted_ids" // Instance of AcceptedIds
+	EcuMemLog = "log" // Internal log
+
+	ObdFunctionalRequestID = 0x7DF // Functional (broadcast) request
 )
+
+func setParam(state component.State, pid uint8, value any) {
+	state.Set(paramStateKey(pid), value)
+}
+
+func getParam(state component.State, pid uint8) any {
+	return state.Get(paramStateKey(pid))
+}
+
+func paramStateKey(pid uint8) string {
+	return fmt.Sprintf("param-%02X", pid)
+}
