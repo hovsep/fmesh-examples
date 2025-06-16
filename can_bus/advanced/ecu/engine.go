@@ -2,6 +2,7 @@ package ecu
 
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -21,6 +22,9 @@ func NewECM() *can.Node {
 		state.Set(ecmMemOxygenSensorAdaptive, 0)
 	},
 		func(this *component.Component) error {
+			if this.InputByName(common.PortCANRx).HasSignals() {
+				this.Logger().Println("got frame:", this.InputByName(common.PortCANRx).FirstSignalPayloadOrNil())
+			}
 			return nil
 		})
 }

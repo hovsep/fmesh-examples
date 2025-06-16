@@ -16,6 +16,7 @@ const (
 	stateKeyRxBuffer                         = "rx_buffer"
 	stateKeyControllerState                  = "controller_state"
 	stateKeyConsecutiveRecessiveBitsObserved = "consecutive_recessive_observed"
+	stateKeyBitsExpected                     = "bits_expected"
 )
 
 // New creates a stateful CAN controller
@@ -29,7 +30,7 @@ func New(unitName string) *component.Component {
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
 			state.Set(stateKeyControllerState, stateIdle)
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
-			state.Set("bits_expected", 0)
+			state.Set(stateKeyBitsExpected, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
 			err := handleIncomingFrames(this)
@@ -162,7 +163,7 @@ func handleIdleState(this *component.Component, currentBit codec.Bit) (State, er
 func handleWaitForBusIdleState(this *component.Component) (State, error) {
 	consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(int)
 
-	if consecutiveRecessiveBitsObserved > codec.ProtocolEOFBitsCount+codec.ProtocolIFSBitsCount {
+	if consecutiveRecessiveBitsObserved > codec.ProtocolEOFSize+codec.ProtocolIFSSize {
 		this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
 		// The bus looks idle. It's time to start transmitting
 		return stateArbitration, nil
@@ -193,9 +194,9 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 
 	// Check if arbitration is won
 	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
-	if rxUnstuffed.Len() == codec.ProtocolIDBitsCount+1 {
+	if rxUnstuffed.Len() == codec.ProtocolIDSize+1 {
 		idReceived := rxUnstuffed[1:]
-		idTransmitted := txItem.Buf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)[1 : codec.ProtocolIDBitsCount+1]
+		idTransmitted := txItem.Buf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)[1 : codec.ProtocolIDSize+1]
 		wonArbitration := idReceived.Equals(idTransmitted)
 		if wonArbitration {
 			this.Logger().Println("won arbitration with rx:", rxUnstuffed)
@@ -244,7 +245,7 @@ func handleTransmitState(this *component.Component) (State, error) {
 
 	txItem := txQueue[0]
 
-	if txItem.Buf.Offset <= codec.ProtocolIDBitsCount {
+	if txItem.Buf.Offset <= codec.ProtocolIDSize {
 		return stateTransmit, errors.New("must be in arbitration state")
 	}
 
@@ -265,13 +266,13 @@ func handleTransmitState(this *component.Component) (State, error) {
 
 func handleReceiveState(this *component.Component, currentBit codec.Bit) (State, error) {
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
-	bitsExpected := this.State().Get("bits_expected").(int)
+	bitsExpected := this.State().Get(stateKeyBitsExpected).(int)
 	defer func() {
 		this.State().Set(stateKeyRxBuffer, rxBuf)
 	}()
 
 	if rxBuf.Len() == 0 {
-		this.State().Set("bits_expected", 1+codec.ProtocolIDBitsCount+codec.ProtocolDLCBitsCount)
+		this.State().Set(stateKeyBitsExpected, 1+codec.ProtocolIDSize+codec.ProtocolDLCSize)
 		this.Logger().Println("receiving SOF")
 	}
 
@@ -279,20 +280,28 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	this.Logger().Println("rxBuf stuffed", rxBuf)
 	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
 	this.Logger().Println("rxBuf unstuffed", rxUnstuffed)
-	if rxUnstuffed.Len() >= 16 && rxUnstuffed.Len() == bitsExpected {
-		if bitsExpected == 16 {
-			id := rxUnstuffed[1:12]
-			dlc := rxUnstuffed[12:]
-			expectedBytes := dlc.ToInt()
-			this.Logger().Println("id: ", id, " dlc:", dlc, " dlc (bytes):", expectedBytes)
+
+	// All CAN frames begin with 3 fixed-size fields: SOF (1), ID(11) and DLC
+	// when we have received enough bits - we decode ID and DLC
+	// knowing DLC allows us to know exactly how many data bits we expect
+	frameFixedSizePart := codec.ProtocolSOFSize + codec.ProtocolIDSize + codec.ProtocolDLCSize
+	if rxUnstuffed.Len() >= frameFixedSizePart && rxUnstuffed.Len() == bitsExpected {
+
+		// Decode ID and DLC
+		if bitsExpected == frameFixedSizePart {
+			idBits := rxUnstuffed[codec.ProtocolSOFSize : codec.ProtocolSOFSize+codec.ProtocolIDSize]
+			dlcBits := rxUnstuffed[codec.ProtocolSOFSize+codec.ProtocolIDSize:]
+			expectedBytes := dlcBits.ToInt()
+			this.Logger().Println("id: ", idBits, " dlc:", dlcBits, " dlc (bytes):", expectedBytes)
 
 			// We know the DLC, let's expect data bits
-			this.State().Set("bits_expected", 16+expectedBytes*8+codec.ProtocolEOFBitsCount)
+			this.State().Set(stateKeyBitsExpected, 16+expectedBytes*8+codec.ProtocolEOFSize)
 		} else {
+			// Decode data
 			this.Logger().Println("received all expected data and EOF")
 
 			// Check for valid EOF
-			firstEOFbitIndex := rxUnstuffed.Len() - codec.ProtocolEOFBitsCount
+			firstEOFbitIndex := rxUnstuffed.Len() - codec.ProtocolEOFSize
 			if !rxUnstuffed[firstEOFbitIndex-1:].AllBitsAre(codec.ProtocolRecessiveBit) {
 				return stateReceive, errors.New("received all expected bits, but do not see correct EOF")
 			}
@@ -303,16 +312,9 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 				return stateReceive, fmt.Errorf("failed to assemble frame: %w", err)
 			}
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
-
+			// TODO: clear state if needed
 			return stateIdle, nil
 		}
-	}
-
-	eofDetected := false // TODO fix this
-	if eofDetected {
-		this.Logger().Println("EOF, final rxBuf:", rxBuf)
-		// Build frame and put on port
-		return stateIdle, nil
 	}
 	return stateReceive, nil
 }

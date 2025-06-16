@@ -54,7 +54,7 @@ func New(name string) *component.Component {
 
 	// Drive the bus with 11 recessive bits to simulate passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
-	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(codec.ProtocolEOFBitsCount + codec.ProtocolIFSBitsCount + 1))
+	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(codec.ProtocolEOFSize + codec.ProtocolIFSSize + 1))
 
 	return bus
 }

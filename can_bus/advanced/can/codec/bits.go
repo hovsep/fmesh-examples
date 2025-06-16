@@ -116,11 +116,11 @@ func (bits Bits) WithoutStuffing(afterEach int) Bits {
 }
 
 func (bits Bits) WithEOF() Bits {
-	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolEOFBitsCount)...)
+	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolEOFSize)...)
 }
 
 func (bits Bits) WithIFS() Bits {
-	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolIFSBitsCount)...)
+	return append(bits, RepeatBit(ProtocolRecessiveBit, ProtocolIFSSize)...)
 }
 
 func (bits Bits) WithBits(extraBits ...Bit) Bits {

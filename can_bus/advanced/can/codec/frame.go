@@ -13,8 +13,8 @@ type Frame struct {
 	// IDE
 	// r0
 	// r1
-	DLC  uint8                    // Data length code (4 bits)
-	Data [ProtocolMaxDataLen]byte // Payload
+	DLC  uint8                      // Data length code (4 bits)
+	Data [ProtocolMaxDataBytes]byte // Payload
 	// CRC
 	// ACK
 	// EOF
@@ -22,11 +22,11 @@ type Frame struct {
 }
 
 func (frame *Frame) IsValid() bool {
-	if frame.Id > ProtocolMaxFrameID {
+	if frame.Id > ProtocolMaxID {
 		return false
 	}
 
-	if frame.DLC > ProtocolMaxDataLen {
+	if frame.DLC > ProtocolMaxDataBytes {
 		return false
 	}
 
@@ -75,39 +75,39 @@ func (frame *Frame) ToBits() Bits {
 
 // FromBits decodes a CAN frame from a Bits slice
 func FromBits(bits Bits) (*Frame, error) {
-	if len(bits) < ProtocolIDBitsCount+ProtocolDLCBitsCount {
+	if len(bits) < ProtocolIDSize+ProtocolDLCSize {
 		return nil, errors.New("bit slice too short to contain a valid CAN frame")
 	}
 
 	// 1. Decode ID
 	var id uint32
-	for i := 0; i < ProtocolIDBitsCount; i++ {
+	for i := 0; i < ProtocolIDSize; i++ {
 		if bits[i] {
-			id |= 1 << (ProtocolIDBitsCount - 1 - i)
+			id |= 1 << (ProtocolIDSize - 1 - i)
 		}
 	}
 
 	// 2. Decode DLC
 	var dlc uint8
-	for i := 0; i < ProtocolDLCBitsCount; i++ {
-		if bits[ProtocolIDBitsCount+i] {
-			dlc |= 1 << (ProtocolDLCBitsCount - 1 - i)
+	for i := 0; i < ProtocolDLCSize; i++ {
+		if bits[ProtocolIDSize+i] {
+			dlc |= 1 << (ProtocolDLCSize - 1 - i)
 		}
 	}
 
 	// 3. Validate DLC
-	if dlc > ProtocolMaxDataLen {
+	if dlc > ProtocolMaxDataBytes {
 		return nil, fmt.Errorf("invalid DLC: %d", dlc)
 	}
 
 	// 4. Decode Data
-	expectedBits := ProtocolIDBitsCount + ProtocolDLCBitsCount + int(dlc)*8
+	expectedBits := ProtocolIDSize + ProtocolDLCSize + int(dlc)*8
 	if len(bits) < expectedBits {
 		return nil, fmt.Errorf("not enough bits for data, expected %d, got %d", expectedBits, len(bits))
 	}
 
-	var data [ProtocolMaxDataLen]byte
-	offset := ProtocolIDBitsCount + ProtocolDLCBitsCount
+	var data [ProtocolMaxDataBytes]byte
+	offset := ProtocolIDSize + ProtocolDLCSize
 	for i := 0; i < int(dlc); i++ {
 		var b byte
 		for j := 0; j < 8; j++ {
