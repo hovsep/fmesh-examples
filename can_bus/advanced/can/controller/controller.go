@@ -312,7 +312,10 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 				return stateReceive, fmt.Errorf("failed to assemble frame: %w", err)
 			}
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
-			// TODO: clear state if needed
+			// Clear state
+			this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+			//this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
+			this.State().Set(stateKeyBitsExpected, 0)
 			return stateIdle, nil
 		}
 	}
