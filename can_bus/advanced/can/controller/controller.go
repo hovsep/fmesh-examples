@@ -74,7 +74,7 @@ func handleIncomingFrames(this *component.Component) error {
 			// Add IFS and 1 extra recessive bit
 			Buf: codec.NewBitBuffer(frameBits.WithIFS().WithBits(codec.ProtocolRecessiveBit)),
 		})
-		this.Logger().Printf("got a frame to send: %s, items in tx-queue: %d", frameBits, len(txQueue))
+		this.Logger().Printf("got a frame to send stuffed: %s, unstuffed: %s, items in tx-queue: %d", frameBits, frameBits.WithoutStuffing(codec.ProtocolBitStuffingStep), len(txQueue))
 	}
 	return nil
 }
@@ -87,7 +87,7 @@ func getCurrentBit(this *component.Component) (codec.Bit, error) {
 		return codec.ProtocolRecessiveBit, errors.New("received more than one bit")
 	}
 	currentBit := this.InputByName(common.PortCANRx).FirstSignalPayloadOrNil().(codec.Bit)
-	this.Logger().Println("observing current bit on bus:", currentBit)
+	//this.Logger().Println("observing current bit on bus:", currentBit)
 
 	return currentBit, nil
 }
@@ -115,7 +115,6 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 		}
 		if nextState == currentState {
 			// No transitions, exit
-			this.Logger().Println("no state transition, exiting")
 			return nil
 		} else {
 			this.Logger().Printf("state transition: %s -> %s", currentState, nextState)
@@ -257,7 +256,7 @@ func handleTransmitState(this *component.Component) (State, error) {
 	}
 
 	txBit := txItem.Buf.NextBit()
-	this.Logger().Println("write frame bit:", txBit)
+	//this.Logger().Println("write frame bit:", txBit)
 	this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
 	txItem.Buf.IncreaseOffset()
 
@@ -277,9 +276,8 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	}
 
 	rxBuf = rxBuf.WithBits(currentBit)
-	this.Logger().Println("rxBuf stuffed", rxBuf)
 	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
-	this.Logger().Println("rxBuf unstuffed", rxUnstuffed)
+	this.Logger().Printf("rxBuf stuffed: %s unstuffed %s", rxBuf, rxUnstuffed)
 
 	// All CAN frames begin with 3 fixed-size fields: SOF (1), ID(11) and DLC
 	// when we have received enough bits - we decode ID and DLC
@@ -299,7 +297,6 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 		} else {
 			// Decode data
 			this.Logger().Println("received all expected data and EOF")
-			// 0 11111011111 1000 00000010 00000001 00001100 00000000 00000000 00000000 00000000 00000000 1111111
 			// Check for valid EOF
 			firstEOFbitIndex := rxUnstuffed.Len() - codec.ProtocolEOFSize
 			if !rxUnstuffed[firstEOFbitIndex:].AllBitsAre(codec.ProtocolRecessiveBit) {
@@ -314,7 +311,7 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
 			// Clear state
 			this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
-			//this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
+			this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 			this.State().Set(stateKeyBitsExpected, 0)
 			return stateIdle, nil
 		}
