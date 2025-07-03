@@ -23,8 +23,8 @@ const (
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANRx).  // Frame in, bits in
-		WithOutputs(common.PortCANTx, common.PortCANRx). // Bits out, frame out
+		WithInputs(common.PortCANTx, common.PortCANRx).           // Frame in, bits in
+		WithOutputs(common.PortCANTx, common.PortCANRx, "to-mm"). // Bits out, frame out
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
@@ -33,6 +33,9 @@ func New(unitName string) *component.Component {
 			state.Set(stateKeyBitsExpected, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
+			defer func() {
+				this.Logger().Printf("exiting AF of %s", this.Name())
+			}()
 			err := handleIncomingFrames(this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
@@ -40,6 +43,12 @@ func New(unitName string) *component.Component {
 
 			// Get current bit set on the bus
 			currentBit, err := getCurrentBit(this)
+			if err != nil && err.Error() == "unable to read current bit, cannot proceed with protocol decision" {
+				this.Logger().Println("bus died, pinging")
+				this.OutputByName("to-mm").PutSignals(signal.New("I see no signals on bus, are you alive ?"))
+
+				return nil
+			}
 			if err != nil {
 				return fmt.Errorf("failed to determine current bit on the bus: %w", err)
 			}
@@ -266,9 +275,6 @@ func handleTransmitState(this *component.Component) (State, error) {
 func handleReceiveState(this *component.Component, currentBit codec.Bit) (State, error) {
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
 	bitsExpected := this.State().Get(stateKeyBitsExpected).(int)
-	defer func() {
-		this.State().Set(stateKeyRxBuffer, rxBuf)
-	}()
 
 	if rxBuf.Len() == 0 {
 		this.State().Set(stateKeyBitsExpected, 1+codec.ProtocolIDSize+codec.ProtocolDLCSize)
@@ -316,5 +322,6 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 			return stateIdle, nil
 		}
 	}
+	this.State().Set(stateKeyRxBuffer, rxBuf)
 	return stateReceive, nil
 }

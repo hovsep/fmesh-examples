@@ -51,6 +51,8 @@ func ecmLogic(this *component.Component) error {
 			return fmt.Errorf("failed to parse ISO-TP message: %w", err)
 		}
 
+		this.Logger().Println("received a frame")
+
 		// TODO: move this to separate function which returns iso message, then just convert any results to can frames and send them
 		switch frame.Id {
 		case ObdFunctionalRequestID:
