@@ -16,12 +16,19 @@ const (
 	MinValidVoltage = Voltage(0.5)
 	MaxValidVoltage = Voltage(4.5)
 
-	portInitialRecessiveSignals = "initial_recessive_signals"
+	portInitialRecessiveSignals  = "initial_recessive_signals"
+	portTerminatorsToWires       = "terminators_to_wires"
+	PortControllersToTerminators = "ctl_to_terminators"
 )
 
+type Bus struct {
+	Wires       *component.Component //Differential pair (Low/High)
+	Terminators *component.Component //Special component which drives wires recessive when no one else is driving
+}
+
 // New creates a new CAN bus
-func New(name string) *component.Component {
-	bus := component.New("can_bus-"+name).
+func New(name string) *Bus {
+	wires := component.New("can_bus_wires-"+name).
 		WithInputs(common.PortCANL, common.PortCANH, portInitialRecessiveSignals).
 		WithOutputs(common.PortCANL, common.PortCANH, portInitialRecessiveSignals).
 		WithLogger(common.NewNoopLogger()).
@@ -49,14 +56,37 @@ func New(name string) *component.Component {
 			return doWiredAND(this, allLow, allHigh)
 		})
 
+	terminators := component.New("can_bus_terminators-" + name).
+		WithInputs(PortControllersToTerminators).
+		WithOutputs(portTerminatorsToWires).
+		WithActivationFunc(func(this *component.Component) error {
+			if this.InputByName(PortControllersToTerminators).HasSignals() {
+				this.Logger().Printf("%d controllers do not see bit on bus, driving recessive", this.InputByName(PortControllersToTerminators).Buffer().Len())
+				this.OutputByName(portTerminatorsToWires).PutSignals(signal.New(10))
+			}
+			return nil
+		})
+
 	// Setup self-activation pipe
-	bus.OutputByName(portInitialRecessiveSignals).PipeTo(bus.InputByName(portInitialRecessiveSignals))
+	wires.OutputByName(portInitialRecessiveSignals).PipeTo(wires.InputByName(portInitialRecessiveSignals))
 
 	// Drive the bus with 11 recessive bits to simulate passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
-	bus.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(codec.ProtocolEOFSize + codec.ProtocolIFSSize + 1))
+	wires.InputByName(portInitialRecessiveSignals).PutSignals(signal.New(codec.ProtocolEOFSize + codec.ProtocolIFSSize + 1))
 
-	return bus
+	terminators.OutputByName(portTerminatorsToWires).PipeTo(wires.InputByName(portInitialRecessiveSignals))
+
+	return &Bus{
+		Wires:       wires,
+		Terminators: terminators,
+	}
+}
+
+// GetAllComponents returns all fmesh components of bus
+func (b Bus) GetAllComponents() []*component.Component {
+	return []*component.Component{
+		b.Wires, b.Terminators,
+	}
 }
 
 // Process init signals (the very first idle state, when bus is just powered)

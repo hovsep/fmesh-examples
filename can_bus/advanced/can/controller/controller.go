@@ -17,14 +17,20 @@ const (
 	stateKeyControllerState                  = "controller_state"
 	stateKeyConsecutiveRecessiveBitsObserved = "consecutive_recessive_observed"
 	stateKeyBitsExpected                     = "bits_expected"
+
+	PortControllerToTerminators = "ctl_to_terminals"
+)
+
+var (
+	errNoBitOnBus = errors.New("no bit set on bus")
 )
 
 // New creates a stateful CAN controller
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANRx).           // Frame in, bits in
-		WithOutputs(common.PortCANTx, common.PortCANRx, "to-mm"). // Bits out, frame out
+		WithInputs(common.PortCANTx, common.PortCANRx).                               // Frame in, bits in
+		WithOutputs(common.PortCANTx, common.PortCANRx, PortControllerToTerminators). // Bits out, frame out, notify when bus is idle
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
@@ -40,9 +46,9 @@ func New(unitName string) *component.Component {
 
 			// Get current bit set on the bus
 			currentBit, err := getCurrentBit(this)
-			if err != nil && err.Error() == "unable to read current bit, cannot proceed with protocol decision" {
-				this.Logger().Println("bus died, pinging")
-				this.OutputByName("to-mm").PutSignals(signal.New("I see no signals on bus, are you alive ?"))
+			if err != nil && errors.Is(err, errNoBitOnBus) {
+				// No node driving bus, let's notify terminators so they will drive the bus recessive
+				this.OutputByName(PortControllerToTerminators).PutSignals(signal.New(true))
 
 				return nil
 			}
@@ -81,13 +87,12 @@ func handleIncomingFrames(this *component.Component) error {
 
 func getCurrentBit(this *component.Component) (codec.Bit, error) {
 	if !this.InputByName(common.PortCANRx).HasSignals() {
-		return codec.ProtocolRecessiveBit, errors.New("unable to read current bit, cannot proceed with protocol decision")
+		return codec.ProtocolRecessiveBit, errNoBitOnBus
 	}
 	if this.InputByName(common.PortCANRx).Buffer().Len() > 1 {
 		return codec.ProtocolRecessiveBit, errors.New("received more than one bit")
 	}
 	currentBit := this.InputByName(common.PortCANRx).FirstSignalPayloadOrNil().(codec.Bit)
-	//this.Logger().Println("observing current bit on bus:", currentBit)
 
 	return currentBit, nil
 }

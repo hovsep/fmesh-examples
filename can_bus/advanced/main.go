@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
-
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 
 	"github.com/hovsep/fmesh"
@@ -30,24 +27,6 @@ func main() {
 
 	allCanNodes.ConnectToBus(ptBus)
 
-	// Create mastermind component (drives bus recessive when no one is writing)
-	mm := component.New("master-mind").
-		WithInputs("ctl-in").
-		WithOutputs("to-bus").
-		WithActivationFunc(func(this *component.Component) error {
-			if this.InputByName("ctl-in").HasSignals() {
-				this.Logger().Printf("%d controllers starve, I will drive bus recessive", this.InputByName("ctl-in").Buffer().Len())
-				this.OutputByName("to-bus").PutSignals(signal.New(10))
-			}
-			return nil
-		})
-
-	mm.OutputByName("to-bus").PipeTo(ptBus.InputByName("initial_recessive_signals"))
-
-	for _, cn := range allCanNodes {
-		cn.Controller.OutputByName("to-mm").PipeTo(mm.InputByName("ctl-in"))
-	}
-
 	// Connect usb-obd cable:
 	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(ecu.PortOBDIn))
 	obdDevice.MCU.OutputByName(ecu.PortOBDOut).PipeTo(laptop.InputByName(portUSBIn))
@@ -57,7 +36,8 @@ func main() {
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
-		WithComponents(ptBus, laptop, mm).
+		WithComponents(laptop).
+		WithComponents(ptBus.GetAllComponents()...).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
 	// Initialize the mesh:
