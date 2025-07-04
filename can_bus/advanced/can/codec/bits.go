@@ -129,7 +129,7 @@ func (bits Bits) WithBits(extraBits ...Bit) Bits {
 }
 
 func (bits Bits) ToInt() int {
-	var result int = 0
+	var result = 0
 	for _, bit := range bits {
 		result <<= 1
 		if bit {

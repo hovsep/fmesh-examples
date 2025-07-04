@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
-	"os"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 

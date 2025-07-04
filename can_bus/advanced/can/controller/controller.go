@@ -33,9 +33,6 @@ func New(unitName string) *component.Component {
 			state.Set(stateKeyBitsExpected, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
-			defer func() {
-				this.Logger().Printf("exiting AF of %s", this.Name())
-			}()
 			err := handleIncomingFrames(this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
@@ -51,12 +48,6 @@ func New(unitName string) *component.Component {
 			}
 			if err != nil {
 				return fmt.Errorf("failed to determine current bit on the bus: %w", err)
-			}
-
-			// Observe consecutive recessive bits to detect special situations on BUS (like SOF or EOF)
-			err = trackConsecutiveBits(this, currentBit)
-			if err != nil {
-				return fmt.Errorf("failed to track consecutive bits: %w", err)
 			}
 
 			// Run the main state machine:
@@ -83,7 +74,7 @@ func handleIncomingFrames(this *component.Component) error {
 			// Add IFS and 1 extra recessive bit
 			Buf: codec.NewBitBuffer(frameBits.WithIFS().WithBits(codec.ProtocolRecessiveBit)),
 		})
-		this.Logger().Printf("got a frame to send stuffed: %s, unstuffed: %s, items in tx-queue: %d", frameBits, frameBits.WithoutStuffing(codec.ProtocolBitStuffingStep), len(txQueue))
+		this.Logger().Printf("got a frame from MCU: %s, items in tx-queue: %d", frameBits.WithoutStuffing(codec.ProtocolBitStuffingStep), len(txQueue))
 	}
 	return nil
 }
@@ -101,32 +92,24 @@ func getCurrentBit(this *component.Component) (codec.Bit, error) {
 	return currentBit, nil
 }
 
-func trackConsecutiveBits(this *component.Component, currentBit codec.Bit) error {
-	consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(int)
-
-	if currentBit.IsRecessive() {
-		consecutiveRecessiveBitsObserved++
-	} else {
-		consecutiveRecessiveBitsObserved = 0
-	}
-
-	this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, consecutiveRecessiveBitsObserved)
-	return nil
-}
-
 func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 	currentState := this.State().Get(stateKeyControllerState).(State)
 	for {
-		this.Logger().Println("current state:", currentState)
 		nextState, err := getNextState(this, currentState, currentBit)
 		if err != nil {
 			return fmt.Errorf("failed to switch from state: %s error: %w", currentState, err)
 		}
+
+		err = handleStateTransition(this, currentState, nextState)
+		if err != nil {
+			return fmt.Errorf("failed to handle state transition: : %w", currentState.To(nextState), err)
+		}
+
 		if nextState == currentState {
 			// No transitions, exit
 			return nil
 		} else {
-			this.Logger().Printf("state transition: %s -> %s", currentState, nextState)
+			this.Logger().Print("state transition:", currentState.To(nextState))
 		}
 		currentState = nextState
 		this.State().Set(stateKeyControllerState, currentState)
@@ -139,7 +122,7 @@ func getNextState(this *component.Component, currentState State, currentBit code
 	case stateIdle:
 		return handleIdleState(this, currentBit)
 	case stateWaitForBusIdle:
-		return handleWaitForBusIdleState(this)
+		return handleWaitForBusIdleState(this, currentBit)
 	case stateArbitration:
 		return handleArbitrationState(this, currentBit)
 
@@ -168,8 +151,16 @@ func handleIdleState(this *component.Component, currentBit codec.Bit) (State, er
 	return stateIdle, nil
 }
 
-func handleWaitForBusIdleState(this *component.Component) (State, error) {
+func handleWaitForBusIdleState(this *component.Component, currentBit codec.Bit) (State, error) {
+	// Track consecutive recessive bits
 	consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(int)
+
+	if currentBit.IsRecessive() {
+		consecutiveRecessiveBitsObserved++
+	} else {
+		consecutiveRecessiveBitsObserved = 0
+	}
+	this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, consecutiveRecessiveBitsObserved)
 
 	if consecutiveRecessiveBitsObserved > codec.ProtocolEOFSize+codec.ProtocolIFSSize {
 		this.Logger().Println("i've seen ", consecutiveRecessiveBitsObserved, " recessives")
@@ -197,7 +188,6 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 	// Receive own sent bits (and skip anything before we started writing first bit)
 	if txItem.Buf.Offset > 0 {
 		rxBuf = rxBuf.WithBits(currentBit)
-		this.Logger().Println("in arbitration rxBuf:", rxBuf)
 	}
 
 	// Check if arbitration is won
@@ -207,7 +197,7 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 		idTransmitted := txItem.Buf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)[1 : codec.ProtocolIDSize+1]
 		wonArbitration := idReceived.Equals(idTransmitted)
 		if wonArbitration {
-			this.Logger().Println("won arbitration with rx:", rxUnstuffed)
+			this.Logger().Println("won arbitration")
 			return stateTransmit, nil
 		}
 	}
@@ -226,19 +216,12 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 				return stateArbitration, errors.New("bus error, recessive bit won arbitration. backoff")
 			}
 
-			txItem.Buf.ResetOffset()                             // Backoff, retry later
-			this.State().Set(stateKeyRxBuffer, codec.NewBits(0)) //Clear observed bits
-
+			txItem.Buf.ResetOffset() // Backoff, retry later
 			return stateReceive, nil
 		}
 	}
 
 	txBit := txItem.Buf.NextBit()
-	if txItem.Buf.Offset == 0 {
-		this.Logger().Println("write SOF bit:", txBit)
-	} else {
-		this.Logger().Println("write arbitration (ID) bit:", txBit)
-	}
 
 	this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
 	txItem.Buf.IncreaseOffset()
@@ -263,7 +246,6 @@ func handleTransmitState(this *component.Component) (State, error) {
 		this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
 
 		txQueue = txQueue[1:]
-		this.State().Set(stateKeyRxBuffer, codec.NewBits(0)) //Clear observed bits
 		return stateIdle, nil
 	}
 
@@ -286,7 +268,6 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 
 	rxBuf = rxBuf.WithBits(currentBit)
 	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
-	this.Logger().Printf("rxBuf stuffed: %s unstuffed %s", rxBuf, rxUnstuffed)
 
 	// All CAN frames begin with 3 fixed-size fields: SOF (1), ID(11) and DLC
 	// when we have received enough bits - we decode ID and DLC
@@ -307,24 +288,49 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 			// Decode data
 			this.Logger().Println("received all expected data and EOF")
 			// Check for valid EOF
-			firstEOFbitIndex := rxUnstuffed.Len() - codec.ProtocolEOFSize
-			if !rxUnstuffed[firstEOFbitIndex:].AllBitsAre(codec.ProtocolRecessiveBit) {
+			firstEOFBitIndex := rxUnstuffed.Len() - codec.ProtocolEOFSize
+			if !rxUnstuffed[firstEOFBitIndex:].AllBitsAre(codec.ProtocolRecessiveBit) {
 				return stateReceive, errors.New("received all expected bits, but do not see correct EOF")
 			}
 
 			// Assemble CAN frame
-			rxFrame, err := codec.FromBits(rxUnstuffed[1:firstEOFbitIndex])
+			rxFrame, err := codec.FromBits(rxUnstuffed[1:firstEOFBitIndex])
 			if err != nil {
 				return stateReceive, fmt.Errorf("failed to assemble frame: %w", err)
 			}
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
-			// Clear state
-			this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
-			this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
-			this.State().Set(stateKeyBitsExpected, 0)
 			return stateIdle, nil
 		}
 	}
 	this.State().Set(stateKeyRxBuffer, rxBuf)
 	return stateReceive, nil
+}
+
+func handleStateTransition(this *component.Component, previousState, nextState State) error {
+	switch previousState.To(nextState) {
+
+	//Lost arbitration
+	case stateArbitration.To(stateReceive):
+		// Forget bits collected during arbitration
+		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+		return nil
+
+	//Successfully finished transmitting
+	case stateTransmit.To(stateIdle):
+		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+		return nil
+
+	// When decided to start transmitting
+	case stateWaitForBusIdle.To(stateArbitration):
+		this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
+		return nil
+
+	//Successfully received a frame
+	case stateReceive.To(stateIdle):
+		//Clear everything, prepare to receive next frame
+		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+		this.State().Set(stateKeyBitsExpected, 0)
+		return nil
+	}
+	return nil
 }
