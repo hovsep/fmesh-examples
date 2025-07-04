@@ -226,7 +226,8 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 				return stateArbitration, errors.New("bus error, recessive bit won arbitration. backoff")
 			}
 
-			txItem.Buf.ResetOffset() // Backoff, retry later
+			txItem.Buf.ResetOffset()                             // Backoff, retry later
+			this.State().Set(stateKeyRxBuffer, codec.NewBits(0)) //Clear observed bits
 
 			return stateReceive, nil
 		}
