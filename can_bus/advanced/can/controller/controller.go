@@ -17,8 +17,6 @@ const (
 	stateKeyControllerState                  = "controller_state"
 	stateKeyConsecutiveRecessiveBitsObserved = "consecutive_recessive_observed"
 	stateKeyBitsExpected                     = "bits_expected"
-	stateKeyIgnoreEchoUntilCycle             = "ignore_echo_until_cycle"
-	stateKeyCycleCounter                     = "cycle_counter"
 )
 
 // New creates a stateful CAN controller
@@ -33,15 +31,8 @@ func New(unitName string) *component.Component {
 			state.Set(stateKeyControllerState, stateIdle)
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 			state.Set(stateKeyBitsExpected, 0)
-			state.Set(stateKeyIgnoreEchoUntilCycle, 0)
-			state.Set(stateKeyCycleCounter, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
-			// Increment cycle counter
-			cycleCounter := this.State().Get(stateKeyCycleCounter).(int)
-			cycleCounter++
-			this.State().Set(stateKeyCycleCounter, cycleCounter)
-
 			defer func() {
 				this.Logger().Printf("exiting AF of %s", this.Name())
 			}()
@@ -60,11 +51,6 @@ func New(unitName string) *component.Component {
 			}
 			if err != nil {
 				return fmt.Errorf("failed to determine current bit on the bus: %w", err)
-			}
-
-			// Check if we should ignore this bit (own echo)
-			if shouldIgnoreEcho(this, currentBit) {
-				return nil
 			}
 
 			// Observe consecutive recessive bits to detect special situations on BUS (like SOF or EOF)
@@ -275,13 +261,8 @@ func handleTransmitState(this *component.Component) (State, error) {
 	if txItem.Buf.Available() == 0 {
 		this.Logger().Println("a buffer is successfully transmitted, remove it from the queue")
 
-		// Set up echo ignore period - ignore echoes for next few cycles
-		cycleCounter := this.State().Get(stateKeyCycleCounter).(int)
-		// Ignore echoes for a reasonable propagation delay (3-5 cycles)
-		ignoreUntilCycle := cycleCounter + 10 // Reduced from frameLength + 5
-		this.State().Set(stateKeyIgnoreEchoUntilCycle, ignoreUntilCycle)
-
 		txQueue = txQueue[1:]
+		this.State().Set(stateKeyRxBuffer, codec.NewBits(0)) //Clear observed bits
 		return stateIdle, nil
 	}
 
@@ -345,34 +326,4 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	}
 	this.State().Set(stateKeyRxBuffer, rxBuf)
 	return stateReceive, nil
-}
-
-func shouldIgnoreEcho(this *component.Component, currentBit codec.Bit) bool {
-	ignoreEchoUntilCycle := this.State().Get(stateKeyIgnoreEchoUntilCycle).(int)
-	cycleCounter := this.State().Get(stateKeyCycleCounter).(int)
-	currentState := this.State().Get(stateKeyControllerState).(State)
-
-	// Only ignore echoes when we're in IDLE state (not during arbitration/transmit)
-	if currentState != stateIdle {
-		return false
-	}
-
-	// If we see a dominant bit (SOF) after our transmission, reset receive state for clean reception
-	if currentBit.IsDominant() && ignoreEchoUntilCycle > 0 {
-		// Clear the echo ignore period and reset receive buffer for clean frame reception
-		this.State().Set(stateKeyIgnoreEchoUntilCycle, 0)
-		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
-		this.State().Set(stateKeyBitsExpected, 0)
-		this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
-		this.Logger().Println("detected new SOF after transmission - resetting receive state")
-		return false
-	}
-
-	// If we're still in the echo ignore period for recessive bits, ignore them
-	if cycleCounter <= ignoreEchoUntilCycle && currentBit.IsRecessive() {
-		this.Logger().Printf("ignoring echo recessive bit (cycle %d <= %d)", cycleCounter, ignoreEchoUntilCycle)
-		return true
-	}
-
-	return false
 }
