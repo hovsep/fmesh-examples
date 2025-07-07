@@ -18,6 +18,7 @@ const (
 	ecmServiceIDShowCurrentData              = 0x01
 	ecmServiceIDStoredDiagnosticTroubleCodes = 0x03
 	ecmServiceIDVehicleInformation           = 0x09
+	ecmShowCurrentDataResponseID             = 0x41
 
 	ecmPIDRPM                      = 0x0C
 	ecmPIDVehicleSpeed             = 0x0D
@@ -34,8 +35,8 @@ func NewECM() *can.Node {
 		state.Set(EcuMemLog, []string{})
 
 		setParam(state, ecmPIDRPM, 3000)
-		setParam(state, ecmPIDVehicleSpeed, 0)
-		setParam(state, ecmPIDEngineCoolantTemperature, 28.5)
+		setParam(state, ecmPIDVehicleSpeed, byte(60))
+		setParam(state, ecmPIDEngineCoolantTemperature, byte(91))
 		setParam(state, ecmPIDECUName, "ENGINE_CONTROL_1")
 	}, ecmLogic)
 }
@@ -56,7 +57,7 @@ func ecmLogic(this *component.Component) error {
 		// TODO: move this to separate function which returns iso message, then just convert any results to can frames and send them
 		switch frame.Id {
 		case ObdFunctionalRequestID:
-			return ecmHandleOBDFR(this, message)
+			return ecmHandleOBDFunctionalRequest(this, message)
 
 		case ecmRequestID:
 			return ecmHandleRequest(this, message)
@@ -68,31 +69,10 @@ func ecmLogic(this *component.Component) error {
 	return nil
 }
 
-func ecmHandleOBDFR(this *component.Component, msg *codec.ISOTPMessage) error {
+func ecmHandleOBDFunctionalRequest(this *component.Component, msg *codec.ISOTPMessage) error {
 	switch msg.ServiceID {
 	case ecmServiceIDShowCurrentData:
-		switch msg.PID {
-		case ecmPIDRPM:
-			currentRPM := getParam(this.State(), ecmPIDRPM).(int)
-			rpmHi, rpmLow := encodeRPM(currentRPM)
-			responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
-				Len:       0x04,
-				ServiceID: 0x41,
-				PID:       0x0C,
-				Data:      []byte{rpmHi, rpmLow},
-			}, ecmResponseID)
-
-			if err != nil {
-				return fmt.Errorf("failed to encode RPM: %w", err)
-			}
-
-			this.OutputByName(common.PortCANTx).PutSignals(signal.New(responseFrame))
-			return nil
-		case ecmPIDVehicleSpeed:
-		case ecmPIDEngineCoolantTemperature:
-		default:
-			return errPIDNotSupported
-		}
+		return handleServiceShowCurrentData(this, msg)
 	case ecmServiceIDStoredDiagnosticTroubleCodes:
 	case ecmServiceIDVehicleInformation:
 		switch msg.PID {
@@ -115,4 +95,81 @@ func encodeRPM(rpm int) (byte, byte) {
 	hi := byte((raw >> 8) & 0xFF)
 	lo := byte(raw & 0xFF)
 	return hi, lo
+}
+
+func handleServiceShowCurrentData(this *component.Component, msg *codec.ISOTPMessage) error {
+	switch msg.PID {
+	case ecmPIDRPM:
+		currentRPMFrame, err := getRPM(this)
+		if err != nil {
+			return fmt.Errorf("failed to get current RPM: %w", err)
+		}
+		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentRPMFrame))
+		return nil
+	case ecmPIDVehicleSpeed:
+		currentSpeedFrame, err := getSpeed(this)
+		if err != nil {
+			return fmt.Errorf("failed to get current speed: %w", err)
+		}
+		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentSpeedFrame))
+		return nil
+	case ecmPIDEngineCoolantTemperature:
+		currentCoolantTemp, err := getCoolantTemp(this)
+		if err != nil {
+			return fmt.Errorf("failed to get coolant temperature: %w", err)
+		}
+		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentCoolantTemp))
+	default:
+		return errPIDNotSupported
+	}
+	return nil
+}
+
+func getRPM(this *component.Component) (*codec.Frame, error) {
+	currentRPM := getParam(this.State(), ecmPIDRPM).(int)
+	rpmHi, rpmLow := encodeRPM(currentRPM)
+	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+		Len:       0x04,
+		ServiceID: ecmShowCurrentDataResponseID,
+		PID:       ecmPIDRPM,
+		Data:      []byte{rpmHi, rpmLow},
+	}, ecmResponseID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return responseFrame, nil
+}
+
+func getSpeed(this *component.Component) (*codec.Frame, error) {
+	currentSpeed := getParam(this.State(), ecmPIDVehicleSpeed).(byte)
+	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+		Len:       0x03,
+		ServiceID: ecmShowCurrentDataResponseID,
+		PID:       ecmPIDVehicleSpeed,
+		Data:      []byte{currentSpeed},
+	}, ecmResponseID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return responseFrame, nil
+}
+
+func getCoolantTemp(this *component.Component) (*codec.Frame, error) {
+	currentCoolantTemp := getParam(this.State(), ecmPIDEngineCoolantTemperature).(byte)
+	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+		Len:       0x03,
+		ServiceID: ecmShowCurrentDataResponseID,
+		PID:       ecmPIDEngineCoolantTemperature,
+		Data:      []byte{currentCoolantTemp},
+	}, ecmResponseID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return responseFrame, nil
 }
