@@ -36,8 +36,7 @@ func main() {
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
-		WithComponents(laptop).
-		WithComponents(ptBus.GetAllComponents()...).
+		WithComponents(laptop, ptBus).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
 	// Initialize the mesh:

@@ -1,7 +1,6 @@
 package can
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
 	"github.com/hovsep/fmesh/component"
@@ -53,16 +52,13 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 }
 
 // ConnectToBus connect all nodes to the given bus
-func (nodes Nodes) ConnectToBus(b *bus.Bus) {
+func (nodes Nodes) ConnectToBus(b *component.Component) {
 	for _, node := range nodes {
 		// transceiver -> bus:
-		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.Wires.InputByName(common.PortCANL))
-		node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.Wires.InputByName(common.PortCANH))
+		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.InputByName(common.PortCANL))
+		node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.InputByName(common.PortCANH))
 		// transceiver <- bus:
-		b.Wires.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
-		b.Wires.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
-
-		// controller -> terminators (special case needed only in simulation to drive bus recessive when no node is driving it)
-		node.Controller.OutputByName(controller.PortControllerToTerminators).PipeTo(b.Terminators.InputByName(bus.PortControllersToTerminators))
+		b.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
+		b.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
 	}
 }

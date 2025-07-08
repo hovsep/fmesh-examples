@@ -17,8 +17,6 @@ const (
 	stateKeyControllerState                  = "controller_state"
 	stateKeyConsecutiveRecessiveBitsObserved = "consecutive_recessive_observed"
 	stateKeyBitsExpected                     = "bits_expected"
-
-	PortControllerToTerminators = "ctl_to_terminals"
 )
 
 var (
@@ -29,8 +27,8 @@ var (
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANRx).                               // Frame in, bits in
-		WithOutputs(common.PortCANTx, common.PortCANRx, PortControllerToTerminators). // Bits out, frame out, notify when bus is idle
+		WithInputs(common.PortCANTx, common.PortCANRx).  // Frame in, bits in
+		WithOutputs(common.PortCANTx, common.PortCANRx). // Bits out, frame out, notify when bus is idle
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
@@ -48,8 +46,7 @@ func New(unitName string) *component.Component {
 			currentBit, err := getCurrentBit(this)
 			if err != nil && errors.Is(err, errNoBitOnBus) {
 				// No node driving bus, let's notify terminators so they will drive the bus recessive
-				this.OutputByName(PortControllerToTerminators).PutSignals(signal.New(true))
-
+				// send report to mastermind so it can push 1 recessive bit on bus
 				return nil
 			}
 			if err != nil {
@@ -157,14 +154,15 @@ func handleIdleState(this *component.Component, currentBit codec.Bit) (State, er
 }
 
 func handleWaitForBusIdleState(this *component.Component, currentBit codec.Bit) (State, error) {
+	// Check if some other node started transmitting
+	// SOF detected, became passive listener
+	if currentBit.IsDominant() {
+		return stateReceive, nil
+	}
+
 	// Track consecutive recessive bits
 	consecutiveRecessiveBitsObserved := this.State().Get(stateKeyConsecutiveRecessiveBitsObserved).(int)
-
-	if currentBit.IsRecessive() {
-		consecutiveRecessiveBitsObserved++
-	} else {
-		consecutiveRecessiveBitsObserved = 0
-	}
+	consecutiveRecessiveBitsObserved++
 	this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, consecutiveRecessiveBitsObserved)
 
 	if consecutiveRecessiveBitsObserved > codec.ProtocolEOFSize+codec.ProtocolIFSSize {
@@ -267,7 +265,8 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	bitsExpected := this.State().Get(stateKeyBitsExpected).(int)
 
 	if rxBuf.Len() == 0 {
-		this.State().Set(stateKeyBitsExpected, 1+codec.ProtocolIDSize+codec.ProtocolDLCSize)
+		// Nothing is received, let's expect first 16 fixed bits
+		this.State().Set(stateKeyBitsExpected, codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize)
 		this.Logger().Println("receiving SOF")
 	}
 
@@ -287,8 +286,8 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 			expectedBytes := dlcBits.ToInt()
 			this.Logger().Println("id: ", idBits, " dlc:", dlcBits, " dlc (bytes):", expectedBytes)
 
-			// We know the DLC, let's expect data bits
-			this.State().Set(stateKeyBitsExpected, 16+expectedBytes*8+codec.ProtocolEOFSize)
+			// We know the DLC, let's expect the all bits
+			this.State().Set(stateKeyBitsExpected, codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize+expectedBytes*8+codec.ProtocolEOFSize)
 		} else {
 			// Decode data
 			this.Logger().Println("received all expected data and EOF")
@@ -314,15 +313,20 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 func handleStateTransition(this *component.Component, previousState, nextState State) error {
 	switch previousState.To(nextState) {
 
-	//Lost arbitration
+	// Lost arbitration
 	case stateArbitration.To(stateReceive):
 		// Forget bits collected during arbitration
 		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
 		return nil
 
-	//Successfully finished transmitting
+	// Successfully finished transmitting
 	case stateTransmit.To(stateIdle):
 		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+		return nil
+
+	// Wanted to start transmitting, but received SOF
+	case stateWaitForBusIdle.To(stateReceive):
+		this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 		return nil
 
 	// When decided to start transmitting
@@ -330,9 +334,9 @@ func handleStateTransition(this *component.Component, previousState, nextState S
 		this.State().Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 		return nil
 
-	//Successfully received a frame
+	// Successfully received a frame
 	case stateReceive.To(stateIdle):
-		//Clear everything, prepare to receive next frame
+		// Clear everything, prepare to receive next frame
 		this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
 		this.State().Set(stateKeyBitsExpected, 0)
 		return nil
