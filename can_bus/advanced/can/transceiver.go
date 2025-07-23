@@ -17,7 +17,7 @@ func NewTransceiver(unitName string) *component.Component {
 	return component.New("can_transceiver-"+unitName).
 		WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL).  // Bits in (write to bus), voltage in (read from bus)
 		WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL). // Bits out (read from bus), voltage out (write to bus)
-		//WithLogger(common.NewNoopLogger()).
+		WithLogger(common.NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			err := handleTxPath(this)
 			if err != nil {

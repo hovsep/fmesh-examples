@@ -1,6 +1,7 @@
 package can
 
 import (
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
 	"github.com/hovsep/fmesh/component"
@@ -52,24 +53,18 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 }
 
 // ConnectToBus connect all nodes to the given bus
-func (nodes Nodes) ConnectToBus(b *component.Component, mm *component.Component) {
+func (nodes Nodes) ConnectToBus(b *bus.Bus) {
 	for _, node := range nodes {
 		// transceiver -> bus:
-		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.InputByName(common.PortCANL))
-		node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.InputByName(common.PortCANH))
-		// transceiver <- bus:
-		b.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
-		b.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
+		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.Wires.InputByName(common.PortCANL))
+		node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.Wires.InputByName(common.PortCANH))
 
-		// ctl -> mm
-		node.Controller.OutputByName("current_state").PipeTo(mm.InputByName("ctl_state"))
+		// transceiver <- bus:
+		b.Wires.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
+		b.Wires.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
+
+		// ctl -> bus watchdog
+		node.Controller.OutputByName(common.PortControllerState).PipeTo(b.Watchdog.InputByName(common.PortControllerState))
 
 	}
-
-	//bus -> mm
-	b.OutputByName(common.PortCANL).PipeTo(mm.InputByName("current_bus_l"))
-	b.OutputByName(common.PortCANH).PipeTo(mm.InputByName("current_bus_h"))
-
-	//mm -> bus
-	mm.OutputByName("bus_trigger").PipeTo(b.InputByName("initial_recessive_signals"))
 }
