@@ -27,8 +27,8 @@ var (
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANRx).  // Frame in, bits in
-		WithOutputs(common.PortCANTx, common.PortCANRx). // Bits out, frame out, notify when bus is idle
+		WithInputs(common.PortCANTx, common.PortCANRx).                   // Frame in, bits in
+		WithOutputs(common.PortCANTx, common.PortCANRx, "current_state"). // Bits out, frame out, notify when bus is idle
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
@@ -37,6 +37,13 @@ func New(unitName string) *component.Component {
 			state.Set(stateKeyBitsExpected, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
+			defer func() {
+				ctlState := this.State().Get(stateKeyControllerState).(State)
+				this.OutputByName("current_state").PutSignals(signal.New(map[string]string{
+					this.Name(): ctlState.String(),
+				}))
+			}()
+
 			err := handleIncomingFrames(this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
@@ -45,8 +52,6 @@ func New(unitName string) *component.Component {
 			// Get current bit set on the bus
 			currentBit, err := getCurrentBit(this)
 			if err != nil && errors.Is(err, errNoBitOnBus) {
-				// No node driving bus, let's notify terminators so they will drive the bus recessive
-				// send report to mastermind so it can push 1 recessive bit on bus
 				return nil
 			}
 			if err != nil {

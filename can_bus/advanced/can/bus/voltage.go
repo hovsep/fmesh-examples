@@ -5,6 +5,7 @@ import "github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
 type Voltage float64
 
 const (
+	NoVoltage           = Voltage(0.0)
 	DominantHighVoltage = Voltage(3.7)
 	DominantLowVoltage  = Voltage(1.5)
 

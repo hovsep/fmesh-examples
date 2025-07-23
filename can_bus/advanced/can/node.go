@@ -52,7 +52,7 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 }
 
 // ConnectToBus connect all nodes to the given bus
-func (nodes Nodes) ConnectToBus(b *component.Component) {
+func (nodes Nodes) ConnectToBus(b *component.Component, mm *component.Component) {
 	for _, node := range nodes {
 		// transceiver -> bus:
 		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.InputByName(common.PortCANL))
@@ -60,5 +60,16 @@ func (nodes Nodes) ConnectToBus(b *component.Component) {
 		// transceiver <- bus:
 		b.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
 		b.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
+
+		// ctl -> mm
+		node.Controller.OutputByName("current_state").PipeTo(mm.InputByName("ctl_state"))
+
 	}
+
+	//bus -> mm
+	b.OutputByName(common.PortCANL).PipeTo(mm.InputByName("current_bus_l"))
+	b.OutputByName(common.PortCANH).PipeTo(mm.InputByName("current_bus_h"))
+
+	//mm -> bus
+	mm.OutputByName("bus_trigger").PipeTo(b.InputByName("initial_recessive_signals"))
 }
