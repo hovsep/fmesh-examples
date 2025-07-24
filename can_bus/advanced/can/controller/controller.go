@@ -45,6 +45,8 @@ func New(unitName string) *component.Component {
 				}))
 			}()
 
+			refreshLoggerPrefix(this)
+
 			err := handleIncomingFrames(this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
