@@ -8,3 +8,5 @@ require (
 )
 
 require github.com/emicklei/dot v1.8.0 // indirect
+
+replace github.com/hovsep/fmesh => ../fmesh

@@ -15,9 +15,17 @@ type ISOTPMessage struct {
 	Data      []byte
 }
 
+const (
+	ValidISOTPFrameDLC = 8
+)
+
 func CANFrameToISOTP(frame *codec.Frame) (*ISOTPMessage, error) {
 	if frame.DLC == 0 {
 		return nil, errors.New("frame has zero DLC")
+	}
+
+	if frame.DLC != ValidISOTPFrameDLC {
+		return nil, errors.New("given frame is not valid ISO-TP frame")
 	}
 
 	pci := frame.Data[0]

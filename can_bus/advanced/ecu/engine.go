@@ -2,18 +2,15 @@ package ecu
 
 import (
 	"errors"
-	"fmt"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	ECMUnitName = "ecm"
+	ECMUnitName        = "ecm"
+	ECMPhysicalAddress = 0x7E0
 
 	ecmPIDRPM                      microcontroller.ParameterID = 0x0C
 	ecmPIDVehicleSpeed             microcontroller.ParameterID = 0x0D
@@ -25,62 +22,41 @@ var (
 )
 
 func NewECM() *can.Node {
-	return can.NewNode(ECMUnitName, nil, ecmLogic)
+	return can.NewNode(ECMUnitName, nil,
+		microcontroller.LogicToActivationFunc(
+			func(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, this *component.Component) (*microcontroller.ISOTPMessage, error) {
+				switch mode {
+				case microcontroller.Functional:
+					return ecmHandleOBDFunctionalRequest(this, request)
+
+				case microcontroller.Physical:
+					return ecmHandleRequest(this, request)
+				default:
+					this.Logger().Printf("addressing mode not supported: %v", mode)
+				}
+				return nil, errors.New("something went wrong")
+			}, ECMPhysicalAddress))
 }
 
-func ecmLogic(this *component.Component) error {
-
-	for _, sig := range this.InputByName(common.PortCANRx).AllSignalsOrNil() {
-		frame, ok := sig.PayloadOrNil().(*codec.Frame)
-		if !ok {
-			return errors.New("got corrupted frame")
-		}
-		message, err := microcontroller.CANFrameToISOTP(frame)
-		if err != nil {
-			return fmt.Errorf("failed to parse ISO-TP message: %w", err)
-		}
-
-		this.Logger().Println("received ISO-TP message")
-
-		addressingMode := microcontroller.AddressingMode(frame.Id)
-
-		// TODO: move this to separate function which returns iso message, then just convert any results to can frames and send them
-		switch addressingMode {
-		case microcontroller.Functional:
-			return ecmHandleOBDFunctionalRequest(this, message)
-
-		case microcontroller.Physical:
-			return ecmHandleRequest(this, message)
-		default:
-			this.Logger().Println("frame id is not supported:", frame.Id)
-		}
-	}
-
-	return nil
-}
-
-func ecmHandleOBDFunctionalRequest(this *component.Component, msg *microcontroller.ISOTPMessage) error {
-
-	sid := microcontroller.ServiceID((msg.ServiceID))
-
-	switch sid {
+func ecmHandleOBDFunctionalRequest(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
+	switch req.ServiceID {
 	case microcontroller.ServiceShowCurrentData:
-		return handleServiceShowCurrentData(this, msg)
+		return handleServiceShowCurrentData(this, req)
 	case microcontroller.ServiceReadStoredDiagnosticCodes:
 	case microcontroller.ServiceVehicleInformation:
-		pid := microcontroller.ParameterID((msg.PID))
-		switch pid {
+		switch req.PID {
 		default:
-			return errPIDNotSupported
+			return nil, errPIDNotSupported
 		}
 	default:
-		return errors.New("ECM Service ID not supported")
+		return nil, errors.New("ECM Service ID not supported")
 	}
-	return nil
+
+	return nil, errors.New("something went wrong")
 }
 
-func ecmHandleRequest(this *component.Component, msg *microcontroller.ISOTPMessage) error {
-	return nil
+func ecmHandleRequest(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
+	return nil, errors.New("physical addressing not supported")
 }
 
 func encodeRPM(rpm int) (byte, byte) {
@@ -90,79 +66,47 @@ func encodeRPM(rpm int) (byte, byte) {
 	return hi, lo
 }
 
-func handleServiceShowCurrentData(this *component.Component, msg *microcontroller.ISOTPMessage) error {
-	switch microcontroller.ParameterID(msg.PID) {
+func handleServiceShowCurrentData(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
+	switch req.PID {
 	case ecmPIDRPM:
-		currentRPMFrame, err := getRPM(this)
-		if err != nil {
-			return fmt.Errorf("failed to get current RPM: %w", err)
-		}
-		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentRPMFrame))
-		return nil
+		return getRPM(), nil
 	case ecmPIDVehicleSpeed:
-		currentSpeedFrame, err := getSpeed(this)
-		if err != nil {
-			return fmt.Errorf("failed to get current speed: %w", err)
-		}
-		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentSpeedFrame))
-		return nil
+		return getSpeed(), nil
 	case ecmPIDEngineCoolantTemperature:
-		currentCoolantTemp, err := getCoolantTemp(this)
-		if err != nil {
-			return fmt.Errorf("failed to get coolant temperature: %w", err)
-		}
-		this.OutputByName(common.PortCANTx).PutSignals(signal.New(currentCoolantTemp))
+		return getCoolantTemp(), nil
 	default:
-		return errPIDNotSupported
+		return nil, errPIDNotSupported
 	}
-	return nil
+	return nil, errPIDNotSupported
 }
 
-func getRPM(this *component.Component) (*codec.Frame, error) {
+func getRPM() *microcontroller.ISOTPMessage {
 	currentRPM := 3571 // todo get from somewhere
 	rpmHi, rpmLow := encodeRPM(currentRPM)
-	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
+	return &microcontroller.ISOTPMessage{
 		Len:       0x04,
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDRPM,
 		Data:      []byte{rpmHi, rpmLow},
-	}, uint32(microcontroller.ResponseShowCurrentData))
-
-	if err != nil {
-		return nil, err
 	}
-
-	return responseFrame, nil
 }
 
-func getSpeed(this *component.Component) (*codec.Frame, error) {
+func getSpeed() *microcontroller.ISOTPMessage {
 	currentSpeed := byte(65) // todo
-	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
+	return &microcontroller.ISOTPMessage{
 		Len:       0x03,
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDVehicleSpeed,
 		Data:      []byte{currentSpeed},
-	}, uint32(microcontroller.ResponseShowCurrentData))
-
-	if err != nil {
-		return nil, err
 	}
-
-	return responseFrame, nil
 }
 
-func getCoolantTemp(this *component.Component) (*codec.Frame, error) {
+func getCoolantTemp() *microcontroller.ISOTPMessage {
 	currentCoolantTemp := byte(92)
-	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
+	return &microcontroller.ISOTPMessage{
 		Len:       0x03,
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDEngineCoolantTemperature,
 		Data:      []byte{currentCoolantTemp},
-	}, uint32(microcontroller.ResponseShowCurrentData))
-
-	if err != nil {
-		return nil, err
 	}
-
-	return responseFrame, nil
 }
