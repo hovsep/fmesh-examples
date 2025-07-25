@@ -20,9 +20,9 @@ func main() {
 	obdDevice := ecu.NewOBD() // putting this into a variable, so we can connect it to the laptop
 	allCanNodes := can.Nodes{
 		ecu.NewECM(), // Engine Control Module
-		//ecu.NewTCM(), // Transmission Control Module
-		//ecu.NewACU(), // Airbag Control Unit
-		obdDevice, // On Board Diagnostics
+		ecu.NewTCM(), // Transmission Control Module
+		ecu.NewACU(), // Airbag Control Unit
+		obdDevice,    // On Board Diagnostics
 	}
 
 	allCanNodes.ConnectToBus(ptBus)
@@ -44,6 +44,7 @@ func main() {
 	// send some data through laptop into OBD socket
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetSpeed)
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetRPM)
+	sendPayloadToUSBPort(laptop, diagnosticFrameGetCoolantTemp)
 
 	runResult, err := fm.Run()
 	if err != nil {
