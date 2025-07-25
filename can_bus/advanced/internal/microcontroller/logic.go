@@ -3,52 +3,85 @@ package microcontroller
 import (
 	"errors"
 	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// LogicFunc is the high level app of the MCU which works on top of CAN
-type LogicFunc func(mode AddressingMode, request *ISOTPMessage, this *component.Component) (*ISOTPMessage, error)
+// ReqHandler is the function that accepts request and provides response
+type ReqHandler func(mode AddressingMode, request *ISOTPMessage, mcu *component.Component) (*ISOTPMessage, error)
 
-// LogicToActivationFunc embeds the given MCU logic into FMesh activation func
-func LogicToActivationFunc(logic LogicFunc, mcuPhysicalAddress uint32) component.ActivationFunc {
+// ParamsMap maps parameter IDs to respective handler
+type ParamsMap map[ParameterID]ReqHandler
+
+// ServiceMap maps services to supported parameters
+type ServiceMap map[ServiceID]ParamsMap
+
+// LogicMap maps addressing modes to allowed services
+type LogicMap map[AddressingMode]ServiceMap
+
+// LogicDescriptor contains whole MCU behaviour
+type LogicDescriptor struct {
+	PhysicalAddress uint32
+	Table           LogicMap
+}
+
+func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 	af := func(this *component.Component) error {
-
 		for _, sig := range this.InputByName(common.PortCANRx).AllSignalsOrNil() {
 			// Validate CAN frame
 			frame, ok := sig.PayloadOrNil().(*codec.Frame)
 			if !ok {
-				return errors.New("got corrupted frame")
+				return errors.New("failed to cast payload to CAN frame")
 			}
 
 			// Convert CAN frame to ISO-TP message (the request)
-			ISOTPRequest, err := CANFrameToISOTP(frame)
+			isoReq, err := CANFrameToISOTP(frame)
 			if err != nil {
 				return fmt.Errorf("failed to parse ISO-TP message: %w", err)
 			}
 
 			// Resolve request address
-			addressingMode := Physical
+			addressingMode := PhysicalAddressing
 
 			if frame.Id == FunctionalRequestID {
-				addressingMode = Functional
+				addressingMode = FunctionalAddressing
 			}
-			this.Logger().Printf("received ISO-TP request: address: %s to %d, sid: %d, pid: %d", addressingMode, frame.Id, ISOTPRequest.ServiceID, ISOTPRequest.PID)
+			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: %X, sid: %X, pid: %X", addressingMode, frame.Id, isoReq.ServiceID, isoReq.PID)
 
+			// Check if addressing mode is supported
+			services, ok := ld.Table[addressingMode]
+			if !ok {
+				return errors.New("addressing mode is not supported")
+			}
+
+			// Check if service is supported
+			params, ok := services[isoReq.ServiceID]
+			if !ok {
+				return errors.New("service is not supported")
+			}
+
+			// Check if parameter is supported
+			reqHandler, ok := params[isoReq.PID]
+			if !ok {
+				return errors.New("param is not supported")
+			}
 			// Run logic and get response
-			ISOTPResponse, err := logic(addressingMode, ISOTPRequest, this)
+			isoResp, err := reqHandler(addressingMode, isoReq, this)
 			if err != nil {
 				return fmt.Errorf("failed to apply MCU logic: %w", err)
 			}
 
 			// Return response down to CAN controller
-			canFrame, err := ISOTPToCANFrame(ISOTPResponse, mcuPhysicalAddress)
+			respCANFrame, err := ISOTPToCANFrame(isoResp, ld.PhysicalAddress+ResponseAddressOffset)
 			if err != nil {
 				return fmt.Errorf("failed to convert ISOTP to CAN frame: %w", err)
 			}
-			this.OutputByName(common.PortCANTx).PutSignals(signal.New(canFrame))
+			this.OutputByName(common.PortCANTx).PutSignals(signal.New(respCANFrame))
+			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: %X, sid: %X, pid: %X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
+
 			return nil
 		}
 

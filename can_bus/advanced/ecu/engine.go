@@ -1,10 +1,8 @@
 package ecu
 
 import (
-	"errors"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
-
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -18,45 +16,27 @@ const (
 )
 
 var (
-	errPIDNotSupported = errors.New("PID not supported")
+	logicDescriptor = &microcontroller.LogicDescriptor{
+		PhysicalAddress: ECMPhysicalAddress,
+		Table: microcontroller.LogicMap{
+			microcontroller.FunctionalAddressing: {
+				microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
+					ecmPIDRPM:                      getRPMParam,
+					ecmPIDVehicleSpeed:             getSpeedParam,
+					ecmPIDEngineCoolantTemperature: getCoolantTempParam,
+				},
+				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{},
+				microcontroller.ServiceVehicleInformation:        microcontroller.ParamsMap{},
+			},
+			microcontroller.PhysicalAddressing: {},
+		},
+	}
 )
 
 func NewECM() *can.Node {
-	return can.NewNode(ECMUnitName, nil,
-		microcontroller.LogicToActivationFunc(
-			func(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, this *component.Component) (*microcontroller.ISOTPMessage, error) {
-				switch mode {
-				case microcontroller.Functional:
-					return ecmHandleOBDFunctionalRequest(this, request)
+	return can.NewNode(ECMUnitName, func(state component.State) {
 
-				case microcontroller.Physical:
-					return ecmHandleRequest(this, request)
-				default:
-					this.Logger().Printf("addressing mode not supported: %v", mode)
-				}
-				return nil, errors.New("something went wrong")
-			}, ECMPhysicalAddress))
-}
-
-func ecmHandleOBDFunctionalRequest(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
-	switch req.ServiceID {
-	case microcontroller.ServiceShowCurrentData:
-		return handleServiceShowCurrentData(this, req)
-	case microcontroller.ServiceReadStoredDiagnosticCodes:
-	case microcontroller.ServiceVehicleInformation:
-		switch req.PID {
-		default:
-			return nil, errPIDNotSupported
-		}
-	default:
-		return nil, errors.New("ECM Service ID not supported")
-	}
-
-	return nil, errors.New("something went wrong")
-}
-
-func ecmHandleRequest(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
-	return nil, errors.New("physical addressing not supported")
+	}, logicDescriptor.ToActivationFunc())
 }
 
 func encodeRPM(rpm int) (byte, byte) {
@@ -66,21 +46,17 @@ func encodeRPM(rpm int) (byte, byte) {
 	return hi, lo
 }
 
-func handleServiceShowCurrentData(this *component.Component, req *microcontroller.ISOTPMessage) (*microcontroller.ISOTPMessage, error) {
-	switch req.PID {
-	case ecmPIDRPM:
-		return getRPM(), nil
-	case ecmPIDVehicleSpeed:
-		return getSpeed(), nil
-	case ecmPIDEngineCoolantTemperature:
-		return getCoolantTemp(), nil
-	default:
-		return nil, errPIDNotSupported
-	}
-	return nil, errPIDNotSupported
+func getSpeedParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+	currentSpeed := byte(65) // todo
+	return &microcontroller.ISOTPMessage{
+		Len:       0x03,
+		ServiceID: microcontroller.ResponseShowCurrentData,
+		PID:       ecmPIDVehicleSpeed,
+		Data:      []byte{currentSpeed},
+	}, nil
 }
 
-func getRPM() *microcontroller.ISOTPMessage {
+func getRPMParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	currentRPM := 3571 // todo get from somewhere
 	rpmHi, rpmLow := encodeRPM(currentRPM)
 	return &microcontroller.ISOTPMessage{
@@ -88,25 +64,15 @@ func getRPM() *microcontroller.ISOTPMessage {
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDRPM,
 		Data:      []byte{rpmHi, rpmLow},
-	}
+	}, nil
 }
 
-func getSpeed() *microcontroller.ISOTPMessage {
-	currentSpeed := byte(65) // todo
-	return &microcontroller.ISOTPMessage{
-		Len:       0x03,
-		ServiceID: microcontroller.ResponseShowCurrentData,
-		PID:       ecmPIDVehicleSpeed,
-		Data:      []byte{currentSpeed},
-	}
-}
-
-func getCoolantTemp() *microcontroller.ISOTPMessage {
+func getCoolantTempParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	currentCoolantTemp := byte(92)
 	return &microcontroller.ISOTPMessage{
 		Len:       0x03,
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDEngineCoolantTemperature,
 		Data:      []byte{currentCoolantTemp},
-	}
+	}, nil
 }
