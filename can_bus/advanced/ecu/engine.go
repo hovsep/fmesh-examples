@@ -3,28 +3,21 @@ package ecu
 import (
 	"errors"
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	ECMUnitName   = "ecm"
-	ecmRequestID  = 0x7E0
-	ecmResponseID = 0x7E8
+	ECMUnitName = "ecm"
 
-	ecmServiceIDShowCurrentData              = 0x01
-	ecmServiceIDStoredDiagnosticTroubleCodes = 0x03
-	ecmServiceIDVehicleInformation           = 0x09
-	ecmShowCurrentDataResponseID             = 0x41
-
-	ecmPIDRPM                      = 0x0C
-	ecmPIDVehicleSpeed             = 0x0D
-	ecmPIDEngineCoolantTemperature = 0x05
-	ecmPIDECUName                  = 0x0A
+	ecmPIDRPM                      microcontroller.ParameterID = 0x0C
+	ecmPIDVehicleSpeed             microcontroller.ParameterID = 0x0D
+	ecmPIDEngineCoolantTemperature microcontroller.ParameterID = 0x05
 )
 
 var (
@@ -32,35 +25,31 @@ var (
 )
 
 func NewECM() *can.Node {
-	return can.NewNode(ECMUnitName, func(state component.State) {
-		state.Set(EcuMemLog, []string{})
-
-		setParam(state, ecmPIDRPM, 3000)
-		setParam(state, ecmPIDVehicleSpeed, byte(60))
-		setParam(state, ecmPIDEngineCoolantTemperature, byte(91))
-		setParam(state, ecmPIDECUName, "ENGINE_CONTROL_1")
-	}, ecmLogic)
+	return can.NewNode(ECMUnitName, nil, ecmLogic)
 }
 
 func ecmLogic(this *component.Component) error {
+
 	for _, sig := range this.InputByName(common.PortCANRx).AllSignalsOrNil() {
 		frame, ok := sig.PayloadOrNil().(*codec.Frame)
 		if !ok {
 			return errors.New("got corrupted frame")
 		}
-		message, err := frame.ToISOTPMessage()
+		message, err := microcontroller.CANFrameToISOTP(frame)
 		if err != nil {
 			return fmt.Errorf("failed to parse ISO-TP message: %w", err)
 		}
 
 		this.Logger().Println("received ISO-TP message")
 
+		addressingMode := microcontroller.AddressingMode(frame.Id)
+
 		// TODO: move this to separate function which returns iso message, then just convert any results to can frames and send them
-		switch frame.Id {
-		case ObdFunctionalRequestID:
+		switch addressingMode {
+		case microcontroller.Functional:
 			return ecmHandleOBDFunctionalRequest(this, message)
 
-		case ecmRequestID:
+		case microcontroller.Physical:
 			return ecmHandleRequest(this, message)
 		default:
 			this.Logger().Println("frame id is not supported:", frame.Id)
@@ -70,14 +59,17 @@ func ecmLogic(this *component.Component) error {
 	return nil
 }
 
-func ecmHandleOBDFunctionalRequest(this *component.Component, msg *codec.ISOTPMessage) error {
-	switch msg.ServiceID {
-	case ecmServiceIDShowCurrentData:
+func ecmHandleOBDFunctionalRequest(this *component.Component, msg *microcontroller.ISOTPMessage) error {
+
+	sid := microcontroller.ServiceID((msg.ServiceID))
+
+	switch sid {
+	case microcontroller.ServiceShowCurrentData:
 		return handleServiceShowCurrentData(this, msg)
-	case ecmServiceIDStoredDiagnosticTroubleCodes:
-	case ecmServiceIDVehicleInformation:
-		switch msg.PID {
-		case ecmPIDECUName:
+	case microcontroller.ServiceReadStoredDiagnosticCodes:
+	case microcontroller.ServiceVehicleInformation:
+		pid := microcontroller.ParameterID((msg.PID))
+		switch pid {
 		default:
 			return errPIDNotSupported
 		}
@@ -87,7 +79,7 @@ func ecmHandleOBDFunctionalRequest(this *component.Component, msg *codec.ISOTPMe
 	return nil
 }
 
-func ecmHandleRequest(this *component.Component, msg *codec.ISOTPMessage) error {
+func ecmHandleRequest(this *component.Component, msg *microcontroller.ISOTPMessage) error {
 	return nil
 }
 
@@ -98,8 +90,8 @@ func encodeRPM(rpm int) (byte, byte) {
 	return hi, lo
 }
 
-func handleServiceShowCurrentData(this *component.Component, msg *codec.ISOTPMessage) error {
-	switch msg.PID {
+func handleServiceShowCurrentData(this *component.Component, msg *microcontroller.ISOTPMessage) error {
+	switch microcontroller.ParameterID(msg.PID) {
 	case ecmPIDRPM:
 		currentRPMFrame, err := getRPM(this)
 		if err != nil {
@@ -127,14 +119,14 @@ func handleServiceShowCurrentData(this *component.Component, msg *codec.ISOTPMes
 }
 
 func getRPM(this *component.Component) (*codec.Frame, error) {
-	currentRPM := getParam(this.State(), ecmPIDRPM).(int)
+	currentRPM := 3571 // todo get from somewhere
 	rpmHi, rpmLow := encodeRPM(currentRPM)
-	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
 		Len:       0x04,
-		ServiceID: ecmShowCurrentDataResponseID,
+		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDRPM,
 		Data:      []byte{rpmHi, rpmLow},
-	}, ecmResponseID)
+	}, uint32(microcontroller.ResponseShowCurrentData))
 
 	if err != nil {
 		return nil, err
@@ -144,13 +136,13 @@ func getRPM(this *component.Component) (*codec.Frame, error) {
 }
 
 func getSpeed(this *component.Component) (*codec.Frame, error) {
-	currentSpeed := getParam(this.State(), ecmPIDVehicleSpeed).(byte)
-	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+	currentSpeed := byte(65) // todo
+	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
 		Len:       0x03,
-		ServiceID: ecmShowCurrentDataResponseID,
+		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDVehicleSpeed,
 		Data:      []byte{currentSpeed},
-	}, ecmResponseID)
+	}, uint32(microcontroller.ResponseShowCurrentData))
 
 	if err != nil {
 		return nil, err
@@ -160,13 +152,13 @@ func getSpeed(this *component.Component) (*codec.Frame, error) {
 }
 
 func getCoolantTemp(this *component.Component) (*codec.Frame, error) {
-	currentCoolantTemp := getParam(this.State(), ecmPIDEngineCoolantTemperature).(byte)
-	responseFrame, err := codec.FromISOTPMessage(&codec.ISOTPMessage{
+	currentCoolantTemp := byte(92)
+	responseFrame, err := microcontroller.ISOTPToCANFrame(&microcontroller.ISOTPMessage{
 		Len:       0x03,
-		ServiceID: ecmShowCurrentDataResponseID,
+		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDEngineCoolantTemperature,
 		Data:      []byte{currentCoolantTemp},
-	}, ecmResponseID)
+	}, uint32(microcontroller.ResponseShowCurrentData))
 
 	if err != nil {
 		return nil, err

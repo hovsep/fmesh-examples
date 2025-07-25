@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
 )
 
 func main() {

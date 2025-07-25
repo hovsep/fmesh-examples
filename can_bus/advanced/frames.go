@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 )
 
 var (

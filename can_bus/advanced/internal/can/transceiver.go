@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )

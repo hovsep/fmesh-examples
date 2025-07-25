@@ -21,15 +21,6 @@ type Frame struct {
 	// IFS
 }
 
-// ISOTPMessage represents a simplified iso-15765 message (transport protocol over CAN-frames)
-// for simplicity we support only single-frame messages
-type ISOTPMessage struct {
-	Len       uint8
-	ServiceID uint8
-	PID       uint8 // Parameter ID
-	Data      []byte
-}
-
 func (frame *Frame) IsValid() bool {
 	if frame.Id > ProtocolMaxID {
 		return false
@@ -128,71 +119,6 @@ func FromBits(bits Bits) (*Frame, error) {
 	if !frame.IsValid() {
 		return nil, errors.New("decoded frame is invalid")
 	}
-
-	return frame, nil
-}
-
-func (frame *Frame) ToISOTPMessage() (*ISOTPMessage, error) {
-	if frame.DLC == 0 {
-		return nil, errors.New("frame has zero DLC")
-	}
-
-	pci := frame.Data[0]
-	frameType := pci >> 4
-	if frameType != 0 {
-		return nil, fmt.Errorf("unsupported ISO-TP frame type: %d (only single frame supported)", frameType)
-	}
-
-	payloadLen := pci & 0x0F
-	if payloadLen == 0 || payloadLen > 7 {
-		return nil, fmt.Errorf("invalid single frame payload length: %d", payloadLen)
-	}
-
-	if int(payloadLen)+1 > int(frame.DLC) {
-		return nil, fmt.Errorf("frame DLC (%d) less than expected payload size (%d)", frame.DLC, payloadLen+1)
-	}
-
-	// payload bytes start from Data[1]
-	if payloadLen < 2 {
-		return nil, fmt.Errorf("payload too short to contain service and PID, length: %d", payloadLen)
-	}
-
-	serviceID := frame.Data[1]
-	pid := frame.Data[2]
-
-	return &ISOTPMessage{
-		Len:       payloadLen,
-		ServiceID: serviceID,
-		PID:       pid,
-	}, nil
-}
-
-func FromISOTPMessage(msg *ISOTPMessage, id uint32) (*Frame, error) {
-	if msg == nil {
-		return nil, errors.New("nil ISOTPMessage")
-	}
-
-	baseLen := 2 // ServiceID + PID
-	totalLen := baseLen + len(msg.Data)
-
-	if totalLen > 7 {
-		return nil, fmt.Errorf("payload length too long for single-frame ISO-TP (max 7), got %d", totalLen)
-	}
-
-	frame := &Frame{
-		Id:  id,
-		DLC: 8, // Full CAN frame length
-	}
-
-	// PCI byte: single frame (0x0) + length of payload
-	frame.Data[0] = byte(0x0<<4) | byte(totalLen)
-
-	// Service ID and PID
-	frame.Data[1] = msg.ServiceID
-	frame.Data[2] = msg.PID
-
-	// Additional data
-	copy(frame.Data[3:], msg.Data)
 
 	return frame, nil
 }

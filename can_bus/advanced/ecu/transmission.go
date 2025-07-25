@@ -1,8 +1,7 @@
 package ecu
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
-	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
 )
 
 const (
@@ -10,10 +9,5 @@ const (
 )
 
 func NewTCM() *can.Node {
-	return can.NewNode(TCMUnitName, func(state component.State) {
-		state.Set(EcuMemLog, []string{})
-	},
-		func(this *component.Component) error {
-			return nil
-		})
+	return can.NewNode(TCMUnitName, nil, nil)
 }

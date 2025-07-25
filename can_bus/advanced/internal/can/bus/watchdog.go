@@ -1,8 +1,8 @@
 package bus
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/controller"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )

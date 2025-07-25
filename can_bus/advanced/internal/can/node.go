@@ -1,26 +1,27 @@
 package can
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/controller"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 	"github.com/hovsep/fmesh/component"
 )
 
-// Node consists of multiple components
+// The Node consists of multiple components
 type Node struct {
-	MCU         *component.Component // Main logic, operates with frames
+	MCU         *component.Component // Main logic, operates with ISO-TP messages
 	Controller  *component.Component // Converts frames to bits and vice versa
 	Transceiver *component.Component // Converts bits to voltages
 }
 
-// Nodes holds multiple nodes without any guarantees of order
+// Nodes hold multiple nodes without any guarantees of order
 type Nodes []*Node
 
 // NewNode creates a new CAN node
-func NewNode(unitName string, initState func(state component.State), mcuLogic component.ActivationFunc) *Node {
+func NewNode(unitName string, mcuInitState func(state component.State), mcuActivationFunction component.ActivationFunc) *Node {
 	// Create electronic components
-	mcu := NewMCU(unitName, initState, mcuLogic)
+	mcu := microcontroller.New(unitName, mcuInitState, mcuActivationFunction)
 	ctl := controller.New(unitName)
 	trsv := NewTransceiver(unitName)
 

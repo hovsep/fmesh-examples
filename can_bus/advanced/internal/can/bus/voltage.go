@@ -1,6 +1,6 @@
 package bus
 
-import "github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
+import "github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 
 type Voltage float64
 
