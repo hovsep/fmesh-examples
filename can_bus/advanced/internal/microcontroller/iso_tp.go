@@ -9,7 +9,6 @@ import (
 // ISOTPMessage represents a simplified iso-15765 message (transport protocol over CAN-frames)
 // for simplicity we support only single-frame messages
 type ISOTPMessage struct {
-	Len       uint8
 	ServiceID ServiceID
 	PID       ParameterID // Parameter ID
 	Data      []byte
@@ -51,10 +50,18 @@ func CANFrameToISOTP(frame *codec.Frame) (*ISOTPMessage, error) {
 	serviceID := frame.Data[1]
 	pid := frame.Data[2]
 
+	dataLen := int(payloadLen) - 2
+	if dataLen < 0 {
+		return nil, fmt.Errorf("payload length too short for ServiceID and PID: %d", payloadLen)
+	}
+
+	dataBytes := make([]byte, dataLen)
+	copy(dataBytes, frame.Data[3:3+dataLen])
+
 	return &ISOTPMessage{
-		Len:       payloadLen,
 		ServiceID: ServiceID(serviceID),
 		PID:       ParameterID(pid),
+		Data:      dataBytes,
 	}, nil
 }
 

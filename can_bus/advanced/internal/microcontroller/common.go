@@ -6,6 +6,8 @@ type ServiceID uint8
 
 type ParameterID uint8
 
+type ParamsState map[ParameterID]any
+
 const (
 	FunctionalAddressing AddressingMode = iota // Broadcast to all nodes
 	PhysicalAddressing                         // Node to node communication
@@ -27,6 +29,6 @@ func (mode AddressingMode) String() string {
 	case PhysicalAddressing:
 		return "physical"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }

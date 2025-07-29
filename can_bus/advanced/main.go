@@ -42,9 +42,9 @@ func main() {
 
 	// Initialize the mesh:
 	// send some data through laptop into OBD socket
-	sendPayloadToUSBPort(laptop, diagnosticFrameGetSpeed)
+	//sendPayloadToUSBPort(laptop, diagnosticFrameGetSpeed)
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetRPM)
-	sendPayloadToUSBPort(laptop, diagnosticFrameGetCoolantTemp)
+	//sendPayloadToUSBPort(laptop, diagnosticFrameGetCoolantTemp)
 
 	runResult, err := fm.Run()
 	if err != nil {
