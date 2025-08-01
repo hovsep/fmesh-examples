@@ -18,8 +18,12 @@ const (
 	ServiceShowCurrentData           ServiceID = 0x01
 	ServiceReadStoredDiagnosticCodes ServiceID = 0x03
 	ServiceVehicleInformation        ServiceID = 0x09
-	ResponseShowCurrentData          ServiceID = 0x41 // 0x40 + 0x01
 
+	ResponseShowCurrentData           ServiceID = 0x41 // SID + 0x01
+	ResponseReadStoredDiagnosticCodes ServiceID = 0x43
+
+	// NoPID is a dummy ParameterID used for services that don't require a real PID.
+	NoPID ParameterID = 0x00
 )
 
 func (mode AddressingMode) String() string {

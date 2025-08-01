@@ -22,7 +22,6 @@ const (
 var (
 	// Supported trouble codes
 	dtcP010C = diagnostics.DTC{0x01, 0x0C} //Mass or Volume Air Flow Circuit High Input
-	dtcP0011 = diagnostics.DTC{0x00, 0x11} //Camshaft Position Timing Over-Advanced
 	dtcP0300 = diagnostics.DTC{0x03, 0x00} //Random/Multiple Cylinder Misfire
 
 	// The "brain" of this unit
@@ -35,14 +34,19 @@ var (
 					ecmPIDVehicleSpeed:       getSpeedParam,
 					ecmPIDCoolantTemperature: getCoolantTempParam,
 				},
-				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{},
-				microcontroller.ServiceVehicleInformation:        microcontroller.ParamsMap{},
+				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
+					microcontroller.NoPID: getStoredDTCs,
+				},
+				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{},
 			},
 			microcontroller.PhysicalAddressing: {
 				microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
 					ecmPIDRPM:                getRPMParam,
 					ecmPIDVehicleSpeed:       getSpeedParam,
 					ecmPIDCoolantTemperature: getCoolantTempParam,
+				},
+				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
+					microcontroller.NoPID: getStoredDTCs,
 				},
 			},
 		},
@@ -63,19 +67,11 @@ func NewECM() *can.Node {
 		// Current state of DTCs
 		DTCsState := []diagnostics.DTC{
 			dtcP010C,
-			dtcP0011,
 			dtcP0300,
 		}
 
 		state.Set(stateKeyDTCs, DTCsState)
 	}, logicDescriptor.ToActivationFunc())
-}
-
-func encodeRPM(rpm int) (byte, byte) {
-	raw := rpm * 4
-	hi := byte((raw >> 8) & 0xFF)
-	lo := byte(raw & 0xFF)
-	return hi, lo
 }
 
 func getSpeedParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
@@ -99,6 +95,13 @@ func getRPMParam(mode microcontroller.AddressingMode, request *microcontroller.I
 	}, nil
 }
 
+func encodeRPM(rpm int) (byte, byte) {
+	raw := rpm * 4
+	hi := byte((raw >> 8) & 0xFF)
+	lo := byte(raw & 0xFF)
+	return hi, lo
+}
+
 func getCoolantTempParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	paramsState := mcu.State().Get(stateKeyParams).(microcontroller.ParamsState)
 	currentCoolantTemp := paramsState[ecmPIDCoolantTemperature].(byte)
@@ -106,5 +109,19 @@ func getCoolantTempParam(mode microcontroller.AddressingMode, request *microcont
 		ServiceID: microcontroller.ResponseShowCurrentData,
 		PID:       ecmPIDCoolantTemperature,
 		Data:      []byte{currentCoolantTemp},
+	}, nil
+}
+
+func getStoredDTCs(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+	dtcs := mcu.State().Get(stateKeyDTCs).([]diagnostics.DTC)
+
+	var dtcData []byte
+	for _, dtc := range dtcs {
+		dtcData = append(dtcData, dtc[0], dtc[1])
+	}
+
+	return &microcontroller.ISOTPMessage{
+		ServiceID: microcontroller.ResponseReadStoredDiagnosticCodes,
+		Data:      dtcData,
 	}, nil
 }

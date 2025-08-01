@@ -42,6 +42,7 @@ func main() {
 
 	// Initialize the mesh:
 	// send some data through laptop into OBD socket
+	sendPayloadToUSBPort(laptop, diagnosticFrameGetEngineDTCs)
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetSpeed)
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetRPM)
 	sendPayloadToUSBPort(laptop, diagnosticFrameGetCoolantTemp)

@@ -38,13 +38,13 @@ var (
 		},
 	}
 
-	diagnosticFrameGetDTCs = &codec.Frame{
-		Id:  0x7DF, // Functional request
+	diagnosticFrameGetEngineDTCs = &codec.Frame{
+		Id:  0x7E0, // Physical address of the engine ECU (not functional broadcast)
 		DLC: 8,
 		Data: [8]byte{
-			0x02,                         // Number of data bytes: 1 (Mode) + 0 (no PID)
-			0x03,                         // Service ID: Request Stored DTCs
-			0x00,                         // No PID needed
+			0x02,                         // Number of data bytes (1 for service, 0 for PID)
+			0x03,                         // Service ID: Request Stored Diagnostic Trouble Codes
+			0x00,                         // No PID (padding or dummy — optional)
 			0x00, 0x00, 0x00, 0x00, 0x00, // Padding
 		},
 	}
