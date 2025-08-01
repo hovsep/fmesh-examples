@@ -31,86 +31,93 @@ func (bits Bits) String() string {
 	return sb.String()
 }
 
-func (bits Bits) WithStuffing(afterEach int) Bits {
-	if afterEach <= 0 {
-		panic("afterEach must be > 0")
+func (bits Bits) WithStuffing(count int) Bits {
+	if count <= 0 {
+		panic("count must be > 0")
 	}
 
-	var stuffed Bits
-	var count int
-	var last Bit
-	first := true
+	if len(bits) == 0 {
+		return bits
+	}
 
-	for _, b := range bits {
-		stuffed = append(stuffed, b)
+	var result Bits
+	consecutive := 1
+	lastBit := bits[0]
+	result = append(result, lastBit)
 
-		if first {
-			last = b
-			count = 1
-			first = false
-			continue
-		}
+	for i := 1; i < len(bits); i++ {
+		currentBit := bits[i]
 
-		if b == last {
-			count++
-			if count == afterEach {
-				stuffedBit := !b
-				stuffed = append(stuffed, stuffedBit)
-				// Treat the stuffed bit as a breaker, not part of the run
-				last = stuffedBit
-				count = 1
+		if currentBit == lastBit {
+			consecutive++
+			result = append(result, currentBit)
+
+			if consecutive == count {
+				// Insert stuff bit (opposite of current)
+				stuffBit := !currentBit
+				result = append(result, stuffBit)
+				// The stuff bit breaks the sequence - use it as the new lastBit
+				lastBit = stuffBit
+				consecutive = 1
 			}
 		} else {
-			last = b
-			count = 1
+			// Different bit, reset counter
+			result = append(result, currentBit)
+			lastBit = currentBit
+			consecutive = 1
 		}
 	}
 
-	return stuffed
+	return result
 }
 
-func (bits Bits) WithoutStuffing(afterEach int) Bits {
-	if afterEach <= 0 {
-		panic("afterEach must be > 0")
+func (bits Bits) WithoutStuffing(count int) Bits {
+
+	if count <= 0 {
+		panic("count must be > 0")
 	}
 
-	var unstuffed Bits
-	var count int
-	var last Bit
-	first := true
+	if len(bits) <= count {
+		return bits // Too short to have any stuffing
+	}
+
+	// First pass: identify stuff bit positions
+	stuffPositions := make(map[int]bool)
 
 	i := 0
 	for i < len(bits) {
-		b := bits[i]
-		unstuffed = append(unstuffed, b)
-
-		if first {
-			last = b
-			count = 1
-			first = false
-			i++
-			continue
+		if i+count >= len(bits) {
+			break // Not enough bits left for a stuffing sequence
 		}
 
-		if b == last {
-			count++
-			if count == afterEach {
-				// Skip the next bit (stuffed bit)
-				i += 2 // skip current + stuffed
-				if i <= len(bits) {
-					first = true // restart tracking after stuffed bit
-				}
-				continue
+		// Check if we have 'count' consecutive identical bits starting at position i
+		consecutive := 1
+		for j := i + 1; j < len(bits) && bits[j] == bits[i] && consecutive < count; j++ {
+			consecutive++
+		}
+
+		// If we found exactly 'count' consecutive bits and there's a next bit
+		if consecutive == count && i+count < len(bits) {
+			// Check if the next bit is a stuff bit (opposite polarity)
+			if bits[i+count] == !bits[i] {
+				stuffPositions[i+count] = true
+				// Continue from next position to check for overlapping sequences
+				// Don't skip past the entire sequence since stuff bit might start new sequence
 			}
-		} else {
-			last = b
-			count = 1
 		}
 
 		i++
 	}
 
-	return unstuffed
+	// Second pass: build result by skipping stuff bit positions
+	var result Bits
+	for i := 0; i < len(bits); i++ {
+		if !stuffPositions[i] {
+			result = append(result, bits[i])
+		}
+	}
+
+	return result
 }
 
 func (bits Bits) WithEOF() Bits {

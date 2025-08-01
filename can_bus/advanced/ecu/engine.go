@@ -53,9 +53,9 @@ func NewECM() *can.Node {
 	return can.NewNode(ECMUnitName, func(state component.State) {
 		// Current state of params
 		paramsState := microcontroller.ParamsState{
-			ecmPIDRPM:                1984, //1 works, 3000 works, but 1984 brakes
+			ecmPIDRPM:                1984,
 			ecmPIDVehicleSpeed:       byte(34),
-			ecmPIDCoolantTemperature: 95,
+			ecmPIDCoolantTemperature: byte(95),
 		}
 
 		state.Set(stateKeyParams, paramsState)
