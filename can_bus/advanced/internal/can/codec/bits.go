@@ -151,7 +151,7 @@ func (bits Bits) Equals(b Bits) bool {
 		return false
 	}
 
-	for i := 0; i < bits.Len()-1; i++ {
+	for i := 0; i < bits.Len(); i++ {
 		if bits[i] != b[i] {
 			return false
 		}
