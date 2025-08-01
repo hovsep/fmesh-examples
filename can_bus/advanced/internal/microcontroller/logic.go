@@ -38,7 +38,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			}
 
 			// Convert CAN frame to ISO-TP message (the request)
-			isoReq, err := CANFrameToISOTP(frame)
+			isoReq, err := NewISOTPMessage().FromCANFrame(frame)
 			if err != nil {
 				return fmt.Errorf("failed to parse ISO-TP message: %w", err)
 			}
@@ -68,14 +68,16 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			if !ok {
 				return errors.New("param is not supported")
 			}
+
 			// Run logic and get response
 			isoResp, err := reqHandler(addressingMode, isoReq, this)
 			if err != nil {
 				return fmt.Errorf("failed to apply MCU logic: %w", err)
 			}
+			// For simplicity this demo supports only single frame responses, so any data which does not fit will be truncated:
 
 			// Return response down to CAN controller
-			respCANFrame, err := ISOTPToCANFrame(isoResp, ld.PhysicalAddress+ResponseAddressOffset)
+			respCANFrame, err := isoResp.ToCANFrame(ld.PhysicalAddress + ResponseAddressOffset)
 			if err != nil {
 				return fmt.Errorf("failed to convert ISOTP to CAN frame: %w", err)
 			}

@@ -4,6 +4,8 @@ import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 )
 
+// Raw CAN frames used for diagnostics via OBD socket
+
 var (
 	diagnosticFrameGetRPM = &codec.Frame{
 		Id:  0x7DF,
@@ -42,10 +44,32 @@ var (
 		Id:  0x7E0, // Physical address of the engine ECU (not functional broadcast)
 		DLC: 8,
 		Data: [8]byte{
-			0x02,                         // Number of data bytes (1 for service, 0 for PID)
-			0x03,                         // Service ID: Request Stored Diagnostic Trouble Codes
-			0x00,                         // No PID (padding or dummy — optional)
-			0x00, 0x00, 0x00, 0x00, 0x00, // Padding
+			0x02,
+			0x03,
+			0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00,
+		},
+	}
+
+	diagnosticFrameGetVIN = &codec.Frame{
+		Id:  0x7E0,
+		DLC: 8,
+		Data: [8]byte{
+			0x02,
+			0x09,
+			0x02,
+			0x00, 0x00, 0x00, 0x00, 0x00,
+		},
+	}
+
+	diagnosticFrameGetCalibrationID = &codec.Frame{
+		Id:  0x7E0,
+		DLC: 8,
+		Data: [8]byte{
+			0x02,
+			0x09,
+			0x04,
+			0x00, 0x00, 0x00, 0x00, 0x00,
 		},
 	}
 )

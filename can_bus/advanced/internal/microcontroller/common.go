@@ -19,8 +19,10 @@ const (
 	ServiceReadStoredDiagnosticCodes ServiceID = 0x03
 	ServiceVehicleInformation        ServiceID = 0x09
 
-	ResponseShowCurrentData           ServiceID = 0x41 // SID + 0x01
-	ResponseReadStoredDiagnosticCodes ServiceID = 0x43
+	ResponseServiceIDOffset           ServiceID = 0x40
+	ResponseShowCurrentData                     = ServiceShowCurrentData + ResponseServiceIDOffset
+	ResponseReadStoredDiagnosticCodes           = ServiceReadStoredDiagnosticCodes + ResponseServiceIDOffset
+	ResponseVehicleInformation                  = ServiceVehicleInformation + ResponseServiceIDOffset
 
 	// NoPID is a dummy ParameterID used for services that don't require a real PID.
 	NoPID ParameterID = 0x00

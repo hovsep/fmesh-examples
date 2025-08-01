@@ -3,6 +3,7 @@ package microcontroller
 import (
 	"errors"
 	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 )
 
@@ -15,10 +16,15 @@ type ISOTPMessage struct {
 }
 
 const (
-	ValidISOTPFrameDLC = 8
+	ValidISOTPFrameDLC   = 8
+	MaxBytesInISOTPFrame = 5
 )
 
-func CANFrameToISOTP(frame *codec.Frame) (*ISOTPMessage, error) {
+func NewISOTPMessage() *ISOTPMessage {
+	return &ISOTPMessage{}
+}
+
+func (msg *ISOTPMessage) FromCANFrame(frame *codec.Frame) (*ISOTPMessage, error) {
 	if frame.DLC == 0 {
 		return nil, errors.New("frame has zero DLC")
 	}
@@ -65,7 +71,7 @@ func CANFrameToISOTP(frame *codec.Frame) (*ISOTPMessage, error) {
 	}, nil
 }
 
-func ISOTPToCANFrame(msg *ISOTPMessage, id uint32) (*codec.Frame, error) {
+func (msg *ISOTPMessage) ToCANFrame(id uint32) (*codec.Frame, error) {
 	if msg == nil {
 		return nil, errors.New("nil ISOTPMessage")
 	}
@@ -93,4 +99,9 @@ func ISOTPToCANFrame(msg *ISOTPMessage, id uint32) (*codec.Frame, error) {
 	copy(frame.Data[3:], msg.Data)
 
 	return frame, nil
+}
+
+// FitDataIntoSingleFrame is a helper function which allows to truncate data exceeding 1 frame
+func FitDataIntoSingleFrame(data []byte) []byte {
+	return data[:MaxBytesInISOTPFrame]
 }

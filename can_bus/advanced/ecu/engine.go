@@ -13,6 +13,8 @@ const (
 
 	ecmPIDRPM                microcontroller.ParameterID = 0x0C
 	ecmPIDVehicleSpeed       microcontroller.ParameterID = 0x0D
+	ecmPIDVIN                microcontroller.ParameterID = 0x02
+	ecmPIDCalibrationID      microcontroller.ParameterID = 0x04
 	ecmPIDCoolantTemperature microcontroller.ParameterID = 0x05
 
 	stateKeyParams = "params"
@@ -21,8 +23,8 @@ const (
 
 var (
 	// Supported trouble codes
-	dtcP010C = diagnostics.DTC{0x01, 0x0C} //Mass or Volume Air Flow Circuit High Input
-	dtcP0300 = diagnostics.DTC{0x03, 0x00} //Random/Multiple Cylinder Misfire
+	dtcP010C = diagnostics.DTC{0x01, 0x0C} // Mass or Volume Air Flow Circuit High Input
+	dtcP0300 = diagnostics.DTC{0x03, 0x00} // Random/Multiple Cylinder Misfire
 
 	// The "brain" of this unit
 	logicDescriptor = &microcontroller.LogicDescriptor{
@@ -37,7 +39,10 @@ var (
 				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
 					microcontroller.NoPID: getStoredDTCs,
 				},
-				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{},
+				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{
+					ecmPIDVIN:           getVIN,
+					ecmPIDCalibrationID: getCalibrationID,
+				},
 			},
 			microcontroller.PhysicalAddressing: {
 				microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
@@ -47,6 +52,10 @@ var (
 				},
 				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
 					microcontroller.NoPID: getStoredDTCs,
+				},
+				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{
+					ecmPIDVIN:           getVIN,
+					ecmPIDCalibrationID: getCalibrationID,
 				},
 			},
 		},
@@ -60,11 +69,15 @@ func NewECM() *can.Node {
 			ecmPIDRPM:                1984,
 			ecmPIDVehicleSpeed:       byte(34),
 			ecmPIDCoolantTemperature: byte(95),
+			ecmPIDVIN:                []byte("VF1AB000123456789"),
+			ecmPIDCalibrationID:      []byte("ECM-A1234-B5678"),
 		}
 
 		state.Set(stateKeyParams, paramsState)
 
-		// Current state of DTCs
+		// Current state of DTCs.
+		// Due to limitations of this example we support
+		// only 2 DTC's maximum, so they can fit into a single frame
 		DTCsState := []diagnostics.DTC{
 			dtcP010C,
 			dtcP0300,
@@ -123,5 +136,25 @@ func getStoredDTCs(mode microcontroller.AddressingMode, request *microcontroller
 	return &microcontroller.ISOTPMessage{
 		ServiceID: microcontroller.ResponseReadStoredDiagnosticCodes,
 		Data:      dtcData,
+	}, nil
+}
+
+func getVIN(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+	paramsState := mcu.State().Get(stateKeyParams).(microcontroller.ParamsState)
+	vin := paramsState[ecmPIDVIN].([]byte)
+	return &microcontroller.ISOTPMessage{
+		ServiceID: microcontroller.ResponseVehicleInformation,
+		PID:       ecmPIDVIN,
+		Data:      microcontroller.FitDataIntoSingleFrame(vin),
+	}, nil
+}
+
+func getCalibrationID(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+	paramsState := mcu.State().Get(stateKeyParams).(microcontroller.ParamsState)
+	id := paramsState[ecmPIDCalibrationID].([]byte)
+	return &microcontroller.ISOTPMessage{
+		ServiceID: microcontroller.ResponseVehicleInformation,
+		PID:       ecmPIDCalibrationID,
+		Data:      microcontroller.FitDataIntoSingleFrame(id),
 	}, nil
 }

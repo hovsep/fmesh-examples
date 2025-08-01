@@ -38,10 +38,13 @@ func NewComputer(name string) *component.Component {
 		})
 }
 
-func sendPayloadToUSBPort(computer *component.Component, payload any) {
+func sendPayloadsToUSBPort(computer *component.Component, payloads ...any) {
 	computer.InputByName(portProgrammaticIn).
-		PutSignals(signal.New(payload).
-			WithLabels(common.LabelsCollection{
-				labelTo: labelUSB,
-			}))
+		PutSignals(
+			signal.NewGroup(payloads...).
+				WithSignalLabels(common.LabelsCollection{
+					labelTo: labelUSB,
+				}).
+				SignalsOrNil()...,
+		)
 }
