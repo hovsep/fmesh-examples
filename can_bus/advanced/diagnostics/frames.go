@@ -52,7 +52,7 @@ var (
 	}
 
 	FrameGetVIN = &codec.Frame{
-		Id:  0x7E0,
+		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
 			0x02,
