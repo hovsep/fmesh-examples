@@ -1,7 +1,7 @@
 package diagnostics
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
@@ -58,8 +58,8 @@ func (l *Laptop) SendDataToUSB(payloads ...any) {
 }
 
 func (l *Laptop) ConnectToOBD(OBDSocket *can.Node) error {
-	l.laptopComponent.OutputByName(portUSBOut).PipeTo(OBDSocket.MCU.InputByName(ecu.PortOBDIn))
-	OBDSocket.MCU.OutputByName(ecu.PortOBDOut).PipeTo(l.laptopComponent.InputByName(portUSBIn))
+	l.laptopComponent.OutputByName(portUSBOut).PipeTo(OBDSocket.MCU.InputByName(obd.PortOBDIn))
+	OBDSocket.MCU.OutputByName(obd.PortOBDOut).PipeTo(l.laptopComponent.InputByName(portUSBIn))
 	if l.laptopComponent.HasErr() {
 		return l.laptopComponent.Err()
 	}

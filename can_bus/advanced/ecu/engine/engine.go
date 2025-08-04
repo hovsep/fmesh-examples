@@ -1,4 +1,4 @@
-package ecu
+package engine
 
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
@@ -61,7 +61,7 @@ var (
 	}
 )
 
-func NewECM() *can.Node {
+func NewNode() *can.Node {
 	return can.NewNode(ECMUnitName, func(state component.State) {
 		// Current state of params
 		paramsState := microcontroller.ParamsState{

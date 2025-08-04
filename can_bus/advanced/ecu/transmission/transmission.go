@@ -1,4 +1,4 @@
-package ecu
+package transmission
 
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
@@ -28,13 +28,37 @@ var (
 	tcmLogic = &microcontroller.LogicDescriptor{
 		PhysicalAddress: TCMPhysicalAddress,
 		Table: microcontroller.LogicMap{
-			microcontroller.FunctionalAddressing: serviceMap(),
-			microcontroller.PhysicalAddressing:   serviceMap(),
+			microcontroller.FunctionalAddressing: {
+				microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
+					tcmPIDFluidTemp:    getFluidTemperature,
+					tcmPIDGearPosition: getGearPosition,
+				},
+				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
+					microcontroller.NoPID: getDTCs,
+				},
+				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{
+					tcmPIDVIN:           getVIN,
+					tcmPIDCalibrationID: getCalibrationID,
+				},
+			},
+			microcontroller.PhysicalAddressing: {
+				microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
+					tcmPIDFluidTemp:    getFluidTemperature,
+					tcmPIDGearPosition: getGearPosition,
+				},
+				microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
+					microcontroller.NoPID: getDTCs,
+				},
+				microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{
+					tcmPIDVIN:           getVIN,
+					tcmPIDCalibrationID: getCalibrationID,
+				},
+			},
 		},
 	}
 )
 
-func NewTCM() *can.Node {
+func NewNode() *can.Node {
 	return can.NewNode(TCMUnitName, func(state component.State) {
 		// Set parameter values
 		paramState := microcontroller.ParamsState{
@@ -54,23 +78,7 @@ func NewTCM() *can.Node {
 	}, tcmLogic.ToActivationFunc())
 }
 
-func serviceMap() microcontroller.ServiceMap {
-	return microcontroller.ServiceMap{
-		microcontroller.ServiceShowCurrentData: microcontroller.ParamsMap{
-			tcmPIDFluidTemp:    getFluidTempParam,
-			tcmPIDGearPosition: getGearPosParam,
-		},
-		microcontroller.ServiceReadStoredDiagnosticCodes: microcontroller.ParamsMap{
-			microcontroller.NoPID: getTCMDTCs,
-		},
-		microcontroller.ServiceVehicleInformation: microcontroller.ParamsMap{
-			tcmPIDVIN:           getTCMVIN,
-			tcmPIDCalibrationID: getTCMCalibrationID,
-		},
-	}
-}
-
-func getFluidTempParam(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+func getFluidTemperature(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	state := mcu.State().Get(tcmStateKeyParams).(microcontroller.ParamsState)
 	temp := state[tcmPIDFluidTemp].(byte)
 	return &microcontroller.ISOTPMessage{
@@ -80,7 +88,7 @@ func getFluidTempParam(mode microcontroller.AddressingMode, req *microcontroller
 	}, nil
 }
 
-func getGearPosParam(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+func getGearPosition(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	state := mcu.State().Get(tcmStateKeyParams).(microcontroller.ParamsState)
 	pos := state[tcmPIDGearPosition].(byte)
 	return &microcontroller.ISOTPMessage{
@@ -90,7 +98,7 @@ func getGearPosParam(mode microcontroller.AddressingMode, req *microcontroller.I
 	}, nil
 }
 
-func getTCMDTCs(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+func getDTCs(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	dtcs := mcu.State().Get(tcmStateKeyDTCs).([]microcontroller.DTC)
 
 	var data []byte
@@ -104,7 +112,7 @@ func getTCMDTCs(mode microcontroller.AddressingMode, req *microcontroller.ISOTPM
 	}, nil
 }
 
-func getTCMVIN(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+func getVIN(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	state := mcu.State().Get(tcmStateKeyParams).(microcontroller.ParamsState)
 	vin := state[tcmPIDVIN].([]byte)
 	return &microcontroller.ISOTPMessage{
@@ -114,7 +122,7 @@ func getTCMVIN(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMe
 	}, nil
 }
 
-func getTCMCalibrationID(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
+func getCalibrationID(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
 	state := mcu.State().Get(tcmStateKeyParams).(microcontroller.ParamsState)
 	id := state[tcmPIDCalibrationID].([]byte)
 	return &microcontroller.ISOTPMessage{

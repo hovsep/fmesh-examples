@@ -1,4 +1,4 @@
-package ecu
+package obd
 
 import (
 	"errors"
@@ -14,10 +14,10 @@ const (
 	OBDUnitName = "obd"
 )
 
-// NewOBD creates an OBD can node
+// NewNode creates an OBD can node
 // in real life OBD socket is not a can node, but for simplicity
 // we simulate OBD socket with plugged-in OBD adapter as a single CAN node
-func NewOBD() *can.Node {
+func NewNode() *can.Node {
 	obdDevice := can.NewNode(OBDUnitName, func(state component.State) {
 	},
 		func(this *component.Component) error {

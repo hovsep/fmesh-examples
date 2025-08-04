@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/diagnostics"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/engine"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/transmission"
 	"os"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
 )
 
@@ -18,12 +20,11 @@ func main() {
 	laptop := diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
 
 	// Build CAN nodes:
-	obdDevice := ecu.NewOBD() // putting this into a variable, so we can connect it to the laptop
+	obdDevice := obd.NewNode() // putting this into a variable, so we can connect it to the laptop
 	allCanNodes := can.Nodes{
-		ecu.NewECM(), // Engine Control Module
-		ecu.NewTCM(), // Transmission Control Module
-		ecu.NewACU(), // Airbag Control Unit
-		obdDevice,    // On Board Diagnostics
+		engine.NewNode(),       // Engine Control Module
+		transmission.NewNode(), // Transmission Control Module
+		obdDevice,              // On Board Diagnostics
 	}
 
 	allCanNodes.ConnectToBus(ptBus)
@@ -46,12 +47,12 @@ func main() {
 	// Initialize the mesh:
 
 	// set diagnostic frames to USB port, so the laptop will send them
-	laptop.SendDataToUSB(
-		diagnostics.FrameGetEngineDTCs,
-		diagnostics.FrameGetSpeed,
-		diagnostics.FrameGetRPM,
-		diagnostics.FrameGetCoolantTemp,
-		diagnostics.FrameGetCalibrationID,
+	laptop.SendDataToUSB( /*
+			diagnostics.FrameGetEngineDTCs,
+			diagnostics.FrameGetSpeed,
+			diagnostics.FrameGetRPM,
+			diagnostics.FrameGetCoolantTemp,
+			diagnostics.FrameGetCalibrationID,*/
 		diagnostics.FrameGetVIN)
 
 	runResult, err := fm.Run()
