@@ -8,6 +8,9 @@ type ParameterID uint8
 
 type ParamsState map[ParameterID]any
 
+// DTC represents On-Board Diagnostic Trouble Code
+type DTC [2]byte
+
 const (
 	FunctionalAddressing AddressingMode = iota // Broadcast to all nodes
 	PhysicalAddressing                         // Node to node communication

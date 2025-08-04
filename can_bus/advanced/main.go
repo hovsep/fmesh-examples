@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/diagnostics"
 	"os"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
@@ -13,8 +14,8 @@ import (
 
 func main() {
 	// Create components:
-	ptBus := bus.New("PT-CAN")      // Modern vehicles have multiple buses, this one is called "powertrain bus"
-	laptop := NewComputer("laptop") // Laptop running diagnostic software and connected to vehicle via OBD socket
+	ptBus := bus.New("PT-CAN")                            // Modern vehicles have multiple buses, this one is called "powertrain bus"
+	laptop := diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
 
 	// Build CAN nodes:
 	obdDevice := ecu.NewOBD() // putting this into a variable, so we can connect it to the laptop
@@ -27,28 +28,31 @@ func main() {
 
 	allCanNodes.ConnectToBus(ptBus)
 
-	// Connect usb-obd cable:
-	laptop.OutputByName(portUSBOut).PipeTo(obdDevice.MCU.InputByName(ecu.PortOBDIn))
-	obdDevice.MCU.OutputByName(ecu.PortOBDOut).PipeTo(laptop.InputByName(portUSBIn))
+	// Connect laptop to OBD socket
+	err := laptop.ConnectToOBD(obdDevice)
+	if err != nil {
+		panic("Failed to connect laptop to OBD: " + err.Error())
+	}
 
 	// Build the mesh
 	fm := fmesh.NewWithConfig("can_bus_sim_v1", &fmesh.Config{
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
-		WithComponents(laptop).
+		WithComponents(laptop.GetAllComponents()...).
 		WithComponents(ptBus.GetAllComponents()...).
 		WithComponents(allCanNodes.GetAllComponents()...)
 
 	// Initialize the mesh:
-	// send some data through laptop into OBD socket
-	sendPayloadsToUSBPort(laptop,
-		diagnosticFrameGetEngineDTCs,
-		diagnosticFrameGetSpeed,
-		diagnosticFrameGetRPM,
-		diagnosticFrameGetCoolantTemp,
-		diagnosticFrameGetCalibrationID,
-		diagnosticFrameGetVIN)
+
+	// set diagnostic frames to USB port, so the laptop will send them
+	laptop.SendDataToUSB(
+		diagnostics.FrameGetEngineDTCs,
+		diagnostics.FrameGetSpeed,
+		diagnostics.FrameGetRPM,
+		diagnostics.FrameGetCoolantTemp,
+		diagnostics.FrameGetCalibrationID,
+		diagnostics.FrameGetVIN)
 
 	runResult, err := fm.Run()
 	if err != nil {

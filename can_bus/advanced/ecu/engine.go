@@ -1,7 +1,6 @@
 package ecu
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/diagnostics"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 	"github.com/hovsep/fmesh/component"
@@ -23,8 +22,8 @@ const (
 
 var (
 	// Supported trouble codes
-	dtcP010C = diagnostics.DTC{0x01, 0x0C} // Mass or Volume Air Flow Circuit High Input
-	dtcP0300 = diagnostics.DTC{0x03, 0x00} // Random/Multiple Cylinder Misfire
+	dtcP010C = microcontroller.DTC{0x01, 0x0C} // Mass or Volume Air Flow Circuit High Input
+	dtcP0300 = microcontroller.DTC{0x03, 0x00} // Random/Multiple Cylinder Misfire
 
 	// The "brain" of this unit
 	logicDescriptor = &microcontroller.LogicDescriptor{
@@ -78,7 +77,7 @@ func NewECM() *can.Node {
 		// Current state of DTCs.
 		// Due to limitations of this example we support
 		// only 2 DTC's maximum, so they can fit into a single frame
-		DTCsState := []diagnostics.DTC{
+		DTCsState := []microcontroller.DTC{
 			dtcP010C,
 			dtcP0300,
 		}
@@ -126,7 +125,7 @@ func getCoolantTempParam(mode microcontroller.AddressingMode, request *microcont
 }
 
 func getStoredDTCs(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {
-	dtcs := mcu.State().Get(stateKeyDTCs).([]diagnostics.DTC)
+	dtcs := mcu.State().Get(stateKeyDTCs).([]microcontroller.DTC)
 
 	var dtcData []byte
 	for _, dtc := range dtcs {

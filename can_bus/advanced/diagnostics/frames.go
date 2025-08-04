@@ -1,4 +1,4 @@
-package main
+package diagnostics
 
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
@@ -7,7 +7,7 @@ import (
 // Raw CAN frames used for diagnostics via OBD socket
 
 var (
-	diagnosticFrameGetRPM = &codec.Frame{
+	FrameGetRPM = &codec.Frame{
 		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
@@ -18,7 +18,7 @@ var (
 		},
 	}
 
-	diagnosticFrameGetSpeed = &codec.Frame{
+	FrameGetSpeed = &codec.Frame{
 		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
@@ -29,7 +29,7 @@ var (
 		},
 	}
 
-	diagnosticFrameGetCoolantTemp = &codec.Frame{
+	FrameGetCoolantTemp = &codec.Frame{
 		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
@@ -40,7 +40,7 @@ var (
 		},
 	}
 
-	diagnosticFrameGetEngineDTCs = &codec.Frame{
+	FrameGetEngineDTCs = &codec.Frame{
 		Id:  0x7E0, // Physical address of the engine ECU (not functional broadcast)
 		DLC: 8,
 		Data: [8]byte{
@@ -51,7 +51,7 @@ var (
 		},
 	}
 
-	diagnosticFrameGetVIN = &codec.Frame{
+	FrameGetVIN = &codec.Frame{
 		Id:  0x7E0,
 		DLC: 8,
 		Data: [8]byte{
@@ -62,7 +62,7 @@ var (
 		},
 	}
 
-	diagnosticFrameGetCalibrationID = &codec.Frame{
+	FrameGetCalibrationID = &codec.Frame{
 		Id:  0x7E0,
 		DLC: 8,
 		Data: [8]byte{

@@ -1,8 +1,8 @@
 package ecu
 
 import (
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/diagnostics"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/microcontroller"
 )
 
 const (
@@ -10,9 +10,9 @@ const (
 )
 
 var (
-	P0710 = diagnostics.DTC{0x07, 0x10} // Fluid Temperature Sensor Circuit High
-	P0705 = diagnostics.DTC{0x07, 0x05} // Range Sensor Circuit Malfunction
-	P0740 = diagnostics.DTC{0x07, 0x40} // Control System Malfunction
+	P0710 = microcontroller.DTC{0x07, 0x10} // Fluid Temperature Sensor Circuit High
+	P0705 = microcontroller.DTC{0x07, 0x05} // Range Sensor Circuit Malfunction
+	P0740 = microcontroller.DTC{0x07, 0x40} // Control System Malfunction
 )
 
 func NewTCM() *can.Node {
