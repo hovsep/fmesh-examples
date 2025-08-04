@@ -51,6 +51,14 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			}
 			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: %X, sid: %X, pid: %X", addressingMode, frame.Id, isoReq.ServiceID, isoReq.PID)
 
+			if addressingMode == PhysicalAddressing && frame.Id != ld.PhysicalAddress {
+				this.Logger().Printf(
+					"skipping request: frame ID 0x%03X does not match physical address 0x%03X (AddressingMode: %v)",
+					frame.Id, ld.PhysicalAddress, addressingMode,
+				)
+				return nil
+			}
+
 			// Check if addressing mode is supported
 			services, ok := ld.Table[addressingMode]
 			if !ok {
