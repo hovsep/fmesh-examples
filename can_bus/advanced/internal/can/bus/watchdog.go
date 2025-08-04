@@ -3,6 +3,7 @@ package bus
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/controller"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/physical"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -49,8 +50,8 @@ func newWatchdog(name string) *component.Component {
 				this.State().Set(stateKeyControllerStates, ctlStates)
 			}
 
-			currentL := this.InputByName(common.PortCANL).FirstSignalPayloadOrDefault(NoVoltage).(Voltage)
-			currentH := this.InputByName(common.PortCANH).FirstSignalPayloadOrDefault(NoVoltage).(Voltage)
+			currentL := this.InputByName(common.PortCANL).FirstSignalPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
+			currentH := this.InputByName(common.PortCANH).FirstSignalPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
 
 			allControllersAreIdle := true
 			for _, ctlState := range ctlStates {
@@ -60,7 +61,7 @@ func newWatchdog(name string) *component.Component {
 				}
 			}
 
-			if currentL+currentH == NoVoltage {
+			if currentL+currentH == physical.NoVoltage {
 				this.State().Set(stateKeyObservedIdleCycles, idleCycleCount+1)
 			} else {
 				this.State().Set(stateKeyObservedIdleCycles, 0)

@@ -2,6 +2,7 @@ package bus
 
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/physical"
 
 	"github.com/hovsep/fmesh/component"
 )
@@ -12,8 +13,8 @@ type Bus struct {
 }
 
 const (
-	MinValidVoltage = Voltage(0.5)
-	MaxValidVoltage = Voltage(4.5)
+	MinValidVoltage = physical.Voltage(0.5)
+	MaxValidVoltage = physical.Voltage(4.5)
 
 	portRecessiveBitRequest = "recessive_bit_request"
 )

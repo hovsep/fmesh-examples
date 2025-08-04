@@ -3,8 +3,8 @@ package can
 import (
 	"errors"
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/physical"
 
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/bus"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/common"
 	"github.com/hovsep/fmesh/component"
@@ -41,11 +41,11 @@ func handleTxPath(this *component.Component) error {
 		}
 
 		// High impedance by default (recessive bit)
-		resultingLVoltage, resultingHVoltage := bus.RecessiveVoltage, bus.RecessiveVoltage
+		resultingLVoltage, resultingHVoltage := physical.RecessiveVoltage, physical.RecessiveVoltage
 
 		if bit == codec.ProtocolDominantBit {
 			// Drive dominant
-			resultingLVoltage, resultingHVoltage = bus.DominantLowVoltage, bus.DominantHighVoltage
+			resultingLVoltage, resultingHVoltage = physical.DominantLowVoltage, physical.DominantHighVoltage
 		}
 
 		this.OutputByName(common.PortCANL).PutSignals(signal.New(resultingLVoltage))
@@ -73,7 +73,7 @@ func handleRxPath(this *component.Component) error {
 			return errors.New("received invalid voltage")
 		}
 
-		bitRead := bus.VoltageToBit(vLow.(bus.Voltage), vHigh.(bus.Voltage))
+		bitRead := physical.VoltageToBit(vLow.(physical.Voltage), vHigh.(physical.Voltage))
 		this.Logger().Printf("convert voltages L:%v / H:%v to bit: %s", vLow, vHigh, bitRead)
 		this.OutputByName(common.PortCANRx).PutSignals(signal.New(bitRead))
 	}

@@ -1,4 +1,4 @@
-package bus
+package physical
 
 import "github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
 
@@ -14,7 +14,6 @@ const (
 
 // VoltageToBit converts voltages to bit
 func VoltageToBit(vLow, vHigh Voltage) codec.Bit {
-	// TODO: make it less strict, use thresholds instead of exact matching
 	if vLow == DominantLowVoltage && vHigh == DominantHighVoltage {
 		return codec.ProtocolDominantBit
 	}

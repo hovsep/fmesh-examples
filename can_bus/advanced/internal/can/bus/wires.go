@@ -3,6 +3,7 @@ package bus
 import (
 	"errors"
 	"fmt"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/physical"
 	"slices"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/internal/can/codec"
@@ -57,13 +58,13 @@ func newWires(name string) *component.Component {
 }
 
 // Process recessive bit request (the very first idle state, when bus is just powered or control signal from watchdog)
-func processRecessiveBitRequest(this *component.Component) ([]Voltage, []Voltage, error) {
-	var allLow, allHigh []Voltage
+func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, []physical.Voltage, error) {
+	var allLow, allHigh []physical.Voltage
 
 	recessivesCount := this.InputByName(portRecessiveBitRequest).FirstSignalPayloadOrDefault(0).(int)
 	if recessivesCount > 0 {
-		allLow = append(allLow, RecessiveVoltage)
-		allHigh = append(allHigh, RecessiveVoltage)
+		allLow = append(allLow, physical.RecessiveVoltage)
+		allHigh = append(allHigh, physical.RecessiveVoltage)
 
 		// Self-activate
 		if recessivesCount > 1 {
@@ -74,9 +75,9 @@ func processRecessiveBitRequest(this *component.Component) ([]Voltage, []Voltage
 }
 
 // Collect CAN_L voltages
-func collectLow(this *component.Component, allLow []Voltage) ([]Voltage, error) {
+func collectLow(this *component.Component, allLow []physical.Voltage) ([]physical.Voltage, error) {
 	for _, sig := range this.InputByName(common.PortCANL).AllSignalsOrNil() {
-		v, ok := sig.PayloadOrNil().(Voltage)
+		v, ok := sig.PayloadOrNil().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_L wire")
 		}
@@ -87,9 +88,9 @@ func collectLow(this *component.Component, allLow []Voltage) ([]Voltage, error) 
 }
 
 // Collect CAN_H voltages
-func collectHigh(this *component.Component, allHigh []Voltage) ([]Voltage, error) {
+func collectHigh(this *component.Component, allHigh []physical.Voltage) ([]physical.Voltage, error) {
 	for _, sig := range this.InputByName(common.PortCANH).AllSignalsOrNil() {
-		v, ok := sig.PayloadOrNil().(Voltage)
+		v, ok := sig.PayloadOrNil().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_H wire")
 		}
@@ -99,7 +100,7 @@ func collectHigh(this *component.Component, allHigh []Voltage) ([]Voltage, error
 	return allHigh, nil
 }
 
-func validateVoltages(allLow, allHigh []Voltage) error {
+func validateVoltages(allLow, allHigh []physical.Voltage) error {
 	// Basic validations:
 	if len(allLow) == 0 {
 		return errors.New("no voltage on L")
@@ -131,7 +132,7 @@ func validateVoltages(allLow, allHigh []Voltage) error {
 }
 
 // Simulate wired-AND behavior by deriving the bus voltage levels from all connected transceivers
-func doWiredAND(this *component.Component, allLow, allHigh []Voltage) error {
+func doWiredAND(this *component.Component, allLow, allHigh []physical.Voltage) error {
 	// For simplicity, we approximate this by using min(CAN_L) and max(CAN_H) across all nodes
 	busLow := slices.Min(allLow)
 	busHigh := slices.Max(allHigh)
