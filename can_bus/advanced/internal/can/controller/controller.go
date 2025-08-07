@@ -82,29 +82,12 @@ func handleIncomingFrames(this *component.Component) error {
 		}
 
 		frameBits := frame.ToBits()
-		frameBitsUnstuffed := frameBits.WithoutStuffing(codec.ProtocolBitStuffingStep)
 
 		txQueue = append(txQueue, &TxQueueItem{
 			// Add IFS and 1 extra recessive bit
 			Buf: codec.NewBitBuffer(frameBits.WithIFS().WithBits(codec.ProtocolRecessiveBit)),
 		})
-		this.Logger().Printf("got a frame from MCU to send: \n frame : %v "+
-			"\n SOF: %s"+
-			"\n ID: %s"+
-			"\n DLC: %s"+
-			"\n DATA: %s"+
-			"\n EOF: %s"+
-			"\n raw: %s "+
-			"\n unstuffed: %s, items in tx-queue: %d",
-			frame,
-			frameBitsUnstuffed[0:codec.ProtocolSOFSize],
-			frameBitsUnstuffed[codec.ProtocolSOFSize:codec.ProtocolSOFSize+codec.ProtocolIDSize],
-			frameBitsUnstuffed[codec.ProtocolSOFSize+codec.ProtocolIDSize:codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize],
-			frameBitsUnstuffed[codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize:codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize+frame.DLC*8],
-			frameBitsUnstuffed[codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize+frame.DLC*8:codec.ProtocolSOFSize+codec.ProtocolIDSize+codec.ProtocolDLCSize+frame.DLC*8+codec.ProtocolEOFSize],
-			frameBits,
-			frameBitsUnstuffed,
-			len(txQueue))
+		this.Logger().Printf("got a frame from MCU to send: %s items in tx-queue: %d", frame, len(txQueue))
 	}
 	return nil
 }

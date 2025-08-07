@@ -122,3 +122,40 @@ func FromBits(bits Bits) (*Frame, error) {
 
 	return frame, nil
 }
+
+func (frame *Frame) String() string {
+	frameBits := frame.ToBits()
+	frameBitsUnstuffed := frameBits.WithoutStuffing(ProtocolBitStuffingStep)
+
+	ranges := struct {
+		sof  [2]byte
+		id   [2]byte
+		dlc  [2]byte
+		data [2]byte
+		eof  [2]byte
+	}{
+		sof: [2]byte{0, ProtocolSOFSize},
+	}
+
+	ranges.id = [2]byte{ranges.sof[1], ranges.sof[1] + ProtocolIDSize}
+	ranges.dlc = [2]byte{ranges.id[1], ranges.id[1] + ProtocolDLCSize}
+	ranges.data = [2]byte{ranges.dlc[1], ranges.dlc[1] + frame.DLC*8}
+	ranges.eof = [2]byte{ranges.data[1], ranges.data[1] + ProtocolEOFSize}
+
+	return fmt.Sprintf("\n \n %#v "+
+		"\n SOF: %s"+
+		"\n ID: %s"+
+		"\n DLC: %s"+
+		"\n Data: %s"+
+		"\n EOF: %s"+
+		"\n unstuffed: %s"+
+		"\n raw: %s \n \n",
+		frame,
+		frameBitsUnstuffed[ranges.sof[0]:ranges.sof[1]],
+		frameBitsUnstuffed[ranges.id[0]:ranges.id[1]],
+		frameBitsUnstuffed[ranges.dlc[0]:ranges.dlc[1]],
+		frameBitsUnstuffed[ranges.data[0]:ranges.data[1]],
+		frameBitsUnstuffed[ranges.eof[0]:ranges.eof[1]],
+		frameBitsUnstuffed,
+		frameBits)
+}
