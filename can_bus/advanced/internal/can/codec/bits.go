@@ -168,3 +168,41 @@ func (bits Bits) AllBitsAre(b Bit) bool {
 
 	return true
 }
+
+// WithoutLastBit returns a new Bits slice with the last bit removed.
+// If the slice is empty, returns an empty slice.
+func (bits Bits) WithoutLastBit() Bits {
+	if len(bits) == 0 {
+		return NewBits(0)
+	}
+
+	result := make(Bits, len(bits)-1)
+	copy(result, bits[:len(bits)-1])
+	return result
+}
+
+// WithLastBitSwitched returns a new Bits slice with the last bit flipped.
+// If the slice is empty, returns an empty slice.
+func (bits Bits) WithLastBitSwitched() Bits {
+	if len(bits) == 0 {
+		return NewBits(0)
+	}
+
+	result := make(Bits, len(bits))
+	copy(result, bits)
+	result[len(result)-1] = !result[len(result)-1]
+	return result
+}
+
+// WithLastBitReplaced returns a new Bits slice with the last bit replaced by the given bit.
+// If the slice is empty, returns a slice with just the new bit.
+func (bits Bits) WithLastBitReplaced(newBit Bit) Bits {
+	if len(bits) == 0 {
+		return Bits{newBit}
+	}
+
+	result := make(Bits, len(bits))
+	copy(result, bits)
+	result[len(result)-1] = newBit
+	return result
+}

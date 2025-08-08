@@ -106,8 +106,10 @@ func getCurrentBit(this *component.Component) (codec.Bit, error) {
 
 func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 	currentState := this.State().Get(stateKeyControllerState).(State)
+	previousState := currentState // Track previous state for first iteration
+
 	for {
-		nextState, err := getNextState(this, currentState, currentBit)
+		nextState, err := getNextState(this, previousState, currentState, currentBit)
 		if err != nil {
 			return fmt.Errorf("failed to switch from state: %s error: %w", currentState, err)
 		}
@@ -123,6 +125,7 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 		} else {
 			this.Logger().Print("state transition:", currentState.To(nextState))
 		}
+		previousState = currentState
 		currentState = nextState
 		this.State().Set(stateKeyControllerState, currentState)
 		refreshLoggerPrefix(this)
@@ -130,25 +133,25 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 	return errors.New("did not manage to exit correctly from main state machine loop")
 }
 
-func getNextState(this *component.Component, currentState State, currentBit codec.Bit) (State, error) {
+func getNextState(this *component.Component, previousState, currentState State, currentBit codec.Bit) (State, error) {
 	switch currentState {
 	case StateIdle:
-		return handleIdleState(this, currentBit)
+		return handleIdleState(this, previousState, currentBit)
 	case StateWaitForBusIdle:
-		return handleWaitForBusIdleState(this, currentBit)
+		return handleWaitForBusIdleState(this, previousState, currentBit)
 	case StateArbitration:
-		return handleArbitrationState(this, currentBit)
+		return handleArbitrationState(this, previousState, currentBit)
 
 	case StateTransmit:
-		return handleTransmitState(this)
+		return handleTransmitState(this, previousState)
 	case StateReceive:
-		return handleReceiveState(this, currentBit)
+		return handleReceiveState(this, previousState, currentBit)
 	default:
 		return currentState, fmt.Errorf("end up in incorrect state: %v", currentState)
 	}
 }
 
-func handleIdleState(this *component.Component, currentBit codec.Bit) (State, error) {
+func handleIdleState(this *component.Component, previousState State, currentBit codec.Bit) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 
 	// SOF detected, became passive listener
@@ -164,7 +167,7 @@ func handleIdleState(this *component.Component, currentBit codec.Bit) (State, er
 	return StateIdle, nil
 }
 
-func handleWaitForBusIdleState(this *component.Component, currentBit codec.Bit) (State, error) {
+func handleWaitForBusIdleState(this *component.Component, previousState State, currentBit codec.Bit) (State, error) {
 	// Check if some other node started transmitting
 	// SOF detected, became passive listener
 	if currentBit.IsDominant() {
@@ -186,7 +189,7 @@ func handleWaitForBusIdleState(this *component.Component, currentBit codec.Bit) 
 	return StateWaitForBusIdle, nil
 }
 
-func handleArbitrationState(this *component.Component, currentBit codec.Bit) (State, error) {
+func handleArbitrationState(this *component.Component, previousState State, currentBit codec.Bit) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
 	defer func() {
@@ -220,6 +223,13 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 	if txItem.Buf.Offset > 1 {
 		// Check if arbitration is lost
 		if currentBit != txItem.Buf.PreviousBit() {
+			// When losing arbitration, we need to fix our RX buffer
+			// The issue: we added our own losing bit to RX buffer, but we should have the winning bit
+			// Solution: Remove our losing bit and add the winning bit from the bus
+
+			// Remove the last bit (our losing bit) and add the winning bit from the bus
+			rxBuf = rxBuf.WithoutLastBit().WithBits(currentBit)
+
 			// Lost arbitration
 			if currentBit.IsDominant() && txItem.Buf.PreviousBit().IsRecessive() {
 				this.Logger().Println("lost arbitration. backoff")
@@ -230,7 +240,8 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 				return StateArbitration, errors.New("bus error, recessive bit won arbitration. backoff")
 			}
 
-			txItem.Buf.ResetOffset() // Backoff, retry later
+			txItem.Buf.ResetOffset()                  // Backoff, retry later
+			this.State().Set(stateKeyRxBuffer, rxBuf) // Save the corrected RX buffer
 			return StateReceive, nil
 		}
 	}
@@ -243,7 +254,7 @@ func handleArbitrationState(this *component.Component, currentBit codec.Bit) (St
 	return StateArbitration, nil
 }
 
-func handleReceiveState(this *component.Component, currentBit codec.Bit) (State, error) {
+func handleReceiveState(this *component.Component, previousState State, currentBit codec.Bit) (State, error) {
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
 	bitsExpected := this.State().Get(stateKeyBitsExpected).(int)
 
@@ -263,8 +274,14 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 
 	}
 
-	rxBuf = rxBuf.WithBits(currentBit)
-	//this.Logger().Println("added a bit to my raw RX:", rxBuf)
+	// Check if we just transitioned from arbitration - if so, skip the current bit
+	// The current bit was already processed in the arbitration handler
+	if previousState == StateArbitration {
+		// Don't add the current bit - it was already processed during arbitration loss
+	} else {
+		rxBuf = rxBuf.WithBits(currentBit)
+	}
+
 	rxUnstuffed = rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
 	bitsReceived = rxUnstuffed.Len()
 
@@ -307,7 +324,7 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	return StateReceive, nil
 }
 
-func handleTransmitState(this *component.Component) (State, error) {
+func handleTransmitState(this *component.Component, previousState State) (State, error) {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 	defer func() {
 		this.State().Set(stateKeyTxQueue, txQueue)
@@ -340,8 +357,10 @@ func handleStateTransition(this *component.Component, previousState, nextState S
 
 	// Lost arbitration
 	case StateArbitration.To(StateReceive):
-		// Forget bits collected during arbitration
-		// do not clear rx when lost the arbitration: this.State().Set(stateKeyRxBuffer, codec.NewBits(0))
+		// When losing arbitration, we need to continue receiving the winning frame
+		// The bits we collected during arbitration are valid and part of the winning frame
+		// Reset expectations to let receive state handle it
+		this.State().Set(stateKeyBitsExpected, 0)
 		return nil
 
 	// Successfully finished transmitting
