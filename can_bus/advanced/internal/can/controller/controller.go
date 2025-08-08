@@ -297,7 +297,7 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 				return StateReceive, fmt.Errorf("failed to assemble frame: %w", err)
 			}
 
-			this.Logger().Println("assembled frame:", rxFrame)
+			this.Logger().Println("received frame:", rxFrame)
 
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
 			return StateIdle, nil

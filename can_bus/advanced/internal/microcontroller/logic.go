@@ -49,7 +49,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			if frame.Id == FunctionalRequestID {
 				addressingMode = FunctionalAddressing
 			}
-			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: %X, sid: %X, pid: %X", addressingMode, frame.Id, isoReq.ServiceID, isoReq.PID)
+			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: %X, sid: %X(%s), pid: %X(%s)", addressingMode, frame.Id, isoReq.ServiceID, isoReq.ServiceID.ToString(), isoReq.PID, isoReq.PID.ToString())
 
 			if addressingMode == PhysicalAddressing && frame.Id != ld.PhysicalAddress {
 				this.Logger().Printf(
@@ -77,7 +77,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 				return errors.New("param is not supported")
 			}
 
-			// Run logic and get response
+			// Run logic and get the response
 			isoResp, err := reqHandler(addressingMode, isoReq, this)
 			if err != nil {
 				return fmt.Errorf("failed to apply MCU logic: %w", err)

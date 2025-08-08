@@ -41,3 +41,43 @@ func (mode AddressingMode) String() string {
 		return "unknown"
 	}
 }
+
+// TODO: remove this
+func (sid ServiceID) ToString() string {
+	switch sid {
+	case ServiceShowCurrentData, ResponseShowCurrentData:
+		return "show current data"
+	case ServiceReadStoredDiagnosticCodes, ResponseReadStoredDiagnosticCodes:
+		return "read stored diagnostic codes"
+	case ServiceVehicleInformation, ResponseVehicleInformation:
+		return "vehicle information"
+	default:
+		return "unknown"
+
+	}
+}
+
+// TODO: remove this
+func (pid ParameterID) ToString() string {
+	switch pid {
+	case NoPID:
+		return "no PID"
+	case 0x0C:
+		return "RPM"
+	case 0x0D:
+		return "Vehicle Speed"
+	case 0x02:
+		return "VIN"
+	case 0x04:
+		return "Calibration ID"
+	case 0x05:
+		return "Coolant Temperature"
+
+	case 0x0F:
+		return "Fluid temperature"
+	case 0xA1:
+		return "Gear position"
+	default:
+		return "unknown"
+	}
+}
