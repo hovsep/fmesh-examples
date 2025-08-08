@@ -264,7 +264,7 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 	}
 
 	rxBuf = rxBuf.WithBits(currentBit)
-	this.Logger().Println("added a bit to my raw RX:", rxBuf)
+	//this.Logger().Println("added a bit to my raw RX:", rxBuf)
 	rxUnstuffed = rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
 	bitsReceived = rxUnstuffed.Len()
 
@@ -296,6 +296,9 @@ func handleReceiveState(this *component.Component, currentBit codec.Bit) (State,
 			if err != nil {
 				return StateReceive, fmt.Errorf("failed to assemble frame: %w", err)
 			}
+
+			this.Logger().Println("assembled frame:", rxFrame)
+
 			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
 			return StateIdle, nil
 		}
