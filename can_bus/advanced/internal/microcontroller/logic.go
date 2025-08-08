@@ -49,11 +49,11 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			if frame.Id == FunctionalRequestID {
 				addressingMode = FunctionalAddressing
 			}
-			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: %X, sid: %X(%s), pid: %X(%s)", addressingMode, frame.Id, isoReq.ServiceID, isoReq.ServiceID.ToString(), isoReq.PID, isoReq.PID.ToString())
+			this.Logger().Printf("received ISO-TP request: addressing mode: %s, req address: 0x%02X, sid: 0x%02X(%s), pid: 0x%02X(%s)", addressingMode, frame.Id, isoReq.ServiceID, isoReq.ServiceID.ToString(), isoReq.PID, isoReq.PID.ToString())
 
 			if addressingMode == PhysicalAddressing && frame.Id != ld.PhysicalAddress {
 				this.Logger().Printf(
-					"skipping request: frame ID 0x%03X does not match physical address 0x%03X (AddressingMode: %v)",
+					"skipping request: frame ID 0x%03X does not match physical address 0x%02X(AddressingMode: %v)",
 					frame.Id, ld.PhysicalAddress, addressingMode,
 				)
 				return nil
@@ -74,7 +74,8 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			// Check if parameter is supported
 			reqHandler, ok := params[isoReq.PID]
 			if !ok {
-				return errors.New("param is not supported")
+				this.Logger().Printf("skipping request: parameter 0x%02X (%s) is not supported", isoReq.PID, isoReq.PID.ToString())
+				continue
 			}
 
 			// Run logic and get the response
@@ -90,7 +91,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 				return fmt.Errorf("failed to convert ISOTP to CAN frame: %w", err)
 			}
 			this.OutputByName(common.PortCANTx).PutSignals(signal.New(respCANFrame))
-			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: %X, sid: %X, pid: %X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
+			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: 0x%03X, sid: 0x%02X, pid: 0x%02X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
 
 			return nil
 		}
