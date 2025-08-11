@@ -12,7 +12,7 @@ const (
 	TCMUnitName        = "tcm"
 	TCMPhysicalAddress = 0x7E1
 
-	tcmPIDFluidTemp     microcontroller.ParameterID = 0x0F
+	tcmPIDFluidTemp     microcontroller.ParameterID = 0xA0
 	tcmPIDGearPosition  microcontroller.ParameterID = 0xA1
 	tcmPIDVIN           microcontroller.ParameterID = 0x02
 	tcmPIDCalibrationID microcontroller.ParameterID = 0x04
@@ -62,7 +62,7 @@ func NewNode() *can.Node {
 	return can.NewNode(TCMUnitName, func(state component.State) {
 		// Set parameter values
 		paramState := microcontroller.ParamsState{
-			tcmPIDFluidTemp:     byte(85),
+			tcmPIDFluidTemp:     byte(88),
 			tcmPIDGearPosition:  byte(3),
 			tcmPIDVIN:           []byte("VF1TC000987654321"),
 			tcmPIDCalibrationID: []byte("TCM-C9999-Z8888"),

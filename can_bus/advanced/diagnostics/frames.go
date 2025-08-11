@@ -29,7 +29,7 @@ var (
 		},
 	}
 
-	FrameGetCoolantTemp = &codec.Frame{
+	FrameGetCoolantTemperature = &codec.Frame{
 		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
@@ -63,12 +63,23 @@ var (
 	}
 
 	FrameGetCalibrationID = &codec.Frame{
-		Id:  0x7E0,
+		Id:  0x7DF,
 		DLC: 8,
 		Data: [8]byte{
 			0x02,
 			0x09,
 			0x04,
+			0x00, 0x00, 0x00, 0x00, 0x00,
+		},
+	}
+
+	FrameGetTransmissionFluidTemperature = &codec.Frame{
+		Id:  0x7E1,
+		DLC: 8,
+		Data: [8]byte{
+			0x02,
+			0x01,
+			0xA0,
 			0x00, 0x00, 0x00, 0x00, 0x00,
 		},
 	}

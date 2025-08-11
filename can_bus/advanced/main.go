@@ -52,9 +52,11 @@ func main() {
 		diagnostics.FrameGetEngineDTCs,
 		diagnostics.FrameGetSpeed,
 		diagnostics.FrameGetRPM,
-		diagnostics.FrameGetCoolantTemp,
+		diagnostics.FrameGetCoolantTemperature,
 		diagnostics.FrameGetCalibrationID,
-		diagnostics.FrameGetVIN)
+		diagnostics.FrameGetVIN,
+		diagnostics.FrameGetTransmissionFluidTemperature,
+	)
 
 	runResult, err := fm.Run()
 	if err != nil {
