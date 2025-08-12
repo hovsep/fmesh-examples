@@ -17,7 +17,7 @@ The list of examples:
 - [Pipeline](https://github.com/hovsep/fmesh-examples/blob/main/pipeline/main.go)  (can not be run in the Go playground as it reads from STDIN)
 - [String processing](https://github.com/hovsep/fmesh-examples/blob/main/string_processing/main.go)  ([play](https://go.dev/play/p/Yf_29d6vs68))
 - [Basic CAN-bus](https://github.com/hovsep/fmesh-examples/blob/main/can_bus/basic/main.go)  ([play](https://go.dev/play/p/M3-jMutt67w))
-- [Advanced CAN-bus](https://github.com/hovsep/fmesh-examples/blob/main/can_bus/advanced/main.go)  (run locally: `cd can_bus/advanced && go run .`)
+- [Advanced CAN-bus](https://github.com/hovsep/fmesh-examples/blob/main/can_bus/advanced/main.go)  ([play](https://go.dev/play/p/vWiIccXoLO9))
 
 
 All examples are using the same [latest version of FMesh](https://github.com/hovsep/fmesh/releases/latest).
