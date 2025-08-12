@@ -1,10 +1,10 @@
-module github.com/hovsep/fmesh-example/can_bus/advanced
+module github.com/hovsep/fmesh-examples/can_bus/advanced
 
 go 1.24.1
 
 require (
 	github.com/hovsep/fmesh v1.2.3-Artashat
-	github.com/hovsep/fmesh-examples v0.0.0-20250811142529-f26c975b3398
+	github.com/hovsep/fmesh-examples v0.0.1
 	github.com/stretchr/testify v1.10.0
 )
 

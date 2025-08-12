@@ -6,10 +6,10 @@ import (
 
 	"github.com/hovsep/fmesh-example/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-example/can_bus/advanced/can/bus"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/diagnostics"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/engine"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
-	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/transmission"
+	"github.com/hovsep/fmesh-example/can_bus/advanced/diagnostics"
+	"github.com/hovsep/fmesh-example/can_bus/advanced/ecu/engine"
+	"github.com/hovsep/fmesh-example/can_bus/advanced/ecu/obd"
+	"github.com/hovsep/fmesh-example/can_bus/advanced/ecu/transmission"
 
 	"github.com/hovsep/fmesh"
 )
