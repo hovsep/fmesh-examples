@@ -1,12 +1,10 @@
 package transmission
 
 import (
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can"
-	"github.com/hovsep/fmesh-example/can_bus/advanced/microcontroller"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/microcontroller"
 	"github.com/hovsep/fmesh/component"
 )
-
-// AI gen, needs review
 
 const (
 	TCMUnitName        = "tcm"

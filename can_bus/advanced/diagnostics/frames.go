@@ -1,7 +1,7 @@
 package diagnostics
 
 import (
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
 )
 
 // Raw CAN frames used for diagnostics via OBD socket

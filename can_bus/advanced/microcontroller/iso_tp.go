@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can/codec"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/codec"
 )
 
 // ISOTPMessage represents a simplified iso-15765 message (transport protocol over CAN-frames)

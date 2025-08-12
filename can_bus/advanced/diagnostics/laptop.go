@@ -1,7 +1,7 @@
 package diagnostics
 
 import (
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"

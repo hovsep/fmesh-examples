@@ -3,8 +3,8 @@ package obd
 import (
 	"errors"
 
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can"
-	"github.com/hovsep/fmesh-example/can_bus/advanced/can/common"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
+	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
