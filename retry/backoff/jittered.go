@@ -8,54 +8,55 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
-func NewJittered() *component.Component {
-	return component.New("jittered_backoff").
+func NewJittered(name string, baseDuration time.Duration, capDuration time.Duration, maxRetries int) *component.Component {
+	return component.New(name).
 		WithInputs("in_req", "in_err").
 		WithOutputs("out_req", "out_fail").
+		WithInitialState(func(state component.State) {
+			state.Set("attempt", 0)
+			state.Set("maxRetries", maxRetries)
+			state.Set("base", baseDuration)
+			state.Set("cap", capDuration)
+		}).
 		WithActivationFunc(func(this *component.Component) error {
-			if this.InputByName("in_err").IsEmpty() {
+			if len(this.InputByName("in_err").AllSignalsOrNil()) == 0 {
 				return nil
 			}
 
-			attempt, _ := this.Local["attempt"].(int)
-			maxRetries, ok := this.Local["maxRetries"].(int)
-			if !ok {
-				maxRetries = 5
-				this.Local["maxRetries"] = maxRetries
-			}
-			base, ok := this.Local["base"].(time.Duration)
-			if !ok {
-				base = time.Second
-				this.Local["base"] = base
-			}
-			capDuration, ok := this.Local["cap"].(time.Duration)
-			if !ok {
-				capDuration = 10 * time.Second
-				this.Local["cap"] = capDuration
-			}
+			attempt := this.State().Get("attempt").(int)
+			maxRetries := this.State().Get("maxRetries").(int)
+			base := this.State().Get("base").(time.Duration)
+			capDuration := this.State().Get("cap").(time.Duration)
 
 			attempt++
-			this.Local["attempt"] = attempt
+			this.State().Set("attempt", attempt)
 
 			if attempt > maxRetries {
-				fmt.Println("[jittered] retries exhausted")
-				this.OutputByName("out_fail").PutSignals(this.InputByName("in_err").First())
+				fmt.Printf("[jittered] retries exhausted after %d attempts\n", attempt-1)
+				errSignal := this.InputByName("in_err").AllSignalsOrNil()[0]
+				this.OutputByName("out_fail").PutSignals(errSignal)
 				return nil
 			}
 
-			// exponential backoff with jitter
+			// Exponential backoff with decorrelated jitter
 			exp := base * (1 << (attempt - 1))
 			if exp > capDuration {
 				exp = capDuration
 			}
-			// decorrelated jitter: random between base and exp
-			sleep := base + time.Duration(rand.Int63n(int64(exp-base+1)))
-			fmt.Printf("[jittered] attempt %d, sleeping %v\n", attempt, sleep)
+
+			// Decorrelated jitter: random between base and exp
+			jitterRange := int64(exp - base + 1)
+			if jitterRange <= 0 {
+				jitterRange = 1
+			}
+			sleep := base + time.Duration(rand.Int63n(jitterRange))
+
+			fmt.Printf("[jittered] attempt %d, sleeping %v (range: %v - %v)\n", attempt, sleep, base, exp)
 			time.Sleep(sleep)
 
-			// retry original request
-			this.OutputByName("out_req").PutSignals(this.InputByName("in_req").First())
+			// Retry with the original request
+			reqSignal := this.InputByName("in_req").AllSignalsOrNil()[0]
+			this.OutputByName("out_req").PutSignals(reqSignal)
 			return nil
 		})
-
 }

@@ -5,33 +5,50 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
-func NewConstatnt() *component.Component {
-	return component.New("constant_backoff").
+func NewConstant(name string, backoffDuration time.Duration, maxRetries int) *component.Component {
+	return component.New(name).
 		WithInputs("in_req", "in_err").
 		WithOutputs("out_req", "out_fail").
+		WithInitialState(func(state component.State) {
+			state.Set("attempt", 0)
+			state.Set("maxRetries", maxRetries)
+			state.Set("backoff", backoffDuration)
+		}).
 		WithActivationFunc(func(this *component.Component) error {
-			if this.InputByName("in_err").IsEmpty() {
+			// Store original request if we have one
+			if len(this.InputByName("in_req").AllSignalsOrNil()) > 0 {
+				reqSignal := this.InputByName("in_req").AllSignalsOrNil()[0]
+				this.State().Set("originalRequest", reqSignal)
+			}
+
+			if len(this.InputByName("in_err").AllSignalsOrNil()) == 0 {
 				return nil
 			}
 
-			attempt := this.Local["attempt"].(int)
-			maxRetries := this.Local["maxRetries"].(int)
-			backoff := this.Local["backoff"].(time.Duration)
+			attempt := this.State().Get("attempt").(int)
+			maxRetries := this.State().Get("maxRetries").(int)
+			backoff := this.State().Get("backoff").(time.Duration)
 
 			attempt++
-			this.Local["attempt"] = attempt
+			this.State().Set("attempt", attempt)
 
 			if attempt > maxRetries {
-				this.OutputByName("out_fail").PutSignals(this.InputByName("in_err").First())
+				fmt.Printf("Backoff Strategy [%s]: Maximum attempts (%d) reached - giving up\n", this.Name(), maxRetries)
+				errSignal := this.InputByName("in_err").AllSignalsOrNil()[0]
+				this.OutputByName("out_fail").PutSignals(errSignal)
 				return nil
 			}
 
-			fmt.Printf("[constant] attempt %d, backing off %v\n", attempt, backoff)
+			fmt.Printf("Backoff Strategy [%s]: Attempt %d/%d - waiting %v before retry (constant backoff)\n", this.Name(), attempt, maxRetries, backoff)
 			time.Sleep(backoff)
-			this.OutputByName("out_req").PutSignals(this.InputByName("in_req").First())
+
+			// Retry with the stored original request
+			if originalReq := this.State().Get("originalRequest"); originalReq != nil {
+				this.OutputByName("out_req").PutSignals(originalReq.(*signal.Signal))
+			}
 			return nil
 		})
-
 }
