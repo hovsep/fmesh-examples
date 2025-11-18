@@ -1,0 +1,85 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>A mesh with 6 components</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s19 {
+		color="black";label="airbag-ecu";margin="20";penwidth="5";style="rounded";
+		n21[fontname="Courier New",group="airbag-ecu",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="airbag-ecu",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[color="#9dddea",fontname="Courier New",group="airbag-ecu",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n21->n20;
+		n20->n22;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="bus";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="bus",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="bus",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="bus",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		n12->n14;
+		
+	}
+	subgraph cluster_s23 {
+		color="black";label="crash-sensor-front-left";margin="20";penwidth="5";style="rounded";
+		n25[fontname="Courier New",group="crash-sensor-front-left",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="crash-sensor-front-left",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[color="#9dddea",fontname="Courier New",group="crash-sensor-front-left",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n25->n24;
+		n24->n26;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="door-lock-actuator-rear-left";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="door-lock-actuator-rear-left",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="door-lock-actuator-rear-left",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="door-lock-actuator-rear-left",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="engine-ecu";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="engine-ecu",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="engine-ecu",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="engine-ecu",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n16->n18;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="obd";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="obd",height="1.0",label="rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="obd",height="1.0",label="tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		
+	}
+	layout="dot";splines="ortho";
+	n22->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n9[color="#e437ea",minlen="3",penwidth="2"];
+	n26->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n6->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n13[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
