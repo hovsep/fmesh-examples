@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -16,19 +17,17 @@ const (
 // This demo demonstrates F-Mesh's signal filtering and routing capabilities.
 // It showcases how components can filter and route signals based on conditions
 func main() {
-	filter := getFilter("pop-filter", common.LabelsCollection{"genre": "pop"})
-	printer1 := getPrinter("dropped-printer")
-	printer2 := getPrinter("passed-printer")
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
 
-	filter.OutputByName("dropped").PipeTo(printer1.InputByName(portIn))
-	filter.OutputByName("passed").PipeTo(printer2.InputByName(portIn))
-
-	fm := fmesh.New("demo-filter").
-		WithComponents(filter, printer1, printer2)
+	// Normal execution
+	fm := getMesh()
 
 	// Init with data
 	signalsToFilter := getSignals()
-	filter.InputByName(portIn).PutSignals(signalsToFilter.SignalsOrNil()...)
+	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignals(signalsToFilter.SignalsOrNil()...)
 
 	_, err := fm.Run()
 	if err != nil {
@@ -37,6 +36,18 @@ func main() {
 	}
 
 	fmt.Println("Filtering finished successfully")
+}
+
+func getMesh() *fmesh.FMesh {
+	filter := getFilter("pop-filter", common.LabelsCollection{"genre": "pop"})
+	printer1 := getPrinter("dropped-printer")
+	printer2 := getPrinter("passed-printer")
+
+	filter.OutputByName("dropped").PipeTo(printer1.InputByName(portIn))
+	filter.OutputByName("passed").PipeTo(printer2.InputByName(portIn))
+
+	return fmesh.New("demo-filter").
+		WithComponents(filter, printer1, printer2)
 }
 
 func getPrinter(name string) *component.Component {

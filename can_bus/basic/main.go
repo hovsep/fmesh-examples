@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -31,29 +32,13 @@ type CanFrame struct {
 // Each node filters and processes only frames that match its assigned ID
 // Features: signal broadcasting, ID-based filtering, and corruption detection
 func main() {
-	// List of simulated CAN nodes. Order determines their ID (starting from 0)
-	canNodes := []string{
-		"engine-ecu",
-		"airbag-ecu",
-		"crash-sensor-front-left",
-		"door-lock-actuator-rear-left",
-		"obd", // On-Board Diagnostic Module
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
 	}
 
-	// Initialize the mesh with the central CAN bus component
-	fm := fmesh.New("can_bus_sim_v0").WithComponents(getBus())
-
-	// Create and connect all CAN nodes to the bus
-	for id, name := range canNodes {
-		canNode := getNode(name, id)
-
-		// Wire node output to bus input and vice versa (bidirectional communication)
-		canNode.OutputByName(portOut).PipeTo(fm.ComponentByName(componentBus).InputByName(portIn))
-		fm.ComponentByName(componentBus).OutputByName(portOut).PipeTo(canNode.InputByName(portIn))
-
-		// Register node in the mesh
-		fm.WithComponents(canNode)
-	}
+	// Normal execution
+	fm := getMesh()
 
 	// Initial signal group includes both valid and corrupted frames
 	initSignals := signal.NewGroup().WithPayloads(
@@ -88,6 +73,34 @@ func main() {
 
 	fm.Logger().Println("======================")
 	fm.Logger().Println("Simulation completed successfully.")
+}
+
+func getMesh() *fmesh.FMesh {
+	// List of simulated CAN nodes. Order determines their ID (starting from 0)
+	canNodes := []string{
+		"engine-ecu",
+		"airbag-ecu",
+		"crash-sensor-front-left",
+		"door-lock-actuator-rear-left",
+		"obd", // On-Board Diagnostic Module
+	}
+
+	// Initialize the mesh with the central CAN bus component
+	fm := fmesh.New("can_bus_sim_v0").WithComponents(getBus())
+
+	// Create and connect all CAN nodes to the bus
+	for id, name := range canNodes {
+		canNode := getNode(name, id)
+
+		// Wire node output to bus input and vice versa (bidirectional communication)
+		canNode.OutputByName(portOut).PipeTo(fm.ComponentByName(componentBus).InputByName(portIn))
+		fm.ComponentByName(componentBus).OutputByName(portOut).PipeTo(canNode.InputByName(portIn))
+
+		// Register node in the mesh
+		fm.WithComponents(canNode)
+	}
+
+	return fm
 }
 
 // getBus returns a simple broadcasting CAN bus component

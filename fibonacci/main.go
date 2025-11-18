@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -15,7 +16,38 @@ import (
 // For instance, this approach can be used to calculate Fibonacci numbers without needing
 // traditional looping code. Instead, the loop is achieved by configuring ports and pipes,
 // where each cycle processes a new Fibonacci term.
+//
+// Usage:
+//
+//	go run .              # Run the example
+//	go run . --graph     # Generate graph.svg and exit
 func main() {
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
+
+	// Normal execution
+	fm := getMesh()
+
+	// Set inputs (first 2 Fibonacci numbers)
+	f0, f1 := signal.New(0), signal.New(1)
+
+	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0)
+	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_cur").PutSignals(f1)
+
+	fmt.Println(f0.PayloadOrNil())
+	fmt.Println(f1.PayloadOrNil())
+
+	// Run the mesh
+	_, err := fm.Run()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func getMesh() *fmesh.FMesh {
 	c1 := component.New("fibonacci number generator").
 		WithInputs("i_cur", "i_prev").
 		WithOutputs("o_cur", "o_prev").
@@ -40,22 +72,5 @@ func main() {
 	c1.Outputs().ByName("o_prev").PipeTo(c1.Inputs().ByName("i_prev"))
 
 	// Build mesh
-	fm := fmesh.New("fibonacci example").WithComponents(c1)
-
-	// Set inputs (first 2 Fibonacci numbers)
-	f0, f1 := signal.New(0), signal.New(1)
-
-	c1.Inputs().ByName("i_prev").PutSignals(f0)
-	c1.Inputs().ByName("i_cur").PutSignals(f1)
-
-	fmt.Println(f0.PayloadOrNil())
-	fmt.Println(f1.PayloadOrNil())
-
-	// Run the mesh
-	_, err := fm.Run()
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	return fmesh.New("fibonacci example").WithComponents(c1)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -22,12 +23,13 @@ const (
 // Each worker processes requests and returns a response, which the load balancer collects and emits.
 // The demo showcases dynamic routing, stateful component behavior, and signal-based processing.
 func main() {
-	workers := getWorkers("api-backend", 3)
-	lb := getLoadBalancer("lb", workers)
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
 
-	fm := fmesh.New("demo-load-balancing").
-		WithComponents(lb).
-		WithComponents(workers...)
+	// Normal execution
+	fm := getMesh()
 
 	// Run multiple waves (traffic spikes) to demonstrate that LB evenly distributes requests even when interrupted
 	// you can play with number of workers, waves and requests per wave to check that
@@ -67,6 +69,15 @@ func main() {
 	for _, sig := range results {
 		fmt.Println(sig.PayloadOrDefault("").(string))
 	}
+}
+
+func getMesh() *fmesh.FMesh {
+	workers := getWorkers("api-backend", 3)
+	lb := getLoadBalancer("lb", workers)
+
+	return fmesh.New("demo-load-balancing").
+		WithComponents(lb).
+		WithComponents(workers...)
 }
 
 func getWorkers(namePrefix string, number int) []*component.Component {

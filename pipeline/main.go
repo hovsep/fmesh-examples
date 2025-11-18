@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 	"io"
@@ -33,17 +34,13 @@ const (
 // Each stage is represented as a reusable F-Mesh component, allowing for easy modifications
 // and extensions. The pipeline executes sequentially, passing processed data between components.
 func main() {
-	fm := buildPipeline(
-		"demo-pipeline",
-		// Just pass stages in desired order:
-		getStdInReader("read-stdin", "Please input text and press ENTER"),
-		getFileWriter("persist-input"),
-		getFileReader("read-file"),
-		getTokenizer("tokenize", tokenizerDelimiter),
-		getFilter("remove-stop-words", map[string]bool{"yes": true, "no": true}),
-		getTokenCounter("counter-tokens"),
-		getFileWriter("persist-results"),
-	)
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
+
+	// Normal execution
+	fm := getMesh()
 
 	// Initialize the pipeline by sending the first signal.
 	// While we could directly reference the entry-point component using fm.ComponentByName("read-stdin"),
@@ -65,6 +62,20 @@ func main() {
 	if resultFileName != "" {
 		fmt.Println("Check results in the file: ", resultFileName)
 	}
+}
+
+func getMesh() *fmesh.FMesh {
+	return buildPipeline(
+		"demo-pipeline",
+		// Just pass stages in desired order:
+		getStdInReader("read-stdin", "Please input text and press ENTER"),
+		getFileWriter("persist-input"),
+		getFileReader("read-file"),
+		getTokenizer("tokenize", tokenizerDelimiter),
+		getFilter("remove-stop-words", map[string]bool{"yes": true, "no": true}),
+		getTokenCounter("counter-tokens"),
+		getFileWriter("persist-results"),
+	)
 }
 
 // getFileReader creates a component that reads the whole file

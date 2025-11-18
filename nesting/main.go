@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -19,6 +20,35 @@ type factorizedNumber struct {
 // mesh, enabling complex and hierarchical workflows.
 // In this example we implement prime factorization (which is core part of RSA encryption algorithm) as a sub-mesh
 func main() {
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
+
+	// Normal execution
+	outerMesh := getMesh()
+
+	// Set init data
+	outerMesh.Components().
+		ByName("starter").
+		InputByName("in").
+		PutSignals(signal.New(315))
+
+	// Run outer mesh
+	_, err := outerMesh.Run()
+
+	if err != nil {
+		fmt.Println(fmt.Errorf("outer mesh failed with error: %w", err))
+	}
+
+	// Read results
+	for _, resSig := range outerMesh.Components().ByName("factorizer").OutputByName("out").AllSignalsOrNil() {
+		result := resSig.PayloadOrNil().(factorizedNumber)
+		fmt.Printf("Factors of number %d : %v \n", result.Num, result.Factors)
+	}
+}
+
+func getMesh() *fmesh.FMesh {
 	starter := component.New("starter").
 		WithDescription("This component just holds numbers we want to factorize").
 		WithInputs("in"). // Single port is enough, as it can hold any number of signals (as long as they fit into1 memory)
@@ -103,26 +133,7 @@ func main() {
 	filter.OutputByName("out").PipeTo(factorizer.InputByName("in"))
 
 	// Build the mesh
-	outerMesh := fmesh.New("outer").WithComponents(starter, filter, logger, factorizer)
-
-	// Set init data
-	outerMesh.Components().
-		ByName("starter").
-		InputByName("in").
-		PutSignals(signal.New(315))
-
-	// Run outer mesh
-	_, err := outerMesh.Run()
-
-	if err != nil {
-		fmt.Println(fmt.Errorf("outer mesh failed with error: %w", err))
-	}
-
-	// Read results
-	for _, resSig := range outerMesh.Components().ByName("factorizer").OutputByName("out").AllSignalsOrNil() {
-		result := resSig.PayloadOrNil().(factorizedNumber)
-		fmt.Printf("Factors of number %d : %v \n", result.Num, result.Factors)
-	}
+	return fmesh.New("outer").WithComponents(starter, filter, logger, factorizer)
 }
 
 func getPrimeFactorizationMesh() *fmesh.FMesh {
