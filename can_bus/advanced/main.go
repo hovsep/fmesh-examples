@@ -11,6 +11,7 @@ import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/engine"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/transmission"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 )
 
 // This demo simulates a CAN bus system with a laptop connected via a USB–OBD interface.
@@ -50,40 +51,19 @@ import (
 //   - Powered by F-Mesh, all nodes run concurrently without explicitly using goroutines— even components within the same node can run in parallel.
 //   - The architecture is modular: you can add more nodes, noise generators, or even virtual instruments (e.g., a voltmeter to plot bus waveforms).
 
+var laptopInstance *diagnostics.Laptop
+
 func main() {
-	// Create components:
-	ptBus := bus.New("PT-CAN")                            // Modern vehicles have multiple buses, this one is called "powertrain bus"
-	laptop := diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
-
-	// Build CAN nodes:
-	obdDevice := obd.NewNode() // putting this into a variable, so we can connect it to the laptop
-	allCanNodes := can.Nodes{
-		engine.NewNode(),       // Engine Control Module
-		transmission.NewNode(), // Transmission Control Module
-		obdDevice,              // On Board Diagnostics
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
 	}
 
-	allCanNodes.ConnectToBus(ptBus)
+	// Normal execution
+	fm := getMesh()
 
-	// Connect laptop to OBD socket
-	err := laptop.ConnectToOBD(obdDevice)
-	if err != nil {
-		panic("Failed to connect laptop to OBD: " + err.Error())
-	}
-
-	// Build the mesh
-	fm := fmesh.NewWithConfig("can_bus_sim_v1", &fmesh.Config{
-		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-		Debug:                 false,
-	}).
-		WithComponents(laptop.GetAllComponents()...).
-		WithComponents(ptBus.GetAllComponents()...).
-		WithComponents(allCanNodes.GetAllComponents()...)
-
-	// Initialize the mesh:
-
-	// set diagnostic frames to USB port, so the laptop will send them
-	laptop.SendDataToUSB(
+	// Initialize the mesh: set diagnostic frames to USB port, so the laptop will send them
+	laptopInstance.SendDataToUSB(
 		diagnostics.FrameGetEngineDTCs,
 		diagnostics.FrameGetSpeed,
 		diagnostics.FrameGetRPM,
@@ -100,4 +80,35 @@ func main() {
 	}
 
 	fmt.Printf("Mesh stopped after %d cycles and %s", runResult.Cycles.Len(), runResult.Duration)
+}
+
+func getMesh() *fmesh.FMesh {
+	// Create components:
+	ptBus := bus.New("PT-CAN")                                   // Modern vehicles have multiple buses, this one is called "powertrain bus"
+	laptopInstance = diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
+
+	// Build CAN nodes:
+	obdDevice := obd.NewNode() // putting this into a variable, so we can connect it to the laptop
+	allCanNodes := can.Nodes{
+		engine.NewNode(),       // Engine Control Module
+		transmission.NewNode(), // Transmission Control Module
+		obdDevice,              // On Board Diagnostics
+	}
+
+	allCanNodes.ConnectToBus(ptBus)
+
+	// Connect laptop to OBD socket
+	err := laptopInstance.ConnectToOBD(obdDevice)
+	if err != nil {
+		panic("Failed to connect laptop to OBD: " + err.Error())
+	}
+
+	// Build the mesh
+	return fmesh.NewWithConfig("can_bus_sim_v1", &fmesh.Config{
+		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
+		Debug:                 false,
+	}).
+		WithComponents(laptopInstance.GetAllComponents()...).
+		WithComponents(ptBus.GetAllComponents()...).
+		WithComponents(allCanNodes.GetAllComponents()...)
 }

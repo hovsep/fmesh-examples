@@ -1,8 +1,9 @@
-package main 
+package main
 
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -46,6 +47,28 @@ const (
 //
 // The simulation runs until a termination condition is met, such as the battery depleting or the lightbulb burning out.
 func main() {
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
+
+	// Normal execution
+	fm := getMesh()
+
+	// Turn on the lightbulb (yes you can init an output port)
+	fm.ComponentByName("lightbulb").InputByName("start_power_demand").PutSignals(signal.New("start"))
+
+	runResult, err := fm.Run()
+
+	if err != nil {
+		fmt.Println("Simulation failed with error: ", err)
+		return
+	}
+
+	fmt.Printf("Simulation finished after %d cycles \n", runResult.Cycles.Len())
+}
+
+func getMesh() *fmesh.FMesh {
 	battery := component.New("battery").
 		WithDescription("electric battery with initial charge level").
 		WithInputs("power_demand").
@@ -142,22 +165,10 @@ func main() {
 	battery.OutputByName("power_supply").PipeTo(lightbulb.InputByName("power_supply"))
 	lightbulb.OutputByName("power_demand").PipeTo(battery.InputByName("power_demand"))
 
-	fm := fmesh.NewWithConfig("battery_and_lightbulb", &fmesh.Config{
+	return fmesh.NewWithConfig("battery_and_lightbulb", &fmesh.Config{
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
 		WithDescription("simple electric simulation").
 		WithComponents(battery, lightbulb)
-
-	// Turn on the lightbulb (yes you can init an output port)
-	lightbulb.InputByName("start_power_demand").PutSignals(signal.New("start"))
-
-	runResult, err := fm.Run()
-
-	if err != nil {
-		fmt.Println("Simulation failed with error: ", err)
-		return
-	}
-
-	fmt.Printf("Simulation finished after %d cycles \n", runResult.Cycles.Len())
 }

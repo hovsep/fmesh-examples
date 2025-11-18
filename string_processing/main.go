@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/tools/example-helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 	"os"
@@ -11,6 +12,33 @@ import (
 
 // This example is used in fmesh repo readme.md
 func main() {
+	// Handle flags (--graph, etc.)
+	if examplehelper.RunWithFlags(getMesh) {
+		return // Exit if graph was generated
+	}
+
+	// Normal execution
+	fm := getMesh()
+
+	// Init inputs
+	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
+	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
+
+	// Run the mesh
+	_, err := fm.Run()
+
+	// Check for errors
+	if err != nil {
+		fmt.Println("F-Mesh returned an error")
+		os.Exit(1)
+	}
+
+	// Extract results
+	results := fm.Components().ByName("case").OutputByName("res").FirstSignalPayloadOrNil()
+	fmt.Printf("Result is : %v", results)
+}
+
+func getMesh() *fmesh.FMesh {
 	fm := fmesh.NewWithConfig("hello world", &fmesh.Config{
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		CyclesLimit:           10,
@@ -40,20 +68,5 @@ func main() {
 		fm.Components().ByName("case").Inputs().ByName("i1"),
 	)
 
-	// Init inputs
-	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
-	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
-
-	// Run the mesh
-	_, err := fm.Run()
-
-	// Check for errors
-	if err != nil {
-		fmt.Println("F-Mesh returned an error")
-		os.Exit(1)
-	}
-
-	// Extract results
-	results := fm.Components().ByName("case").OutputByName("res").FirstSignalPayloadOrNil()
-	fmt.Printf("Result is : %v", results)
+	return fm
 }
