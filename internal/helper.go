@@ -16,10 +16,15 @@ func HandleGraphFlag(fm *fmesh.FMesh) error {
 	var shouldGenerateGraph bool
 
 	flag.BoolVar(&shouldGenerateGraph, "graph", false, "Generate graph.dot and graph.svg files and exit")
+	flag.Parse()
 
 	if !shouldGenerateGraph {
 		return nil
 	}
+
+	defer func() {
+		os.Exit(0)
+	}()
 
 	// Generate DOT format
 	exporter := dot.NewDotExporter()
