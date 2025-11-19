@@ -49,10 +49,10 @@ digraph  {
 		n6[fontname="Courier New",group="lb",height="1.0",label="upstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n7[fontname="Courier New",group="lb",height="1.0",label="upstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n8[fontname="Courier New",group="lb",height="1.0",label="upstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[fontname="Courier New",group="lb",height="1.0",label="downstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n9[fontname="Courier New",group="lb",height="1.0",label="downstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="lb",height="1.0",label="downstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="lb",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[fontname="Courier New",group="lb",height="1.0",label="downstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="lb",height="1.0",label="downstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="lb",height="1.0",label="downstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="lb",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n4[color="#9dddea",fontname="Courier New",group="lb",height="1.0",label="Load balancer with 3 workers",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
 		n6->n4;
@@ -68,8 +68,8 @@ digraph  {
 	n16->n6[color="#e437ea",minlen="3",penwidth="2"];
 	n20->n7[color="#e437ea",minlen="3",penwidth="2"];
 	n24->n8[color="#e437ea",minlen="3",penwidth="2"];
-	n12->n15[color="#e437ea",minlen="3",penwidth="2"];
-	n9->n19[color="#e437ea",minlen="3",penwidth="2"];
-	n10->n23[color="#e437ea",minlen="3",penwidth="2"];
+	n9->n15[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n19[color="#e437ea",minlen="3",penwidth="2"];
+	n11->n23[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

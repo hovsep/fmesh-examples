@@ -1,0 +1,40 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>A mesh with 2 components</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s8 {
+		color="black";label="error logger";margin="20";penwidth="5";style="rounded";
+		n10[fontname="Courier New",group="error logger",height="1.0",label="error",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="error logger",height="1.0",label="logs http errors",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n10->n9;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="web crawler";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="web crawler",height="1.0",label="url",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="web crawler",height="1.0",label="errors",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="web crawler",height="1.0",label="headers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="web crawler",height="1.0",label="gets http headers from given url",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		n4->n7;
+		
+	}
+	layout="dot";splines="ortho";
+	n6->n10[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
