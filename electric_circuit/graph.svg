@@ -94,33 +94,33 @@
 <path fill="none" stroke="black" d="M667.89,-299.23C667.89,-299.23 667.89,-270.47 667.89,-270.47"/>
 <polygon fill="black" stroke="black" points="671.39,-270.47 667.89,-260.47 664.39,-270.47 671.39,-270.47"/>
 </g>
-<!-- n11 -->
+<!-- n12 -->
 <g id="node7" class="node">
-<title>n11</title>
+<title>n12</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="585" cy="-89.15" rx="61.15" ry="61.15"/>
 <text text-anchor="middle" x="585" y="-84.1" font-family="Courier New" font-size="14.00">light_supply</text>
 </g>
-<!-- n12 -->
+<!-- n11 -->
 <g id="node8" class="node">
-<title>n12</title>
+<title>n11</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="725" cy="-89.15" rx="61.15" ry="61.15"/>
 <text text-anchor="middle" x="725" y="-84.1" font-family="Courier New" font-size="14.00">power_demand</text>
 </g>
-<!-- n12&#45;&gt;n5 -->
+<!-- n11&#45;&gt;n5 -->
 <g id="edge8" class="edge">
-<title>n12&#45;&gt;n5</title>
+<title>n11&#45;&gt;n5</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M786.83,-89C797.09,-89 804.47,-89 804.47,-89 804.47,-89 804.47,-923 804.47,-923 804.47,-923 680.05,-923 680.05,-923"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="680.05,-919.5 670.05,-923 680.05,-926.5 680.05,-919.5"/>
-</g>
-<!-- n8&#45;&gt;n11 -->
-<g id="edge5" class="edge">
-<title>n8&#45;&gt;n11</title>
-<path fill="none" stroke="black" d="M602.95,-185.56C602.95,-185.56 602.95,-160.04 602.95,-160.04"/>
-<polygon fill="black" stroke="black" points="606.45,-160.04 602.95,-150.04 599.45,-160.04 606.45,-160.04"/>
 </g>
 <!-- n8&#45;&gt;n12 -->
 <g id="edge6" class="edge">
 <title>n8&#45;&gt;n12</title>
+<path fill="none" stroke="black" d="M602.95,-185.56C602.95,-185.56 602.95,-160.04 602.95,-160.04"/>
+<polygon fill="black" stroke="black" points="606.45,-160.04 602.95,-150.04 599.45,-160.04 606.45,-160.04"/>
+</g>
+<!-- n8&#45;&gt;n11 -->
+<g id="edge5" class="edge">
+<title>n8&#45;&gt;n11</title>
 <path fill="none" stroke="black" d="M694.05,-185.56C694.05,-185.56 694.05,-154.48 694.05,-154.48"/>
 <polygon fill="black" stroke="black" points="697.55,-154.48 694.05,-144.48 690.55,-154.48 697.55,-154.48"/>
 </g>

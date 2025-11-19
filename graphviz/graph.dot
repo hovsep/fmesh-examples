@@ -16,45 +16,45 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s7 {
-		color="black";label="clutch";margin="20";penwidth="5";style="rounded";
-		n9[fontname="Courier New",group="clutch",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="clutch",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[color="#9dddea",fontname="Courier New",group="clutch",height="1.0",label="Simple clutch",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n9->n8;
-		n8->n10;
-		
-	}
-	subgraph cluster_s3 {
-		color="black";label="engine";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="engine",height="1.0",label="start",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="engine",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="engine",height="1.0",label="Sends out rotation signal once started",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n5->n4;
-		n4->n6;
-		
-	}
-	subgraph cluster_s11 {
-		color="black";label="gearbox";margin="20";penwidth="5";style="rounded";
-		n13[fontname="Courier New",group="gearbox",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n14[fontname="Courier New",group="gearbox",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[color="#9dddea",fontname="Courier New",group="gearbox",height="1.0",label="⚙️",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n13->n12;
-		n12->n14;
-		
-	}
 	subgraph cluster_s15 {
-		color="black";label="wheels";margin="20";penwidth="5";style="rounded";
-		n17[fontname="Courier New",group="wheels",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[fontname="Courier New",group="wheels",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n16[color="#9dddea",fontname="Courier New",group="wheels",height="1.0",label="🚗",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="clutch";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="clutch",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="clutch",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="clutch",height="1.0",label="Simple clutch",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n17->n16;
 		n16->n18;
 		
 	}
+	subgraph cluster_s11 {
+		color="black";label="engine";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="engine",height="1.0",label="start",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="engine",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="engine",height="1.0",label="Sends out rotation signal once started",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		n12->n14;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="gearbox";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="gearbox",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="gearbox",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="gearbox",height="1.0",label="⚙️",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="wheels";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="wheels",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="wheels",height="1.0",label="rotation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="wheels",height="1.0",label="🚗",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		
+	}
 	layout="dot";splines="ortho";
-	n10->n13[color="#e437ea",minlen="3",penwidth="2"];
-	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n5[color="#e437ea",minlen="3",penwidth="2"];
 	n14->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

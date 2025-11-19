@@ -16,27 +16,27 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s3 {
+	subgraph cluster_s8 {
 		color="black";label="case";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="case",height="1.0",label="i1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="case",height="1.0",label="res",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="case",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n5->n4;
-		n4->n6;
+		n10[fontname="Courier New",group="case",height="1.0",label="i1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="case",height="1.0",label="res",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="case",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n10->n9;
+		n9->n11;
 		
 	}
-	subgraph cluster_s7 {
+	subgraph cluster_s3 {
 		color="black";label="concat";margin="20";penwidth="5";style="rounded";
-		n9[fontname="Courier New",group="concat",height="1.0",label="i1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="concat",height="1.0",label="i2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="concat",height="1.0",label="res",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[color="#9dddea",fontname="Courier New",group="concat",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n9->n8;
-		n10->n8;
-		n8->n11;
+		n5[fontname="Courier New",group="concat",height="1.0",label="i1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="concat",height="1.0",label="i2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="concat",height="1.0",label="res",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="concat",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n6->n4;
+		n4->n7;
 		
 	}
 	layout="dot";splines="ortho";
-	n11->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n10[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

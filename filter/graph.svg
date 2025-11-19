@@ -13,17 +13,17 @@
 <polygon fill="#e2c6fc" stroke="black" stroke-dasharray="5,2" points="8,-560.68 8,-625.18 376,-625.18 376,-560.68 8,-560.68"/>
 </g>
 <g id="clust2" class="cluster">
-<title>cluster_s8</title>
+<title>cluster_s11</title>
 <path fill="none" stroke="black" stroke-width="5" d="M236,-8C236,-8 442,-8 442,-8 448,-8 454,-14 454,-20 454,-20 454,-240.5 454,-240.5 454,-246.5 448,-252.5 442,-252.5 442,-252.5 236,-252.5 236,-252.5 230,-252.5 224,-246.5 224,-240.5 224,-240.5 224,-20 224,-20 224,-14 230,-8 236,-8"/>
 <text text-anchor="middle" x="339" y="-235.2" font-family="Times,serif" font-size="14.00">dropped&#45;printer</text>
 </g>
 <g id="clust3" class="cluster">
-<title>cluster_s11</title>
+<title>cluster_s3</title>
 <path fill="none" stroke="black" stroke-width="5" d="M474,-8C474,-8 680,-8 680,-8 686,-8 692,-14 692,-20 692,-20 692,-240.5 692,-240.5 692,-246.5 686,-252.5 680,-252.5 680,-252.5 474,-252.5 474,-252.5 468,-252.5 462,-246.5 462,-240.5 462,-240.5 462,-20 462,-20 462,-14 468,-8 474,-8"/>
 <text text-anchor="middle" x="577" y="-235.2" font-family="Times,serif" font-size="14.00">passed&#45;printer</text>
 </g>
 <g id="clust4" class="cluster">
-<title>cluster_s3</title>
+<title>cluster_s6</title>
 <path fill="none" stroke="black" stroke-width="5" d="M400,-314.5C400,-314.5 584,-314.5 584,-314.5 590,-314.5 596,-320.5 596,-326.5 596,-326.5 596,-661.43 596,-661.43 596,-667.43 590,-673.43 584,-673.43 584,-673.43 400,-673.43 400,-673.43 394,-673.43 388,-667.43 388,-661.43 388,-661.43 388,-326.5 388,-326.5 388,-320.5 394,-314.5 400,-314.5"/>
 <text text-anchor="middle" x="492" y="-656.13" font-family="Times,serif" font-size="14.00">pop&#45;filter</text>
 </g>
@@ -33,93 +33,93 @@
 <text text-anchor="start" x="36.5" y="-587.88" font-family="Courier New" font-size="14.00">Description:</text>
 <text text-anchor="start" x="149.5" y="-587.88" font-family="Courier New" font-size="14.00">A mesh with 3 components</text>
 </g>
-<!-- n10 -->
+<!-- n13 -->
 <g id="node2" class="node">
-<title>n10</title>
+<title>n13</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="339" cy="-172" rx="36" ry="36"/>
 <text text-anchor="middle" x="339" y="-166.95" font-family="Courier New" font-size="14.00">in</text>
 </g>
-<!-- n9 -->
+<!-- n12 -->
 <g id="node3" class="node">
-<title>n9</title>
+<title>n12</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="433.62,-100 244.38,-100 244.38,-28 433.62,-28 433.62,-100"/>
 <text text-anchor="middle" x="339" y="-58.95" font-family="Courier New" font-size="14.00">Simple stdout printer</text>
 </g>
-<!-- n10&#45;&gt;n9 -->
+<!-- n13&#45;&gt;n12 -->
 <g id="edge1" class="edge">
-<title>n10&#45;&gt;n9</title>
+<title>n13&#45;&gt;n12</title>
 <path fill="none" stroke="black" d="M339,-135.13C339,-135.13 339,-112.21 339,-112.21"/>
 <polygon fill="black" stroke="black" points="342.5,-112.21 339,-102.21 335.5,-112.21 342.5,-112.21"/>
 </g>
-<!-- n13 -->
+<!-- n5 -->
 <g id="node4" class="node">
-<title>n13</title>
+<title>n5</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="577" cy="-172" rx="36" ry="36"/>
 <text text-anchor="middle" x="577" y="-166.95" font-family="Courier New" font-size="14.00">in</text>
 </g>
-<!-- n12 -->
+<!-- n4 -->
 <g id="node5" class="node">
-<title>n12</title>
+<title>n4</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="671.62,-100 482.38,-100 482.38,-28 671.62,-28 671.62,-100"/>
 <text text-anchor="middle" x="577" y="-58.95" font-family="Courier New" font-size="14.00">Simple stdout printer</text>
 </g>
-<!-- n13&#45;&gt;n12 -->
+<!-- n5&#45;&gt;n4 -->
 <g id="edge2" class="edge">
-<title>n13&#45;&gt;n12</title>
+<title>n5&#45;&gt;n4</title>
 <path fill="none" stroke="black" d="M577,-135.13C577,-135.13 577,-112.21 577,-112.21"/>
 <polygon fill="black" stroke="black" points="580.5,-112.21 577,-102.21 573.5,-112.21 580.5,-112.21"/>
 </g>
-<!-- n5 -->
+<!-- n8 -->
 <g id="node6" class="node">
-<title>n5</title>
+<title>n8</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="492" cy="-592.93" rx="36" ry="36"/>
 <text text-anchor="middle" x="492" y="-587.88" font-family="Courier New" font-size="14.00">in</text>
 </g>
-<!-- n4 -->
+<!-- n7 -->
 <g id="node9" class="node">
-<title>n4</title>
+<title>n7</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="553.62,-520.93 430.38,-520.93 430.38,-448.93 553.62,-448.93 553.62,-520.93"/>
 <text text-anchor="middle" x="492" y="-479.88" font-family="Courier New" font-size="14.00">Simple filter</text>
 </g>
-<!-- n5&#45;&gt;n4 -->
+<!-- n8&#45;&gt;n7 -->
 <g id="edge3" class="edge">
-<title>n5&#45;&gt;n4</title>
+<title>n8&#45;&gt;n7</title>
 <path fill="none" stroke="black" d="M492,-556.06C492,-556.06 492,-533.14 492,-533.14"/>
 <polygon fill="black" stroke="black" points="495.5,-533.14 492,-523.14 488.5,-533.14 495.5,-533.14"/>
 </g>
-<!-- n6 -->
+<!-- n9 -->
 <g id="node7" class="node">
-<title>n6</title>
+<title>n9</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="447" cy="-373.72" rx="39.22" ry="39.22"/>
 <text text-anchor="middle" x="447" y="-368.67" font-family="Courier New" font-size="14.00">dropped</text>
 </g>
-<!-- n6&#45;&gt;n10 -->
+<!-- n9&#45;&gt;n13 -->
 <g id="edge6" class="edge">
-<title>n6&#45;&gt;n10</title>
+<title>n9&#45;&gt;n13</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M406.91,-374C388.74,-374 371.25,-374 371.25,-374 371.25,-374 371.25,-202.95 371.25,-202.95"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="374.75,-202.95 371.25,-192.95 367.75,-202.95 374.75,-202.95"/>
 </g>
-<!-- n7 -->
+<!-- n10 -->
 <g id="node8" class="node">
-<title>n7</title>
+<title>n10</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="540" cy="-373.72" rx="36" ry="36"/>
 <text text-anchor="middle" x="540" y="-368.67" font-family="Courier New" font-size="14.00">passed</text>
 </g>
-<!-- n7&#45;&gt;n13 -->
+<!-- n10&#45;&gt;n5 -->
 <g id="edge7" class="edge">
-<title>n7&#45;&gt;n13</title>
+<title>n10&#45;&gt;n5</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M558.5,-341.75C558.5,-341.75 558.5,-216.84 558.5,-216.84"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="562,-216.84 558.5,-206.84 555,-216.84 562,-216.84"/>
 </g>
-<!-- n4&#45;&gt;n6 -->
+<!-- n7&#45;&gt;n9 -->
 <g id="edge4" class="edge">
-<title>n4&#45;&gt;n6</title>
+<title>n7&#45;&gt;n9</title>
 <path fill="none" stroke="black" d="M458.3,-448.21C458.3,-448.21 458.3,-423.82 458.3,-423.82"/>
 <polygon fill="black" stroke="black" points="461.8,-423.82 458.3,-413.82 454.8,-423.82 461.8,-423.82"/>
 </g>
-<!-- n4&#45;&gt;n7 -->
+<!-- n7&#45;&gt;n10 -->
 <g id="edge5" class="edge">
-<title>n4&#45;&gt;n7</title>
+<title>n7&#45;&gt;n10</title>
 <path fill="none" stroke="black" d="M528.81,-448.21C528.81,-448.21 528.81,-420.4 528.81,-420.4"/>
 <polygon fill="black" stroke="black" points="532.31,-420.4 528.81,-410.4 525.31,-420.4 532.31,-420.4"/>
 </g>
