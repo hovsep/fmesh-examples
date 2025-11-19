@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -32,13 +33,14 @@ type CanFrame struct {
 // Each node filters and processes only frames that match its assigned ID
 // Features: signal broadcasting, ID-based filtering, and corruption detection
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Initial signal group includes both valid and corrupted frames
 	initSignals := signal.NewGroup().WithPayloads(

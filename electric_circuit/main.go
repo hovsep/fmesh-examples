@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -47,13 +49,14 @@ const (
 //
 // The simulation runs until a termination condition is met, such as the battery depleting or the lightbulb burning out.
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Turn on the lightbulb (yes you can init an output port)
 	fm.ComponentByName("lightbulb").InputByName("start_power_demand").PutSignals(signal.New("start"))

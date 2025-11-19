@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 	"os"
@@ -12,20 +12,21 @@ import (
 
 // This example is used in fmesh repo readme.md
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Init inputs
 	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
 	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
 
 	// Run the mesh
-	_, err := fm.Run()
+	_, err = fm.Run()
 
 	// Check for errors
 	if err != nil {
