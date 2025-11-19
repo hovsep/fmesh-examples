@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -18,18 +18,19 @@ const (
 
 // This demo simulates a load balancing scenario using F-Mesh components.
 // A central load balancer distributes incoming requests to multiple backend workers
-// using round-robin strategy. The system runs in waves (simulating traffic spikes),
-// ensuring fair distribution of load even across multiple activation cycles.
+// using a round-robin strategy. The system runs in waves (simulating traffic spikes),
+// ensuring a fair distribution of a load even across multiple activation cycles.
 // Each worker processes requests and returns a response, which the load balancer collects and emits.
 // The demo showcases dynamic routing, stateful component behavior, and signal-based processing.
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Run multiple waves (traffic spikes) to demonstrate that LB evenly distributes requests even when interrupted
 	// you can play with number of workers, waves and requests per wave to check that

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 	"io"
@@ -34,13 +34,14 @@ const (
 // Each stage is represented as a reusable F-Mesh component, allowing for easy modifications
 // and extensions. The pipeline executes sequentially, passing processed data between components.
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Initialize the pipeline by sending the first signal.
 	// While we could directly reference the entry-point component using fm.ComponentByName("read-stdin"),
@@ -48,7 +49,7 @@ func main() {
 	// This ensures cleaner and more maintainable code, especially if component names change in the future.
 	fm.Components().ByLabelValue("stage", "1").One().InputByName(portIn).PutSignals(signal.New("start"))
 
-	_, err := fm.Run()
+	_, err = fm.Run()
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
 		os.Exit(1)

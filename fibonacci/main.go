@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -16,19 +18,15 @@ import (
 // For instance, this approach can be used to calculate Fibonacci numbers without needing
 // traditional looping code. Instead, the loop is achieved by configuring ports and pipes,
 // where each cycle processes a new Fibonacci term.
-//
-// Usage:
-//
-//	go run .              # Run the example
-//	go run . --graph     # Generate graph.svg and exit
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Set inputs (first 2 Fibonacci numbers)
 	f0, f1 := signal.New(0), signal.New(1)
@@ -40,7 +38,7 @@ func main() {
 	fmt.Println(f1.PayloadOrNil())
 
 	// Run the mesh
-	_, err := fm.Run()
+	_, err = fm.Run()
 
 	if err != nil {
 		fmt.Println(err)

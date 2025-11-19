@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -20,13 +22,14 @@ type factorizedNumber struct {
 // mesh, enabling complex and hierarchical workflows.
 // In this example we implement prime factorization (which is core part of RSA encryption algorithm) as a sub-mesh
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	outerMesh := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(outerMesh)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Set init data
 	outerMesh.Components().
@@ -35,7 +38,7 @@ func main() {
 		PutSignals(signal.New(315))
 
 	// Run outer mesh
-	_, err := outerMesh.Run()
+	_, err = outerMesh.Run()
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("outer mesh failed with error: %w", err))

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-graphviz/dot"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -20,15 +20,16 @@ import (
 // These DOT files can be rendered into images using Graphviz,
 // allowing you to inspect both the static topology and runtime behavior of the mesh.
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution - this example also demonstrates manual graph generation
 	fm := getMesh()
 
-	// Start the engine !
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
+
+	// Start the engine!
 	fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch"))
 
 	runtimeInfo, err := fm.Run()

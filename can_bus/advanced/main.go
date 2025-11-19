@@ -11,7 +11,7 @@ import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/engine"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/transmission"
-	"github.com/hovsep/fmesh-examples/tools/example-helper"
+	"github.com/hovsep/fmesh-examples/internal"
 )
 
 // This demo simulates a CAN bus system with a laptop connected via a USB–OBD interface.
@@ -54,13 +54,14 @@ import (
 var laptopInstance *diagnostics.Laptop
 
 func main() {
-	// Handle flags (--graph, etc.)
-	if examplehelper.RunWithFlags(getMesh) {
-		return // Exit if graph was generated
-	}
-
-	// Normal execution
 	fm := getMesh()
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
 
 	// Initialize the mesh: set diagnostic frames to USB port, so the laptop will send them
 	laptopInstance.SendDataToUSB(
