@@ -68,7 +68,7 @@ func main() {
 func getMesh() *fmesh.FMesh {
 	return buildPipeline(
 		"demo-pipeline",
-		// Just pass stages in desired order:
+		// Just pass stages in the desired order:
 		getStdInReader("read-stdin", "Please input text and press ENTER"),
 		getFileWriter("persist-input"),
 		getFileReader("read-file"),
