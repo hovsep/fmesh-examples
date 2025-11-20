@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
-	"os"
-	"strings"
 )
 
 // This example is used in fmesh repo readme.md
@@ -35,8 +36,8 @@ func main() {
 	}
 
 	// Extract results
-	results := fm.Components().ByName("case").OutputByName("res").FirstSignalPayloadOrNil()
-	fmt.Printf("Result is : %v", results)
+	result := fm.Components().ByName("case").OutputByName("res").Signals().FirstPayloadOrNil()
+	fmt.Printf("Result is : %v", result)
 }
 
 func getMesh() *fmesh.FMesh {
@@ -44,22 +45,22 @@ func getMesh() *fmesh.FMesh {
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		CyclesLimit:           10,
 	}).
-		WithComponents(
+		AddComponents(
 			component.New("concat").
-				WithInputs("i1", "i2").
-				WithOutputs("res").
+				AddInputs("i1", "i2").
+				AddOutputs("res").
 				WithActivationFunc(func(this *component.Component) error {
-					word1 := this.InputByName("i1").FirstSignalPayloadOrDefault("").(string)
-					word2 := this.InputByName("i2").FirstSignalPayloadOrDefault("").(string)
+					word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
+					word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
 
 					this.OutputByName("res").PutSignals(signal.New(word1 + word2))
 					return nil
 				}),
 			component.New("case").
-				WithInputs("i1").
-				WithOutputs("res").
+				AddInputs("i1").
+				AddOutputs("res").
 				WithActivationFunc(func(this *component.Component) error {
-					inputString := this.InputByName("i1").FirstSignalPayloadOrDefault("").(string)
+					inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
 
 					this.OutputByName("res").PutSignals(signal.New(strings.ToTitle(inputString)))
 					return nil

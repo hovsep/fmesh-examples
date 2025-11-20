@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
-	"net/http"
-	"os"
-	"time"
 )
 
 // This example processes 1 url every 3 seconds
@@ -59,7 +60,7 @@ func main() {
 			}
 
 			if fm.Components().ByName("web crawler").OutputByName("headers").HasSignals() {
-				results, err := fm.Components().ByName("web crawler").OutputByName("headers").AllSignalsPayloads()
+				results, err := fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
 				if err != nil {
 					fmt.Println("Failed to get results ", err)
 				}
@@ -93,14 +94,14 @@ func getMesh() *fmesh.FMesh {
 	// Define components
 	crawler := component.New("web crawler").
 		WithDescription("gets http headers from given url").
-		WithInputs("url").
-		WithOutputs("errors", "headers").
+		AddInputs("url").
+		AddOutputs("errors", "headers").
 		WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("url").HasSignals() {
 				return component.NewErrWaitForInputs(false)
 			}
 
-			allUrls, err := this.InputByName("url").AllSignalsPayloads()
+			allUrls, err := this.InputByName("url").Signals().AllPayloads()
 			if err != nil {
 				return err
 			}
@@ -131,13 +132,13 @@ func getMesh() *fmesh.FMesh {
 
 	logger := component.New("error logger").
 		WithDescription("logs http errors").
-		WithInputs("error").
+		AddInputs("error").
 		WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("error").HasSignals() {
 				return component.NewErrWaitForInputs(false)
 			}
 
-			allErrors, err := this.InputByName("error").AllSignalsPayloads()
+			allErrors, err := this.InputByName("error").Signals().AllPayloads()
 			if err != nil {
 				return err
 			}
@@ -157,6 +158,6 @@ func getMesh() *fmesh.FMesh {
 
 	return fmesh.NewWithConfig("web scraper", &fmesh.Config{
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-	}).WithComponents(crawler, logger)
+	}).AddComponents(crawler, logger)
 
 }
