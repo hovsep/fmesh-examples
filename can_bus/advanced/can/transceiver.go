@@ -15,8 +15,8 @@ import (
 // which converts bits to voltage and vice versa
 func NewTransceiver(unitName string) *component.Component {
 	return component.New("can_transceiver-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL).  // Bits in (write to bus), voltage in (read from bus)
-		WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL). // Bits out (read from bus), voltage out (write to bus)
+		AddInputs(common.PortCANTx, common.PortCANH, common.PortCANL).  // Bits in (write to bus), voltage in (read from bus)
+		AddOutputs(common.PortCANRx, common.PortCANH, common.PortCANL). // Bits out (read from bus), voltage out (write to bus)
 		WithLogger(common.NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			err := handleTxPath(this)
@@ -34,7 +34,7 @@ func NewTransceiver(unitName string) *component.Component {
 
 // Write path: transceiver -> bus
 func handleTxPath(this *component.Component) error {
-	for _, sig := range this.InputByName(common.PortCANTx).AllSignalsOrNil() {
+	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
 		bit, ok := sig.PayloadOrNil().(codec.Bit)
 		if !ok {
 			this.Logger().Println("received corrupted bit")
@@ -52,19 +52,19 @@ func handleTxPath(this *component.Component) error {
 		this.OutputByName(common.PortCANH).PutSignals(signal.New(resultingHVoltage))
 
 		this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
-	}
-	return nil
+		return nil
+	}).ChainableErr()
 }
 
 // Read path: transceiver <- bus (exactly one bit)
 func handleRxPath(this *component.Component) error {
 	if this.InputByName(common.PortCANL).HasSignals() && this.InputByName(common.PortCANH).HasSignals() {
-		vLow, err := this.InputByName(common.PortCANL).FirstSignalPayload()
+		vLow, err := this.InputByName(common.PortCANL).Signals().FirstPayload()
 		if err != nil {
 			return errors.New("failed to read voltage from L")
 		}
 
-		vHigh, err := this.InputByName(common.PortCANH).FirstSignalPayload()
+		vHigh, err := this.InputByName(common.PortCANH).Signals().FirstPayload()
 		if err != nil {
 			return errors.New("failed to read voltage from H")
 		}

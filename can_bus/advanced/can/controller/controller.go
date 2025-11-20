@@ -29,8 +29,8 @@ var (
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
 	return component.New("can_controller-"+unitName).
-		WithInputs(common.PortCANTx, common.PortCANRx).                              // Frame in, bits in
-		WithOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState). // Bits out, frame out, notify when bus is idle
+		AddInputs(common.PortCANTx, common.PortCANRx).                              // Frame in, bits in
+		AddOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState). // Bits out, frame out, notify when bus is idle
 		WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
@@ -75,7 +75,7 @@ func handleIncomingFrames(this *component.Component) error {
 		this.State().Set(stateKeyTxQueue, txQueue)
 	}()
 
-	for _, sig := range this.InputByName(common.PortCANTx).AllSignalsOrNil() {
+	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
 		frame, ok := sig.PayloadOrNil().(*codec.Frame)
 		if !ok || !frame.IsValid() {
 			return errors.New("received corrupted frame")
@@ -88,18 +88,18 @@ func handleIncomingFrames(this *component.Component) error {
 			Buf: codec.NewBitBuffer(frameBits.WithIFS().WithBits(codec.ProtocolRecessiveBit)),
 		})
 		this.Logger().Printf("got a frame from MCU to send: %s items in tx-queue: %d", frame, len(txQueue))
-	}
-	return nil
+		return nil
+	}).ChainableErr()
 }
 
 func getCurrentBit(this *component.Component) (codec.Bit, error) {
 	if !this.InputByName(common.PortCANRx).HasSignals() {
 		return codec.ProtocolRecessiveBit, errNoBitOnBus
 	}
-	if this.InputByName(common.PortCANRx).Buffer().Len() > 1 {
+	if this.InputByName(common.PortCANRx).Signals().Len() > 1 {
 		return codec.ProtocolRecessiveBit, errors.New("received more than one bit")
 	}
-	currentBit := this.InputByName(common.PortCANRx).FirstSignalPayloadOrNil().(codec.Bit)
+	currentBit := this.InputByName(common.PortCANRx).Signals().FirstPayloadOrNil().(codec.Bit)
 
 	return currentBit, nil
 }
@@ -130,7 +130,6 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 		this.State().Set(stateKeyControllerState, currentState)
 		refreshLoggerPrefix(this)
 	}
-	return errors.New("did not manage to exit correctly from main state machine loop")
 }
 
 func getNextState(this *component.Component, previousState, currentState State, currentBit codec.Bit) (State, error) {

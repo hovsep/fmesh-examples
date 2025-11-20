@@ -10,21 +10,21 @@ import (
 
 const (
 	stateKeyControllerStates   = "ctl_states"      // Set of all received states
-	stateKeyObservedIdleCycles = "bus_idle_cycles" // How many cycles bus was passive-idle (not producing a pair of voltages)
+	stateKeyObservedIdleCycles = "bus_idle_cycles" // For how many cycles the bus was passive-idle (not producing a pair of voltages)
 	triggerBusAfterIdleCycles  = 3 + 1             // If the bus is idle for 4 (signal propagation distance from bus to MCU in cycles + 1) consecutive cycles, request a recessive bit (simulates passive resistors pulling the lines)
-	stopBusAfterIdleCycles     = 11 + 1            // If the bus remains idle for 12 (11 signals are needed for controller to start arbitration) consecutive cycles, stop watchdog self-activation to allow the bus stop naturally)
+	stopBusAfterIdleCycles     = 11 + 1            // If the bus remains idle for 12 (11 signals are needed for controller to start arbitration) consecutive cycles, stop watchdog self-activation to allow the bus to stop naturally)
 )
 
 func newWatchdog(name string) *component.Component {
 	watchdog := component.New(name).
 		WithDescription("Simulates terminal resistors and halts the bus when all nodes are idle").
-		WithInputs(
+		AddInputs(
 			common.PortControllerState, // Each CAN node sends it's current state here
 			common.PortCANL,            // Current voltage on bus low wire
 			common.PortCANH,            // Current voltage on bus high wire
 			common.PortSelfActivation,  // Non-parametrized (dummy) feedback-loop, so watchdog is activated in each cycle once fired
 		).
-		WithOutputs(
+		AddOutputs(
 			portRecessiveBitRequest, // Control signal to bus, in order to drive the bus recessive (simulate terminal resistors effect)
 			common.PortSelfActivation,
 		).
@@ -32,7 +32,7 @@ func newWatchdog(name string) *component.Component {
 			// We will track the state of each controller
 			state.Set(stateKeyControllerStates, make(controller.StateMap))
 
-			// Tracking consecutive cycles in which bus is silent allows us to stop the bus and whole simulation
+			// Tracking consecutive cycles in which the bus is silent allows us to stop the bus and whole simulation
 			state.Set(stateKeyObservedIdleCycles, 0)
 		}).
 		WithActivationFunc(func(this *component.Component) error {
@@ -41,17 +41,17 @@ func newWatchdog(name string) *component.Component {
 
 			if this.InputByName(common.PortControllerState).HasSignals() {
 
-				for _, sig := range this.InputByName(common.PortControllerState).AllSignalsOrNil() {
+				this.InputByName(common.PortControllerState).Signals().ForEach(func(sig *signal.Signal) error {
 					ctlStateMap := sig.PayloadOrNil().(controller.StateMap)
-
 					ctlStates = ctlStates.MergeFrom(ctlStateMap)
-				}
+					return nil
+				})
 
 				this.State().Set(stateKeyControllerStates, ctlStates)
 			}
 
-			currentL := this.InputByName(common.PortCANL).FirstSignalPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
-			currentH := this.InputByName(common.PortCANH).FirstSignalPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
+			currentL := this.InputByName(common.PortCANL).Signals().FirstPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
+			currentH := this.InputByName(common.PortCANH).Signals().FirstPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
 
 			allControllersAreIdle := true
 			for _, ctlState := range ctlStates {

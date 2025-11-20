@@ -45,17 +45,18 @@ func main() {
 	}
 
 	// Read results
-	for _, resSig := range outerMesh.Components().ByName("factorizer").OutputByName("out").AllSignalsOrNil() {
-		result := resSig.PayloadOrNil().(factorizedNumber)
+	outerMesh.Components().ByName("factorizer").OutputByName("out").Signals().ForEach(func(sig *signal.Signal) error {
+		result := sig.PayloadOrNil().(factorizedNumber)
 		fmt.Printf("Factors of number %d : %v \n", result.Num, result.Factors)
-	}
+		return nil
+	})
 }
 
 func getMesh() *fmesh.FMesh {
 	starter := component.New("starter").
 		WithDescription("This component just holds numbers we want to factorize").
-		WithInputs("in"). // Single port is enough, as it can hold any number of signals (as long as they fit into1 memory)
-		WithOutputs("out").
+		AddInputs("in"). // A single port is enough, as it can hold any number of signals (as long as they fit into1 memory)
+		AddOutputs("out").
 		WithActivationFunc(func(this *component.Component) error {
 			// Pure bypass
 			return port.ForwardSignals(this.InputByName("in"), this.OutputByName("out"))
@@ -63,48 +64,47 @@ func getMesh() *fmesh.FMesh {
 
 	filter := component.New("filter").
 		WithDescription("In this component we can do some optional filtering").
-		WithInputs("in").
-		WithOutputs("out", "log").
+		AddInputs("in").
+		AddOutputs("out", "log").
 		WithActivationFunc(func(this *component.Component) error {
 			isValid := func(num int) bool {
 				return num < 1000
 			}
 
-			for _, sig := range this.InputByName("in").AllSignalsOrNil() {
+			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				if isValid(sig.PayloadOrNil().(int)) {
-					this.OutputByName("out").PutSignals(sig)
-				} else {
-					this.OutputByName("log").PutSignals(sig)
+					return this.OutputByName("out").PutSignals(sig).ChainableErr()
 				}
-			}
-			return nil
+				return this.OutputByName("log").PutSignals(sig).ChainableErr()
+			}).ChainableErr()
 		})
 
 	logger := component.New("logger").
 		WithDescription("Simple logger").
-		WithInputs("in").
+		AddInputs("in").
 		WithActivationFunc(func(this *component.Component) error {
-			for _, sig := range this.InputByName("in").AllSignalsOrNil() {
+			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				this.Logger().Println(sig.PayloadOrNil())
-			}
-			return nil
+				return nil
+			}).ChainableErr()
 		})
 
 	factorizer := component.New("factorizer").
 		WithDescription("Prime factorization implemented as separate f-mesh").
-		WithInputs("in").
-		WithOutputs("out").
+		AddInputs("in").
+		AddOutputs("out").
 		WithActivationFunc(func(this *component.Component) error {
-			// This activation function has no implementation of factorization algorithm,
+			// This activation function has no implementation of the factorization algorithm,
 			// it only runs another f-mesh to get results
 
 			// Get nested mesh or meshes
 			factorization := getPrimeFactorizationMesh()
 
 			// As nested f-mesh processes 1 signal per run we run it in the loop per each number
-			for _, numSig := range this.InputByName("in").AllSignalsOrNil() {
+			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
+
 				// Set init data to nested mesh (pass signals from outer mesh to inner one)
-				factorization.Components().ByName("starter").InputByName("in").PutSignals(numSig)
+				factorization.Components().ByName("starter").InputByName("in").PutSignals(sig)
 
 				// Run nested mesh
 				_, err := factorization.Run()
@@ -114,20 +114,18 @@ func getMesh() *fmesh.FMesh {
 				}
 
 				// Get results from nested mesh
-				factors, err := factorization.Components().ByName("results").OutputByName("factors").AllSignalsPayloads()
+				factors, err := factorization.Components().ByName("results").OutputByName("factors").Signals().AllPayloads()
 				if err != nil {
 					return fmt.Errorf("failed to get factors: %w", err)
 				}
 
 				// Pass results to outer mesh
-				number := numSig.PayloadOrNil().(int)
-				this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
+				number := sig.PayloadOrNil().(int)
+				return this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
 					Num:     number,
 					Factors: factors,
-				}))
-			}
-
-			return nil
+				})).ChainableErr()
+			}).ChainableErr()
 		})
 
 	// Setup pipes
@@ -136,42 +134,40 @@ func getMesh() *fmesh.FMesh {
 	filter.OutputByName("out").PipeTo(factorizer.InputByName("in"))
 
 	// Build the mesh
-	return fmesh.New("outer").WithComponents(starter, filter, logger, factorizer)
+	return fmesh.New("outer").AddComponents(starter, filter, logger, factorizer)
 }
 
 func getPrimeFactorizationMesh() *fmesh.FMesh {
 	starter := component.New("starter").
 		WithDescription("Load the number to be factorized").
-		WithInputs("in").
-		WithOutputs("out").
+		AddInputs("in").
+		AddOutputs("out").
 		WithActivationFunc(func(this *component.Component) error {
-			// For simplicity this f-mesh processes only one signal per run, so ignore all except first
-			this.OutputByName("out").PutSignals(this.InputByName("in").Buffer().First())
-			return nil
+			// For simplicity this f-mesh processes only one signal per run, so ignore all except the first
+			return this.OutputByName("out").PutSignals(this.InputByName("in").Signals().First()).ChainableErr()
 		})
 
 	d2 := component.New("d2").
 		WithDescription("Divide by smallest prime (2) to handle even factors").
-		WithInputs("in").
-		WithOutputs("out", "factor").
+		AddInputs("in").
+		AddOutputs("out", "factor").
 		WithActivationFunc(func(this *component.Component) error {
-			number := this.InputByName("in").FirstSignalPayloadOrNil().(int)
+			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 
 			for number%2 == 0 {
 				this.OutputByName("factor").PutSignals(signal.New(2))
 				number /= 2
 			}
 
-			this.OutputByName("out").PutSignals(signal.New(number))
-			return nil
+			return this.OutputByName("out").PutSignals(signal.New(number)).ChainableErr()
 		})
 
 	dodd := component.New("dodd").
 		WithDescription("Divide by odd primes starting from 3").
-		WithInputs("in").
-		WithOutputs("out", "factor").
+		AddInputs("in").
+		AddOutputs("out", "factor").
 		WithActivationFunc(func(this *component.Component) error {
-			number := this.InputByName("in").FirstSignalPayloadOrNil().(int)
+			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			divisor := 3
 			for number > 1 && divisor*divisor <= number {
 				for number%divisor == 0 {
@@ -180,26 +176,25 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 				}
 				divisor += 2
 			}
-			this.OutputByName("out").PutSignals(signal.New(number))
-			return nil
+			return this.OutputByName("out").PutSignals(signal.New(number)).ChainableErr()
 		})
 
 	finalPrime := component.New("final_prime").
 		WithDescription("Store the last remaining prime factor, if any").
-		WithInputs("in").
-		WithOutputs("factor").
+		AddInputs("in").
+		AddOutputs("factor").
 		WithActivationFunc(func(this *component.Component) error {
-			number := this.InputByName("in").FirstSignalPayloadOrNil().(int)
+			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			if number > 1 {
-				this.OutputByName("factor").PutSignals(signal.New(number))
+				return this.OutputByName("factor").PutSignals(signal.New(number)).ChainableErr()
 			}
 			return nil
 		})
 
 	results := component.New("results").
 		WithDescription("factors holder").
-		WithInputs("factor").
-		WithOutputs("factors").
+		AddInputs("factor").
+		AddOutputs("factors").
 		WithActivationFunc(func(this *component.Component) error {
 			return port.ForwardSignals(this.InputByName("factor"), this.OutputByName("factors"))
 		})
@@ -216,5 +211,5 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 
 	return fmesh.New("prime factors algo").
 		WithDescription("Pass single signal to starter").
-		WithComponents(starter, d2, dodd, finalPrime, results)
+		AddComponents(starter, d2, dodd, finalPrime, results)
 }

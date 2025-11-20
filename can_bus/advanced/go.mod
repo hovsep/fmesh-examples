@@ -3,12 +3,10 @@ module github.com/hovsep/fmesh-examples/can_bus/advanced
 go 1.24.1
 
 require (
-	github.com/hovsep/fmesh v1.2.3-Artashat
-	github.com/hovsep/fmesh-examples v0.0.0
-	github.com/stretchr/testify v1.10.0
+	github.com/hovsep/fmesh v1.3.1-tigranakert.0.20251120012724-362e2e1b7a36
+	github.com/hovsep/fmesh-examples v0.0.4-0.20251119211747-b35d3239e788
+	github.com/stretchr/testify v1.11.1
 )
-
-replace github.com/hovsep/fmesh-examples => ../..
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

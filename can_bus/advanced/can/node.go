@@ -10,7 +10,7 @@ import (
 
 // The Node consists of multiple components
 type Node struct {
-	MCU         *component.Component // Main logic, operates with ISO-TP messages
+	MCU         *component.Component // Main logic operates with ISO-TP messages
 	Controller  *component.Component // Converts frames to bits and vice versa
 	Transceiver *component.Component // Converts bits to voltages
 }
@@ -44,7 +44,7 @@ func NewNode(unitName string, mcuInitState func(state component.State), mcuActiv
 	}
 }
 
-// GetAllComponents returns all fmesh components of node
+// GetAllComponents returns all fmesh components of the node
 func (nodes Nodes) GetAllComponents() []*component.Component {
 	var all []*component.Component
 	for _, node := range nodes {

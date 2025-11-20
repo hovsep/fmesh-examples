@@ -22,7 +22,7 @@ type ServiceMap map[ServiceID]ParamsMap
 // LogicMap maps addressing modes to allowed services
 type LogicMap map[AddressingMode]ServiceMap
 
-// LogicDescriptor contains whole MCU behaviour
+// LogicDescriptor contains the whole MCU behavior
 type LogicDescriptor struct {
 	PhysicalAddress uint32
 	Table           LogicMap
@@ -30,7 +30,7 @@ type LogicDescriptor struct {
 
 func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 	af := func(this *component.Component) error {
-		for _, sig := range this.InputByName(common.PortCANRx).AllSignalsOrNil() {
+		return this.InputByName(common.PortCANRx).Signals().ForEach(func(sig *signal.Signal) error {
 			// Validate CAN frame
 			frame, ok := sig.PayloadOrNil().(*codec.Frame)
 			if !ok {
@@ -65,7 +65,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 				return errors.New("addressing mode is not supported")
 			}
 
-			// Check if service is supported
+			// Check if the service is supported
 			params, ok := services[isoReq.ServiceID]
 			if !ok {
 				return errors.New("service is not supported")
@@ -75,7 +75,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			reqHandler, ok := params[isoReq.PID]
 			if !ok {
 				this.Logger().Printf("skipping request: parameter 0x%02X (%s) is not supported", isoReq.PID, isoReq.PID.ToString())
-				continue
+				return nil
 			}
 
 			// Run logic and get the response
@@ -83,7 +83,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			if err != nil {
 				return fmt.Errorf("failed to apply MCU logic: %w", err)
 			}
-			// For simplicity this demo supports only single frame responses, so any data which does not fit will be truncated:
+			// For simplicity this demo supports only single frame responses, so any data that does not fit will be truncated:
 
 			// Return response down to CAN controller
 			respCANFrame, err := isoResp.ToCANFrame(ld.PhysicalAddress + ResponseAddressOffset)
@@ -94,9 +94,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: 0x%03X, sid: 0x%02X, pid: 0x%02X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
 
 			return nil
-		}
-
-		return nil
+		}).ChainableErr()
 	}
 
 	return af

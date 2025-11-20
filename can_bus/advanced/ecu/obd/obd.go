@@ -34,8 +34,8 @@ func NewNode() *can.Node {
 	// Add custom ports
 	obdDevice.MCU.
 		// Physical 16 pin OBD socket (io)
-		WithInputs(PortOBDIn).
-		WithOutputs(PortOBDOut)
+		AddInputs(PortOBDIn).
+		AddOutputs(PortOBDOut)
 
 	return obdDevice
 }
