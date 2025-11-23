@@ -3,7 +3,6 @@ package diagnostics
 import (
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
-	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -23,23 +22,25 @@ const (
 func NewLaptop(name string) *Laptop {
 	return &Laptop{
 		laptopComponent: component.New(name).
-			WithInputs(portUSBIn, portProgrammaticIn).
-			WithOutputs(portUSBOut).
+			AddInputs(portUSBIn, portProgrammaticIn).
+			AddOutputs(portUSBOut).
 			WithActivationFunc(func(this *component.Component) error {
 
 				// Process programmatic commands
-				for _, sig := range this.InputByName(portProgrammaticIn).AllSignalsOrNil() {
+				this.InputByName(portProgrammaticIn).Signals().ForEach(func(sig *signal.Signal) error {
 					// Handle signals routed to usb port
-					if sig.LabelIs(labelTo, labelUSB) {
+					if sig.Labels().ValueIs(labelTo, labelUSB) {
 						this.OutputByName(portUSBOut).PutSignals(sig)
 					}
-				}
+					return nil
+				})
 
 				// Process incoming usb data
-				for _, sig := range this.InputByName(portUSBIn).AllSignalsOrNil() {
+				this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
 					// Just print everything to STDOUT
 					this.Logger().Printf("Got data on USB port: %v", sig.PayloadOrNil())
-				}
+					return nil
+				})
 
 				return nil
 			}),
@@ -48,24 +49,23 @@ func NewLaptop(name string) *Laptop {
 
 func (l *Laptop) SendDataToUSB(payloads ...any) {
 	l.laptopComponent.InputByName(portProgrammaticIn).
-		PutSignals(
-			signal.NewGroup(payloads...).
-				WithSignalLabels(common.LabelsCollection{
-					labelTo: labelUSB,
-				}).
-				SignalsOrNil()...,
+		PutSignalGroups(
+			signal.NewGroup(payloads...).ForEach(func(sig *signal.Signal) error {
+				sig.AddLabel(labelTo, labelUSB)
+				return nil
+			}),
 		)
 }
 
 func (l *Laptop) ConnectToOBD(OBDSocket *can.Node) error {
 	l.laptopComponent.OutputByName(portUSBOut).PipeTo(OBDSocket.MCU.InputByName(obd.PortOBDIn))
 	OBDSocket.MCU.OutputByName(obd.PortOBDOut).PipeTo(l.laptopComponent.InputByName(portUSBIn))
-	if l.laptopComponent.HasErr() {
-		return l.laptopComponent.Err()
+	if l.laptopComponent.HasChainableErr() {
+		return l.laptopComponent.ChainableErr()
 	}
 
-	if OBDSocket.MCU.HasErr() {
-		return OBDSocket.MCU.Err()
+	if OBDSocket.MCU.HasChainableErr() {
+		return OBDSocket.MCU.ChainableErr()
 	}
 
 	return nil

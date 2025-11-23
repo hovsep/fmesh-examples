@@ -13,13 +13,6 @@ func NewBitBuffer(bits Bits) *BitBuffer {
 	}
 }
 
-func NewEmptyBitBuffer() *BitBuffer {
-	return &BitBuffer{
-		Bits:   NewBits(0),
-		Offset: 0,
-	}
-}
-
 func (bb *BitBuffer) Len() int {
 	return bb.Bits.Len()
 }

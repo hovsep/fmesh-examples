@@ -20,8 +20,8 @@ const (
 func newWires(name string) *component.Component {
 	wires := component.New(name).
 		WithDescription("Simulates differential low/high pair, performs wire-and logic").
-		WithInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
-		WithOutputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
+		AddInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
+		AddOutputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
 		WithLogger(common.NewNoopLogger()).
 		WithActivationFunc(func(this *component.Component) error {
 			allLow, allHigh, err := processRecessiveBitRequest(this)
@@ -47,21 +47,21 @@ func newWires(name string) *component.Component {
 			return doWiredAND(this, allLow, allHigh)
 		})
 
-	// Setup self-activation pipe
+	// Set up self-activation pipe
 	wires.OutputByName(portRecessiveBitRequest).PipeTo(wires.InputByName(portRecessiveBitRequest))
 
-	// Initially drive the bus with 11 recessive bits to simulate passive idle state,
+	// Initially drive the bus with 11 recessive bits to simulate a passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
 	wires.InputByName(portRecessiveBitRequest).PutSignals(signal.New(initialRecessiveBitsRequest))
 
 	return wires
 }
 
-// Process recessive bit request (the very first idle state, when bus is just powered or control signal from watchdog)
+// Process recessive bit request (the very first idle state, when the bus is just powered or control signal from watchdog)
 func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, []physical.Voltage, error) {
 	var allLow, allHigh []physical.Voltage
 
-	recessivesCount := this.InputByName(portRecessiveBitRequest).FirstSignalPayloadOrDefault(0).(int)
+	recessivesCount := this.InputByName(portRecessiveBitRequest).Signals().FirstPayloadOrDefault(0).(int)
 	if recessivesCount > 0 {
 		allLow = append(allLow, physical.RecessiveVoltage)
 		allHigh = append(allHigh, physical.RecessiveVoltage)
@@ -76,27 +76,31 @@ func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, 
 
 // Collect CAN_L voltages
 func collectLow(this *component.Component, allLow []physical.Voltage) ([]physical.Voltage, error) {
-	for _, sig := range this.InputByName(common.PortCANL).AllSignalsOrNil() {
+	this.InputByName(common.PortCANL).Signals().ForEach(func(sig *signal.Signal) error {
 		v, ok := sig.PayloadOrNil().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_L wire")
 		}
 
 		allLow = append(allLow, v)
-	}
+		return nil
+	})
+
 	return allLow, nil
 }
 
 // Collect CAN_H voltages
 func collectHigh(this *component.Component, allHigh []physical.Voltage) ([]physical.Voltage, error) {
-	for _, sig := range this.InputByName(common.PortCANH).AllSignalsOrNil() {
+	this.InputByName(common.PortCANH).Signals().ForEach(func(sig *signal.Signal) error {
 		v, ok := sig.PayloadOrNil().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_H wire")
 		}
 
 		allHigh = append(allHigh, v)
-	}
+		return nil
+	})
+
 	return allHigh, nil
 }
 

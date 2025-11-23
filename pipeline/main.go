@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 	tokenizerDelimiter = " "
 )
 
-// This example demonstrates simple pipeline implementation
+// This example demonstrates a simple pipeline implementation
 // The pipeline consists of multiple processing stages:
 // 1. Reads a line of text from standard input.
 // 2. Writes the input text to a file for persistence.
@@ -46,8 +47,10 @@ func main() {
 	// Initialize the pipeline by sending the first signal.
 	// While we could directly reference the entry-point component using fm.ComponentByName("read-stdin"),
 	// leveraging our custom "stage" label provides a more flexible and semantically meaningful approach.
-	// This ensures cleaner and more maintainable code, especially if component names change in the future.
-	fm.Components().ByLabelValue("stage", "1").One().InputByName(portIn).PutSignals(signal.New("start"))
+	// This ensures cleaner and more maintainable code, especially if component names will change in the future.
+	fm.Components().FindAny(func(c *component.Component) bool {
+		return c.Labels().ValueIs("stage", "1")
+	}).InputByName(portIn).PutSignals(signal.New("start"))
 
 	_, err = fm.Run()
 	if err != nil {
@@ -58,7 +61,9 @@ func main() {
 	fmt.Println("Pipeline finished successfully")
 
 	// Extract the filename from the latest stage
-	resultFileName := fm.Components().ByLabelValue("stage", strconv.Itoa(fm.Components().Len())).One().OutputByName(portOut).FirstSignalPayloadOrDefault("")
+	resultFileName := fm.Components().FindAny(func(c *component.Component) bool {
+		return c.Labels().ValueIs("stage", strconv.Itoa(fm.Components().Len()))
+	}).OutputByName(portOut).Signals().FirstPayloadOrDefault("")
 
 	if resultFileName != "" {
 		fmt.Println("Check results in the file: ", resultFileName)
@@ -87,7 +92,7 @@ func getFileReader(name string) *component.Component {
 		WithDescription("read file").
 		WithActivationFunc(func(this *component.Component) error {
 			// We expect exactly one signal with file name
-			fileName := this.InputByName(portIn).FirstSignalPayloadOrDefault("").(string)
+			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if fileName == "" {
 				return errors.New("no input filename")
 			}
@@ -135,7 +140,7 @@ func getFileWriter(name string) *component.Component {
 			if err != nil {
 				return err
 			}
-			fileName := fmt.Sprintf("stage-%s_%s_%d", this.LabelOrDefault("stage", ""), this.Name(), time.Now().UnixNano())
+			fileName := fmt.Sprintf("stage-%s_%s_%d", this.Labels().ValueOrDefault("stage", ""), this.Name(), time.Now().UnixNano())
 			file, err := root.Create(fileName)
 			if err != nil {
 				return err
@@ -153,11 +158,13 @@ func getFileWriter(name string) *component.Component {
 			}()
 
 			// Write all signals into the file (we assume they all are strings)
-			for _, sig := range this.InputByName(portIn).AllSignalsOrNil() {
-				_, err = file.WriteString(sig.PayloadOrDefault("").(string) + "\n")
-				if err != nil {
-					return err
-				}
+			this.InputByName(portIn).Signals().ForEach(func(s *signal.Signal) error {
+				_, err = file.WriteString(s.PayloadOrDefault("").(string) + "\n")
+				return err
+			})
+
+			if this.HasChainableErr() {
+				return this.ChainableErr()
 			}
 
 			err = file.Sync()
@@ -200,7 +207,7 @@ func getTokenizer(name, delimiter string) *component.Component {
 	return component.New(name).
 		WithDescription("tokenize text").
 		WithActivationFunc(func(this *component.Component) error {
-			text := this.InputByName(portIn).FirstSignalPayloadOrDefault("").(string)
+			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if text == "" {
 				this.Logger().Println("got empty text. Aborting activation")
 				return nil
@@ -233,13 +240,14 @@ func getFilter(name string, blockList map[string]bool) *component.Component {
 		WithActivationFunc(func(this *component.Component) error {
 			filtered := signal.NewGroup()
 
-			for _, sig := range this.InputByName(portIn).AllSignalsOrNil() {
+			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				if !blockList[sig.PayloadOrDefault("").(string)] {
-					filtered = filtered.With(sig)
+					filtered = filtered.Add(sig)
 				}
-			}
+				return nil
+			})
 
-			this.OutputByName(portOut).PutSignals(filtered.SignalsOrNil()...)
+			this.OutputByName(portOut).PutSignalGroups(filtered)
 			return nil
 		})
 }
@@ -252,9 +260,11 @@ func getTokenCounter(name string) *component.Component {
 		WithDescription("count tokens").
 		WithActivationFunc(func(this *component.Component) error {
 			counters := make(map[string]int)
-			for _, tokenSig := range this.InputByName(portIn).AllSignalsOrNil() {
-				counters[tokenSig.PayloadOrDefault("").(string)]++
-			}
+
+			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+				counters[sig.PayloadOrDefault("").(string)]++
+				return nil
+			})
 			for t, count := range counters {
 				this.OutputByName(portOut).PutSignals(signal.New(fmt.Sprintf("%s:%d", t, count)))
 			}
@@ -264,7 +274,9 @@ func getTokenCounter(name string) *component.Component {
 
 // buildPipeline accepts multiple components and builds a pipeline of them
 // each component will be setup with standard interface (input/output ports)
-// Also each component will be assigned a "stage" label which allows referring
+//
+//	Also, each component will be assigned a "stage" label which allows referring
+//
 // to components by stage index instead of the name
 func buildPipeline(name string, components ...*component.Component) *fmesh.FMesh {
 	stageIndex := 1
@@ -274,16 +286,15 @@ func buildPipeline(name string, components ...*component.Component) *fmesh.FMesh
 		// We can add custom labels
 		c.AddLabel("stage", strconv.Itoa(stageIndex))
 
-		fm = fm.WithComponents(withPipelineInterface(c))
+		fm = fm.AddComponents(withPipelineInterface(c))
 
 		// Connect stages with pipes
 		if stageIndex > 1 {
 			// Use stage-index semantics to connect components
-			fm.Components().
-				ByLabelValue("stage", strconv.Itoa(stageIndex-1)). // Get previous stage component
-				One().                                             // We are sure there is only one such
-				OutputByName(portOut).                             // Connect from
-				PipeTo(c.InputByName(portIn))                      // Connect to
+			fm.Components().FindAny(func(c *component.Component) bool {
+				return c.Labels().ValueIs("stage", strconv.Itoa(stageIndex-1))
+			}).OutputByName(portOut). // Connect from
+							PipeTo(c.InputByName(portIn)) // Connect to
 		}
 		stageIndex++
 	}
@@ -294,5 +305,5 @@ func buildPipeline(name string, components ...*component.Component) *fmesh.FMesh
 // withPipelineInterface defines the common interface shared by all components
 // as we are building a pipeline each component will have one input and one output
 func withPipelineInterface(c *component.Component) *component.Component {
-	return c.WithInputs(portIn).WithOutputs(portOut)
+	return c.AddInputs(portIn).AddOutputs(portOut)
 }

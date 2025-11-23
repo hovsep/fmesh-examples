@@ -1,7 +1,5 @@
 package codec
 
-// Generated with AI
-
 import (
 	"testing"
 

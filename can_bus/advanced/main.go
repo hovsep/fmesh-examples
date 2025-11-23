@@ -109,7 +109,7 @@ func getMesh() *fmesh.FMesh {
 		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
 		Debug:                 false,
 	}).
-		WithComponents(laptopInstance.GetAllComponents()...).
-		WithComponents(ptBus.GetAllComponents()...).
-		WithComponents(allCanNodes.GetAllComponents()...)
+		AddComponents(laptopInstance.GetAllComponents()...).
+		AddComponents(ptBus.GetAllComponents()...).
+		AddComponents(allCanNodes.GetAllComponents()...)
 }

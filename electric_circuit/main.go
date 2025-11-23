@@ -74,8 +74,8 @@ func main() {
 func getMesh() *fmesh.FMesh {
 	battery := component.New("battery").
 		WithDescription("electric battery with initial charge level").
-		WithInputs("power_demand").
-		WithOutputs("power_supply").
+		AddInputs("power_demand").
+		AddOutputs("power_supply").
 		WithInitialState(func(state component.State) {
 			state.Set("level", 1000)
 		}).
@@ -91,7 +91,7 @@ func getMesh() *fmesh.FMesh {
 			this.Logger().Println("level: ", level)
 			// Power demand/supply cycle
 			if this.InputByName("power_demand").HasSignals() {
-				demandedCurrent := this.InputByName("power_demand").FirstSignalPayloadOrDefault(0).(int)
+				demandedCurrent := this.InputByName("power_demand").Signals().FirstPayloadOrDefault(0).(int)
 
 				// Emit current represented as a number
 				suppliedCurrent := min(level, demandedCurrent)
@@ -116,8 +116,8 @@ func getMesh() *fmesh.FMesh {
 
 	lightbulb := component.New("lightbulb").
 		WithDescription("electric lightbulb").
-		WithInputs("power_supply", "start_power_demand").
-		WithOutputs("light_supply", "power_demand").
+		AddInputs("power_supply", "start_power_demand").
+		AddOutputs("light_supply", "power_demand").
 		WithInitialState(func(state component.State) {
 			state.Set("temperature", 26.0)
 		}).
@@ -134,7 +134,7 @@ func getMesh() *fmesh.FMesh {
 			// Skip power consumption on start (as power is not demanded yet)
 			if !this.InputByName("start_power_demand").HasSignals() {
 				// Power consumption cycle (at constant rate)
-				inputPower := this.InputByName("power_supply").FirstSignalPayloadOrDefault(0).(int)
+				inputPower := this.InputByName("power_supply").Signals().FirstPayloadOrDefault(0).(int)
 				this.Logger().Println("got power: ", inputPower)
 
 				if inputPower >= lightBulbPowerConsumption {
@@ -173,5 +173,5 @@ func getMesh() *fmesh.FMesh {
 		Debug:                 false,
 	}).
 		WithDescription("simple electric simulation").
-		WithComponents(battery, lightbulb)
+		AddComponents(battery, lightbulb)
 }

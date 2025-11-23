@@ -47,11 +47,11 @@ func main() {
 
 func getMesh() *fmesh.FMesh {
 	c1 := component.New("fibonacci number generator").
-		WithInputs("i_cur", "i_prev").
-		WithOutputs("o_cur", "o_prev").
+		AddInputs("i_cur", "i_prev").
+		AddOutputs("o_cur", "o_prev").
 		WithActivationFunc(func(this *component.Component) error {
-			cur := this.InputByName("i_cur").FirstSignalPayloadOrDefault(0).(int)
-			prev := this.InputByName("i_prev").FirstSignalPayloadOrDefault(0).(int)
+			cur := this.InputByName("i_cur").Signals().FirstPayloadOrDefault(0).(int)
+			prev := this.InputByName("i_prev").Signals().FirstPayloadOrDefault(0).(int)
 
 			next := cur + prev
 
@@ -70,5 +70,5 @@ func getMesh() *fmesh.FMesh {
 	c1.Outputs().ByName("o_prev").PipeTo(c1.Inputs().ByName("i_prev"))
 
 	// Build mesh
-	return fmesh.New("fibonacci example").WithComponents(c1)
+	return fmesh.New("fibonacci example").AddComponents(c1)
 }

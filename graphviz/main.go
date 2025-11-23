@@ -4,13 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-graphviz/dot"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
-	"os"
 )
 
 // This example demonstrates how to visualize an fmesh network using the fmesh-graphviz package.
@@ -61,7 +62,7 @@ func main() {
 
 	writeGraphToFile(staticGraphBytes, fmt.Sprintf("static_graph-%v.dot", runId))
 
-	cyclesGraphs, err := exporter.ExportWithCycles(fm, runtimeInfo.Cycles.CyclesOrNil())
+	cyclesGraphs, err := exporter.ExportWithCycles(fm, runtimeInfo.Cycles)
 	if err != nil {
 		panic("can not export graph with cycles")
 	}
@@ -84,11 +85,11 @@ func main() {
 func getMesh() *fmesh.FMesh {
 	fm := fmesh.New("graph").
 		WithDescription("Simple car mechanics simulation").
-		WithComponents(
+		AddComponents(
 			component.New("engine").
 				WithDescription("Sends out rotation signal once started").
-				WithInputs("start").
-				WithOutputs("rotation").
+				AddInputs("start").
+				AddOutputs("rotation").
 				WithActivationFunc(func(this *component.Component) error {
 					revolution := signal.New(10)
 					revolution.AddLabel("direction", "clockwise")
@@ -99,8 +100,8 @@ func getMesh() *fmesh.FMesh {
 
 			component.New("clutch").
 				WithDescription("Simple clutch").
-				WithInputs("rotation").
-				WithOutputs("rotation").
+				AddInputs("rotation").
+				AddOutputs("rotation").
 				WithActivationFunc(func(this *component.Component) error {
 					// Assume clutch is always engaged
 					return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
@@ -108,22 +109,24 @@ func getMesh() *fmesh.FMesh {
 
 			component.New("gearbox").
 				WithDescription("⚙️").
-				WithInputs("rotation").
-				WithOutputs("rotation").
+				AddInputs("rotation").
+				AddOutputs("rotation").
 				WithActivationFunc(func(this *component.Component) error {
-					for _, s := range this.InputByName("rotation").AllSignalsOrNil() {
-						// Simulate gear ratio
-						rotationAfter := signal.New(s.PayloadOrDefault(0).(int) / 2).WithLabels(s.Labels())
-						this.OutputByName("rotation").PutSignals(rotationAfter)
-					}
+					return this.InputByName("rotation").Signals().ForEach(func(s *signal.Signal) error {
+						rotationAfter := s.MapPayload(func(payload any) any {
+							// Simulate gear ratio
+							return payload.(int) / 2
+						})
 
-					return nil
+						return this.OutputByName("rotation").PutSignals(rotationAfter).ChainableErr()
+
+					}).ChainableErr()
 				}),
 
 			component.New("wheels").
 				WithDescription("🚗").
-				WithInputs("rotation").
-				WithOutputs("rotation").
+				AddInputs("rotation").
+				AddOutputs("rotation").
 				WithActivationFunc(func(this *component.Component) error {
 					return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
 				}),

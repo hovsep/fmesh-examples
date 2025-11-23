@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/labels"
 	"github.com/hovsep/fmesh/signal"
-	"os"
 )
 
 const (
@@ -28,7 +29,7 @@ func main() {
 
 	// Init with data
 	signalsToFilter := getSignals()
-	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignals(signalsToFilter.SignalsOrNil()...)
+	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignalGroups(signalsToFilter)
 
 	_, err = fm.Run()
 	if err != nil {
@@ -40,7 +41,7 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	filter := getFilter("pop-filter", common.LabelsCollection{"genre": "pop"})
+	filter := getFilter("pop-filter", labels.NewCollection().Add("genre", "pop"))
 	printer1 := getPrinter("dropped-printer")
 	printer2 := getPrinter("passed-printer")
 
@@ -48,81 +49,80 @@ func getMesh() *fmesh.FMesh {
 	filter.OutputByName("passed").PipeTo(printer2.InputByName(portIn))
 
 	return fmesh.New("demo-filter").
-		WithComponents(filter, printer1, printer2)
+		AddComponents(filter, printer1, printer2)
 }
 
 func getPrinter(name string) *component.Component {
 	return component.New(name).
 		WithDescription("Simple stdout printer").
-		WithInputs(portIn).
+		AddInputs(portIn).
 		WithActivationFunc(func(this *component.Component) error {
-			for _, sig := range this.InputByName(portIn).AllSignalsOrNil() {
+			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				fmt.Printf("%s: %v \n", this.Name(), sig.PayloadOrDefault("no payload"))
-			}
-			return nil
+				return nil
+			}).ChainableErr()
 		})
 }
 
-func getFilter(name string, disallowedLabels common.LabelsCollection) *component.Component {
+func getFilter(name string, disallowedLabels *labels.Collection) *component.Component {
 	return component.New(name).
 		WithDescription("Simple filter").
-		WithInputs(portIn).
-		WithOutputs("dropped", "passed").
+		AddInputs(portIn).
+		AddOutputs("dropped", "passed").
 		WithActivationFunc(func(this *component.Component) error {
-			for _, sig := range this.InputByName(portIn).AllSignalsOrNil() {
-				if sig.HasAnyLabelWithValue(disallowedLabels) {
-					this.OutputByName("dropped").PutSignals(sig)
-				} else {
-					this.OutputByName("passed").PutSignals(sig)
+			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+				if sig.Labels().HasAnyFrom(disallowedLabels) {
+					return this.OutputByName("dropped").PutSignals(sig).ChainableErr()
 				}
-			}
-			return nil
+
+				return this.OutputByName("passed").PutSignals(sig).ChainableErr()
+			}).ChainableErr()
 		})
 }
 
 func getSignals() *signal.Group {
-	return signal.NewGroup().With(
-		signal.New("Justice").WithLabels(common.LabelsCollection{
+	return signal.NewGroup().Add(
+		signal.New("Justice").AddLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Justin Bieber",
 			"year":   "2021",
 		}),
-		signal.New("Dysania").WithLabels(common.LabelsCollection{
+		signal.New("Dysania").AddLabels(labels.Map{
 			"genre":  "rock",
 			"artist": "Elita",
 			"year":   "2023",
 		}),
-		signal.New("After Hours").WithLabels(common.LabelsCollection{
+		signal.New("After Hours").AddLabels(labels.Map{
 			"genre":  "pop",
-			"artist": "The Weeknd",
+			"artist": "The Weekend",
 			"year":   "2020",
 		}),
-		signal.New("Random Access Memories").WithLabels(common.LabelsCollection{
+		signal.New("Random Access Memories").AddLabels(labels.Map{
 			"genre":  "electronic",
 			"artist": "Daft Punk",
 			"year":   "2013",
 		}),
-		signal.New("Evermore").WithLabels(common.LabelsCollection{
+		signal.New("Evermore").AddLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2020",
 		}),
-		signal.New("1989").WithLabels(common.LabelsCollection{
+		signal.New("1989").AddLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2014",
 		}),
-		signal.New("To Pimp a Butterfly").WithLabels(common.LabelsCollection{
+		signal.New("To Pimp a Butterfly").AddLabels(labels.Map{
 			"genre":  "hip-hop",
 			"artist": "Kendrick Lamar",
 			"year":   "2015",
 		}),
-		signal.New("Ghost Stories").WithLabels(common.LabelsCollection{
+		signal.New("Ghost Stories").AddLabels(labels.Map{
 			"genre":  "alternative",
 			"artist": "Coldplay",
 			"year":   "2014",
 		}),
-		signal.New("Future Nostalgia").WithLabels(common.LabelsCollection{
+		signal.New("Future Nostalgia").AddLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Dua Lipa",
 			"year":   "2020",

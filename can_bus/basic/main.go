@@ -7,8 +7,8 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh/common"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/labels"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -42,8 +42,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	runCycle := 0
 	// Initial signal group includes both valid and corrupted frames
-	initSignals := signal.NewGroup().WithPayloads(
+	signal.NewGroup(
 		CanFrame{Id: 0, Data: []byte("ignition-start")},
 		CanFrame{Id: 2, Data: []byte("impact-detected-front-left")},
 		CanFrame{Id: 1, Data: []byte("deploy-airbag")},
@@ -56,10 +57,7 @@ func main() {
 		CanFrame{Id: 1, Data: []byte("airbag-status:ok")},
 		CanFrame{Id: 2, Data: []byte("sensor-selfcheck:pass")},
 		CanFrame{Id: 3, Data: []byte("lock-status:locked")},
-	)
-
-	// Feed signals one by one into the bus for processing
-	for runCycle, sig := range initSignals.SignalsOrNil() {
+	).ForEach(func(sig *signal.Signal) error {
 		fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig)
 
 		fm.Logger().Println("======================")
@@ -71,7 +69,9 @@ func main() {
 		}
 
 		time.Sleep(delayBetweenFrames)
-	}
+		runCycle++
+		return nil
+	})
 
 	fm.Logger().Println("======================")
 	fm.Logger().Println("Simulation completed successfully.")
@@ -88,7 +88,7 @@ func getMesh() *fmesh.FMesh {
 	}
 
 	// Initialize the mesh with the central CAN bus component
-	fm := fmesh.New("can_bus_sim_v0").WithComponents(getBus())
+	fm := fmesh.New("can_bus_sim_v0").AddComponents(getBus())
 
 	// Create and connect all CAN nodes to the bus
 	for id, name := range canNodes {
@@ -99,7 +99,7 @@ func getMesh() *fmesh.FMesh {
 		fm.ComponentByName(componentBus).OutputByName(portOut).PipeTo(canNode.InputByName(portIn))
 
 		// Register node in the mesh
-		fm.WithComponents(canNode)
+		fm.AddComponents(canNode)
 	}
 
 	return fm
@@ -109,8 +109,8 @@ func getMesh() *fmesh.FMesh {
 // All incoming signals are forwarded to all connected nodes
 func getBus() *component.Component {
 	return component.New(componentBus).
-		WithInputs(portIn).
-		WithOutputs(portOut).
+		AddInputs(portIn).
+		AddOutputs(portOut).
 		WithActivationFunc(func(this *component.Component) error {
 			return port.ForwardSignals(this.InputByName(portIn), this.OutputByName(portOut))
 		})
@@ -123,13 +123,13 @@ func getNode(name string, id int) *component.Component {
 		WithInitialState(func(state component.State) {
 			state.Set(stateNodeId, id)
 		}).
-		WithInputs(portIn).
-		WithOutputs(portOut).
+		AddInputs(portIn).
+		AddOutputs(portOut).
 		WithActivationFunc(func(this *component.Component) error {
 			myId := this.State().Get(stateNodeId).(int)
 			validFrames := make([]CanFrame, 0)
 
-			for _, sig := range this.InputByName(portIn).AllSignalsOrNil() {
+			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				// Reject corrupted signals
 				canFrame, ok := sig.PayloadOrNil().(CanFrame)
 				if !ok {
@@ -141,23 +141,25 @@ func getNode(name string, id int) *component.Component {
 							CanFrame{
 								Id:   4,
 								Data: []byte(fmt.Sprintf("register corrupted singal: %v", sig.PayloadOrNil())),
-							}).WithLabels(
-							// Additionally we can add some meta-data
-							common.LabelsCollection{
+							}).AddLabels(
+							// Additionally, we can add some meta-data
+							labels.Map{
 								"from":       this.Name(),
 								"detectedAt": time.Now().Format(time.RFC3339Nano),
-							}))
-					continue
+							}),
+					)
+					return nil
 				}
 
 				// Ignore frames not addressed to this node
 				if canFrame.Id != myId {
 					this.Logger().Printf("Frame ID mismatch: expected %d, got %d", myId, canFrame.Id)
-					continue
+					return nil
 				}
 
 				validFrames = append(validFrames, canFrame)
-			}
+				return nil
+			})
 
 			if len(validFrames) == 0 {
 				// No frames to process. Aborting activation
