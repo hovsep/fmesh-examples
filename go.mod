@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/chzyer/readline v1.5.1
-	github.com/hovsep/fmesh v1.4.0-Vagharshapat
+	github.com/hovsep/fmesh v1.4.1-Dvin
 	github.com/hovsep/fmesh-graphviz v1.3.0
 )
 
