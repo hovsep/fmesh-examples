@@ -1,8 +1,11 @@
 package env
 
 import (
+	"time"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/human_body/env/factor"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -11,9 +14,9 @@ const (
 
 // GetMesh builds the mesh that simulates the outside environment (the world)
 func GetMesh() *fmesh.FMesh {
+	simTime := factor.GetTimeComponent()
 	temperature := factor.GetTempComponent()
 	//@TODO:
-	// time (generate sim ticks, each tick is 10ms of real time, fast forwarding)
 	// humidity(%RH),
 	// radiation,
 	// uv,
@@ -25,6 +28,12 @@ func GetMesh() *fmesh.FMesh {
 	// physical impacts (running, weight lifting, walking)
 	// injury
 
-	return fmesh.New(meshName).
-		AddComponents(temperature)
+	// Start the time
+	simTime.InputByName("ctl").PutSignals(signal.New("start"))
+
+	return fmesh.NewWithConfig(meshName, &fmesh.Config{
+		CyclesLimit: 0,
+		TimeLimit:   10 * time.Second,
+	}).
+		AddComponents(simTime, temperature)
 }

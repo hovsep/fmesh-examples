@@ -2,11 +2,9 @@ package factor
 
 import "github.com/hovsep/fmesh/component"
 
-const componentName = "temperature"
-
 // GetTempComponent returns the temperature component of the environment
 func GetTempComponent() *component.Component {
-	return component.New(componentName).
+	return component.New("temperature").
 		WithDescription("Outside temperature in Celsius degrees").
 		AddInputs().
 		AddOutputs().
