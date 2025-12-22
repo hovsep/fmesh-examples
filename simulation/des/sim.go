@@ -1,4 +1,4 @@
-package main
+package des
 
 import (
 	"context"
@@ -11,22 +11,23 @@ import (
 
 type MeshCommandMap map[Command]func(fm *fmesh.FMesh)
 
+type SimInitFunc func(sim *Simulation)
+
 type Simulation struct {
 	ctx          context.Context
-	fm           *fmesh.FMesh
 	cmdChan      chan Command
 	isPaused     bool
-	meshCommands MeshCommandMap
-	autoPause    bool
+	FM           *fmesh.FMesh
+	MeshCommands MeshCommandMap
+	AutoPause    bool
 }
 
-func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh, autoPause bool) *Simulation {
+func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *Simulation {
 	return &Simulation{
 		ctx:          ctx,
-		fm:           fm,
+		FM:           fm,
 		cmdChan:      cmdChan,
-		meshCommands: make(MeshCommandMap),
-		autoPause:    autoPause,
+		MeshCommands: make(MeshCommandMap),
 	}
 }
 
@@ -73,14 +74,14 @@ func (s *Simulation) Run() {
 		}
 
 		// Run a single simulation cycle
-		runResult, err := s.fm.Run()
+		runResult, err := s.FM.Run()
 		if err != nil {
 			fmt.Println("Simulation cycle finished with error:", err)
 			return
 		}
 
 		// Auto-pause if nothing is happening
-		if s.autoPause && !runResult.Cycles.AnyMatch(func(c *cycle.Cycle) bool {
+		if s.AutoPause && !runResult.Cycles.AnyMatch(func(c *cycle.Cycle) bool {
 			return c.HasActivatedComponents()
 		}) {
 			fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")
@@ -100,11 +101,11 @@ func (s *Simulation) Resume() {
 }
 
 func (s *Simulation) handleCommand(cmd Command) {
-	cmdFunc, ok := s.meshCommands[cmd]
+	cmdFunc, ok := s.MeshCommands[cmd]
 	if !ok {
 		fmt.Printf("Unknown command: %v \n", cmd)
 		return
 	}
 	fmt.Println("Executing command: ", cmd)
-	cmdFunc(s.fm)
+	cmdFunc(s.FM)
 }

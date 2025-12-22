@@ -1,4 +1,4 @@
-package main
+package des
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh/signal"
 )
 
 type Application struct {
@@ -18,7 +17,7 @@ type Application struct {
 	sim  *Simulation
 }
 
-func NewApp(fm *fmesh.FMesh) *Application {
+func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -27,18 +26,7 @@ func NewApp(fm *fmesh.FMesh) *Application {
 		cancel:  cancel,
 		cmdChan: cmdChan,
 		REPL:    NewREPL(cmdChan),
-		sim: NewSimulation(ctx, cmdChan, fm, true).
-			Init(func(sim *Simulation) {
-				// Add custom commands here
-				sim.meshCommands["dummy"] = func(fm *fmesh.FMesh) {
-					fm.ComponentByName("bypass").Inputs().ByName("in").PutSignals(signal.New("dummy line"))
-				}
-
-				// Init mesh
-				sim.fm.ComponentByName("bypass").
-					InputByName("in").
-					PutSignals(signal.New("start"))
-			}),
+		sim:     NewSimulation(ctx, cmdChan, fm).Init(simInitFunc),
 	}
 
 	return app
@@ -49,7 +37,7 @@ func (app *Application) Run() {
 
 	defer func() {
 		app.cancel()
-		time.Sleep(1 * time.Second) // Just to allow the simulation to shut down gracefully
+		time.Sleep(1 * time.Second) // Just to allow the simulation to shut down gracefully (until we implement more elegant synchronization)
 		fmt.Println("Shutting down the application...")
 	}()
 

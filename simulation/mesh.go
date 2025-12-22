@@ -10,7 +10,7 @@ import (
 const meshName = "simulation_template"
 
 // GetMesh returns the main mesh for the simulation
-func GetMesh() *fmesh.FMesh {
+func getMesh() *fmesh.FMesh {
 	bypassComponent := component.New("bypass").
 		WithDescription("Bypasses all signals").
 		AddInputs("in").
