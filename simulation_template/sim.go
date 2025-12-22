@@ -41,7 +41,12 @@ func (s *Simulation) Run() {
 		case <-s.ctx.Done():
 			fmt.Println("Shutting down simulation...")
 			return
-		case cmd := <-s.cmdChan:
+		case cmd, ok := <-s.cmdChan:
+			if !ok {
+				fmt.Println("Command channel closed, shutting down the simulation...")
+				return
+			}
+
 			switch cmd {
 			case cmdPause:
 				s.Pause()
@@ -68,7 +73,6 @@ func (s *Simulation) Run() {
 				return c.HasActivatedComponents()
 			}) {
 				fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")
-				fmt.Println("")
 				s.Pause()
 			}
 		}
@@ -76,18 +80,21 @@ func (s *Simulation) Run() {
 }
 
 func (s *Simulation) Pause() {
+	fmt.Println("Simulation paused")
 	s.isPaused = true
 }
 
 func (s *Simulation) Resume() {
+	fmt.Println("Simulation resumed")
 	s.isPaused = false
 }
 
 func (s *Simulation) handleCommand(cmd Command) {
 	cmdFunc, ok := s.meshCommands[cmd]
 	if !ok {
-		fmt.Println("Unknown command: ", cmd)
+		fmt.Printf("Unknown command: %v \n", cmd)
 		return
 	}
+	fmt.Println("Executing command: ", cmd)
 	cmdFunc(s.fm)
 }

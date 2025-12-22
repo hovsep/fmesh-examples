@@ -18,15 +18,16 @@ type Application struct {
 	sim  *Simulation
 }
 
-func NewApp() *Application {
+func NewApp(fm *fmesh.FMesh) *Application {
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
+
 	app := &Application{
 		ctx:     ctx,
 		cancel:  cancel,
 		cmdChan: cmdChan,
 		REPL:    NewREPL(cmdChan),
-		sim: NewSimulation(ctx, cmdChan, GetMesh()).
+		sim: NewSimulation(ctx, cmdChan, fm).
 			Init(func(sim *Simulation) {
 				// Add custom commands here
 				sim.meshCommands["dummy"] = func(fm *fmesh.FMesh) {
@@ -48,7 +49,6 @@ func (app *Application) Run() {
 
 	defer func() {
 		app.cancel()
-		close(app.cmdChan)
 		time.Sleep(1 * time.Second) // Just to allow the simulation to shut down gracefully
 		fmt.Println("Shutting down the application...")
 	}()

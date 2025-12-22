@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type REPL struct {
@@ -18,18 +19,21 @@ func NewREPL(cmdChan chan Command) *REPL {
 
 func (r *REPL) Run() {
 	fmt.Println("Starting REPL...")
+
+	defer close(r.cmdChan)
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("> ")
 		_ = os.Stdout.Sync()
 		if !scanner.Scan() {
 			if err := scanner.Err(); err != nil {
-				fmt.Println(fmt.Errorf("reading standard input: %w", err))
+				fmt.Println(fmt.Errorf("failed to read from stdIn: %w", err))
 			}
 			return
 		}
 
-		cmd := Command(scanner.Text())
+		cmd := Command(strings.TrimSpace(scanner.Text()))
 
 		if cmd == "" {
 			continue
@@ -39,7 +43,6 @@ func (r *REPL) Run() {
 			fmt.Println("Shutting down REPL...")
 			return
 		}
-
 	}
 }
 
@@ -53,7 +56,7 @@ func (r *REPL) handleCommand(cmd Command) bool {
 		showHelp()
 		return false
 	default:
-		fmt.Println("Dispatching command: ", cmd)
+		fmt.Println("Dispatching command to simulation: ", cmd)
 		r.cmdChan <- cmd
 		return false
 	}
