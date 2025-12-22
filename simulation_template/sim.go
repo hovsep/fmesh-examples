@@ -68,6 +68,7 @@ func (s *Simulation) Run() {
 				return c.HasActivatedComponents()
 			}) {
 				fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")
+				fmt.Println("")
 				s.Pause()
 			}
 		}
