@@ -22,8 +22,14 @@ func main() {
 	}()
 
 	go NewSimulation(ctx, cmdChan, GetMesh()).
-		Init(func(fm *fmesh.FMesh) {
-			fm.ComponentByName("bypass").
+		Init(func(sim *Simulation) {
+			// Add custom commands here
+			sim.meshCommands["dummy"] = func(fm *fmesh.FMesh) {
+				fm.ComponentByName("bypass").Inputs().ByName("in").PutSignals(signal.New("dummy line"))
+			}
+
+			// Init mesh
+			sim.fm.ComponentByName("bypass").
 				InputByName("in").
 				PutSignals(signal.New("start"))
 		}).Run()

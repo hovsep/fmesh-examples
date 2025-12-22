@@ -9,24 +9,28 @@ import (
 	"github.com/hovsep/fmesh/cycle"
 )
 
+type MeshCommandMap map[Command]func(fm *fmesh.FMesh)
+
 type Simulation struct {
-	ctx      context.Context
-	fm       *fmesh.FMesh
-	cmdChan  chan Command
-	isPaused bool
+	ctx          context.Context
+	fm           *fmesh.FMesh
+	cmdChan      chan Command
+	isPaused     bool
+	meshCommands MeshCommandMap
 }
 
 func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *Simulation {
 	return &Simulation{
-		ctx:     ctx,
-		fm:      fm,
-		cmdChan: cmdChan,
+		ctx:          ctx,
+		fm:           fm,
+		cmdChan:      cmdChan,
+		meshCommands: make(MeshCommandMap),
 	}
 }
 
-// Init allows initializing the mesh before the simulation starts
-func (s *Simulation) Init(initFunc func(fm *fmesh.FMesh)) *Simulation {
-	initFunc(s.fm)
+// Init allows initializing the simulation before the simulation starts
+func (s *Simulation) Init(initFunc func(sim *Simulation)) *Simulation {
+	initFunc(s)
 	return s
 }
 
@@ -44,7 +48,7 @@ func (s *Simulation) Run() {
 			case cmdResume:
 				s.Resume()
 			default:
-				// handle user-defined commands or send_signal / get_state
+				s.handleCommand(cmd)
 			}
 		default:
 			if s.isPaused {
@@ -76,4 +80,13 @@ func (s *Simulation) Pause() {
 
 func (s *Simulation) Resume() {
 	s.isPaused = false
+}
+
+func (s *Simulation) handleCommand(cmd Command) {
+	cmdFunc, ok := s.meshCommands[cmd]
+	if !ok {
+		fmt.Println("Unknown command: ", cmd)
+		return
+	}
+	cmdFunc(s.fm)
 }

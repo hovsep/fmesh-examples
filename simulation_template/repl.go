@@ -53,6 +53,7 @@ func (r *REPL) handleCommand(cmd Command) bool {
 		showHelp()
 		return false
 	default:
+		fmt.Println("Dispatching command: ", cmd)
 		r.cmdChan <- cmd
 		return false
 	}
