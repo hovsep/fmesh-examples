@@ -27,7 +27,7 @@ func NewApp(fm *fmesh.FMesh) *Application {
 		cancel:  cancel,
 		cmdChan: cmdChan,
 		REPL:    NewREPL(cmdChan),
-		sim: NewSimulation(ctx, cmdChan, fm).
+		sim: NewSimulation(ctx, cmdChan, fm, true).
 			Init(func(sim *Simulation) {
 				// Add custom commands here
 				sim.meshCommands["dummy"] = func(fm *fmesh.FMesh) {

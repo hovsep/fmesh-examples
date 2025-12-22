@@ -17,14 +17,16 @@ type Simulation struct {
 	cmdChan      chan Command
 	isPaused     bool
 	meshCommands MeshCommandMap
+	autoPause    bool
 }
 
-func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *Simulation {
+func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh, autoPause bool) *Simulation {
 	return &Simulation{
 		ctx:          ctx,
 		fm:           fm,
 		cmdChan:      cmdChan,
 		meshCommands: make(MeshCommandMap),
+		autoPause:    autoPause,
 	}
 }
 
@@ -36,45 +38,53 @@ func (s *Simulation) Init(initFunc func(sim *Simulation)) *Simulation {
 
 func (s *Simulation) Run() {
 	fmt.Println("Starting simulation...")
+
 	for {
-		select {
-		case <-s.ctx.Done():
-			fmt.Println("Shutting down simulation...")
-			return
-		case cmd, ok := <-s.cmdChan:
-			if !ok {
-				fmt.Println("Command channel closed, shutting down the simulation...")
+		// Process all pending commands
+		checkCommands := true
+		for checkCommands {
+			select {
+			case <-s.ctx.Done():
+				fmt.Println("Shutting down simulation...")
 				return
-			}
-
-			switch cmd {
-			case cmdPause:
-				s.Pause()
-			case cmdResume:
-				s.Resume()
+			case cmd, ok := <-s.cmdChan:
+				if !ok {
+					fmt.Println("Command channel closed, shutting down simulation...")
+					return
+				}
+				switch cmd {
+				case cmdPause:
+					s.Pause()
+				case cmdResume:
+					s.Resume()
+				default:
+					s.handleCommand(cmd)
+				}
 			default:
-				s.handleCommand(cmd)
+				// No more commands in the channel, break the inner loop
+				checkCommands = false
 			}
-		default:
-			if s.isPaused {
-				time.Sleep(time.Second)
-				continue
-			}
+		}
 
-			runResult, err := s.fm.Run()
-			if err != nil {
-				fmt.Println("Simulation cycle finished with error: ", err)
-				return
-			}
+		// Sleep if paused to avoid a busy-wait
+		if s.isPaused {
+			time.Sleep(time.Second)
+			continue
+		}
 
-			fmt.Println("Simulation cycle finished successfully after ", runResult.Cycles.Len(), " cycles")
+		// Run a single simulation cycle
+		runResult, err := s.fm.Run()
+		if err != nil {
+			fmt.Println("Simulation cycle finished with error:", err)
+			return
+		}
 
-			if !runResult.Cycles.AnyMatch(func(c *cycle.Cycle) bool {
-				return c.HasActivatedComponents()
-			}) {
-				fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")
-				s.Pause()
-			}
+		// Auto-pause if nothing is happening
+		if s.autoPause && !runResult.Cycles.AnyMatch(func(c *cycle.Cycle) bool {
+			return c.HasActivatedComponents()
+		}) {
+			fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")
+			s.Pause()
 		}
 	}
 }
