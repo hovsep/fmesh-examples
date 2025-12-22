@@ -16,60 +16,60 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s13 {
-		color="black";label="api-backend-0";margin="20";penwidth="5";style="rounded";
-		n15[fontname="Courier New",group="api-backend-0",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n16[fontname="Courier New",group="api-backend-0",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n14[color="#9dddea",fontname="Courier New",group="api-backend-0",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n15->n14;
-		n14->n16;
-		
-	}
-	subgraph cluster_s17 {
-		color="black";label="api-backend-1";margin="20";penwidth="5";style="rounded";
-		n19[fontname="Courier New",group="api-backend-1",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n20[fontname="Courier New",group="api-backend-1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[color="#9dddea",fontname="Courier New",group="api-backend-1",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n19->n18;
-		n18->n20;
-		
-	}
-	subgraph cluster_s21 {
-		color="black";label="api-backend-2";margin="20";penwidth="5";style="rounded";
-		n23[fontname="Courier New",group="api-backend-2",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n24[fontname="Courier New",group="api-backend-2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n22[color="#9dddea",fontname="Courier New",group="api-backend-2",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n23->n22;
-		n22->n24;
-		
-	}
 	subgraph cluster_s3 {
-		color="black";label="lb";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="lb",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="lb",height="1.0",label="upstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[fontname="Courier New",group="lb",height="1.0",label="upstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[fontname="Courier New",group="lb",height="1.0",label="upstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n9[fontname="Courier New",group="lb",height="1.0",label="downstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="lb",height="1.0",label="downstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="lb",height="1.0",label="downstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[fontname="Courier New",group="lb",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="lb",height="1.0",label="Load balancer with 3 workers",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="api-backend-0";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="api-backend-0",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="api-backend-0",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="api-backend-0",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
-		n6->n4;
-		n7->n4;
-		n8->n4;
-		n4->n9;
-		n4->n10;
-		n4->n11;
-		n4->n12;
+		n4->n6;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="api-backend-1";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="api-backend-1",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="api-backend-1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="api-backend-1",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="api-backend-2";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="api-backend-2",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="api-backend-2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="api-backend-2",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		n12->n14;
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="lb";margin="20";penwidth="5";style="rounded";
+		n18[fontname="Courier New",group="lb",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[fontname="Courier New",group="lb",height="1.0",label="upstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[fontname="Courier New",group="lb",height="1.0",label="upstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="lb",height="1.0",label="upstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="lb",height="1.0",label="downstream0",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="lb",height="1.0",label="downstream1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n23[fontname="Courier New",group="lb",height="1.0",label="downstream2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[fontname="Courier New",group="lb",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="lb",height="1.0",label="Load balancer with 3 workers",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n18->n16;
+		n19->n16;
+		n20->n16;
+		n17->n16;
+		n16->n21;
+		n16->n22;
+		n16->n23;
+		n16->n24;
 		
 	}
 	layout="dot";splines="ortho";
-	n16->n6[color="#e437ea",minlen="3",penwidth="2"];
-	n20->n7[color="#e437ea",minlen="3",penwidth="2"];
-	n24->n8[color="#e437ea",minlen="3",penwidth="2"];
-	n9->n15[color="#e437ea",minlen="3",penwidth="2"];
-	n10->n19[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n23[color="#e437ea",minlen="3",penwidth="2"];
+	n6->n19[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n20[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n21->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n9[color="#e437ea",minlen="3",penwidth="2"];
+	n23->n13[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

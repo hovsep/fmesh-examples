@@ -13,22 +13,22 @@
 <polygon fill="#e2c6fc" stroke="black" stroke-dasharray="5,2" points="8,-1597.68 8,-1662.18 432,-1662.18 432,-1597.68 8,-1597.68"/>
 </g>
 <g id="clust2" class="cluster">
-<title>cluster_s15</title>
+<title>cluster_s7</title>
 <path fill="none" stroke="black" stroke-width="5" d="M559,-897.82C559,-897.82 699,-897.82 699,-897.82 705,-897.82 711,-903.82 711,-909.82 711,-909.82 711,-1268.72 711,-1268.72 711,-1274.72 705,-1280.72 699,-1280.72 699,-1280.72 559,-1280.72 559,-1280.72 553,-1280.72 547,-1274.72 547,-1268.72 547,-1268.72 547,-909.82 547,-909.82 547,-903.82 553,-897.82 559,-897.82"/>
 <text text-anchor="middle" x="629" y="-1263.42" font-family="Times,serif" font-size="14.00">clutch</text>
 </g>
 <g id="clust3" class="cluster">
-<title>cluster_s11</title>
+<title>cluster_s3</title>
 <path fill="none" stroke="black" stroke-width="5" d="M456,-1342.72C456,-1342.72 802,-1342.72 802,-1342.72 808,-1342.72 814,-1348.72 814,-1354.72 814,-1354.72 814,-1698.43 814,-1698.43 814,-1704.43 808,-1710.43 802,-1710.43 802,-1710.43 456,-1710.43 456,-1710.43 450,-1710.43 444,-1704.43 444,-1698.43 444,-1698.43 444,-1354.72 444,-1354.72 444,-1348.72 450,-1342.72 456,-1342.72"/>
 <text text-anchor="middle" x="629" y="-1693.13" font-family="Times,serif" font-size="14.00">engine</text>
 </g>
 <g id="clust4" class="cluster">
-<title>cluster_s3</title>
+<title>cluster_s11</title>
 <path fill="none" stroke="black" stroke-width="5" d="M577,-452.91C577,-452.91 681,-452.91 681,-452.91 687,-452.91 693,-458.91 693,-464.91 693,-464.91 693,-823.82 693,-823.82 693,-829.82 687,-835.82 681,-835.82 681,-835.82 577,-835.82 577,-835.82 571,-835.82 565,-829.82 565,-823.82 565,-823.82 565,-464.91 565,-464.91 565,-458.91 571,-452.91 577,-452.91"/>
 <text text-anchor="middle" x="629" y="-818.52" font-family="Times,serif" font-size="14.00">gearbox</text>
 </g>
 <g id="clust5" class="cluster">
-<title>cluster_s7</title>
+<title>cluster_s15</title>
 <path fill="none" stroke="black" stroke-width="5" d="M577,-8C577,-8 681,-8 681,-8 687,-8 693,-14 693,-20 693,-20 693,-378.91 693,-378.91 693,-384.91 687,-390.91 681,-390.91 681,-390.91 577,-390.91 577,-390.91 571,-390.91 565,-384.91 565,-378.91 565,-378.91 565,-20 565,-20 565,-14 571,-8 577,-8"/>
 <text text-anchor="middle" x="629" y="-373.61" font-family="Times,serif" font-size="14.00">wheels</text>
 </g>
@@ -38,141 +38,141 @@
 <text text-anchor="start" x="35.62" y="-1624.88" font-family="Courier New" font-size="14.00">Description:</text>
 <text text-anchor="start" x="148.62" y="-1624.88" font-family="Courier New" font-size="14.00">Simple car mechanics simulation</text>
 </g>
-<!-- n17 -->
+<!-- n9 -->
 <g id="node2" class="node">
-<title>n17</title>
+<title>n9</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-1192.62" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-1187.57" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n16 -->
+<!-- n8 -->
 <g id="node4" class="node">
-<title>n16</title>
+<title>n8</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="690.62,-1113.02 567.38,-1113.02 567.38,-1041.02 690.62,-1041.02 690.62,-1113.02"/>
 <text text-anchor="middle" x="629" y="-1071.97" font-family="Courier New" font-size="14.00">Simple clutch</text>
 </g>
-<!-- n17&#45;&gt;n16 -->
+<!-- n9&#45;&gt;n8 -->
 <g id="edge1" class="edge">
-<title>n17&#45;&gt;n16</title>
+<title>n9&#45;&gt;n8</title>
 <path fill="none" stroke="black" d="M629,-1148.26C629,-1148.26 629,-1125.46 629,-1125.46"/>
 <polygon fill="black" stroke="black" points="632.5,-1125.46 629,-1115.46 625.5,-1125.46 632.5,-1125.46"/>
 </g>
-<!-- n18 -->
+<!-- n10 -->
 <g id="node3" class="node">
-<title>n18</title>
+<title>n10</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-961.42" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-956.37" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n5 -->
+<!-- n13 -->
 <g id="node8" class="node">
-<title>n5</title>
+<title>n13</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-747.71" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-742.66" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n18&#45;&gt;n5 -->
+<!-- n10&#45;&gt;n13 -->
 <g id="edge9" class="edge">
-<title>n18&#45;&gt;n5</title>
+<title>n10&#45;&gt;n13</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M629,-916.88C629,-916.88 629,-805.22 629,-805.22"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="632.5,-805.22 629,-795.22 625.5,-805.22 632.5,-805.22"/>
 </g>
-<!-- n16&#45;&gt;n18 -->
+<!-- n8&#45;&gt;n10 -->
 <g id="edge2" class="edge">
-<title>n16&#45;&gt;n18</title>
+<title>n8&#45;&gt;n10</title>
 <path fill="none" stroke="black" d="M629,-1040.12C629,-1040.12 629,-1017.15 629,-1017.15"/>
 <polygon fill="black" stroke="black" points="632.5,-1017.15 629,-1007.15 625.5,-1017.15 632.5,-1017.15"/>
 </g>
-<!-- n13 -->
+<!-- n5 -->
 <g id="node5" class="node">
-<title>n13</title>
+<title>n5</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-1629.93" rx="36" ry="36"/>
 <text text-anchor="middle" x="629" y="-1624.88" font-family="Courier New" font-size="14.00">start</text>
 </g>
-<!-- n12 -->
+<!-- n4 -->
 <g id="node7" class="node">
-<title>n12</title>
+<title>n4</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="793.75,-1557.93 464.25,-1557.93 464.25,-1485.93 793.75,-1485.93 793.75,-1557.93"/>
 <text text-anchor="middle" x="629" y="-1516.88" font-family="Courier New" font-size="14.00">Sends out rotation signal once started</text>
 </g>
-<!-- n13&#45;&gt;n12 -->
+<!-- n5&#45;&gt;n4 -->
 <g id="edge3" class="edge">
-<title>n13&#45;&gt;n12</title>
+<title>n5&#45;&gt;n4</title>
 <path fill="none" stroke="black" d="M629,-1593.06C629,-1593.06 629,-1570.14 629,-1570.14"/>
 <polygon fill="black" stroke="black" points="632.5,-1570.14 629,-1560.14 625.5,-1570.14 632.5,-1570.14"/>
 </g>
-<!-- n14 -->
+<!-- n6 -->
 <g id="node6" class="node">
-<title>n14</title>
+<title>n6</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-1406.33" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-1401.28" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n14&#45;&gt;n17 -->
+<!-- n6&#45;&gt;n9 -->
 <g id="edge10" class="edge">
-<title>n14&#45;&gt;n17</title>
+<title>n6&#45;&gt;n9</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M629,-1361.79C629,-1361.79 629,-1250.13 629,-1250.13"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="632.5,-1250.13 629,-1240.13 625.5,-1250.13 632.5,-1250.13"/>
 </g>
-<!-- n12&#45;&gt;n14 -->
+<!-- n4&#45;&gt;n6 -->
 <g id="edge4" class="edge">
-<title>n12&#45;&gt;n14</title>
+<title>n4&#45;&gt;n6</title>
 <path fill="none" stroke="black" d="M629,-1485.03C629,-1485.03 629,-1462.06 629,-1462.06"/>
 <polygon fill="black" stroke="black" points="632.5,-1462.06 629,-1452.06 625.5,-1462.06 632.5,-1462.06"/>
 </g>
-<!-- n4 -->
+<!-- n12 -->
 <g id="node10" class="node">
-<title>n4</title>
+<title>n12</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="665,-668.11 593,-668.11 593,-596.11 665,-596.11 665,-668.11"/>
 <text text-anchor="middle" x="629" y="-628.19" font-family="Courier New" font-size="14.00">⚙️</text>
 </g>
-<!-- n5&#45;&gt;n4 -->
+<!-- n13&#45;&gt;n12 -->
 <g id="edge5" class="edge">
-<title>n5&#45;&gt;n4</title>
+<title>n13&#45;&gt;n12</title>
 <path fill="none" stroke="black" d="M629,-703.35C629,-703.35 629,-680.55 629,-680.55"/>
 <polygon fill="black" stroke="black" points="632.5,-680.55 629,-670.55 625.5,-680.55 632.5,-680.55"/>
 </g>
-<!-- n6 -->
+<!-- n14 -->
 <g id="node9" class="node">
-<title>n6</title>
+<title>n14</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-516.51" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-511.46" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n9 -->
+<!-- n17 -->
 <g id="node11" class="node">
-<title>n9</title>
+<title>n17</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-302.81" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-297.76" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n6&#45;&gt;n9 -->
+<!-- n14&#45;&gt;n17 -->
 <g id="edge11" class="edge">
-<title>n6&#45;&gt;n9</title>
+<title>n14&#45;&gt;n17</title>
 <path fill="none" stroke="#e437ea" stroke-width="2" d="M629,-471.97C629,-471.97 629,-360.31 629,-360.31"/>
 <polygon fill="#e437ea" stroke="#e437ea" stroke-width="2" points="632.5,-360.31 629,-350.31 625.5,-360.31 632.5,-360.31"/>
 </g>
-<!-- n4&#45;&gt;n6 -->
+<!-- n12&#45;&gt;n14 -->
 <g id="edge6" class="edge">
-<title>n4&#45;&gt;n6</title>
+<title>n12&#45;&gt;n14</title>
 <path fill="none" stroke="black" d="M629,-595.22C629,-595.22 629,-572.25 629,-572.25"/>
 <polygon fill="black" stroke="black" points="632.5,-572.25 629,-562.25 625.5,-572.25 632.5,-572.25"/>
 </g>
-<!-- n8 -->
+<!-- n16 -->
 <g id="node13" class="node">
-<title>n8</title>
+<title>n16</title>
 <polygon fill="#9dddea" stroke="#9dddea" stroke-width="2.5" points="665,-223.2 593,-223.2 593,-151.2 665,-151.2 665,-223.2"/>
 <text text-anchor="middle" x="629" y="-183.28" font-family="Courier New" font-size="14.00">🚗</text>
 </g>
-<!-- n9&#45;&gt;n8 -->
+<!-- n17&#45;&gt;n16 -->
 <g id="edge7" class="edge">
-<title>n9&#45;&gt;n8</title>
+<title>n17&#45;&gt;n16</title>
 <path fill="none" stroke="black" d="M629,-258.44C629,-258.44 629,-235.64 629,-235.64"/>
 <polygon fill="black" stroke="black" points="632.5,-235.64 629,-225.64 625.5,-235.64 632.5,-235.64"/>
 </g>
-<!-- n10 -->
+<!-- n18 -->
 <g id="node12" class="node">
-<title>n10</title>
+<title>n18</title>
 <ellipse fill="lightgrey" stroke="black" stroke-width="2.5" cx="629" cy="-71.6" rx="43.6" ry="43.6"/>
 <text text-anchor="middle" x="629" y="-66.55" font-family="Courier New" font-size="14.00">rotation</text>
 </g>
-<!-- n8&#45;&gt;n10 -->
+<!-- n16&#45;&gt;n18 -->
 <g id="edge8" class="edge">
-<title>n8&#45;&gt;n10</title>
+<title>n16&#45;&gt;n18</title>
 <path fill="none" stroke="black" d="M629,-150.31C629,-150.31 629,-127.34 629,-127.34"/>
 <polygon fill="black" stroke="black" points="632.5,-127.34 629,-117.34 625.5,-127.34 632.5,-127.34"/>
 </g>

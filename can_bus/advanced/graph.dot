@@ -16,212 +16,212 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s37 {
+	subgraph cluster_s3 {
 		color="black";label="PT-CAN-watchdog";margin="20";penwidth="5";style="rounded";
-		n42[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n41[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n40[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n39[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="sa",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n43[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n44[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="sa",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n38[color="#9dddea",fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="Simulates terminal resistors and halts the bus when all nodes are idle",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n42->n38;
-		n41->n38;
-		n40->n38;
-		n39->n38;
-		n38->n43;
-		n38->n44;
+		n7[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n5[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="sa",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="sa",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="PT-CAN-watchdog",height="1.0",label="Simulates terminal resistors and halts the bus when all nodes are idle",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n7->n4;
+		n6->n4;
+		n5->n4;
+		n8->n4;
+		n4->n9;
+		n4->n10;
 		
 	}
-	subgraph cluster_s29 {
+	subgraph cluster_s41 {
 		color="black";label="PT-CAN-wires";margin="20";penwidth="5";style="rounded";
-		n32[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n31[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n33[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n36[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n35[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n34[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n30[color="#9dddea",fontname="Courier New",group="PT-CAN-wires",height="1.0",label="Simulates differential low/high pair, performs wire-and logic",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n32->n30;
-		n31->n30;
-		n33->n30;
-		n30->n34;
-		n30->n35;
-		n30->n36;
+		n45[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n43[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n47[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[fontname="Courier New",group="PT-CAN-wires",height="1.0",label="recessive_bit_request",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[color="#9dddea",fontname="Courier New",group="PT-CAN-wires",height="1.0",label="Simulates differential low/high pair, performs wire-and logic",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n45->n42;
+		n44->n42;
+		n43->n42;
+		n42->n46;
+		n42->n47;
+		n42->n48;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="can_controller-ecm";margin="20";penwidth="5";style="rounded";
+		n14[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n15[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="can_controller-ecm",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="can_controller-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n14->n12;
+		n13->n12;
+		n12->n15;
+		n12->n16;
+		n12->n17;
+		
+	}
+	subgraph cluster_s26 {
+		color="black";label="can_controller-obd";margin="20";penwidth="5";style="rounded";
+		n29[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[fontname="Courier New",group="can_controller-obd",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n27[color="#9dddea",fontname="Courier New",group="can_controller-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n29->n27;
+		n28->n27;
+		n27->n30;
+		n27->n31;
+		n27->n32;
+		
+	}
+	subgraph cluster_s65 {
+		color="black";label="can_controller-tcm";margin="20";penwidth="5";style="rounded";
+		n68[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n69[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="can_controller-tcm",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[color="#9dddea",fontname="Courier New",group="can_controller-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n68->n66;
+		n67->n66;
+		n66->n69;
+		n66->n70;
+		n66->n71;
+		
+	}
+	subgraph cluster_s53 {
+		color="black";label="can_transceiver-ecm";margin="20";penwidth="5";style="rounded";
+		n56[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n57[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n55[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n59[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[color="#9dddea",fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n56->n54;
+		n57->n54;
+		n55->n54;
+		n54->n58;
+		n54->n59;
+		n54->n60;
+		
+	}
+	subgraph cluster_s33 {
+		color="black";label="can_transceiver-obd";margin="20";penwidth="5";style="rounded";
+		n35[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n37[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n39[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[color="#9dddea",fontname="Courier New",group="can_transceiver-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n35->n34;
+		n36->n34;
+		n37->n34;
+		n34->n38;
+		n34->n39;
+		n34->n40;
+		
+	}
+	subgraph cluster_s18 {
+		color="black";label="can_transceiver-tcm";margin="20";penwidth="5";style="rounded";
+		n20[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n25[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n23[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[color="#9dddea",fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n20->n19;
+		n21->n19;
+		n22->n19;
+		n19->n23;
+		n19->n24;
+		n19->n25;
+		
+	}
+	subgraph cluster_s78 {
+		color="black";label="lenovo-ideapad-340";margin="20";penwidth="5";style="rounded";
+		n81[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="pr_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n80[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="usb_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="usb_out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n79[color="#9dddea",fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n81->n79;
+		n80->n79;
+		n79->n82;
 		
 	}
 	subgraph cluster_s49 {
-		color="black";label="can_controller-ecm";margin="20";penwidth="5";style="rounded";
-		n52[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n51[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n54[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n53[fontname="Courier New",group="can_controller-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n55[fontname="Courier New",group="can_controller-ecm",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n50[color="#9dddea",fontname="Courier New",group="can_controller-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n52->n50;
-		n51->n50;
-		n50->n53;
-		n50->n54;
-		n50->n55;
-		
-	}
-	subgraph cluster_s9 {
-		color="black";label="can_controller-obd";margin="20";penwidth="5";style="rounded";
-		n12[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n14[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n13[fontname="Courier New",group="can_controller-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n15[fontname="Courier New",group="can_controller-obd",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[color="#9dddea",fontname="Courier New",group="can_controller-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n12->n10;
-		n11->n10;
-		n10->n13;
-		n10->n14;
-		n10->n15;
-		
-	}
-	subgraph cluster_s64 {
-		color="black";label="can_controller-tcm";margin="20";penwidth="5";style="rounded";
-		n67[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n66[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n69[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n68[fontname="Courier New",group="can_controller-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n70[fontname="Courier New",group="can_controller-tcm",height="1.0",label="ctl_state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n65[color="#9dddea",fontname="Courier New",group="can_controller-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n67->n65;
-		n66->n65;
-		n65->n68;
-		n65->n69;
-		n65->n70;
-		
-	}
-	subgraph cluster_s56 {
-		color="black";label="can_transceiver-ecm";margin="20";penwidth="5";style="rounded";
-		n59[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n60[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n58[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n62[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n63[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n61[fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n57[color="#9dddea",fontname="Courier New",group="can_transceiver-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n59->n57;
-		n60->n57;
-		n58->n57;
-		n57->n61;
-		n57->n62;
-		n57->n63;
-		
-	}
-	subgraph cluster_s16 {
-		color="black";label="can_transceiver-obd";margin="20";penwidth="5";style="rounded";
-		n20[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n19[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n22[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n23[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n21[fontname="Courier New",group="can_transceiver-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n17[color="#9dddea",fontname="Courier New",group="can_transceiver-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n20->n17;
-		n18->n17;
-		n19->n17;
-		n17->n21;
-		n17->n22;
-		n17->n23;
-		
-	}
-	subgraph cluster_s75 {
-		color="black";label="can_transceiver-tcm";margin="20";penwidth="5";style="rounded";
-		n78[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n79[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n77[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n81[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_h",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n82[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_l",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n80[fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n76[color="#9dddea",fontname="Courier New",group="can_transceiver-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n78->n76;
-		n79->n76;
-		n77->n76;
-		n76->n80;
-		n76->n81;
-		n76->n82;
-		
-	}
-	subgraph cluster_s24 {
-		color="black";label="lenovo-ideapad-340";margin="20";penwidth="5";style="rounded";
-		n27[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="pr_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n26[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="usb_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n28[fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="usb_out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n25[color="#9dddea",fontname="Courier New",group="lenovo-ideapad-340",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n27->n25;
-		n26->n25;
-		n25->n28;
-		
-	}
-	subgraph cluster_s45 {
 		color="black";label="mcu-ecm";margin="20";penwidth="5";style="rounded";
-		n47[fontname="Courier New",group="mcu-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n48[fontname="Courier New",group="mcu-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n46[color="#9dddea",fontname="Courier New",group="mcu-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n47->n46;
-		n46->n48;
+		n51[fontname="Courier New",group="mcu-ecm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="mcu-ecm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[color="#9dddea",fontname="Courier New",group="mcu-ecm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n51->n50;
+		n50->n52;
 		
 	}
-	subgraph cluster_s3 {
+	subgraph cluster_s72 {
 		color="black";label="mcu-obd";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="mcu-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="mcu-obd",height="1.0",label="obd_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[fontname="Courier New",group="mcu-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[fontname="Courier New",group="mcu-obd",height="1.0",label="obd_out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="mcu-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n5->n4;
-		n6->n4;
-		n4->n7;
-		n4->n8;
+		n74[fontname="Courier New",group="mcu-obd",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n75[fontname="Courier New",group="mcu-obd",height="1.0",label="obd_in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="mcu-obd",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n77[fontname="Courier New",group="mcu-obd",height="1.0",label="obd_out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n73[color="#9dddea",fontname="Courier New",group="mcu-obd",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n74->n73;
+		n75->n73;
+		n73->n76;
+		n73->n77;
 		
 	}
-	subgraph cluster_s71 {
+	subgraph cluster_s61 {
 		color="black";label="mcu-tcm";margin="20";penwidth="5";style="rounded";
-		n73[fontname="Courier New",group="mcu-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n74[fontname="Courier New",group="mcu-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n72[color="#9dddea",fontname="Courier New",group="mcu-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n73->n72;
-		n72->n74;
+		n63[fontname="Courier New",group="mcu-tcm",height="1.0",label="can_rx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[fontname="Courier New",group="mcu-tcm",height="1.0",label="can_tx",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[color="#9dddea",fontname="Courier New",group="mcu-tcm",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n63->n62;
+		n62->n64;
 		
 	}
 	layout="dot";splines="ortho";
-	n43->n33[color="#e437ea",minlen="3",penwidth="2"];
-	n44->n39[color="#e437ea",minlen="3",penwidth="2"];
-	n36->n42[color="#e437ea",minlen="3",penwidth="2"];
-	n36->n59[color="#e437ea",minlen="3",penwidth="2"];
-	n36->n78[color="#e437ea",minlen="3",penwidth="2"];
-	n36->n20[color="#e437ea",minlen="3",penwidth="2"];
-	n35->n41[color="#e437ea",minlen="3",penwidth="2"];
-	n35->n60[color="#e437ea",minlen="3",penwidth="2"];
-	n35->n79[color="#e437ea",minlen="3",penwidth="2"];
-	n35->n18[color="#e437ea",minlen="3",penwidth="2"];
-	n34->n33[color="#e437ea",minlen="3",penwidth="2"];
-	n54->n47[color="#e437ea",minlen="3",penwidth="2"];
-	n53->n58[color="#e437ea",minlen="3",penwidth="2"];
-	n55->n40[color="#e437ea",minlen="3",penwidth="2"];
-	n14->n5[color="#e437ea",minlen="3",penwidth="2"];
-	n13->n19[color="#e437ea",minlen="3",penwidth="2"];
-	n15->n40[color="#e437ea",minlen="3",penwidth="2"];
-	n69->n73[color="#e437ea",minlen="3",penwidth="2"];
-	n68->n77[color="#e437ea",minlen="3",penwidth="2"];
-	n70->n40[color="#e437ea",minlen="3",penwidth="2"];
-	n62->n32[color="#e437ea",minlen="3",penwidth="2"];
-	n63->n31[color="#e437ea",minlen="3",penwidth="2"];
-	n61->n52[color="#e437ea",minlen="3",penwidth="2"];
-	n22->n32[color="#e437ea",minlen="3",penwidth="2"];
-	n23->n31[color="#e437ea",minlen="3",penwidth="2"];
-	n21->n12[color="#e437ea",minlen="3",penwidth="2"];
-	n81->n32[color="#e437ea",minlen="3",penwidth="2"];
-	n82->n31[color="#e437ea",minlen="3",penwidth="2"];
-	n80->n67[color="#e437ea",minlen="3",penwidth="2"];
-	n28->n6[color="#e437ea",minlen="3",penwidth="2"];
-	n48->n51[color="#e437ea",minlen="3",penwidth="2"];
-	n8->n11[color="#e437ea",minlen="3",penwidth="2"];
-	n7->n26[color="#e437ea",minlen="3",penwidth="2"];
-	n74->n66[color="#e437ea",minlen="3",penwidth="2"];
+	n9->n43[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n8[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n7[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n56[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n20[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n35[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n6[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n36[color="#e437ea",minlen="3",penwidth="2"];
+	n48->n43[color="#e437ea",minlen="3",penwidth="2"];
+	n16->n51[color="#e437ea",minlen="3",penwidth="2"];
+	n15->n55[color="#e437ea",minlen="3",penwidth="2"];
+	n17->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n30->n74[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n31->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n69->n63[color="#e437ea",minlen="3",penwidth="2"];
+	n71->n22[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n60->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n44[color="#e437ea",minlen="3",penwidth="2"];
+	n59->n14[color="#e437ea",minlen="3",penwidth="2"];
+	n38->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n39->n44[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n29[color="#e437ea",minlen="3",penwidth="2"];
+	n24->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n25->n44[color="#e437ea",minlen="3",penwidth="2"];
+	n23->n68[color="#e437ea",minlen="3",penwidth="2"];
+	n82->n75[color="#e437ea",minlen="3",penwidth="2"];
+	n52->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n76->n28[color="#e437ea",minlen="3",penwidth="2"];
+	n77->n80[color="#e437ea",minlen="3",penwidth="2"];
+	n64->n67[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

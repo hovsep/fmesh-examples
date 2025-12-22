@@ -29,8 +29,8 @@ digraph  {
 		color="black";label="lightbulb";margin="20";penwidth="5";style="rounded";
 		n9[fontname="Courier New",group="lightbulb",height="1.0",label="power_supply",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n10[fontname="Courier New",group="lightbulb",height="1.0",label="start_power_demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[fontname="Courier New",group="lightbulb",height="1.0",label="light_supply",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="lightbulb",height="1.0",label="power_demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="lightbulb",height="1.0",label="light_supply",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="lightbulb",height="1.0",label="power_demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n8[color="#9dddea",fontname="Courier New",group="lightbulb",height="1.0",label="electric lightbulb",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n9->n8;
 		n10->n8;
@@ -40,6 +40,6 @@ digraph  {
 	}
 	layout="dot";splines="ortho";
 	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n12->n5[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

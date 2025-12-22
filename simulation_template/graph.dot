@@ -1,0 +1,38 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>A mesh with 2 components</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="bypass";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="bypass",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="bypass",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="bypass",height="1.0",label="Bypasses all signals",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="logger";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="logger",height="1.0",label="line",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="logger",height="1.0",label="Simple logger",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		
+	}
+	layout="dot";splines="ortho";
+	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
+	
+}

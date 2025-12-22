@@ -16,33 +16,33 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s11 {
-		color="black";label="dropped-printer";margin="20";penwidth="5";style="rounded";
-		n13[fontname="Courier New",group="dropped-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[color="#9dddea",fontname="Courier New",group="dropped-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n13->n12;
-		
-	}
 	subgraph cluster_s3 {
-		color="black";label="passed-printer";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="passed-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="passed-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="dropped-printer";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="dropped-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="dropped-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
 		
 	}
 	subgraph cluster_s6 {
-		color="black";label="pop-filter";margin="20";penwidth="5";style="rounded";
-		n8[fontname="Courier New",group="pop-filter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n9[fontname="Courier New",group="pop-filter",height="1.0",label="dropped",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="pop-filter",height="1.0",label="passed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[color="#9dddea",fontname="Courier New",group="pop-filter",height="1.0",label="Simple filter",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="passed-printer";margin="20";penwidth="5";style="rounded";
+		n8[fontname="Courier New",group="passed-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[color="#9dddea",fontname="Courier New",group="passed-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n8->n7;
-		n7->n9;
-		n7->n10;
+		
+	}
+	subgraph cluster_s9 {
+		color="black";label="pop-filter";margin="20";penwidth="5";style="rounded";
+		n11[fontname="Courier New",group="pop-filter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="pop-filter",height="1.0",label="dropped",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="pop-filter",height="1.0",label="passed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[color="#9dddea",fontname="Courier New",group="pop-filter",height="1.0",label="Simple filter",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n11->n10;
+		n10->n12;
+		n10->n13;
 		
 	}
 	layout="dot";splines="ortho";
-	n9->n13[color="#e437ea",minlen="3",penwidth="2"];
-	n10->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n12->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n13->n8[color="#e437ea",minlen="3",penwidth="2"];
 	
 }
