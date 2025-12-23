@@ -29,7 +29,7 @@ func initSim(sim *des.Simulation) {
 	sim.AutoPause = false
 
 	// Add custom commands
-	sim.MeshCommands["time:show"] = func(fm *fmesh.FMesh) {
+	sim.MeshCommands["time:now"] = func(fm *fmesh.FMesh) {
 		timeRel := sim.FM.ComponentByName("time").State().Get("current_time_rel")
 		timeAbs := sim.FM.ComponentByName("time").State().Get("current_time_abs")
 		fmt.Printf("current time abs: %v time rel: %v \n", timeAbs, timeRel)
