@@ -29,12 +29,22 @@ func initSim(sim *des.Simulation) {
 	sim.AutoPause = false
 
 	// Add custom commands
-	sim.MeshCommands["temp:show"] = func(fm *fmesh.FMesh) {
+	sim.MeshCommands["time:show"] = func(fm *fmesh.FMesh) {
 		timeRel := sim.FM.ComponentByName("time").State().Get("current_time_rel")
 		timeAbs := sim.FM.ComponentByName("time").State().Get("current_time_abs")
 		fmt.Printf("current time abs: %v time rel: %v \n", timeAbs, timeRel)
 	}
 
-	// Init mesh
-	sim.FM.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
+	sim.MeshCommands["time:tick"] = func(fm *fmesh.FMesh) {
+		sim.FM.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
+	}
+
+	// Setup mesh
+	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+		// Let the time tick monotonically
+		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
+			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
+			return nil
+		})
+	})
 }
