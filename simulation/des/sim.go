@@ -13,6 +13,8 @@ type MeshCommandMap map[Command]func(fm *fmesh.FMesh)
 
 type SimInitFunc func(sim *Simulation)
 
+// Simulation is a wrapper around a mesh
+// it runs the mesh in a loop and feeds it with commands from outside (e.g., REPL or another system)
 type Simulation struct {
 	ctx          context.Context
 	cmdChan      chan Command
@@ -31,17 +33,19 @@ func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *
 	}
 }
 
-// Init allows initializing the simulation before the simulation starts
+// Init allows initializing the simulation before the simulation starts,
+// e.g., adding custom commands or manipulating the mesh before it starts running
 func (s *Simulation) Init(initFunc func(sim *Simulation)) *Simulation {
 	initFunc(s)
 	return s
 }
 
+// Run starts the simulation loop
 func (s *Simulation) Run() {
 	fmt.Println("Starting simulation...")
 
 	for {
-		// Process all pending commands
+		// Process incoming commands
 		checkCommands := true
 		for checkCommands {
 			select {
@@ -100,6 +104,7 @@ func (s *Simulation) Resume() {
 	s.isPaused = false
 }
 
+// handleCommand executes a valid command
 func (s *Simulation) handleCommand(cmd Command) {
 	cmdFunc, ok := s.MeshCommands[cmd]
 	if !ok {
