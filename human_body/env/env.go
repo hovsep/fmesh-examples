@@ -5,7 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/human_body/env/factor"
-	"github.com/hovsep/fmesh/signal"
+	"github.com/hovsep/fmesh/component"
 )
 
 const (
@@ -28,12 +28,18 @@ func GetMesh() *fmesh.FMesh {
 	// physical impacts (running, weight lifting, walking)
 	// injury
 
-	// Start the time
-	simTime.InputByName("ctl").PutSignals(signal.New("start"))
+	simTime.OutputByName("tick").PipeTo(temperature.InputByName("time"))
 
 	return fmesh.NewWithConfig(meshName, &fmesh.Config{
 		CyclesLimit: 0,
 		TimeLimit:   10 * time.Second,
 	}).
 		AddComponents(simTime, temperature)
+}
+
+func AddOrganisms(envMesh *fmesh.FMesh, organisms ...*component.Component) {
+	for _, organism := range organisms {
+		envMesh.AddComponents(organism)
+		envMesh.ComponentByName("time").OutputByName("tick").PipeTo(organism.InputByName("time"))
+	}
 }

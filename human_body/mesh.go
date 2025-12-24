@@ -13,8 +13,7 @@ func getMesh() *fmesh.FMesh {
 	// Create the human being
 	humanBeing := body.GetComponent()
 
-	// Put human being into the world
-	world.AddComponents(humanBeing)
+	env.AddOrganisms(world, humanBeing)
 
 	return world
 }

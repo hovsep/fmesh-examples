@@ -6,7 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/simulation/des"
+	"github.com/hovsep/fmesh-examples/simulation/tss"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -14,6 +14,7 @@ import (
 
 func main() {
 	fm := getMesh()
+
 	// Generate graphs if needed
 	err := internal.HandleGraphFlag(fm)
 	if err != nil {
@@ -21,22 +22,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	des.NewApp(fm, initSim).Run()
+	// Run the mesh as Time Step Simulation
+	tss.NewApp(fm, initSim).Run()
 }
 
-func initSim(sim *des.Simulation) {
+func initSim(sim *tss.Simulation) {
 	// Configure simulation
 	sim.AutoPause = false
 
 	// Add custom commands
+	// Print current time
 	sim.MeshCommands["time:now"] = func(fm *fmesh.FMesh) {
-		timeRel := sim.FM.ComponentByName("time").State().Get("current_time_rel")
-		timeAbs := sim.FM.ComponentByName("time").State().Get("current_time_abs")
-		fmt.Printf("current time abs: %v time rel: %v \n", timeAbs, timeRel)
-	}
-
-	sim.MeshCommands["time:tick"] = func(fm *fmesh.FMesh) {
-		sim.FM.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
+		tickCount := sim.FM.ComponentByName("time").State().Get("tick_count")
+		simTime := sim.FM.ComponentByName("time").State().Get("sim_time")
+		simWallTime := sim.FM.ComponentByName("time").State().Get("sim_wall_time")
+		fmt.Println("Current tick count: ", tickCount, " sim duration", simTime, " wall time:", simWallTime)
 	}
 
 	// Setup mesh

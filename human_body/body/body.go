@@ -16,10 +16,10 @@ const (
 // getMesh builds the mesh that simulates the human body
 func getMesh() *fmesh.FMesh {
 	brain := organ.GetBrainComponent()
+	heart := organ.GetHeartComponent()
 
 	// @TODO:
 	// other organs:
-	// heart,
 	// lungs,
 	// liver,
 	// kidneys,
@@ -43,7 +43,7 @@ func getMesh() *fmesh.FMesh {
 	// aggregated state (heart rate, breath, oxygen saturation, body temp, systemic stress index, fatigue, blood pH, blood volume, pain level, inflammation level)
 
 	return fmesh.New(meshName).
-		AddComponents(brain)
+		AddComponents(brain, heart)
 }
 
 // GetComponent wraps the body mesh into a fmesh component
@@ -52,7 +52,7 @@ func GetComponent() *component.Component {
 
 	return component.New(componentName).
 		WithDescription("Human body component").
-		AddInputs().  // Probably all env factors
+		AddInputs("time").
 		AddOutputs(). // Probably body state and maybe impact to env
 		WithActivationFunc(func(this *component.Component) error {
 			// read body inputs

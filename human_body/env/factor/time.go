@@ -12,25 +12,38 @@ const durationPerTick = 10 * time.Millisecond
 // GetTimeComponent returns the time component of the environment
 func GetTimeComponent() *component.Component {
 	c := component.New("time").
-		WithDescription("Time").
+		WithDescription("Time management for the simulation").
 		WithInitialState(func(state component.State) {
-			state.Set("current_time_rel", uint64(0))        // Monotonic integer counter
-			state.Set("current_time_abs", time.Duration(0)) // Elapsed time in milliseconds
+			state.Set("tick_count", uint64(0))      // Discrete step counter
+			state.Set("sim_time", time.Duration(0)) // Elapsed simulated duration
+			state.Set("sim_start_time", time.Now()) // Fixed wall-clock anchor
+			state.Set("sim_wall_time", time.Now())  // Simulation wall-clock time
 		}).
 		AddInputs("ctl").
 		AddOutputs("tick").
 		WithActivationFunc(func(this *component.Component) error {
-			tick := signal.New(durationPerTick)
+			// No need to check for inputs, just tick on every activation
 
-			currentTimeRel := this.State().Get("current_time_rel").(uint64)
-			currentTimeAbs := this.State().Get("current_time_abs").(time.Duration)
+			this.State().Update("tick_count", func(v any) any {
+				return v.(uint64) + 1
+			})
 
-			defer func() {
-				this.State().Set("current_time_rel", currentTimeRel+1)
-				this.State().Set("current_time_abs", currentTimeAbs+tick.PayloadOrNil().(time.Duration))
+			this.State().Update("sim_time", func(v any) any {
+				return v.(time.Duration) + durationPerTick
+			})
 
-			}()
-			this.OutputByName("tick").PutSignals(tick)
+			simStartTime := this.State().Get("sim_start_time").(time.Time)
+			simTime := this.State().Get("sim_time").(time.Duration)
+			this.State().Update("sim_wall_time", func(v any) any {
+				return simStartTime.Add(simTime)
+			})
+
+			tickMeta := signal.NewGroup(
+				signal.New(this.State().Get("tick_count")).AddLabel("tick_meta", "index"),
+				signal.New(this.State().Get("sim_time")).AddLabel("tick_meta", "sim_time"),
+				signal.New(this.State().Get("sim_wall_time")).AddLabel("tick_meta", "sim_wall_time"),
+			)
+			this.OutputByName("tick").PutSignals(signal.New(tickMeta))
 			return nil
 		})
 

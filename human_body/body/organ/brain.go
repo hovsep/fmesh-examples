@@ -2,10 +2,8 @@ package organ
 
 import "github.com/hovsep/fmesh/component"
 
-const componentName = "brain"
-
 func GetBrainComponent() *component.Component {
-	return component.New(componentName).
+	return component.New("brain").
 		WithDescription("Brain of the human body").
 		AddInputs().  // Probably: mental stress, sensory inputs, memories, hormones
 		AddOutputs(). // Control signals like heart rate increase, cortisol release

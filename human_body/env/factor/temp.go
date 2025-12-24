@@ -11,11 +11,11 @@ import (
 // GetTempComponent returns the temperature component of the environment
 func GetTempComponent() *component.Component {
 	return component.New("temperature").
-		WithDescription("Outside temperature in Celsius degrees").
+		WithDescription("Ambient temperature in Celsius degrees").
 		WithInitialState(func(state component.State) {
 			state.Set("current_temperature", 200)
 		}).
-		AddInputs("ctl").
+		AddInputs("ctl", "time").
 		AddOutputs("current_temperature").
 		WithActivationFunc(func(this *component.Component) error {
 
