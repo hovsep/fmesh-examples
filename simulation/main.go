@@ -6,12 +6,11 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/simulation/des"
+	"github.com/hovsep/fmesh-examples/simulation/tss"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// This example shows how to turn your fmesh into a simple Discrete Event Simulation (DES) program
-// probably this project be moved to "fmesh-sim" repo in the future
+// This example shows how to turn your fmesh into a simple Time Step Simulation (TSS) program
 func main() {
 	fm := getMesh()
 	// Generate graphs if needed
@@ -21,10 +20,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	des.NewApp(fm, initSim).Run()
+	tss.NewApp(fm, initSim).Run()
 }
 
-func initSim(sim *des.Simulation) {
+func initSim(sim *tss.Simulation) {
 	// Configure simulation
 	sim.AutoPause = true
 

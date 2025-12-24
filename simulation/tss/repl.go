@@ -1,4 +1,4 @@
-package des
+package tss
 
 import (
 	"bufio"
