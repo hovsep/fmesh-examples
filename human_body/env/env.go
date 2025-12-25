@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/human_body/annotation"
 	"github.com/hovsep/fmesh-examples/human_body/env/factor"
 	"github.com/hovsep/fmesh/component"
 )
@@ -38,27 +39,19 @@ func getFactors() *component.Collection {
 
 // addFactors adds all exposure factors to the mesh
 func addFactors(envMesh *fmesh.FMesh, factors *component.Collection) {
-	// Pick the time factor
-	timeFactor := factors.FindAny(func(c *component.Component) bool {
-		return c.Name() == "time"
-	})
-
-	// Connect the time factor to all other factors
-	factors.Filter(func(c *component.Component) bool {
-		return c.Name() != "time"
-	}).ForEach(func(c *component.Component) error {
-		return timeFactor.OutputByName("tick").PipeTo(c.InputByName("time")).ChainableErr()
-	})
-
 	// Add all factors to the mesh
 	factors.ForEach(func(c *component.Component) error {
 		return envMesh.AddComponents(c).ChainableErr()
+	}).ForEach(func(c *component.Component) error {
+		// Handle auto piping
+		annotation.AutopipeComponent(envMesh, c)
+		return c.ChainableErr()
 	})
 }
 
 func AddOrganisms(envMesh *fmesh.FMesh, organisms ...*component.Component) {
 	for _, organism := range organisms {
+		annotation.AutopipeComponent(envMesh, organism)
 		envMesh.AddComponents(organism)
-		envMesh.ComponentByName("time").OutputByName("tick").PipeTo(organism.InputByName("time"))
 	}
 }

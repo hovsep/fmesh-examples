@@ -20,7 +20,7 @@ func getMesh() *fmesh.FMesh {
 
 	env.AddOrganisms(world, humanBeing)
 
-	// Setup the mesh
+	// Set up the mesh
 	world.SetupHooks(func(hooks *fmesh.Hooks) {
 		// Let the time tick monotonically
 		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {

@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/human_body/body/controller"
 	"github.com/hovsep/fmesh-examples/human_body/body/organ"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 )
 
 const (
@@ -72,7 +73,43 @@ func GetComponent() *component.Component {
 
 	return component.New(componentName).
 		WithDescription("Human body component").
-		AddInputs("time").
+		AttachInputPorts(
+			port.NewInput("time").
+				WithDescription("Time signal").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "time").
+				AddLabel("@autopipe-port", "tick"),
+
+			port.NewInput("env_temperature").
+				WithDescription("Ambient temperature in Celsius degrees").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "temperature").
+				AddLabel("@autopipe-port", "current_temperature"),
+
+			port.NewInput("uvi").
+				WithDescription("Ultraviolet index").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "sun").
+				AddLabel("@autopipe-port", "uvi"),
+
+			port.NewInput("lux").
+				WithDescription("Illuminance in lux").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "sun").
+				AddLabel("@autopipe-port", "lux"),
+
+			port.NewInput("air_humidity").
+				WithDescription("Air humidity").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "air").
+				AddLabel("@autopipe-port", "humidity"),
+
+			port.NewInput("air_composition").
+				WithDescription("Air composition").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "air").
+				AddLabel("@autopipe-port", "composition"),
+		).
 		AddOutputs(). // Probably body state and maybe impact to env
 		WithActivationFunc(func(this *component.Component) error {
 			// read body inputs

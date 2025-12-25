@@ -13,6 +13,7 @@ const durationPerTick = 10 * time.Millisecond
 func GetTimeComponent() *component.Component {
 	c := component.New("time").
 		WithDescription("Time management for the simulation").
+		AddLabel("category", "env-factor").
 		WithInitialState(func(state component.State) {
 			state.Set("tick_count", uint64(0))      // Discrete step counter
 			state.Set("sim_time", time.Duration(0)) // Elapsed simulated duration

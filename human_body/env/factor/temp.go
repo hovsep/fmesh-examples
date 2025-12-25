@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -11,10 +12,19 @@ import (
 func GetTemperatureComponent() *component.Component {
 	return component.New("temperature").
 		WithDescription("Ambient temperature in Celsius degrees").
+		AddLabel("category", "env-factor").
 		WithInitialState(func(state component.State) {
 			state.Set("current_temperature", +05.0)
 		}).
-		AddInputs("time", "ctl").
+		AttachInputPorts(
+			port.NewInput("time").
+				WithDescription("Time signal").
+				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-component", "time").
+				AddLabel("@autopipe-port", "tick"),
+			port.NewInput("ctl").
+				WithDescription("Control signal"),
+		).
 		AddOutputs("current_temperature").
 		WithActivationFunc(func(this *component.Component) error {
 			if this.InputByName("ctl").HasSignals() {
