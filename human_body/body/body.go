@@ -2,8 +2,10 @@ package body
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/human_body/body/controller"
 	"github.com/hovsep/fmesh-examples/human_body/body/organ"
 	"github.com/hovsep/fmesh/component"
 )
@@ -15,8 +17,19 @@ const (
 
 // getMesh builds the mesh that simulates the human body
 func getMesh() *fmesh.FMesh {
-	brain := organ.GetBrainComponent()
-	heart := organ.GetHeartComponent()
+	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
+		CyclesLimit: 0,
+		TimeLimit:   10 * time.Second,
+	})
+
+	getBodyComponents().ForEach(func(c *component.Component) error {
+		return mesh.AddComponents(c).ChainableErr()
+	})
+
+	return mesh
+}
+
+func getBodyComponents() *component.Collection {
 
 	// @TODO:
 	// other organs:
@@ -42,8 +55,15 @@ func getMesh() *fmesh.FMesh {
 	// internal physiological load
 	// aggregated state (heart rate, breath, oxygen saturation, body temp, systemic stress index, fatigue, blood pH, blood volume, pain level, inflammation level)
 
-	return fmesh.New(meshName).
-		AddComponents(brain, heart)
+	return component.NewCollection().
+		Add(
+			organ.GetBrainComponent(),
+			organ.GetHeartComponent(),
+
+			controller.GetIntakeComponent(),
+			controller.GetPhysicalStressComponent(),
+			controller.GetMentalStressComponent(),
+		)
 }
 
 // GetComponent wraps the body mesh into a fmesh component

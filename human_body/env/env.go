@@ -12,29 +12,48 @@ const (
 	meshName = "env"
 )
 
-// GetMesh builds the mesh that simulates the outside environment (the world)
+// GetMesh builds the environment mesh
 func GetMesh() *fmesh.FMesh {
-	simTime := factor.GetTimeComponent()
-	temperature := factor.GetTempComponent()
-	//@TODO:
-	// humidity(%RH),
-	// radiation,
-	// uv,
-	// air pressure,composition
-	// noise,
-	// light level,
-	// gravity,
-	// acceleration,
-	// physical impacts (running, weight lifting, walking)
-	// injury
-
-	simTime.OutputByName("tick").PipeTo(temperature.InputByName("time"))
-
-	return fmesh.NewWithConfig(meshName, &fmesh.Config{
+	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		CyclesLimit: 0,
-		TimeLimit:   10 * time.Second,
-	}).
-		AddComponents(simTime, temperature)
+		TimeLimit:   10 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
+	})
+
+	addFactors(mesh, getFactors())
+
+	return mesh
+}
+
+// getFactors returns a collection of environment exposure factors
+func getFactors() *component.Collection {
+	factors := component.NewCollection().Add(
+		factor.GetTimeComponent(),
+		factor.GetSunComponent(),
+		factor.GetTemperatureComponent(),
+		factor.GetAirComponent(),
+	)
+
+	return factors
+}
+
+// addFactors adds all exposure factors to the mesh
+func addFactors(envMesh *fmesh.FMesh, factors *component.Collection) {
+	// Pick the time factor
+	timeFactor := factors.FindAny(func(c *component.Component) bool {
+		return c.Name() == "time"
+	})
+
+	// Connect the time factor to all other factors
+	factors.Filter(func(c *component.Component) bool {
+		return c.Name() != "time"
+	}).ForEach(func(c *component.Component) error {
+		return timeFactor.OutputByName("tick").PipeTo(c.InputByName("time")).ChainableErr()
+	})
+
+	// Add all factors to the mesh
+	factors.ForEach(func(c *component.Component) error {
+		return envMesh.AddComponents(c).ChainableErr()
+	})
 }
 
 func AddOrganisms(envMesh *fmesh.FMesh, organisms ...*component.Component) {
