@@ -32,6 +32,7 @@ func getMesh() *fmesh.FMesh {
 	return world
 }
 
+// setMeshCommands sets the commands that can be executed on the mesh
 func setMeshCommands(mesh *fmesh.FMesh, commands tss.MeshCommandMap) {
 	timeComponent := mesh.ComponentByName("time")
 
@@ -41,5 +42,26 @@ func setMeshCommands(mesh *fmesh.FMesh, commands tss.MeshCommandMap) {
 		simTime := timeComponent.State().Get("sim_time")
 		simWallTime := timeComponent.State().Get("sim_wall_time")
 		fmt.Println("Current tick count: ", tickCount, " sim duration", simTime, " wall time:", simWallTime)
+	}
+
+	// Print main env factor levels
+	commands["env:show"] = func(fm *fmesh.FMesh) {
+		temperature := mesh.ComponentByName("temperature").State().Get("current_temperature")
+		fmt.Println("Current temperature: ", temperature)
+	}
+
+	// Increase temperature
+	commands["temp:inc"] = func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(+5.0).AddLabel("cmd", "change_temperature"))
+	}
+
+	// Decrease temperature
+	commands["temp:dec"] = func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(-5.0).AddLabel("cmd", "change_temperature"))
+	}
+
+	// Set the temperature to zero
+	commands["temp:zero"] = func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
 	}
 }

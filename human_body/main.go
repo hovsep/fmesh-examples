@@ -24,6 +24,7 @@ func main() {
 	tss.NewApp(fm, initSim).Run()
 }
 
+// initSim configures simulation and adds custom commands
 func initSim(sim *tss.Simulation) {
 	// Configure simulation
 	sim.AutoPause = false
