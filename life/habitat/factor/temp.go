@@ -8,18 +8,18 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// GetTemperatureComponent returns the temperature component of the environment
+// GetTemperatureComponent returns the temperature component of the habitat
 func GetTemperatureComponent() *component.Component {
 	return component.New("temperature").
 		WithDescription("Ambient temperature in Celsius degrees").
-		AddLabel("category", "env-factor").
+		AddLabel("category", "habitat-factor").
 		WithInitialState(func(state component.State) {
 			state.Set("current_temperature", +05.0)
 		}).
 		AttachInputPorts(
 			port.NewInput("time").
 				WithDescription("Time signal").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "time").
 				AddLabel("@autopipe-port", "tick"),
 			port.NewInput("ctl").
@@ -53,7 +53,7 @@ func GetTemperatureComponent() *component.Component {
 			currentTemperature := this.State().Get("current_temperature").(float64)
 			this.OutputByName("current_temperature").PutSignals(
 				signal.New(currentTemperature).
-					AddLabel("env-factor", "temperature").
+					AddLabel("habitat-factor", "temperature").
 					AddLabel("unit", "Celsius degrees"),
 			)
 			return nil

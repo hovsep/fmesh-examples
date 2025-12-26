@@ -1,19 +1,19 @@
-package env
+package habitat
 
 import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/human_body/annotation"
-	"github.com/hovsep/fmesh-examples/human_body/env/factor"
+	"github.com/hovsep/fmesh-examples/life/annotation"
+	"github.com/hovsep/fmesh-examples/life/habitat/factor"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
-	meshName = "env"
+	meshName = "habitat_mesh"
 )
 
-// GetMesh builds the environment mesh
+// GetMesh builds the habitat mesh
 func GetMesh() *fmesh.FMesh {
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		CyclesLimit: 0,
@@ -25,7 +25,7 @@ func GetMesh() *fmesh.FMesh {
 	return mesh
 }
 
-// getFactors returns a collection of environment exposure factors
+// getFactors returns a collection of habitat factors
 func getFactors() *component.Collection {
 	factors := component.NewCollection().Add(
 		factor.GetTimeComponent(),
@@ -37,21 +37,21 @@ func getFactors() *component.Collection {
 	return factors
 }
 
-// addFactors adds all exposure factors to the mesh
-func addFactors(envMesh *fmesh.FMesh, factors *component.Collection) {
+// addFactors adds all exposure factors to the habitat mesh
+func addFactors(habitatMesh *fmesh.FMesh, factors *component.Collection) {
 	// Add all factors to the mesh
 	factors.ForEach(func(c *component.Component) error {
-		return envMesh.AddComponents(c).ChainableErr()
+		return habitatMesh.AddComponents(c).ChainableErr()
 	}).ForEach(func(c *component.Component) error {
 		// Handle auto piping
-		annotation.AutopipeComponent(envMesh, c)
+		annotation.AutopipeComponent(habitatMesh, c)
 		return c.ChainableErr()
 	})
 }
 
-func AddOrganisms(envMesh *fmesh.FMesh, organisms ...*component.Component) {
+func AddOrganisms(habitatMesh *fmesh.FMesh, organisms ...*component.Component) {
 	for _, organism := range organisms {
-		annotation.AutopipeComponent(envMesh, organism)
-		envMesh.AddComponents(organism)
+		annotation.AutopipeComponent(habitatMesh, organism)
+		habitatMesh.AddComponents(organism)
 	}
 }

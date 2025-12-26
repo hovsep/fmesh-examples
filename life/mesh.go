@@ -4,24 +4,24 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/human_body/body"
-	"github.com/hovsep/fmesh-examples/human_body/env"
+	"github.com/hovsep/fmesh-examples/life/habitat"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/simulation/tss"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// getMesh returns the main mesh of the simulation
-func getMesh() *fmesh.FMesh {
+// getSimulationMesh returns the main mesh of the simulation
+func getSimulationMesh() *fmesh.FMesh {
 	// Create the world
-	world := env.GetMesh()
+	habitatMesh := habitat.GetMesh()
 
 	// Create the human being
-	humanBeing := body.GetComponent()
+	humanComponent := human.GetComponent()
 
-	env.AddOrganisms(world, humanBeing)
+	habitat.AddOrganisms(habitatMesh, humanComponent)
 
 	// Set up the mesh
-	world.SetupHooks(func(hooks *fmesh.Hooks) {
+	habitatMesh.SetupHooks(func(hooks *fmesh.Hooks) {
 		// Let the time tick monotonically
 		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
@@ -29,7 +29,7 @@ func getMesh() *fmesh.FMesh {
 		})
 	})
 
-	return world
+	return habitatMesh
 }
 
 // setMeshCommands sets the commands that can be executed on the mesh
@@ -44,8 +44,8 @@ func setMeshCommands(mesh *fmesh.FMesh, commands tss.MeshCommandMap) {
 		fmt.Println("Current tick count: ", tickCount, " sim duration", simTime, " wall time:", simWallTime)
 	}
 
-	// Print main env factor levels
-	commands["env:show"] = func(fm *fmesh.FMesh) {
+	// Print habitat state
+	commands["habitat:show"] = func(fm *fmesh.FMesh) {
 		temperature := mesh.ComponentByName("temperature").State().Get("current_temperature")
 		fmt.Println("Current temperature: ", temperature)
 	}

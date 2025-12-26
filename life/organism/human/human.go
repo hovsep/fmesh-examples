@@ -1,36 +1,36 @@
-package body
+package human
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/human_body/body/controller"
-	"github.com/hovsep/fmesh-examples/human_body/body/organ"
+	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
+	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
 
 const (
-	meshName      = "body_mesh"
-	componentName = "body"
+	meshName      = "human_mesh"
+	componentName = "human"
 )
 
-// getMesh builds the mesh that simulates the human body
+// getMesh builds the mesh that simulates the human being
 func getMesh() *fmesh.FMesh {
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		CyclesLimit: 0,
 		TimeLimit:   10 * time.Second,
 	})
 
-	getBodyComponents().ForEach(func(c *component.Component) error {
+	getHumanComponents().ForEach(func(c *component.Component) error {
 		return mesh.AddComponents(c).ChainableErr()
 	})
 
 	return mesh
 }
 
-func getBodyComponents() *component.Collection {
+func getHumanComponents() *component.Collection {
 
 	// @TODO:
 	// other organs:
@@ -67,54 +67,54 @@ func getBodyComponents() *component.Collection {
 		)
 }
 
-// GetComponent wraps the body mesh into a fmesh component
+// GetComponent wraps the human mesh into an FMesh component (so it can be injected into habitat mesh)
 func GetComponent() *component.Component {
 	mesh := getMesh()
 
 	return component.New(componentName).
-		WithDescription("Human body component").
+		WithDescription("Human being component (a facade for the habibat)").
 		AttachInputPorts(
-			port.NewInput("time").
+			port.NewInput("habitat_time").
 				WithDescription("Time signal").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "time").
 				AddLabel("@autopipe-port", "tick"),
 
-			port.NewInput("env_temperature").
+			port.NewInput("habitat_temperature").
 				WithDescription("Ambient temperature in Celsius degrees").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "temperature").
 				AddLabel("@autopipe-port", "current_temperature"),
 
-			port.NewInput("uvi").
+			port.NewInput("habitat_uvi").
 				WithDescription("Ultraviolet index").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "sun").
 				AddLabel("@autopipe-port", "uvi"),
 
-			port.NewInput("lux").
+			port.NewInput("habitat_lux").
 				WithDescription("Illuminance in lux").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "sun").
 				AddLabel("@autopipe-port", "lux"),
 
-			port.NewInput("air_humidity").
+			port.NewInput("habitat_air_humidity").
 				WithDescription("Air humidity").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "air").
 				AddLabel("@autopipe-port", "humidity"),
 
-			port.NewInput("air_composition").
+			port.NewInput("habitat_air_composition").
 				WithDescription("Air composition").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "air").
 				AddLabel("@autopipe-port", "composition"),
 		).
-		AddOutputs(). // Probably body state and maybe impact to env
+		AddOutputs(). // Probably human state and maybe impact to habitat
 		WithActivationFunc(func(this *component.Component) error {
-			// read body inputs
+			// read signals from habitat
 
-			// pass body inputs into body mesh (route inputs to respective organs or central router)
+			// route habitat signals to respective organs or central router
 			_, err := mesh.Run()
 
 			if err != nil {

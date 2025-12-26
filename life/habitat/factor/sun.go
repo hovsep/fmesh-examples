@@ -5,15 +5,15 @@ import (
 	"github.com/hovsep/fmesh/port"
 )
 
-// GetSunComponent returns the sun radiation exposure factor component of the environment
+// GetSunComponent returns the sun radiation exposure factor component of the habitat
 func GetSunComponent() *component.Component {
 	return component.New("sun").
 		WithDescription("Sun radiation exposure factor").
-		AddLabel("category", "env-factor").
+		AddLabel("category", "habitat-factor").
 		AttachInputPorts(
 			port.NewInput("time").
 				WithDescription("Time signal").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "time").
 				AddLabel("@autopipe-port", "tick"),
 			port.NewInput("ctl").

@@ -5,15 +5,15 @@ import (
 	"github.com/hovsep/fmesh/port"
 )
 
-// GetAirComponent returns the air component of the environment
+// GetAirComponent returns the air component of the habitat
 func GetAirComponent() *component.Component {
 	return component.New("air").
 		WithDescription("Air quality factor").
-		AddLabel("category", "env-factor").
+		AddLabel("category", "habitat-factor").
 		AttachInputPorts(
 			port.NewInput("time").
 				WithDescription("Time signal").
-				AddLabel("@autopipe-category", "env-factor").
+				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "time").
 				AddLabel("@autopipe-port", "tick"),
 			port.NewInput("ctl").

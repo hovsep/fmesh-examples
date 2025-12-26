@@ -4,7 +4,7 @@ import "github.com/hovsep/fmesh/component"
 
 func GetPhysicalStressComponent() *component.Component {
 	return component.New("physical_stress").
-		WithDescription("Physical stress perception of the human body").
+		WithDescription("Physical stress perception of the human being").
 		AddInputs("time", "physical_activity").
 		AddOutputs(). //Emit loads on organs
 		WithActivationFunc(func(this *component.Component) error {

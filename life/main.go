@@ -11,17 +11,17 @@ import (
 // @TODO: implement basic abstractions: ResourcePool, Oscillator ,Gauge, Controller, Router
 
 func main() {
-	fm := getMesh()
+	simMesh := getSimulationMesh()
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm)
+	err := internal.HandleGraphFlag(simMesh)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)
 	}
 
 	// Run the mesh as Time Step Simulation
-	tss.NewApp(fm, initSim).Run()
+	tss.NewApp(simMesh, initSim).Run()
 }
 
 // initSim configures simulation and adds custom commands
