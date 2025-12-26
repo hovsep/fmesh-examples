@@ -25,7 +25,7 @@ func GetTemperatureComponent() *component.Component {
 			port.NewInput("ctl").
 				WithDescription("Control signal"),
 		).
-		AddOutputs("current_temperature").
+		AddOutputs("temperature").
 		WithActivationFunc(func(this *component.Component) error {
 			if this.InputByName("ctl").HasSignals() {
 				this.InputByName("ctl").Signals().ForEach(func(ctlSig *signal.Signal) error {
@@ -51,7 +51,7 @@ func GetTemperatureComponent() *component.Component {
 			}
 
 			currentTemperature := this.State().Get("current_temperature").(float64)
-			this.OutputByName("current_temperature").PutSignals(
+			this.OutputByName("temperature").PutSignals(
 				signal.New(currentTemperature).
 					AddLabel("habitat-factor", "temperature").
 					AddLabel("unit", "Celsius degrees"),

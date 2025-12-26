@@ -12,27 +12,36 @@ import (
 )
 
 const (
-	meshName      = "human_mesh"
-	componentName = "human"
+	meshName = "human_mesh"
 )
 
 // getMesh builds the mesh that simulates the human being
 func getMesh() *fmesh.FMesh {
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
-		CyclesLimit: 0,
+		// Guardrail: do not let human mesh to run forever
+		CyclesLimit: 1000,
 		TimeLimit:   10 * time.Second,
 	})
 
-	getHumanComponents().ForEach(func(c *component.Component) error {
+	getComponents().ForEach(func(c *component.Component) error {
 		return mesh.AddComponents(c).ChainableErr()
 	})
 
 	return mesh
 }
 
-func getHumanComponents() *component.Collection {
+// getComponents returns the collection of human components (organs, systems, etc.)
+func getComponents() *component.Collection {
+
+	//@todo: all habitat signals must go to "interface" organ, e.g. air->lungs and never air->blood system
+	// interfaces:
+	// human_time (possibility to run inner mesh for 3 or more phases: sense, act, aggregate)
+	// respiratory_interface
+	// GL tract
+	// skin
 
 	// @TODO:
+
 	// other organs:
 	// lungs,
 	// liver,
@@ -67,12 +76,12 @@ func getHumanComponents() *component.Collection {
 		)
 }
 
-// GetComponent wraps the human mesh into an FMesh component (so it can be injected into habitat mesh)
-func GetComponent() *component.Component {
+// Build wraps the human mesh into an FMesh component (so it can be injected into habitat mesh)
+func Build(name string) *component.Component {
 	mesh := getMesh()
 
-	return component.New(componentName).
-		WithDescription("Human being component (a facade for the habibat)").
+	return component.New("human-"+name).
+		WithDescription("A human being").
 		AttachInputPorts(
 			port.NewInput("habitat_time").
 				WithDescription("Time signal").
@@ -84,7 +93,7 @@ func GetComponent() *component.Component {
 				WithDescription("Ambient temperature in Celsius degrees").
 				AddLabel("@autopipe-category", "habitat-factor").
 				AddLabel("@autopipe-component", "temperature").
-				AddLabel("@autopipe-port", "current_temperature"),
+				AddLabel("@autopipe-port", "temperature"),
 
 			port.NewInput("habitat_uvi").
 				WithDescription("Ultraviolet index").
@@ -110,7 +119,7 @@ func GetComponent() *component.Component {
 				AddLabel("@autopipe-component", "air").
 				AddLabel("@autopipe-port", "composition"),
 		).
-		AddOutputs(). // Probably human state and maybe impact to habitat
+		AddOutputs(). // Probably human state, NO IMPACT TO HABIBAT
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 

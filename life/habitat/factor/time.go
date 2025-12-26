@@ -43,6 +43,7 @@ func GetTimeComponent() *component.Component {
 				signal.New(this.State().Get("tick_count")).AddLabel("tick_meta", "index"),
 				signal.New(this.State().Get("sim_time")).AddLabel("tick_meta", "sim_time"),
 				signal.New(this.State().Get("sim_wall_time")).AddLabel("tick_meta", "sim_wall_time"),
+				signal.New(durationPerTick).AddLabel("tick_meta", "dt"),
 			)
 			this.OutputByName("tick").PutSignals(signal.New(tickMeta))
 			return nil

@@ -15,10 +15,8 @@ func getSimulationMesh() *fmesh.FMesh {
 	// Create the world
 	habitatMesh := habitat.GetMesh()
 
-	// Create the human being
-	humanComponent := human.GetComponent()
-
-	habitat.AddOrganisms(habitatMesh, humanComponent)
+	// Add human beings
+	habitat.AddOrganisms(habitatMesh, human.Build("Leon"), human.Build("Leon"))
 
 	// Set up the mesh
 	habitatMesh.SetupHooks(func(hooks *fmesh.Hooks) {

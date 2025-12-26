@@ -11,6 +11,7 @@ import (
 )
 
 // This example shows how to turn your fmesh into a simple Time Step Simulation (TSS) program
+// @TODO: make it more interesting
 func main() {
 	fm := getMesh()
 	// Generate graphs if needed
