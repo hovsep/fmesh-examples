@@ -8,7 +8,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
 )
 
 const (
@@ -82,42 +81,13 @@ func Build(name string) *component.Component {
 
 	return component.New("human-"+name).
 		WithDescription("A human being").
-		AttachInputPorts(
-			port.NewInput("habitat_time").
-				WithDescription("Time signal").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "time").
-				AddLabel("@autopipe-port", "tick"),
-
-			port.NewInput("habitat_temperature").
-				WithDescription("Ambient temperature in Celsius degrees").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "temperature").
-				AddLabel("@autopipe-port", "temperature"),
-
-			port.NewInput("habitat_uvi").
-				WithDescription("Ultraviolet index").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "sun").
-				AddLabel("@autopipe-port", "uvi"),
-
-			port.NewInput("habitat_lux").
-				WithDescription("Illuminance in lux").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "sun").
-				AddLabel("@autopipe-port", "lux"),
-
-			port.NewInput("habitat_air_humidity").
-				WithDescription("Air humidity").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "air").
-				AddLabel("@autopipe-port", "humidity"),
-
-			port.NewInput("habitat_air_composition").
-				WithDescription("Air composition").
-				AddLabel("@autopipe-category", "habitat-factor").
-				AddLabel("@autopipe-component", "air").
-				AddLabel("@autopipe-port", "composition"),
+		AddInputs(
+			"habitat_time",
+			"habitat_temperature",
+			"habitat_uvi",
+			"habitat_lux",
+			"habitat_air_humidity",
+			"habitat_air_composition",
 		).
 		AddOutputs(). // Probably human state, NO IMPACT TO HABIBAT
 		WithActivationFunc(func(this *component.Component) error {

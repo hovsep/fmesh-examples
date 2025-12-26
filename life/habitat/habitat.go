@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/annotation"
 	"github.com/hovsep/fmesh-examples/life/habitat/factor"
 	"github.com/hovsep/fmesh/component"
 )
@@ -43,15 +42,15 @@ func addFactors(habitatMesh *fmesh.FMesh, factors *component.Collection) {
 	factors.ForEach(func(c *component.Component) error {
 		return habitatMesh.AddComponents(c).ChainableErr()
 	}).ForEach(func(c *component.Component) error {
-		// Handle auto piping
-		annotation.AutopipeComponent(habitatMesh, c)
+
+		// todo:wire time
 		return c.ChainableErr()
 	})
 }
 
 func AddOrganisms(habitatMesh *fmesh.FMesh, organisms ...*component.Component) {
 	for _, organism := range organisms {
-		annotation.AutopipeComponent(habitatMesh, organism)
+		//@todo: wire
 		habitatMesh.AddComponents(organism)
 	}
 }
