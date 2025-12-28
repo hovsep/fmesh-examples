@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/simulation/tss"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 )
 
 // This example demonstrates a basic life simulation.
@@ -14,7 +14,7 @@ import (
 //   - Habitat: an external environment model
 //   - Human: a physiological model of a human body
 //
-// The program is implemented as a Time Step Simulation (TSS).
+// The program is implemented as a step simulation model.
 //
 // Simulation model:
 //
@@ -50,12 +50,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Run the mesh as Time Step Simulation
-	tss.NewApp(simMesh, initSim).Run()
+	// Run the mesh in a step simulation
+	step_sim.NewApp(simMesh, initSim).Run()
 }
 
 // initSim configures simulation and adds custom commands
-func initSim(sim *tss.Simulation) {
+func initSim(sim *step_sim.Simulation) {
 	// Configure simulation
 	sim.AutoPause = false
 

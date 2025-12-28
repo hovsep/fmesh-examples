@@ -4,34 +4,40 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/habitat"
+	"github.com/hovsep/fmesh-examples/life/env"
+	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
-	"github.com/hovsep/fmesh-examples/simulation/tss"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
 // getSimulationMesh returns the main mesh of the simulation
 func getSimulationMesh() *fmesh.FMesh {
-	// Create the world
-	habitatMesh := habitat.GetMesh()
+	// Set up the world
+	habitat := env.NewHabitat(component.NewCollection().Add(
+		factor.GetTimeComponent(),
+		factor.GetAirComponent(),
+		factor.GetSunComponent(),
+	))
 
 	// Add human beings
-	habitat.AddOrganisms(habitatMesh, human.Build("Leon"), human.Build("Leon"))
+	habitat.AddOrganisms(human.New("Leon"))
 
 	// Set up the mesh
-	habitatMesh.SetupHooks(func(hooks *fmesh.Hooks) {
-		// Let the time tick monotonically
+	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+		// Generate a tick signal before each run (time step simulation)
 		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 			return nil
 		})
 	})
 
-	return habitatMesh
+	return habitat.FM
 }
 
 // setMeshCommands sets the commands that can be executed on the mesh
-func setMeshCommands(mesh *fmesh.FMesh, commands tss.MeshCommandMap) {
+func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 	timeComponent := mesh.ComponentByName("time")
 
 	// Print current time

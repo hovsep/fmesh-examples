@@ -9,7 +9,7 @@ func GetAirComponent() *component.Component {
 	return component.New("air").
 		WithDescription("Air quality factor").
 		AddInputs("time", "ctl").
-		AddOutputs("composition", "humidity").
+		AddOutputs("temperature", "composition", "humidity").
 		WithActivationFunc(func(this *component.Component) error {
 
 			return nil

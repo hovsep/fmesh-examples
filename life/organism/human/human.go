@@ -75,21 +75,21 @@ func getComponents() *component.Collection {
 		)
 }
 
-// Build wraps the human mesh into an FMesh component (so it can be injected into habitat mesh)
-func Build(name string) *component.Component {
+// New wraps the human mesh wrapped into an FMesh component (so it can be injected into habitat mesh)
+func New(name string) *component.Component {
 	mesh := getMesh()
 
 	return component.New("human-"+name).
 		WithDescription("A human being").
 		AddInputs(
-			"habitat_time",
-			"habitat_temperature",
-			"habitat_uvi",
-			"habitat_lux",
+			"habitat_time_tick",
+			"habitat_sun2_uvi",
+			"habitat_sun_lux",
+			"habitat_air_temperature",
 			"habitat_air_humidity",
 			"habitat_air_composition",
 		).
-		AddOutputs(). // Probably human state, NO IMPACT TO HABIBAT
+		AddOutputs(). // Probably human state, NO IMPACT TO HABITAT
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 
