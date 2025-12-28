@@ -6,11 +6,11 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/simulation/tss"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// This example shows how to turn your fmesh into a simple Time Step Simulation (TSS) program
+// This example shows how to turn your fmesh into a simple step simulation program
 // @TODO: make it more interesting
 func main() {
 	fm := getMesh()
@@ -21,10 +21,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	tss.NewApp(fm, initSim).Run()
+	step_sim.NewApp(fm, initSim).Run()
 }
 
-func initSim(sim *tss.Simulation) {
+func initSim(sim *step_sim.Simulation) {
 	// Configure simulation
 	sim.AutoPause = true
 
