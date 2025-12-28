@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emicklei/dot v1.9.2 h1:E/Wjz+BAH+JDhybEpISbo+QyDMNSiu/wqmIW9y922P8=
 github.com/emicklei/dot v1.9.2/go.mod h1:DeV7GvQtIw4h2u73RKBkkFdvVAz0D9fzeJrgPW6gy/s=
-github.com/hovsep/fmesh v1.6.0-Kars h1:efCR5ba+5UOmK/ZxxTCmrYJk3U9jukn+xgORhx8CtSI=
-github.com/hovsep/fmesh v1.6.0-Kars/go.mod h1:FiydvzvwrFXa+SK4dsXc3HKujvDeMJrun9fHaR1u8RE=
+github.com/hovsep/fmesh v1.7.0-Ani h1:N9iEkRDmqYbilQFnfx6SvUC5w7+E/YC1dGcT/SJbYEE=
+github.com/hovsep/fmesh v1.7.0-Ani/go.mod h1:FiydvzvwrFXa+SK4dsXc3HKujvDeMJrun9fHaR1u8RE=
 github.com/hovsep/fmesh-graphviz v1.3.0 h1:qwHdrVCCWGqKsQmgl4RUWOK4FUcaMtREfKveFV/4LTY=
 github.com/hovsep/fmesh-graphviz v1.3.0/go.mod h1:UmPRDXl2kNeQjd/GO4lYbGjB/KFeZET7FXVIUMwzfDw=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
