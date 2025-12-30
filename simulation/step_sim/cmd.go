@@ -1,8 +1,13 @@
 package step_sim
 
-import "fmt"
+import "github.com/hovsep/fmesh"
 
 type Command string
+
+type MeshCommandDescriptor struct {
+	Description string
+	Func        func(*fmesh.FMesh)
+}
 
 const (
 	cmdPause  Command = "pause"
@@ -11,10 +16,14 @@ const (
 	cmdHelp   Command = "help"
 )
 
-func showHelp() {
-	fmt.Println("Available commands:")
-	fmt.Println("  exit - exit REPL")
-	fmt.Println("  pause - pause simulation")
-	fmt.Println("  resume - resume simulation")
-	fmt.Println("  help - show this help")
+var NoopMeshCommand = func(*fmesh.FMesh) {
+	return
+}
+
+func NewMeshCommandDescriptor(desc string, cmdFunc func(*fmesh.FMesh)) MeshCommandDescriptor {
+	return MeshCommandDescriptor{desc, cmdFunc}
+}
+
+func (md MeshCommandDescriptor) RunWithMesh(fm *fmesh.FMesh) {
+	md.Func(fm)
 }

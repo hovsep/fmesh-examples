@@ -24,7 +24,6 @@ func (r *REPL) Run() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Print("> ")
 		_ = os.Stdout.Sync()
 		if !scanner.Scan() {
 			if err := scanner.Err(); err != nil {
@@ -53,10 +52,9 @@ func (r *REPL) handleCommand(cmd Command) bool {
 	case cmdExit:
 		return true
 	case cmdHelp:
-		showHelp()
-		return false
+		// Pass to simulation, so custom commands can be also displayed
+		fallthrough
 	default:
-		fmt.Println("Dispatching command to simulation: ", cmd)
 		r.cmdChan <- cmd
 		return false
 	}

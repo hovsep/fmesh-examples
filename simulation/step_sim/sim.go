@@ -3,13 +3,15 @@ package step_sim
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/cycle"
 )
 
-type MeshCommandMap map[Command]func(fm *fmesh.FMesh)
+type MeshCommandMap map[Command]MeshCommandDescriptor
 
 type SimInitFunc func(sim *Simulation)
 
@@ -29,8 +31,20 @@ func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *
 		ctx:          ctx,
 		FM:           fm,
 		cmdChan:      cmdChan,
-		MeshCommands: make(MeshCommandMap),
+		MeshCommands: getDefaultMeshCommands(),
 	}
+}
+
+func getDefaultMeshCommands() MeshCommandMap {
+	meshCommands := make(MeshCommandMap)
+	// Default commands are handled by the REPL, we add them here just to handle descriptions in one place
+	meshCommands[cmdExit] = NewMeshCommandDescriptor("exit REPL", NoopMeshCommand)
+	meshCommands[cmdPause] = NewMeshCommandDescriptor("pause simulation", NoopMeshCommand)
+	meshCommands[cmdResume] = NewMeshCommandDescriptor("resume simulation", NoopMeshCommand)
+	meshCommands[cmdHelp] = NewMeshCommandDescriptor("show this help message", func(_ *fmesh.FMesh) {
+		showHelp(meshCommands)
+	})
+	return meshCommands
 }
 
 // Init allows initializing the simulation before the simulation starts,
@@ -106,11 +120,18 @@ func (s *Simulation) Resume() {
 
 // handleCommand executes a valid command
 func (s *Simulation) handleCommand(cmd Command) {
-	cmdFunc, ok := s.MeshCommands[cmd]
+	cmdDescriptor, ok := s.MeshCommands[cmd]
 	if !ok {
 		fmt.Printf("Unknown command: %v \n", cmd)
 		return
 	}
-	fmt.Println("Executing command: ", cmd)
-	cmdFunc(s.FM)
+	cmdDescriptor.RunWithMesh(s.FM)
+}
+
+func showHelp(meshCommands MeshCommandMap) {
+	fmt.Println("Available commands:")
+
+	for _, cmd := range slices.Sorted(maps.Keys(meshCommands)) {
+		fmt.Printf("  %s - %s\n", cmd, meshCommands[cmd].Description)
+	}
 }
