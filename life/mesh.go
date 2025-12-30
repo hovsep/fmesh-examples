@@ -56,16 +56,26 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 
 	// Increase temperature
 	commands["temp:inc"] = func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(+5.0).AddLabel("cmd", "change_temperature"))
+		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).AddLabel("cmd", "change_temperature"))
 	}
 
 	// Decrease temperature
 	commands["temp:dec"] = func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(-5.0).AddLabel("cmd", "change_temperature"))
+		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).AddLabel("cmd", "change_temperature"))
 	}
 
 	// Set the temperature to zero
 	commands["temp:zero"] = func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("temperature").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
+		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
+	}
+
+	// Make the temperature hot
+	commands["temp:hot"] = func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).AddLabel("cmd", "set_temperature"))
+	}
+
+	// Make the temperature cold
+	commands["temp:cold"] = func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).AddLabel("cmd", "set_temperature"))
 	}
 }
