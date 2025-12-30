@@ -42,5 +42,8 @@ func handleControlSignals(this *component.Component) error {
 		default:
 			return errors.New("unknown command")
 		}
+
 	})
+
+	return nil
 }
