@@ -45,7 +45,9 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 		tickCount := timeComponent.State().Get("tick_count")
 		simTime := timeComponent.State().Get("sim_time")
 		simWallTime := timeComponent.State().Get("sim_wall_time")
-		fmt.Println("Current tick count: ", tickCount, " sim duration", simTime, " wall time:", simWallTime)
+		fmt.Println("Current tick count:", tickCount)
+		fmt.Println("Simulation duration:", simTime)
+		fmt.Println("Simulation wall-clock time:", simWallTime)
 	})
 
 	// Print habitat state
@@ -69,12 +71,12 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
 	})
 
-	// Make the temperature hot
+	// Make the air hot
 	commands["temp:hot"] = step_sim.NewMeshCommandDescriptor("Set air temperature to +38.0", func(fm *fmesh.FMesh) {
 		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).AddLabel("cmd", "set_temperature"))
 	})
 
-	// Make the temperature cold
+	// Make the air cold
 	commands["temp:cold"] = step_sim.NewMeshCommandDescriptor("Set air temperature to -35.0", func(fm *fmesh.FMesh) {
 		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).AddLabel("cmd", "set_temperature"))
 	})

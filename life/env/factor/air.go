@@ -30,12 +30,13 @@ func handleControlSignals(this *component.Component) error {
 		}).ForEach(func(ctlSig *signal.Signal) error {
 		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
 		case "change_temperature":
-			this.State().Update("temperature", func(temp any) any {
-				return temp.(float64) + ctlSig.PayloadOrDefault(0.0).(float64)
+			this.State().Update("temperature", func(currentTemp any) any {
+				return currentTemp.(float64) + ctlSig.PayloadOrDefault(0.0).(float64)
 			})
 			return nil
 		case "set_temperature":
-			this.State().Update("current_temperature", func(currentTemp any) any {
+			this.Logger().Println("Setting temperature to ", ctlSig.PayloadOrDefault(0.0).(float64))
+			this.State().Update("temperature", func(currentTemp any) any {
 				return ctlSig.PayloadOrDefault(0.0).(float64)
 			})
 			return nil
