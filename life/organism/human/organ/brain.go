@@ -2,8 +2,9 @@ package organ
 
 import "github.com/hovsep/fmesh/component"
 
-func GetBrainComponent() *component.Component {
-	return component.New("brain").
+// GetBrain returns brain organ component
+func GetBrain() *component.Component {
+	return component.New("organ:brain").
 		WithDescription("Brain").
 		AddInputs("time"). // Probably: mental stress, sensory inputs, memories, hormones
 		AddOutputs().      // Control signals like heart rate increase, cortisol release

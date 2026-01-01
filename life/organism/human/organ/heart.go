@@ -2,8 +2,9 @@ package organ
 
 import "github.com/hovsep/fmesh/component"
 
-func GetHeartComponent() *component.Component {
-	return component.New("heart").
+// GetHeart returns heart component
+func GetHeart() *component.Component {
+	return component.New("organ:heart").
 		WithDescription("Heart").
 		AddInputs("time").
 		AddOutputs().
