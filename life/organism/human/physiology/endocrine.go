@@ -1,9 +1,10 @@
-package organ
+package physiology
 
 import "github.com/hovsep/fmesh/component"
 
-func GetEndocrineSystemComponent() *component.Component {
-	return component.New("endocrine_system").
+// GetEndocrineAxis ...
+func GetEndocrineAxis() *component.Component {
+	return component.New("physiology:endocrine_axis").
 		WithDescription("Endocrine system").
 		AddInputs("time").
 		AddOutputs().
