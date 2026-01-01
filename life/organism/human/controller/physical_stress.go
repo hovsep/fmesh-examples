@@ -2,8 +2,9 @@ package controller
 
 import "github.com/hovsep/fmesh/component"
 
-func GetPhysicalStressComponent() *component.Component {
-	return component.New("physical_stress").
+// GetPhysicalStress returns the physical stress controller component
+func GetPhysicalStress() *component.Component {
+	return component.New("controller:physical_stress").
 		WithDescription("Physical stress perception of the human being").
 		AddInputs("time", "physical_activity").
 		AddOutputs(). //Emit loads on organs
