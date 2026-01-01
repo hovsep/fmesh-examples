@@ -1,10 +1,10 @@
-package controller
+package boundary
 
 import "github.com/hovsep/fmesh/component"
 
-func GetRespiratoryInterface() *component.Component {
-	return component.New("respiratory_interface").
-		WithDescription("Transforms environmental air signals (composition, humidity) into oxygen/CO2 levels and lung input for circulation").
+func GetRespiratory() *component.Component {
+	return component.New("boundary:respiratory").
+		WithDescription("Transforms environmental air signals into chemical levels and lung input for circulation").
 		AddInputs(
 			"time",
 			"air_composition", // O2, CO2, pollutants

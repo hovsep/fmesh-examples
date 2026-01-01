@@ -1,9 +1,9 @@
-package controller
+package boundary
 
 import "github.com/hovsep/fmesh/component"
 
-func GetMechanicalInterface() *component.Component {
-	return component.New("mechanical_interface").
+func GetMechanical() *component.Component {
+	return component.New("boundary:mechanical").
 		WithDescription("Transforms mechanical stimuli (loads, movement, posture) into signals for musculoskeletal and cardiovascular systems").
 		AddInputs(
 			"time",

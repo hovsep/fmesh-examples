@@ -1,9 +1,9 @@
-package controller
+package boundary
 
 import "github.com/hovsep/fmesh/component"
 
-func GetIngestionInterface() *component.Component {
-	return component.New("ingestion_interface").
+func GetIngestion() *component.Component {
+	return component.New("boundary:ingestion").
 		WithDescription("Transforms intake signals (food, water, substances) into physiological ingestion and absorption signals").
 		AddInputs(
 			"time",

@@ -1,9 +1,9 @@
-package controller
+package boundary
 
 import "github.com/hovsep/fmesh/component"
 
-func GetThermalInterface() *component.Component {
-	return component.New("thermal_interface").
+func GetThermal() *component.Component {
+	return component.New("boundary:thermal").
 		WithDescription("Transforms environmental thermal signals into body heat load, cold/heat stress signals").
 		AddInputs(
 			"time",
