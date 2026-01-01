@@ -5,8 +5,12 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
+	"github.com/hovsep/fmesh-examples/life/organism/human/regulation"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -31,47 +35,54 @@ func getMesh() *fmesh.FMesh {
 
 // getComponents returns the collection of human components (organs, systems, etc.)
 func getComponents() *component.Collection {
-
-	//@todo: all habitat signals must go to "interface" organ, e.g. air->lungs and never air->blood system
-	// interfaces:
-	// human_time (possibility to run inner mesh for 3 or more phases: sense, act, aggregate)
-	// respiratory_interface
-	// GL tract
-	// skin
-
 	// @TODO:
 
 	// other organs:
-	// lungs,
 	// liver,
 	// kidneys,
-	// GL tract,
 
 	// distributed anatomy:
-	// skeletal system
-	// cardiovascular system
-	// muscular system
-	// endocrine system
-	// respiratory system
 	// immune system
 	// nutritional/metabolic system
-	// autonomic nervous system
-	// skin
 	// fluid balance
 
 	// logical components:
-
 	// internal physiological load
 	// aggregated state (heart rate, breath, oxygen saturation, body temp, systemic stress index, fatigue, blood pH, blood volume, pain level, inflammation level)
 
 	return component.NewCollection().
 		Add(
-			organ.GetBrainComponent(),
-			organ.GetHeartComponent(),
+			// Boundaries (interfaces between the environment and a human body)
+			boundary.GetThermal(),
+			boundary.GetMechanical(),
+			boundary.GetRespiratory(),
+			boundary.GetIngestion(),
 
-			controller.GetIntakeComponent(),
-			controller.GetPhysicalStressComponent(),
-			controller.GetMentalStressComponent(),
+			// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
+			controller.GetIntake(),
+			controller.GetPhysicalStress(),
+			controller.GetMentalStress(),
+
+			// Physiological systems
+			physiology.GetAutonomicCoordination(),
+			physiology.GetPhysiologicalLoad(),
+			physiology.GetEndocrineAxis(),
+			physiology.GetObservableState(),
+			physiology.GetPhysiologicalState(),
+
+			// Regulation systems
+			regulation.GetHomeostasis(),
+
+			// Organs
+			organ.GetBrain(),
+			organ.GetHeart(),
+
+			// Distributed anatomy
+			da.GetSkin(),
+			da.GetBloodSystem(),
+			da.GetMuscularSystem(),
+			da.GetNervousSystem(),
+			da.GetGITract(),
 		)
 }
 
