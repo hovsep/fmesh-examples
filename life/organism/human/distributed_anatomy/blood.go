@@ -1,9 +1,10 @@
-package organ
+package da
 
 import "github.com/hovsep/fmesh/component"
 
-func GetBloodSystemComponent() *component.Component {
-	return component.New("blood_system").
+// GetBloodSystem
+func GetBloodSystem() *component.Component {
+	return component.New("da:blood_system").
 		WithDescription("Blood system").
 		AddInputs("time").
 		AddOutputs().

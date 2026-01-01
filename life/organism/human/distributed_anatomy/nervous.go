@@ -1,9 +1,10 @@
-package organ
+package da
 
 import "github.com/hovsep/fmesh/component"
 
-func GetNervousSystemComponent() *component.Component {
-	return component.New("nervous_system").
+// GetNervousSystem ...
+func GetNervousSystem() *component.Component {
+	return component.New("da:nervous_system").
 		WithDescription("Nervous system").
 		AddInputs("time").
 		AddOutputs().

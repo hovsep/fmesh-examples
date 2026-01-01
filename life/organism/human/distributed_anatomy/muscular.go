@@ -1,9 +1,10 @@
-package organ
+package da
 
 import "github.com/hovsep/fmesh/component"
 
-func GetMuscularSystemComponent() *component.Component {
-	return component.New("muscular_system").
+// GetMuscularSystem ...
+func GetMuscularSystem() *component.Component {
+	return component.New("da:muscular_system").
 		WithDescription("Muscular system").
 		AddInputs("time").
 		AddOutputs().

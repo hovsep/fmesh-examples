@@ -1,9 +1,10 @@
-package organ
+package da
 
 import "github.com/hovsep/fmesh/component"
 
-func GetGIComponent() *component.Component {
-	return component.New("gi").
+// GetGITract ...
+func GetGITract() *component.Component {
+	return component.New("da:gi_tract").
 		WithDescription("GI / Digestive Tract").
 		AddInputs("time").
 		AddOutputs().
