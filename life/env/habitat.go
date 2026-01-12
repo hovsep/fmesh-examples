@@ -53,6 +53,7 @@ func (h *Habitat) addFactors(factors *component.Collection) {
 	})
 }
 
+// AddOrganisms adds organisms components to the habitat mesh
 func (h *Habitat) AddOrganisms(organisms ...*component.Component) {
 	for _, organism := range organisms {
 		h.FM.AddComponents(organism)
@@ -76,12 +77,14 @@ func (h *Habitat) AddOrganisms(organisms ...*component.Component) {
 	}
 }
 
+// getTimeFactor returns the time factor component
 func (h *Habitat) getTimeFactor() *component.Component {
 	return h.FM.Components().FindAny(func(c *component.Component) bool {
 		return c.Name() == "time"
 	})
 }
 
+// connectToTimeFactor connects the given component to the time factor
 func (h *Habitat) connectToTimeFactor(c *component.Component) {
 	habitatTimeFactor := h.getTimeFactor()
 	c.Inputs().ForEach(func(p *port.Port) error {

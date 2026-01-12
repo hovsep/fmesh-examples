@@ -20,16 +20,19 @@ const (
 
 // getMesh builds the mesh that simulates the human being
 func getMesh() *fmesh.FMesh {
+	// Create the mesh
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		// Guardrail: do not let human mesh to run forever
 		CyclesLimit: 1000,
 		TimeLimit:   10 * time.Second,
 	})
 
+	// Add components to the mesh
 	getComponents().ForEach(func(c *component.Component) error {
 		return mesh.AddComponents(c).ChainableErr()
 	})
 
+	// Do the wiring
 	return mesh
 }
 
@@ -60,8 +63,9 @@ func getComponents() *component.Collection {
 
 			// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
 			controller.GetIntake(),
-			controller.GetPhysicalStress(),
-			controller.GetMentalStress(),
+			controller.GetPhysical(),
+			controller.GetMental(),
+			controller.GetExcretion(),
 
 			// Physiological systems
 			physiology.GetAutonomicCoordination(),
@@ -86,21 +90,16 @@ func getComponents() *component.Collection {
 		)
 }
 
-// New wraps the human mesh wrapped into an FMesh component (so it can be injected into habitat mesh)
+// New returns a new human as a component (for simplicity we skip a clothing insulation factor, so the human being is naked)
 func New(name string) *component.Component {
 	mesh := getMesh()
 
-	return component.New("human-"+name).
+	return component.New("human-" + name).
 		WithDescription("A human being").
 		AddInputs(
-			"habitat_time_tick",
-			"habitat_sun2_uvi",
-			"habitat_sun_lux",
-			"habitat_air_temperature",
-			"habitat_air_humidity",
-			"habitat_air_composition",
+			"habitat",
 		).
-		AddOutputs(). // Probably human state, NO IMPACT TO HABITAT
+		AddOutputs(). // Simplification: no impact to habitat
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 

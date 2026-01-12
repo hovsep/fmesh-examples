@@ -12,6 +12,7 @@ func GetAirComponent() *component.Component {
 	return component.New("air").
 		WithDescription("Air factor").
 		AddInputs("time", "ctl").
+		// For the sake of simplicity, we skip parameters like barometric pressure or wind
 		AddOutputs("temperature", "composition", "humidity").
 		WithInitialState(func(state component.State) {
 			state.Set("temperature", +26.0)

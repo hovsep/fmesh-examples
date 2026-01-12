@@ -2,8 +2,8 @@ package controller
 
 import "github.com/hovsep/fmesh/component"
 
-// GetMentalStress returns the mental stress component of the human being
-func GetMentalStress() *component.Component {
+// GetMental returns the mental stress component of the human being
+func GetMental() *component.Component {
 	return component.New("controller:mental_stress").
 		WithDescription("Mental stress perception of the human being").
 		AddInputs("time", "emotional_stimulus").
