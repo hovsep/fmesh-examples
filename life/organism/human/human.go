@@ -12,7 +12,10 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/organism/human/regulation"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 )
+
+type PortPair [2]*port.Port
 
 const (
 	meshName = "human_mesh"
@@ -94,17 +97,37 @@ func getComponents() *component.Collection {
 func New(name string) *component.Component {
 	mesh := getMesh()
 
-	return component.New("human-" + name).
+	return component.New("human-"+name).
 		WithDescription("A human being").
 		AddInputs(
-			"habitat",
+			"habitat_air_temperature",
+			"habitat_air_humidity",
+			"habitat_air_composition",
 		).
 		AddOutputs(). // Simplification: no impact to habitat
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 
 			// route habitat signals to respective organs or central router
-			_, err := mesh.Run()
+
+			respiratory := mesh.ComponentByName("boundary:respiratory")
+			err := multiForward(
+				PortPair{
+					this.InputByName("habitat_air_temperature"),
+					respiratory.InputByName("air_temperature"),
+				}, PortPair{
+					this.InputByName("habitat_air_humidity"),
+					respiratory.InputByName("air_humidity"),
+				},
+				PortPair{
+					this.InputByName("habitat_air_composition"),
+					respiratory.InputByName("air_composition"),
+				})
+			if err != nil {
+				return fmt.Errorf("failed to forward air signals: %w", err)
+			}
+
+			_, err = mesh.Run()
 
 			if err != nil {
 				return fmt.Errorf("failed to run %s: %w", mesh.Name(), err)
@@ -116,4 +139,15 @@ func New(name string) *component.Component {
 
 			return nil
 		})
+}
+
+// multiForward is a helper function to make multiple 1:1 port forwarding easier
+func multiForward(portPairs ...PortPair) error {
+	for _, pair := range portPairs {
+		err := port.ForwardSignals(pair[0], pair[1])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

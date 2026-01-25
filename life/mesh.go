@@ -18,7 +18,7 @@ func getSimulationMesh() *fmesh.FMesh {
 	habitat := env.NewHabitat(component.NewCollection().Add(
 		factor.GetTimeComponent(),
 		factor.GetAirComponent(),
-		factor.GetSunComponent(),
+		factor.GetSunComponent(), // @todo: make sun to affect air temperature
 	))
 
 	// Add human beings
