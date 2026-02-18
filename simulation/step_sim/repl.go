@@ -3,6 +3,7 @@ package step_sim
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -17,12 +18,12 @@ func NewREPL(cmdChan chan Command) *REPL {
 	}
 }
 
-func (r *REPL) Run() {
+func (repl *REPL) Run(r io.Reader) {
 	fmt.Println("Starting REPL...")
 
-	defer close(r.cmdChan)
+	defer close(repl.cmdChan)
 
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(r)
 	for {
 		_ = os.Stdout.Sync()
 		if !scanner.Scan() {
@@ -38,7 +39,7 @@ func (r *REPL) Run() {
 			continue
 		}
 
-		if r.handleCommand(cmd) {
+		if repl.handleCommand(cmd) {
 			fmt.Println("Shutting down REPL...")
 			return
 		}
@@ -46,7 +47,7 @@ func (r *REPL) Run() {
 }
 
 // handleCommand processes a single REPL command and returns true if the REPL should be closed
-func (r *REPL) handleCommand(cmd Command) bool {
+func (repl *REPL) handleCommand(cmd Command) bool {
 	// Handle REPL-specific commands immediately and pass others to the channel
 	switch cmd {
 	case cmdExit:
@@ -55,7 +56,7 @@ func (r *REPL) handleCommand(cmd Command) bool {
 		// Pass to simulation, so custom commands can be also displayed
 		fallthrough
 	default:
-		r.cmdChan <- cmd
+		repl.cmdChan <- cmd
 		return false
 	}
 }

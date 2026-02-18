@@ -3,6 +3,7 @@ package step_sim
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -12,12 +13,13 @@ type Application struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	cmdChan chan Command
+	reader  io.Reader
 
 	REPL *REPL
-	sim  *Simulation
+	Sim  *Simulation
 }
 
-func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
+func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, reader io.Reader) *Application {
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -25,8 +27,9 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
 		ctx:     ctx,
 		cancel:  cancel,
 		cmdChan: cmdChan,
+		reader:  reader,
 		REPL:    NewREPL(cmdChan),
-		sim:     NewSimulation(ctx, cmdChan, fm).Init(simInitFunc),
+		Sim:     NewSimulation(ctx, cmdChan, fm).Init(simInitFunc),
 	}
 
 	return app
@@ -41,7 +44,7 @@ func (app *Application) Run() {
 		fmt.Println("Shutting down the application...")
 	}()
 
-	go app.sim.Run()
+	go app.Sim.Run()
 
-	app.REPL.Run()
+	app.REPL.Run(app.reader)
 }

@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Run the mesh in a step simulation
-	step_sim.NewApp(simMesh, initSim).Run()
+	step_sim.NewApp(simMesh, initSim, os.Stdin).Run()
 }
 
 // initSim configures simulation and adds custom commands

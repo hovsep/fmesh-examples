@@ -76,6 +76,8 @@ func (s *Simulation) Run() {
 					s.Pause()
 				case cmdResume:
 					s.Resume()
+				case cmdExit:
+					return
 				default:
 					s.handleCommand(cmd)
 				}

@@ -99,6 +99,9 @@ func New(name string) *component.Component {
 
 	return component.New("human-"+name).
 		WithDescription("A human being").
+		AddLabel("role", "organism").
+		AddLabel("genus", "homo").
+		AddLabel("species", "sapiens").
 		AddInputs(
 			"habitat_air_temperature",
 			"habitat_air_humidity",
