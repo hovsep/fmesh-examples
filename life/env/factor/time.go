@@ -20,7 +20,7 @@ func GetTimeComponent() *component.Component {
 			state.Set("sim_wall_time", time.Now())  // Simulation wall-clock time
 		}).
 		AddInputs("ctl").
-		AddOutputs("tick").
+		AddOutputs("tick", "sim_time").
 		WithActivationFunc(func(this *component.Component) error {
 			// No need to check for inputs, just tick on every activation
 
@@ -45,7 +45,9 @@ func GetTimeComponent() *component.Component {
 				signal.New(durationPerTick).AddLabel("tick_meta", "dt"),
 			)
 			this.OutputByName("tick").PutSignals(signal.New(tickMeta))
-			return nil
+			this.OutputByName("sim_time").PutSignals(signal.New(this.State().Get("sim_time")))
+
+			return this.ChainableErr()
 		})
 
 	return c

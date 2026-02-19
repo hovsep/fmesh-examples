@@ -107,7 +107,7 @@ func New(name string) *component.Component {
 			"habitat_air_humidity",
 			"habitat_air_composition",
 		).
-		AddOutputs(). // Simplification: no impact to habitat
+		AddOutputs("body_temperature", "heartbeat"). // Simplification: no impact to habitat
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 
