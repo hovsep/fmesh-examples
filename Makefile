@@ -23,3 +23,7 @@ graph: ## Generate graphs for all examples
 clean: ## Clean build artifacts
 	@for ex in $(EXAMPLES); do (cd $$ex && go clean) || true; done
 	@echo "✓ Clean complete"
+
+test: ## Run tests
+	go test ./...
+	@echo "✓ Tests finished"
