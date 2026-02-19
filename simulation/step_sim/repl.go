@@ -50,9 +50,9 @@ func (repl *REPL) Run(r io.Reader) {
 func (repl *REPL) handleCommand(cmd Command) bool {
 	// Handle REPL-specific commands immediately and pass others to the channel
 	switch cmd {
-	case cmdExit:
+	case Exit:
 		return true
-	case cmdHelp:
+	case Help:
 		// Pass to simulation, so custom commands can be also displayed
 		fallthrough
 	default:

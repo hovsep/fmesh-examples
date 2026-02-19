@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -23,16 +24,14 @@ func NewHabitat(factors *component.Collection) *Habitat {
 	habitat := &Habitat{}
 	habitat.FM = fmesh.NewWithConfig(meshName, &fmesh.Config{
 		CyclesLimit: fmesh.UnlimitedCycles,
-		TimeLimit:   10 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
+		TimeLimit:   1 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
 	})
 
-	habitat.addFactors(factors)
-
-	return habitat
+	return habitat.addFactors(factors)
 }
 
 // addFactors adds all exposure factors to the habitat mesh
-func (h *Habitat) addFactors(factors *component.Collection) {
+func (h *Habitat) addFactors(factors *component.Collection) *Habitat {
 	if !factors.AnyMatch(func(factor *component.Component) bool {
 		return factor.Name() == "time"
 	}) {
@@ -51,10 +50,75 @@ func (h *Habitat) addFactors(factors *component.Collection) {
 		h.connectToTimeFactor(c)
 		return h.FM.ChainableErr()
 	})
+	return h
+}
+
+func (h *Habitat) AddAggregatedState() *Habitat {
+	agg, err := newAggregator("aggregated_state", h.FM, []string{
+		"time::sim_time",
+		"air::temperature",
+		"sun::uvi",
+		"human-Leon::body_temperature", //@TODO: get human component name dynamically
+		"human-Leon::heartbeat"})
+
+	if err != nil {
+		panic(err)
+	}
+
+	h.FM.AddComponents(agg)
+	return h
+}
+
+func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
+	agg := component.New(name).
+		WithDescription("composes data from multiple sources into one (single source of true for UI)").
+		WithActivationFunc(func(this *component.Component) error {
+			return this.Inputs().ForEach(func(in *port.Port) error {
+				// Just proxy "in -> out" with the same port name
+				return port.ForwardSignals(in, this.OutputByName(in.Name()))
+
+			}).ChainableErr()
+		})
+	for _, inputPath := range inputPaths {
+		if inputPath == "" {
+			return nil, fmt.Errorf("empty input path")
+		}
+
+		if !strings.Contains(inputPath, "::") {
+			return nil, fmt.Errorf("delimiter missing in input path: %s", inputPath)
+		}
+
+		segments := strings.Split(inputPath, "::")
+		if len(segments) != 2 {
+			return nil, fmt.Errorf("invalid input path: %s", inputPath)
+		}
+
+		componentName, srcPortName := segments[0], segments[1]
+
+		srcComponent := fm.ComponentByName(componentName)
+		if srcComponent == nil {
+			return nil, fmt.Errorf("unknown component: %s", componentName)
+		}
+
+		sourcePort := srcComponent.OutputByName(srcPortName)
+
+		if sourcePort == nil {
+			return nil, fmt.Errorf("could not find source port: %s", srcPortName)
+		}
+
+		// Add input and output with the same name and connect to the source
+		agg.AddInputs(inputPath).AddOutputs(inputPath)
+		err := sourcePort.PipeTo(agg.InputByName(inputPath)).ChainableErr()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return agg, nil
 }
 
 // AddOrganisms adds organisms components to the habitat mesh
-func (h *Habitat) AddOrganisms(organisms ...*component.Component) {
+func (h *Habitat) AddOrganisms(organisms ...*component.Component) *Habitat {
 	for _, organism := range organisms {
 		h.FM.AddComponents(organism)
 
@@ -75,6 +139,7 @@ func (h *Habitat) AddOrganisms(organisms ...*component.Component) {
 			}).ChainableErr()
 		})
 	}
+	return h
 }
 
 // getTimeFactor returns the time factor component

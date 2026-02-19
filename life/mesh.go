@@ -15,14 +15,9 @@ import (
 // getSimulationMesh returns the main mesh of the simulation
 func getSimulationMesh() *fmesh.FMesh {
 	// Set up the world
-	habitat := env.NewHabitat(component.NewCollection().Add(
-		factor.GetTimeComponent(),
-		factor.GetAirComponent(),
-		factor.GetSunComponent(), // @todo: make sun to affect air temperature
-	))
-
-	// Add human beings
-	habitat.AddOrganisms(human.New("Leon"))
+	habitat := getHabitat().
+		AddOrganisms(human.New("Leon")).
+		AddAggregatedState()
 
 	// Set up the mesh
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
@@ -34,6 +29,15 @@ func getSimulationMesh() *fmesh.FMesh {
 	})
 
 	return habitat.FM
+}
+
+// getHabitat builds the habitat mesh
+func getHabitat() *env.Habitat {
+	return env.NewHabitat(component.NewCollection().Add(
+		factor.GetTimeComponent(),
+		factor.GetAirComponent(),
+		factor.GetSunComponent(), // @todo: make sun to affect air temperature
+	))
 }
 
 // setMeshCommands sets the commands that can be executed on the mesh

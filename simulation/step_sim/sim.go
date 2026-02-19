@@ -19,7 +19,7 @@ type SimInitFunc func(sim *Simulation)
 // it runs the mesh in a loop and feeds it with commands from outside (e.g., REPL or another system)
 type Simulation struct {
 	ctx          context.Context
-	cmdChan      chan Command
+	CMDChan      chan Command
 	isPaused     bool
 	FM           *fmesh.FMesh
 	MeshCommands MeshCommandMap
@@ -30,7 +30,7 @@ func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *
 	return &Simulation{
 		ctx:          ctx,
 		FM:           fm,
-		cmdChan:      cmdChan,
+		CMDChan:      cmdChan,
 		MeshCommands: getDefaultMeshCommands(),
 	}
 }
@@ -38,10 +38,10 @@ func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *
 func getDefaultMeshCommands() MeshCommandMap {
 	meshCommands := make(MeshCommandMap)
 	// Default commands are handled by the REPL, we add them here just to handle descriptions in one place
-	meshCommands[cmdExit] = NewMeshCommandDescriptor("exit REPL", NoopMeshCommand)
-	meshCommands[cmdPause] = NewMeshCommandDescriptor("pause simulation", NoopMeshCommand)
-	meshCommands[cmdResume] = NewMeshCommandDescriptor("resume simulation", NoopMeshCommand)
-	meshCommands[cmdHelp] = NewMeshCommandDescriptor("show this help message", func(_ *fmesh.FMesh) {
+	meshCommands[Exit] = NewMeshCommandDescriptor("exit REPL", NoopMeshCommand)
+	meshCommands[Pause] = NewMeshCommandDescriptor("pause simulation", NoopMeshCommand)
+	meshCommands[Resume] = NewMeshCommandDescriptor("resume simulation", NoopMeshCommand)
+	meshCommands[Help] = NewMeshCommandDescriptor("show this help message", func(_ *fmesh.FMesh) {
 		showHelp(meshCommands)
 	})
 	return meshCommands
@@ -66,17 +66,17 @@ func (s *Simulation) Run() {
 			case <-s.ctx.Done():
 				fmt.Println("Shutting down simulation...")
 				return
-			case cmd, ok := <-s.cmdChan:
+			case cmd, ok := <-s.CMDChan:
 				if !ok {
 					fmt.Println("Command channel closed, shutting down simulation...")
 					return
 				}
 				switch cmd {
-				case cmdPause:
+				case Pause:
 					s.Pause()
-				case cmdResume:
+				case Resume:
 					s.Resume()
-				case cmdExit:
+				case Exit:
 					return
 				default:
 					s.handleCommand(cmd)
@@ -128,6 +128,10 @@ func (s *Simulation) handleCommand(cmd Command) {
 		return
 	}
 	cmdDescriptor.RunWithMesh(s.FM)
+}
+
+func (s *Simulation) SendCommand(cmd Command) {
+	s.CMDChan <- cmd
 }
 
 func showHelp(meshCommands MeshCommandMap) {

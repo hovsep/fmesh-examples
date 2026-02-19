@@ -10,10 +10,10 @@ type MeshCommandDescriptor struct {
 }
 
 const (
-	cmdPause  Command = "pause"
-	cmdResume Command = "resume"
-	cmdExit   Command = "exit"
-	cmdHelp   Command = "help"
+	Pause  Command = "pause"
+	Resume Command = "resume"
+	Exit   Command = "exit"
+	Help   Command = "help"
 )
 
 var NoopMeshCommand = func(*fmesh.FMesh) {
