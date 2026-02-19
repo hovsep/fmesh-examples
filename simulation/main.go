@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	step_sim.NewApp(fm, initSim).Run()
+	step_sim.NewApp(fm, initSim, os.Stdin).Run()
 }
 
 func initSim(sim *step_sim.Simulation) {
