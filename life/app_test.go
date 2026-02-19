@@ -33,6 +33,7 @@ func Test_AppChecks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mesh := getSimulationMesh()
 			app := step_sim.NewApp(mesh, initSim, os.Stdin)
+			assert.NotNil(t, app)
 
 			if tt.assertions != nil {
 				tt.assertions(t, app)

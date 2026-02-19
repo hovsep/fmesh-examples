@@ -25,5 +25,5 @@ clean: ## Clean build artifacts
 	@echo "✓ Clean complete"
 
 test: ## Run tests
-	go test ./...
+	cd ./life && go test .
 	@echo "✓ Tests finished"
