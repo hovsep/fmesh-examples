@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_SimChecks(t *testing.T) {
+const defaultSimulationDuration = 100 * time.Millisecond
+
+func Test_Time(t *testing.T) {
 	tests := []struct {
 		name       string
 		assertions func(t *testing.T, sim *step_sim.Simulation)
@@ -19,16 +23,27 @@ func Test_SimChecks(t *testing.T) {
 		{
 			name: "time advances in timer",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				var observedSimWallTime []time.Time
+
 				timeComponent := sim.FM.ComponentByName("time")
-				t1 := timeComponent.State().Get("tick_count")
+				require.NotNil(t, timeComponent)
 
-				assert.Zero(t, t1)
+				timeComponent.SetupHooks(func(hooks *component.Hooks) {
+					hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
+						tickSig := timeComponent.OutputByName("tick").Signals().First()
+						require.NotNil(t, tickSig)
 
-				runAndAssert(t, sim, func(t *testing.T, sim *step_sim.Simulation) {
-					time.Sleep(100 * time.Millisecond)
+						_, _, simWallTime, _, err := helper.UnpackTick(tickSig)
+						require.NoError(t, err)
 
-					t2 := timeComponent.State().Get("tick_count")
-					assert.Greater(t, t2, t1)
+						// Observe and collect sim wall time after every iteration
+						observedSimWallTime = append(observedSimWallTime, simWallTime)
+						return nil
+					})
+				})
+
+				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+					assert.IsIncreasing(t, observedSimWallTime)
 				})
 
 			},
@@ -36,27 +51,24 @@ func Test_SimChecks(t *testing.T) {
 		{
 			name: "time advances in aggregated state",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				runAndAssert(t, sim, func(t *testing.T, sim *step_sim.Simulation) {
-					observedSimTime := []time.Duration{}
+				var observedSimTime []time.Duration
 
-					sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
-						hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-							aggState := mesh.ComponentByName("aggregated_state")
-							require.NotNil(t, aggState)
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						aggState := mesh.ComponentByName("aggregated_state")
+						require.NotNil(t, aggState)
 
-							simTimeSig := aggState.OutputByName("time::sim_time").Signals().First()
-							require.NotNil(t, simTimeSig)
-							assert.NotZero(t, simTimeSig.PayloadOrNil())
+						simTimeSig := aggState.OutputByName("time::sim_time").Signals().First()
+						require.NotNil(t, simTimeSig)
+						assert.NotZero(t, simTimeSig.PayloadOrNil())
 
-							// Observe and collect sim time after every iteration
-							observedSimTime = append(observedSimTime, simTimeSig.PayloadOrNil().(time.Duration))
-							return nil
-						})
+						// Observe and collect sim time after every iteration
+						observedSimTime = append(observedSimTime, simTimeSig.PayloadOrNil().(time.Duration))
+						return nil
 					})
+				})
 
-					// Let the sim to run for some time
-					time.Sleep(100 * time.Millisecond)
-
+				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
 					// Check if time advances actually
 					assert.IsIncreasing(t, observedSimTime)
 				})
@@ -77,8 +89,32 @@ func Test_SimChecks(t *testing.T) {
 	}
 }
 
-func runAndAssert(t *testing.T, sim *step_sim.Simulation, assertions func(t *testing.T, sim *step_sim.Simulation)) {
-	go sim.Run()
-	assertions(t, sim)
-	sim.SendCommand(step_sim.Exit)
+func Test_Human(t *testing.T) {
+	tests := []struct {
+		name       string
+		assertions func(t *testing.T, sim *step_sim.Simulation)
+	}{
+		{
+			name: "human is alive",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				humanComponent := helper.FindHumanComponent(sim.FM)
+				require.NotNil(t, humanComponent)
+
+				helper.WithRunningSimulation(sim, 100*time.Millisecond, func() {
+
+				})
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdChan := make(chan step_sim.Command)
+			fm := getSimulationMesh()
+			sim := step_sim.NewSimulation(context.Background(), cmdChan, fm)
+
+			if tt.assertions != nil {
+				tt.assertions(t, sim)
+			}
+		})
+	}
 }

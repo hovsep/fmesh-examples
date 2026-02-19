@@ -3,6 +3,7 @@ package factor
 import (
 	"time"
 
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -38,13 +39,12 @@ func GetTimeComponent() *component.Component {
 				return simStartTime.Add(simTime)
 			})
 
-			tickMeta := signal.NewGroup(
-				signal.New(this.State().Get("tick_count")).AddLabel("tick_meta", "index"),
-				signal.New(this.State().Get("sim_time")).AddLabel("tick_meta", "sim_time"),
-				signal.New(this.State().Get("sim_wall_time")).AddLabel("tick_meta", "sim_wall_time"),
-				signal.New(durationPerTick).AddLabel("tick_meta", "dt"),
-			)
-			this.OutputByName("tick").PutSignals(signal.New(tickMeta))
+			this.OutputByName("tick").PutSignals(helper.PackTick(
+				this.State().Get("tick_count").(uint64),
+				this.State().Get("sim_time").(time.Duration),
+				this.State().Get("sim_wall_time").(time.Time),
+				durationPerTick,
+			))
 			this.OutputByName("sim_time").PutSignals(signal.New(this.State().Get("sim_time")))
 
 			return this.ChainableErr()

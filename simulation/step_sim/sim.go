@@ -19,7 +19,7 @@ type SimInitFunc func(sim *Simulation)
 // it runs the mesh in a loop and feeds it with commands from outside (e.g., REPL or another system)
 type Simulation struct {
 	ctx          context.Context
-	CMDChan      chan Command
+	cmdChan      chan Command
 	isPaused     bool
 	FM           *fmesh.FMesh
 	MeshCommands MeshCommandMap
@@ -30,7 +30,7 @@ func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *
 	return &Simulation{
 		ctx:          ctx,
 		FM:           fm,
-		CMDChan:      cmdChan,
+		cmdChan:      cmdChan,
 		MeshCommands: getDefaultMeshCommands(),
 	}
 }
@@ -66,7 +66,7 @@ func (s *Simulation) Run() {
 			case <-s.ctx.Done():
 				fmt.Println("Shutting down simulation...")
 				return
-			case cmd, ok := <-s.CMDChan:
+			case cmd, ok := <-s.cmdChan:
 				if !ok {
 					fmt.Println("Command channel closed, shutting down simulation...")
 					return
@@ -77,6 +77,7 @@ func (s *Simulation) Run() {
 				case Resume:
 					s.Resume()
 				case Exit:
+					fmt.Println("Exiting simulation...")
 					return
 				default:
 					s.handleCommand(cmd)
@@ -131,7 +132,7 @@ func (s *Simulation) handleCommand(cmd Command) {
 }
 
 func (s *Simulation) SendCommand(cmd Command) {
-	s.CMDChan <- cmd
+	s.cmdChan <- cmd
 }
 
 func showHelp(meshCommands MeshCommandMap) {
