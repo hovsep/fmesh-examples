@@ -77,8 +77,8 @@ func main() {
 	fmt.Println("You can inspect the graphs using online editors like https://edotor.net")
 	fmt.Println("All generated graphs are also written as local files")
 	fmt.Println("Want to convert all .dot files to images? Run the following command:")
-	// ignore go vet
-	fmt.Println(`for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done`)
+	bashCmd := `for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done`
+	fmt.Println(bashCmd)
 
 }
 
