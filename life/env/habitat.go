@@ -58,6 +58,7 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		"time::tick",
 		"air::temperature",
 		"sun::uvi",
+		"human-Leon::is_alive",
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
 		"human-Leon::heartbeat"})
 
