@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 const durationPerTick = 10 * time.Millisecond
@@ -21,7 +20,7 @@ func GetTimeComponent() *component.Component {
 			state.Set("sim_wall_time", time.Now())  // Simulation wall-clock time
 		}).
 		AddInputs("ctl").
-		AddOutputs("tick", "sim_time").
+		AddOutputs("tick").
 		WithActivationFunc(func(this *component.Component) error {
 			// No need to check for inputs, just tick on every activation
 
@@ -39,13 +38,13 @@ func GetTimeComponent() *component.Component {
 				return simStartTime.Add(simTime)
 			})
 
-			this.OutputByName("tick").PutSignals(helper.PackTick(
+			nextTick := helper.PackTick(
 				this.State().Get("tick_count").(uint64),
 				this.State().Get("sim_time").(time.Duration),
 				this.State().Get("sim_wall_time").(time.Time),
 				durationPerTick,
-			))
-			this.OutputByName("sim_time").PutSignals(signal.New(this.State().Get("sim_time")))
+			)
+			this.OutputByName("tick").PutSignals(nextTick)
 
 			return this.ChainableErr()
 		})
