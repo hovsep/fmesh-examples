@@ -99,11 +99,22 @@ func Test_Human(t *testing.T) {
 		{
 			name: "human is alive",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				humanComponent := helper.FindHumanComponent(sim.FM)
-				require.NotNil(t, humanComponent)
+				var observedIsAlive []bool
 
-				helper.WithRunningSimulation(sim, 100*time.Millisecond, func() {
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
 
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sig := aggState.OutputByName("human-Leon::is_alive").Signals().First()
+						require.NotNil(t, sig)
+						observedIsAlive = append(observedIsAlive, sig.PayloadOrDefault(false).(bool))
+						return nil
+					})
+				})
+
+				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+					assert.NotContains(t, observedIsAlive, false)
 				})
 			},
 		},

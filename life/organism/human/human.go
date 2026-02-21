@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
@@ -12,10 +13,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/organism/human/regulation"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
 )
-
-type PortPair [2]*port.Port
 
 const (
 	meshName = "human_mesh"
@@ -107,22 +105,30 @@ func New(name string) *component.Component {
 			"habitat_air_humidity",
 			"habitat_air_composition",
 		).
-		AddOutputs("body_temperature", "heartbeat"). // Simplification: no impact to habitat
+		AddOutputs(
+			"is_alive",
+			"body_temperature",
+			"heartbeat",
+		).
+		WithInitialState(func(state component.State) {
+
+		}).
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 
 			// route habitat signals to respective organs or central router
 
 			respiratory := mesh.ComponentByName("boundary:respiratory")
-			err := multiForward(
-				PortPair{
+			err := helper.MultiForward(
+				helper.PortPair{
 					this.InputByName("habitat_air_temperature"),
 					respiratory.InputByName("air_temperature"),
-				}, PortPair{
+				},
+				helper.PortPair{
 					this.InputByName("habitat_air_humidity"),
 					respiratory.InputByName("air_humidity"),
 				},
-				PortPair{
+				helper.PortPair{
 					this.InputByName("habitat_air_composition"),
 					respiratory.InputByName("air_composition"),
 				})
@@ -140,17 +146,8 @@ func New(name string) *component.Component {
 
 			// put mesh outputs into component outputs
 
+			this.OutputByName("is_alive").PutPayloads(false)
+
 			return nil
 		})
-}
-
-// multiForward is a helper function to make multiple 1:1 port forwarding easier
-func multiForward(portPairs ...PortPair) error {
-	for _, pair := range portPairs {
-		err := port.ForwardSignals(pair[0], pair[1])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
