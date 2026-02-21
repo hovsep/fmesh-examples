@@ -58,12 +58,14 @@ func Test_Time(t *testing.T) {
 						aggState := mesh.ComponentByName("aggregated_state")
 						require.NotNil(t, aggState)
 
-						simTimeSig := aggState.OutputByName("time::sim_time").Signals().First()
-						require.NotNil(t, simTimeSig)
-						assert.NotZero(t, simTimeSig.PayloadOrNil())
+						tickSig := aggState.OutputByName("time::tick").Signals().First()
+						require.NotNil(t, tickSig)
+						_, simTime, _, _, err := helper.UnpackTick(tickSig)
+						require.NoError(t, err)
+						assert.NotZero(t, simTime)
 
 						// Observe and collect sim time after every iteration
-						observedSimTime = append(observedSimTime, simTimeSig.PayloadOrNil().(time.Duration))
+						observedSimTime = append(observedSimTime, simTime)
 						return nil
 					})
 				})
