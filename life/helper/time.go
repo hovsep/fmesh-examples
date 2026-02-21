@@ -7,14 +7,23 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+const (
+	LabelTickCount   = "tick_count"
+	LabelSimTime     = "sim_time"
+	LabelSimWallTime = "sim_wall_time"
+	LabelDeltaT      = "dt"
+	LabelTickMeta    = "tick_meta"
+)
+
 // PackTick returns a signal containing the tick meta-data
 func PackTick(seq uint64, simTime time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
-	return signal.New(signal.NewGroup(
-		signal.New(seq).AddLabel("tick_meta", "tick_count"),
-		signal.New(simTime).AddLabel("tick_meta", "sim_time"),
-		signal.New(simWallTime).AddLabel("tick_meta", "sim_wall_time"),
-		signal.New(duration).AddLabel("tick_meta", "dt"),
-	))
+	return signal.New(signal.NewGroup().Add(
+		signal.New(seq).AddLabel(LabelTickMeta, LabelTickCount),
+		signal.New(simTime).AddLabel(LabelTickMeta, LabelSimTime),
+		signal.New(simWallTime).AddLabel(LabelTickMeta, LabelSimWallTime),
+		signal.New(duration).AddLabel(LabelTickMeta, LabelDeltaT),
+	),
+	)
 }
 
 // UnpackTick unpacks a tick signal into its meta-data components
@@ -31,28 +40,40 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 		return
 	}
 
-	payload.ForEach(func(tickMeta *signal.Signal) error {
-		if tickMeta.Labels().ValueIs("tick_meta", "tick_count") {
-			seq = tickMeta.PayloadOrNil().(uint64)
-			return nil
+	payload.ForEach(func(tickMetaSig *signal.Signal) error {
+
+		tickMetaLabel, labelErr := tickMetaSig.Labels().Value(LabelTickMeta)
+		if labelErr != nil {
+			return labelErr
 		}
 
-		if tickMeta.Labels().ValueIs("tick_meta", "sim_time") {
-			simTime = tickMeta.PayloadOrNil().(time.Duration)
-			return nil
+		fmt.Println(tickMetaLabel)
+
+		tickMeta := tickMetaSig.PayloadOrNil()
+		if tickMeta == nil {
+			return fmt.Errorf("tick signal payload cannot be nil")
 		}
 
-		if tickMeta.Labels().ValueIs("tick_meta", "sim_wall_time") {
-			simWallTime = tickMeta.PayloadOrNil().(time.Time)
+		switch tickMetaLabel {
+		case LabelTickCount:
+			seq = tickMeta.(uint64)
 			return nil
-		}
 
-		if tickMeta.Labels().ValueIs("tick_meta", "dt") {
-			duration = tickMeta.PayloadOrNil().(time.Duration)
+		case LabelSimTime:
+			simTime = tickMeta.(time.Duration)
 			return nil
-		}
 
-		return fmt.Errorf("unknown tick meta label: %s", tickMeta.Labels().ValueOrDefault("tick_meta", "unknown"))
+		case LabelSimWallTime:
+			simWallTime = tickMeta.(time.Time)
+			return nil
+
+		case LabelDeltaT:
+			duration = tickMeta.(time.Duration)
+			return nil
+
+		default:
+			return fmt.Errorf("tick signal label %s not supported", tickMetaLabel)
+		}
 	})
 	return
 }

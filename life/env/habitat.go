@@ -55,7 +55,7 @@ func (h *Habitat) addFactors(factors *component.Collection) *Habitat {
 
 func (h *Habitat) AddAggregatedState() *Habitat {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
-		"time::sim_time",
+		"time::tick",
 		"air::temperature",
 		"sun::uvi",
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
