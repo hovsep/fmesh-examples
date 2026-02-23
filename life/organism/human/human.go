@@ -28,12 +28,14 @@ func getMesh() *fmesh.FMesh {
 		TimeLimit:   10 * time.Second,
 	})
 
+	components := getComponents()
 	// Add components to the mesh
-	getComponents().ForEach(func(c *component.Component) error {
+	components.ForEach(func(c *component.Component) error {
 		return mesh.AddComponents(c).ChainableErr()
 	})
 
 	// Do the wiring
+	components.ByName("organ:brain").OutputByName("neural_drive").PipeTo(components.ByName("physiology:autonomic_coordination").InputByName("neural_drive"))
 	return mesh
 }
 
@@ -101,6 +103,7 @@ func New(name string) *component.Component {
 		AddLabel("genus", "homo").
 		AddLabel("species", "sapiens").
 		AddInputs(
+			"habitat_time_tick",
 			"habitat_air_temperature",
 			"habitat_air_humidity",
 			"habitat_air_composition",
@@ -120,6 +123,10 @@ func New(name string) *component.Component {
 
 			respiratory := mesh.ComponentByName("boundary:respiratory")
 			err := helper.MultiForward(
+				helper.PortPair{
+					this.InputByName("habitat_time_tick"),
+					mesh.ComponentByName("organ:brain").InputByName("time"),
+				},
 				helper.PortPair{
 					this.InputByName("habitat_air_temperature"),
 					respiratory.InputByName("air_temperature"),
