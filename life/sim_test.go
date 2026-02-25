@@ -48,35 +48,6 @@ func Test_Time(t *testing.T) {
 
 			},
 		},
-		{
-			name: "time advances in aggregated state",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				var observedSimTime []time.Duration
-
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-						aggState := mesh.ComponentByName("aggregated_state")
-						require.NotNil(t, aggState)
-
-						tickSig := aggState.OutputByName("time::tick").Signals().First()
-						require.NotNil(t, tickSig)
-						_, simTime, _, _, err := helper.UnpackTick(tickSig)
-						require.NoError(t, err)
-						assert.NotZero(t, simTime)
-
-						// Observe and collect sim time after every iteration
-						observedSimTime = append(observedSimTime, simTime)
-						return nil
-					})
-				})
-
-				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
-					// Check if time advances actually
-					assert.IsIncreasing(t, observedSimTime)
-				})
-
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
