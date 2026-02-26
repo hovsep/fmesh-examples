@@ -36,6 +36,19 @@ func getMesh() *fmesh.FMesh {
 
 	// Do the wiring
 	components.ByName("organ:brain").OutputByName("neural_drive").PipeTo(components.ByName("physiology:autonomic_coordination").InputByName("neural_drive"))
+
+	components.ByName("physiology:autonomic_coordination").SetupHooks(func(h *component.Hooks) {
+		h.AfterActivation(func(ctx *component.ActivationContext) error {
+			tone := ctx.Component.OutputByName("autonomic_tone").Signals().First()
+			if tone == nil {
+				return fmt.Errorf("autonomic tone signal not found")
+			}
+			sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB := physiology.UnpackAutonomicTone(tone)
+
+			ctx.Component.Logger().Printf("autonomic tone: %v, %v, %v, %v, %v, %v, %v, %v", sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB)
+			return nil
+		})
+	})
 	return mesh
 }
 
