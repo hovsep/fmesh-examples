@@ -4,6 +4,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -31,23 +32,25 @@ func GetAutonomicCoordination() *component.Component {
 				return nil
 			}
 
-			// Sympathetic level rises with ND
-			sym, paraSym := neuralDrive, helper.Clamp(1.0-neuralDrive, 0.0, 1.0)
-
-			// Gain proportional to ND
-			gain := neuralDrive
-
-			// Regional biases as a fraction of ND, with some small variability
-			regionalDriveBaser := neuralDrive * 0.5
-			cardiacBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter) // ±5% jitter
-			vascularBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
-			respiratoryBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
-			giBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
-
-			this.OutputByName("autonomic_tone").PutSignals(NewAutonomicTone(sym, paraSym, defaultAutonomicCoordinationNoise, gain, cardiacBias, vascularBias, respiratoryBias, giBias))
-			this.Logger().Println("autonomic tone produced")
-			this.Logger().Printf("Autonomic tone produced with gain %f and biases cardiac %f, vascular %f, respiratory %f, GI %f", gain, cardiacBias, vascularBias, respiratoryBias, giBias)
+			this.OutputByName("autonomic_tone").PutSignals(getAutonomicToneSignal(neuralDrive))
 			return nil
 		})
 
+}
+
+func getAutonomicToneSignal(neuralDrive float64) *signal.Signal {
+	// Sympathetic level rises with ND
+	sym, paraSym := neuralDrive, helper.Clamp(1.0-neuralDrive, 0.0, 1.0)
+
+	// Gain proportional to ND
+	gain := neuralDrive
+
+	// Regional biases as a fraction of ND, with some small variability
+	regionalDriveBaser := neuralDrive * 0.5
+	cardiacBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter) // ±5% jitter
+	vascularBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
+	respiratoryBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
+	giBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
+
+	return PackAutonomicTone(sym, paraSym, defaultAutonomicCoordinationNoise, gain, cardiacBias, vascularBias, respiratoryBias, giBias)
 }
