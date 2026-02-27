@@ -3,6 +3,7 @@ module github.com/hovsep/fmesh-examples/life
 go 1.26
 
 require (
+	github.com/guptarohit/asciigraph v0.7.3
 	github.com/hovsep/fmesh v1.8.1-Tarsus
 	github.com/hovsep/fmesh-examples v0.0.7
 	github.com/stretchr/testify v1.11.1

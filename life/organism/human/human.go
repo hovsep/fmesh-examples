@@ -24,8 +24,9 @@ func getMesh() *fmesh.FMesh {
 	// Create the mesh
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		// Guardrail: do not let human mesh to run forever
+		Debug:       false,
 		CyclesLimit: 1000,
-		TimeLimit:   10 * time.Second,
+		TimeLimit:   60 * time.Second,
 	})
 
 	components := getComponents()
@@ -42,7 +43,7 @@ func getMesh() *fmesh.FMesh {
 			components.ByName("physiology:observable_state").InputByName("brain_activity"),
 		)
 
-	// Temporary logging
+	//DEBUG_START
 	components.ByName("physiology:autonomic_coordination").SetupHooks(func(h *component.Hooks) {
 		h.AfterActivation(func(ctx *component.ActivationContext) error {
 			tone := ctx.Component.OutputByName("autonomic_tone").Signals().First()
@@ -55,6 +56,8 @@ func getMesh() *fmesh.FMesh {
 			return nil
 		})
 	})
+	//DEBUG_END
+
 	return mesh
 }
 
@@ -129,6 +132,8 @@ func New(name string) *component.Component {
 		).
 		AddOutputs(
 			"is_alive",
+			"brain_activity",
+			"brain_activity_trend",
 			"body_temperature",
 			"heartbeat",
 		).
@@ -139,7 +144,6 @@ func New(name string) *component.Component {
 			// read signals from habitat
 
 			// route habitat signals to respective organs or central router
-
 			respiratory := mesh.ComponentByName("boundary:respiratory")
 			err := helper.MultiForward(
 				helper.PortPair{
@@ -159,7 +163,7 @@ func New(name string) *component.Component {
 					respiratory.InputByName("air_composition"),
 				})
 			if err != nil {
-				return fmt.Errorf("failed to forward air signals: %w", err)
+				return fmt.Errorf("failed to forward signals into human mesh: %w", err)
 			}
 
 			_, err = mesh.Run()
@@ -168,13 +172,26 @@ func New(name string) *component.Component {
 				return fmt.Errorf("failed to run %s: %w", mesh.Name(), err)
 			}
 
-			// extract body outputs from body mesh
-			isAlive := mesh.ComponentByName("physiology:observable_state").OutputByName("is_alive").Signals().FirstPayloadOrDefault(false)
+			humanObservableState := mesh.ComponentByName("physiology:observable_state")
 
-			// put mesh outputs into component outputs
-
-			this.OutputByName("is_alive").PutPayloads(isAlive)
-
+			// Propagate signals from human mesh to the human component outputs
+			err = helper.MultiForward(
+				helper.PortPair{
+					humanObservableState.OutputByName("is_alive"),
+					this.OutputByName("is_alive"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("brain_activity"),
+					this.OutputByName("brain_activity"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("brain_activity_trend"),
+					this.OutputByName("brain_activity_trend"),
+				},
+			)
+			if err != nil {
+				return fmt.Errorf("failed to forward signals from human mesh: %w", err)
+			}
 			return nil
 		})
 }

@@ -21,7 +21,7 @@ func GetObservableState() *component.Component {
 			st.Set(LastBrainActivity, 0.0)
 		}).
 		AddInputs("time", "brain_activity").
-		AddOutputs("brain_activity_trend", "is_alive").
+		AddOutputs("brain_activity", "brain_activity_trend", "is_alive").
 		WithActivationFunc(func(this *component.Component) error {
 			// Are we alive?
 			this.OutputByName("is_alive").PutPayloads(this.InputByName("brain_activity").HasSignals())
@@ -47,6 +47,7 @@ func GetObservableState() *component.Component {
 
 			this.State().Set(LastBrainActivity, smoothedBrainActivity)
 			this.Logger().Printf("Brain activity: %f, trend: %s", smoothedBrainActivity, brainActivityTrend)
+			this.OutputByName("brain_activity").PutSignals(signal.New(smoothedBrainActivity))
 			return this.OutputByName("brain_activity_trend").PutSignals(signal.New(brainActivityTrend)).ChainableErr()
 		})
 }

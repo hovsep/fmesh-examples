@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -23,8 +24,9 @@ type Habitat struct {
 func NewHabitat(factors *component.Collection) *Habitat {
 	habitat := &Habitat{}
 	habitat.FM = fmesh.NewWithConfig(meshName, &fmesh.Config{
+		Debug:       false,
 		CyclesLimit: fmesh.UnlimitedCycles,
-		TimeLimit:   1 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
+		TimeLimit:   60 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
 	})
 
 	return habitat.addFactors(factors)
@@ -59,6 +61,8 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		"air::temperature",
 		"sun::uvi",
 		"human-Leon::is_alive",
+		"human-Leon::brain_activity",
+		"human-Leon::brain_activity_trend",
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
 		"human-Leon::heartbeat"})
 
@@ -66,20 +70,83 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		panic(err)
 	}
 
+	//DEBUG_START
+	agg.SetupHooks(func(hooks *component.Hooks) {
+		hooks.AfterActivation(func(ctx *component.ActivationContext) error {
+			cmp := ctx.Component
+			//cmp.Logger().Println("ports signals counts:")
+			cmp.Inputs().ForEach(func(in *port.Port) error {
+				//cmp.Logger().Printf("port %s: %d signals", in.Name(), in.Signals().Len())
+				return nil
+			})
+			return nil
+		})
+	})
+	//DEBUG_END
+
 	h.FM.AddComponents(agg)
+	return h
+}
+
+func (h *Habitat) AddAggregatedStatePublisher() *Habitat {
+	agg := h.FM.Components().FindAny(func(c *component.Component) bool {
+		return c.Labels().ValueIs("role", "aggregator")
+	})
+
+	if agg == nil {
+		panic("Aggregator not found")
+	}
+
+	publisher := component.New("aggregated_state_publisher").
+		WithDescription("publishes aggregated state to unit socket").
+		AddLabel("role", "publisher").
+		AddInputs("aggregated_state").
+		AddOutputs("stream").
+		WithActivationFunc(func(this *component.Component) error {
+			this.InputByName("aggregated_state").Signals().ForEach(func(sig *signal.Signal) error {
+				if !sig.Labels().Has("from") {
+					return fmt.Errorf("missing 'from' label")
+				}
+
+				return this.OutputByName("stream").PutPayloads(fmt.Sprintf("%s %v \n", sig.Labels().ValueOrDefault("from", "unknown"), sig.PayloadOrNil())).ChainableErr()
+			})
+
+			return nil
+		})
+
+	agg.OutputByName("aggregated_state").PipeTo(publisher.InputByName("aggregated_state"))
+
+	h.FM.AddComponents(publisher)
 	return h
 }
 
 func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
 	agg := component.New(name).
 		WithDescription("composes data from multiple sources into one (single source of true for UI)").
+		AddLabel("role", "aggregator"). //@TODO: generalise and refactor components taxonomy (same as signals)
+		AddOutputs("aggregated_state").
 		WithActivationFunc(func(this *component.Component) error {
 			return this.Inputs().ForEach(func(in *port.Port) error {
-				// Just proxy "in -> out" with the same port name
-				return port.ForwardSignals(in, this.OutputByName(in.Name()))
+				// Add all signals from the input port to the aggregated state (for later publishing)
 
+				err := port.ForwardWithMap(in, this.OutputByName("aggregated_state"), func(sig *signal.Signal) *signal.Signal {
+					return sig.AddLabel("from", in.Name())
+				})
+
+				if err != nil {
+					return err
+				}
+
+				// Just proxy "in -> out" with the same port name
+				err = port.ForwardSignals(in, this.OutputByName(in.Name()))
+				if err != nil {
+					return err
+				}
+				return nil
 			}).ChainableErr()
 		})
+
+	// Dynamic piping (extract to plugin or helper)
 	for _, inputPath := range inputPaths {
 		if inputPath == "" {
 			return nil, fmt.Errorf("empty input path")
