@@ -35,17 +35,23 @@ func getMesh() *fmesh.FMesh {
 	})
 
 	// Do the wiring
-	components.ByName("organ:brain").OutputByName("neural_drive").PipeTo(components.ByName("physiology:autonomic_coordination").InputByName("neural_drive"))
+	components.ByName("organ:brain").
+		OutputByName("neural_drive").
+		PipeTo(
+			components.ByName("physiology:autonomic_coordination").InputByName("neural_drive"),
+			components.ByName("physiology:observable_state").InputByName("brain_activity"),
+		)
 
+	// Temporary logging
 	components.ByName("physiology:autonomic_coordination").SetupHooks(func(h *component.Hooks) {
 		h.AfterActivation(func(ctx *component.ActivationContext) error {
 			tone := ctx.Component.OutputByName("autonomic_tone").Signals().First()
 			if tone == nil {
 				return fmt.Errorf("autonomic tone signal not found")
 			}
-			sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB := physiology.UnpackAutonomicTone(tone)
+			//sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB := physiology.UnpackAutonomicTone(tone)
 
-			ctx.Component.Logger().Printf("autonomic tone: %v, %v, %v, %v, %v, %v, %v, %v", sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB)
+			//ctx.Component.Logger().Printf("autonomic tone: %v, %v, %v, %v, %v, %v, %v, %v", sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB)
 			return nil
 		})
 	})
@@ -163,10 +169,11 @@ func New(name string) *component.Component {
 			}
 
 			// extract body outputs from body mesh
+			isAlive := mesh.ComponentByName("physiology:observable_state").OutputByName("is_alive").Signals().FirstPayloadOrDefault(false)
 
 			// put mesh outputs into component outputs
 
-			this.OutputByName("is_alive").PutPayloads(false)
+			this.OutputByName("is_alive").PutPayloads(isAlive)
 
 			return nil
 		})

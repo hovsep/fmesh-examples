@@ -85,6 +85,7 @@ func Test_Human(t *testing.T) {
 				})
 
 				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+					assert.NotEmpty(t, observedIsAlive)
 					assert.NotContains(t, observedIsAlive, false)
 				})
 			},
