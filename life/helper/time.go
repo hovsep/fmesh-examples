@@ -4,24 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh/signal"
-)
-
-const (
-	LabelTickCount   = "tick_count"
-	LabelSimTime     = "sim_time"
-	LabelSimWallTime = "sim_wall_time"
-	LabelDeltaT      = "dt"
-	LabelTickMeta    = "tick_meta"
 )
 
 // PackTick returns a signal containing the tick meta-data
 func PackTick(seq uint64, simTime time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
 	return signal.New(signal.NewGroup().Add(
-		signal.New(seq).AddLabel(LabelTickMeta, LabelTickCount),
-		signal.New(simTime).AddLabel(LabelTickMeta, LabelSimTime),
-		signal.New(simWallTime).AddLabel(LabelTickMeta, LabelSimWallTime),
-		signal.New(duration).AddLabel(LabelTickMeta, LabelDeltaT),
+		signal.New(seq).AddLabel(common.TickMeta, common.TickCount),
+		signal.New(simTime).AddLabel(common.TickMeta, common.SimTime),
+		signal.New(simWallTime).AddLabel(common.TickMeta, common.SimWallTime),
+		signal.New(duration).AddLabel(common.TickMeta, common.DeltaT),
 	),
 	)
 }
@@ -42,7 +35,7 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 
 	payload.ForEach(func(tickMetaSig *signal.Signal) error {
 
-		tickMetaLabel, labelErr := tickMetaSig.Labels().Value(LabelTickMeta)
+		tickMetaLabel, labelErr := tickMetaSig.Labels().Value(common.TickMeta)
 		if labelErr != nil {
 			return labelErr
 		}
@@ -55,19 +48,19 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 		}
 
 		switch tickMetaLabel {
-		case LabelTickCount:
+		case common.TickCount:
 			seq = tickMeta.(uint64)
 			return nil
 
-		case LabelSimTime:
+		case common.SimTime:
 			simTime = tickMeta.(time.Duration)
 			return nil
 
-		case LabelSimWallTime:
+		case common.SimWallTime:
 			simWallTime = tickMeta.(time.Time)
 			return nil
 
-		case LabelDeltaT:
+		case common.DeltaT:
 			duration = tickMeta.(time.Duration)
 			return nil
 
