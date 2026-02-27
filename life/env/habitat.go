@@ -70,6 +70,20 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		panic(err)
 	}
 
+	//DEBUG_START
+	agg.SetupHooks(func(hooks *component.Hooks) {
+		hooks.AfterActivation(func(ctx *component.ActivationContext) error {
+			cmp := ctx.Component
+			//cmp.Logger().Println("ports signals counts:")
+			cmp.Inputs().ForEach(func(in *port.Port) error {
+				//cmp.Logger().Printf("port %s: %d signals", in.Name(), in.Signals().Len())
+				return nil
+			})
+			return nil
+		})
+	})
+	//DEBUG_END
+
 	h.FM.AddComponents(agg)
 	return h
 }
