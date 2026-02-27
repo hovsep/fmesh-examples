@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"sync"
 
+	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh/signal"
 )
 
 // This example demonstrates a basic life simulation.
@@ -41,10 +45,69 @@ import (
 //	The simulation is single-directional (habitat → human), as the primary
 //	goal is studying human physiology rather than environmental dynamics.
 func main() {
+	const sockPath = "/tmp/sim.sock"
+
+	// Remove old socket if exists
+	os.Remove(sockPath)
+
+	l, err := net.Listen("unix", sockPath)
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+	fmt.Println("Producer listening on", sockPath)
+
 	simMesh := getSimulationMesh()
 
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(simMesh)
+	streamChan := make(chan string)
+
+	simMesh.SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
+				streamChan <- line.PayloadOrNil().(string)
+				return nil
+			})
+			return nil
+		})
+	})
+
+	// Accept socket connections in a separate goroutine
+	clients := make(map[net.Conn]struct{})
+	clientsMu := sync.Mutex{}
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				fmt.Println("accept error:", err)
+				continue
+			}
+
+			fmt.Println("New client connected")
+			clientsMu.Lock()
+			clients[conn] = struct{}{}
+			clientsMu.Unlock()
+		}
+	}()
+
+	// Start a goroutine to broadcast streamChan to clients
+	go func() {
+		for line := range streamChan {
+			clientsMu.Lock()
+			for c := range clients {
+				_, err := fmt.Fprintln(c, line)
+				if err != nil {
+					// Remove disconnected clients
+					c.Close()
+					delete(clients, c)
+				}
+			}
+			clientsMu.Unlock()
+		}
+	}()
+
+	// Now run the simulation; the producer is non-blocking
+	err = internal.HandleGraphFlag(simMesh)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)

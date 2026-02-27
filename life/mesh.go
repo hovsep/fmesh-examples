@@ -17,7 +17,8 @@ func getSimulationMesh() *fmesh.FMesh {
 	// Set up the world
 	habitat := getHabitat().
 		AddOrganisms(human.New("Leon")).
-		AddAggregatedState()
+		AddAggregatedState().
+		AddAggregatedStatePublisher()
 
 	// Set up the mesh
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
@@ -26,6 +27,7 @@ func getSimulationMesh() *fmesh.FMesh {
 			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 			return nil
 		})
+
 	})
 
 	return habitat.FM
