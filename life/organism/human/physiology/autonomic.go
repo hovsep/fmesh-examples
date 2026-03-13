@@ -52,5 +52,5 @@ func getAutonomicToneSignal(neuralDrive float64) *signal.Signal {
 	respiratoryBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
 	giBias := helper.Jitter(regionalDriveBaser, defaultRegionalBiasJitter)
 
-	return PackAutonomicTone(sym, paraSym, defaultAutonomicCoordinationNoise, gain, cardiacBias, vascularBias, respiratoryBias, giBias)
+	return helper.PackAutonomicTone(sym, paraSym, defaultAutonomicCoordinationNoise, gain, cardiacBias, vascularBias, respiratoryBias, giBias)
 }

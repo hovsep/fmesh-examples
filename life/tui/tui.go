@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/guptarohit/asciigraph"
 )
@@ -24,24 +23,20 @@ func main() {
 
 	var values []float64
 	const maxPoints = 50 // max points to plot
-
-	var trend string
-
+	var heartRate int
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// TODO: get rid of ifs
-		// TODO: add numeric ranges with color coding
-		if strings.HasPrefix(line, "human-Leon::brain_activity_trend") {
+		if strings.HasPrefix(line, "human-Leon::heart_rate") {
 			parts := strings.Fields(line)
 			if len(parts) < 2 {
 				continue
 			}
-			trend = parts[1]
+			heartRate, err = strconv.Atoi(parts[1])
 		}
 
 		// Extract brain_activity value
-		if strings.HasPrefix(line, "human-Leon::brain_activity") {
+		if strings.HasPrefix(line, "human-Leon::heart_cardiac_activation") {
 			parts := strings.Fields(line)
 			if len(parts) < 2 {
 				continue
@@ -59,10 +54,9 @@ func main() {
 			plotValues := append([]float64{}, values...)
 			// Clear terminal and print graph
 			fmt.Print("\033[H\033[2J") // ANSI clear screen
-			graph := asciigraph.Plot(plotValues, asciigraph.Height(10), asciigraph.Caption("Brain Activity: "+trend))
+			graph := asciigraph.Plot(plotValues, asciigraph.Height(10), asciigraph.Caption("Heart rate: "+strconv.Itoa(heartRate)))
 			fmt.Println(graph)
 		}
-		time.Sleep(10 * time.Millisecond)
 	}
 
 	if err := scanner.Err(); err != nil {

@@ -90,6 +90,11 @@ func Test_Human(t *testing.T) {
 				})
 			},
 		},
+		{
+			name: "heart is beating",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
