@@ -59,7 +59,7 @@ func main() {
 
 	simMesh := getSimulationMesh()
 
-	streamChan := make(chan string)
+	streamChan := make(chan string, 1000)
 
 	simMesh.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
