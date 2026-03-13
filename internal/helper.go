@@ -12,6 +12,7 @@ import (
 )
 
 // HandleGraphFlag handles the -graph flag and generates a graph.dot and graph.svg file if requested
+// @TODO: refactor, allow to export multiple meshes in 1 program
 func HandleGraphFlag(fm *fmesh.FMesh) error {
 	var shouldGenerateGraph bool
 
@@ -33,8 +34,8 @@ func HandleGraphFlag(fm *fmesh.FMesh) error {
 		return fmt.Errorf("failed to export mesh to DOT: %w", err)
 	}
 
-	dotFile := "graph.dot"
-	svgFile := "graph.svg"
+	dotFile := fm.Name() + "-graph.dot"
+	svgFile := fm.Name() + "-graph.svg"
 
 	// Always write DOT file
 	if err := os.WriteFile(dotFile, dotBytes, 0644); err != nil {
