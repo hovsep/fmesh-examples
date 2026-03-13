@@ -40,8 +40,6 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 			return labelErr
 		}
 
-		fmt.Println(tickMetaLabel)
-
 		tickMeta := tickMetaSig.PayloadOrNil()
 		if tickMeta == nil {
 			return fmt.Errorf("tick signal payload cannot be nil")
@@ -69,4 +67,10 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 		}
 	})
 	return
+}
+
+// TickDurationInSec returns the duration of a tick in seconds
+func TickDurationInSec(tick *signal.Signal) (float64, error) {
+	_, _, _, duration, err := UnpackTick(tick)
+	return float64(duration) / float64(time.Second), err
 }

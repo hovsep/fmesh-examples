@@ -1,6 +1,8 @@
 package helper
 
-import "github.com/hovsep/fmesh/signal"
+import (
+	"github.com/hovsep/fmesh/signal"
+)
 
 func AsF64(s *signal.Signal) float64 {
 	if s == nil {
