@@ -33,17 +33,7 @@ func GetObservableState() *component.Component {
 			ema := helper.NewEMA(defaultBrainActivitySmoothingFactor, lastSmoothedBrainActivity, defaultBrainActivityThreshold)
 
 			smoothedBrainActivity := ema.Update(currentBrainActivity)
-			brainActivityTrend := common.Balanced
-			switch ema.ClassifyTrend(currentBrainActivity) {
-			case +1:
-				brainActivityTrend = common.Rising
-				break
-			case -1:
-				brainActivityTrend = common.Falling
-				break
-			default:
-
-			}
+			brainActivityTrend := ema.ClassifyTrend(currentBrainActivity)
 
 			this.State().Set(LastBrainActivity, smoothedBrainActivity)
 			this.Logger().Printf("Brain activity: %f, trend: %s", smoothedBrainActivity, brainActivityTrend)

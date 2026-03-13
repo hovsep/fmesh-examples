@@ -1,5 +1,7 @@
 package helper
 
+import "github.com/hovsep/fmesh-examples/life/common"
+
 // EMA represents Exponential Moving Average with trend detection
 type EMA struct {
 	alpha   float64
@@ -29,15 +31,15 @@ func (e *EMA) Value() float64 {
 	return e.value
 }
 
-// ClassifyTrend returns +1 for rising, -1 for falling, 0 for balanced
-func (e *EMA) ClassifyTrend(current float64) int {
+// ClassifyTrend returns the trend of the EMA
+func (e *EMA) ClassifyTrend(current float64) common.Trend {
 	diff := current - e.value
 	switch {
 	case diff > e.epsilon:
-		return +1
+		return common.Rising
 	case diff < -e.epsilon:
-		return -1
+		return common.Falling
 	default:
-		return 0
+		return common.Balanced
 	}
 }
