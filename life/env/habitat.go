@@ -57,32 +57,18 @@ func (h *Habitat) addFactors(factors *component.Collection) *Habitat {
 
 func (h *Habitat) AddAggregatedState() *Habitat {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
-		"time::tick",
 		"air::temperature",
 		"sun::uvi",
 		"human-Leon::is_alive",
 		"human-Leon::brain_activity",
 		"human-Leon::brain_activity_trend",
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
-		"human-Leon::heartbeat"})
+		"human-Leon::heart_rate",
+		"human-Leon::heart_cardiac_activation"})
 
 	if err != nil {
 		panic(err)
 	}
-
-	//DEBUG_START
-	agg.SetupHooks(func(hooks *component.Hooks) {
-		hooks.AfterActivation(func(ctx *component.ActivationContext) error {
-			cmp := ctx.Component
-			//cmp.Logger().Println("ports signals counts:")
-			cmp.Inputs().ForEach(func(in *port.Port) error {
-				//cmp.Logger().Printf("port %s: %d signals", in.Name(), in.Signals().Len())
-				return nil
-			})
-			return nil
-		})
-	})
-	//DEBUG_END
 
 	h.FM.AddComponents(agg)
 	return h

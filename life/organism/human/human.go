@@ -39,24 +39,31 @@ func getMesh() *fmesh.FMesh {
 	components.ByName("organ:brain").
 		OutputByName("neural_drive").
 		PipeTo(
+			// Brain drives the autonomic coordination system
 			components.ByName("physiology:autonomic_coordination").InputByName("neural_drive"),
+
+			// Brain activity is observable
 			components.ByName("physiology:observable_state").InputByName("brain_activity"),
 		)
 
-	//DEBUG_START
-	components.ByName("physiology:autonomic_coordination").SetupHooks(func(h *component.Hooks) {
-		h.AfterActivation(func(ctx *component.ActivationContext) error {
-			tone := ctx.Component.OutputByName("autonomic_tone").Signals().First()
-			if tone == nil {
-				return fmt.Errorf("autonomic tone signal not found")
-			}
-			//sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB := physiology.UnpackAutonomicTone(tone)
+	components.ByName("organ:heart").
+		OutputByName("cardiac_activation").
+		PipeTo(
+			// Heart activity is observable
+			components.ByName("physiology:observable_state").InputByName("heart_cardiac_activation"),
+		)
 
-			//ctx.Component.Logger().Printf("autonomic tone: %v, %v, %v, %v, %v, %v, %v, %v", sym, paraSym, noise, gain, cardiacB, vascularB, respiratoryB, giB)
-			return nil
-		})
-	})
-	//DEBUG_END
+	components.ByName("organ:heart").
+		OutputByName("rate").
+		PipeTo(
+			// Heart rate is observable
+			components.ByName("physiology:observable_state").InputByName("heart_rate"),
+		)
+
+	components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone").PipeTo(
+		// Autonomic tone affects the heart
+		components.ByName("organ:heart").InputByName("autonomic_tone"),
+	)
 
 	return mesh
 }
@@ -135,7 +142,8 @@ func New(name string) *component.Component {
 			"brain_activity",
 			"brain_activity_trend",
 			"body_temperature",
-			"heartbeat",
+			"heart_cardiac_activation",
+			"heart_rate",
 		).
 		WithInitialState(func(state component.State) {
 
@@ -146,10 +154,16 @@ func New(name string) *component.Component {
 			// route habitat signals to respective organs or central router
 			respiratory := mesh.ComponentByName("boundary:respiratory")
 			err := helper.MultiForward(
+				// Time to organs
 				helper.PortPair{
 					this.InputByName("habitat_time_tick"),
 					mesh.ComponentByName("organ:brain").InputByName("time"),
 				},
+				helper.PortPair{
+					this.InputByName("habitat_time_tick"),
+					mesh.ComponentByName("organ:heart").InputByName("time"),
+				},
+
 				helper.PortPair{
 					this.InputByName("habitat_air_temperature"),
 					respiratory.InputByName("air_temperature"),
@@ -187,6 +201,14 @@ func New(name string) *component.Component {
 				helper.PortPair{
 					humanObservableState.OutputByName("brain_activity_trend"),
 					this.OutputByName("brain_activity_trend"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("heart_cardiac_activation"),
+					this.OutputByName("heart_cardiac_activation"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("heart_rate"),
+					this.OutputByName("heart_rate"),
 				},
 			)
 			if err != nil {

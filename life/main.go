@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
@@ -67,6 +68,8 @@ func main() {
 				streamChan <- line.PayloadOrNil().(string)
 				return nil
 			})
+
+			time.Sleep(7 * time.Millisecond) // Near real time
 			return nil
 		})
 	})
@@ -109,7 +112,7 @@ func main() {
 	// Now run the simulation; the producer is non-blocking
 	err = internal.HandleGraphFlag(simMesh)
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
 	}
 

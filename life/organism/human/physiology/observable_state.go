@@ -20,8 +20,8 @@ func GetObservableState() *component.Component {
 		WithInitialState(func(st component.State) {
 			st.Set(LastBrainActivity, 0.0)
 		}).
-		AddInputs("time", "brain_activity").
-		AddOutputs("brain_activity", "brain_activity_trend", "is_alive").
+		AddInputs("time", "brain_activity", "heart_cardiac_activation", "heart_rate").
+		AddOutputs("brain_activity", "brain_activity_trend", "is_alive", "heart_cardiac_activation", "heart_rate").
 		WithActivationFunc(func(this *component.Component) error {
 			// Are we alive?
 			this.OutputByName("is_alive").PutPayloads(this.InputByName("brain_activity").HasSignals())
@@ -38,6 +38,19 @@ func GetObservableState() *component.Component {
 			this.State().Set(LastBrainActivity, smoothedBrainActivity)
 			this.Logger().Printf("Brain activity: %f, trend: %s", smoothedBrainActivity, brainActivityTrend)
 			this.OutputByName("brain_activity").PutSignals(signal.New(smoothedBrainActivity))
-			return this.OutputByName("brain_activity_trend").PutSignals(signal.New(brainActivityTrend)).ChainableErr()
+			this.OutputByName("brain_activity_trend").PutSignals(signal.New(brainActivityTrend))
+
+			// Heart signals
+			helper.MultiForward(
+				helper.PortPair{
+					this.InputByName("heart_cardiac_activation"),
+					this.OutputByName("heart_cardiac_activation"),
+				},
+				helper.PortPair{
+					this.InputByName("heart_rate"),
+					this.OutputByName("heart_rate"),
+				})
+
+			return nil
 		})
 }
