@@ -25,8 +25,20 @@ func main() {
 	var values []float64
 	const maxPoints = 50 // max points to plot
 
+	var trend string
+
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// TODO: get rid of ifs
+		// TODO: add numeric ranges with color coding
+		if strings.HasPrefix(line, "human-Leon::brain_activity_trend") {
+			parts := strings.Fields(line)
+			if len(parts) < 2 {
+				continue
+			}
+			trend = parts[1]
+		}
 
 		// Extract brain_activity value
 		if strings.HasPrefix(line, "human-Leon::brain_activity") {
@@ -44,13 +56,13 @@ func main() {
 			if len(values) > maxPoints {
 				values = values[1:]
 			}
-			plotValues := append([]float64{0.0, 1.0}, values...)
+			plotValues := append([]float64{}, values...)
 			// Clear terminal and print graph
 			fmt.Print("\033[H\033[2J") // ANSI clear screen
-			graph := asciigraph.Plot(plotValues, asciigraph.Height(10), asciigraph.Caption("Brain Activity"))
+			graph := asciigraph.Plot(plotValues, asciigraph.Height(10), asciigraph.Caption("Brain Activity: "+trend))
 			fmt.Println(graph)
 		}
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	if err := scanner.Err(); err != nil {
