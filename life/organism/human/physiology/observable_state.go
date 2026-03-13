@@ -9,8 +9,8 @@ import (
 
 const (
 	LastBrainActivity                   common.State = "last_brain_activity"
-	defaultBrainActivitySmoothingFactor              = 0.1  // alpha in ema
-	defaultBrainActivityThreshold                    = 0.05 // epsilon in ema
+	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
+	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
 )
 
 // GetObservableState ...
