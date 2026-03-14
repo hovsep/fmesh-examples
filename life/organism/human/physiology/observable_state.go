@@ -24,23 +24,16 @@ func GetObservableState() *component.Component {
 		AddInputs("time", "brain_activity", "heart_cardiac_activation", "heart_rate").
 		AddOutputs("brain_activity", "brain_activity_trend", "is_alive", "heart_cardiac_activation", "heart_rate").
 		WithActivationFunc(func(this *component.Component) error {
-
+			//@TODO: use composite activation function
 			brainErr := handleBrainSignals(this)
-
 			if brainErr != nil {
 				return brainErr
 			}
 
-			// Heart signals
-			helper.MultiForward(
-				helper.PortPair{
-					this.InputByName("heart_cardiac_activation"),
-					this.OutputByName("heart_cardiac_activation"),
-				},
-				helper.PortPair{
-					this.InputByName("heart_rate"),
-					this.OutputByName("heart_rate"),
-				})
+			heartErr := handleHeartSignals(this)
+			if heartErr != nil {
+				return heartErr
+			}
 
 			return nil
 		})
@@ -69,4 +62,16 @@ func handleBrainSignals(this *component.Component) error {
 	this.OutputByName("brain_activity").PutPayloads(smoothedBrainActivity)
 	this.OutputByName("brain_activity_trend").PutPayloads(brainActivityTrend)
 	return nil
+}
+
+func handleHeartSignals(this *component.Component) error {
+	return helper.MultiForward(
+		helper.PortPair{
+			this.InputByName("heart_cardiac_activation"),
+			this.OutputByName("heart_cardiac_activation"),
+		},
+		helper.PortPair{
+			this.InputByName("heart_rate"),
+			this.OutputByName("heart_rate"),
+		})
 }

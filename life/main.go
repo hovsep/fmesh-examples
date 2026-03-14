@@ -69,7 +69,7 @@ func main() {
 				return nil
 			})
 
-			time.Sleep(7 * time.Millisecond) // Near real time
+			time.Sleep(10 * time.Millisecond) // Near real time
 			return nil
 		})
 	})
