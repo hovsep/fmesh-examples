@@ -11,9 +11,8 @@ import (
 
 const (
 	cardiacBias        common.State = "cardiac_bias"
-	cardiacActivation  common.State = "cardiac_activation"
 	rate               common.State = "rate"
-	phaseState         common.State = "phase"
+	phase              common.State = "phase"
 	defaultCardiacBias float64      = 0.5 // Used when autonomic tone is not received (denervation, death, etc)
 	minBPM             float64      = 40
 	maxBPM             float64      = 200
@@ -33,9 +32,8 @@ func GetHeart() *component.Component {
 		WithDescription("Heart").
 		WithInitialState(func(state component.State) {
 			state.Set(cardiacBias, defaultCardiacBias)
-			state.Set(cardiacActivation, 0.0) // Initial cardiac activation
-			state.Set(rate, 60)               // Default BPM
-			state.Set(phaseState, 0.0)        // Phase in current heartbeat cycle
+			state.Set(rate, 60)   // Initial BPM
+			state.Set(phase, 0.0) // Phase in the current heartbeat cycle
 		}).
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("cardiac_activation", "rate").
@@ -55,9 +53,7 @@ func GetHeart() *component.Component {
 			}
 
 			// Output signals
-			this.OutputByName("cardiac_activation").PutPayloads(this.State().Get(cardiacActivation).(float64))
 			this.OutputByName("rate").PutPayloads(this.State().Get(rate).(int))
-
 			return nil
 		})
 }
@@ -82,18 +78,17 @@ func oscillate(this *component.Component) error {
 	})
 
 	// Advance phase
-
-	var phase float64
-	this.State().Update(phaseState, func(old any) any {
-		currentPhase := this.State().Get(phaseState).(float64)
+	var nextPhase float64
+	this.State().Update(phase, func(old any) any {
+		currentPhase := this.State().Get(phase).(float64)
 		phaseStep := dt / (60.0 / bpm)
-		phase = math.Mod(currentPhase+phaseStep, 1.0)
-		return phase
+		nextPhase = math.Mod(currentPhase+phaseStep, 1.0)
+		return nextPhase
 	})
 
 	// Compute cardiac activation
-	act := CardiacActivationWave(phase)
-	this.State().Set(cardiacActivation, act)
+	act := CardiacActivationWave(nextPhase)
+	this.OutputByName("cardiac_activation").PutPayloads(act)
 	return nil
 }
 
