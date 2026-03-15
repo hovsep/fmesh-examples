@@ -79,7 +79,7 @@ func Test_Human(t *testing.T) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::is_alive").Signals().First()
 						require.NotNil(t, sig)
-						observedIsAlive = append(observedIsAlive, sig.PayloadOrDefault(false).(bool))
+						observedIsAlive = append(observedIsAlive, helper.AsBoolOrFalse(sig))
 						return nil
 					})
 				})

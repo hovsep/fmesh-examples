@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -42,13 +43,13 @@ func handleControlSignals(this *component.Component) error {
 		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
 		case "change_temperature":
 			this.State().Update("temperature", func(currentTemp any) any {
-				return currentTemp.(float64) + ctlSig.PayloadOrDefault(0.0).(float64)
+				return currentTemp.(float64) + helper.AsF64OrDefault(ctlSig, 0.0)
 			})
 			return nil
 		case "set_temperature":
-			this.Logger().Println("Setting temperature to ", ctlSig.PayloadOrDefault(0.0).(float64))
+			this.Logger().Println("Setting temperature to ", helper.AsF64OrDefault(ctlSig, 0.0))
 			this.State().Update("temperature", func(currentTemp any) any {
-				return ctlSig.PayloadOrDefault(0.0).(float64)
+				return helper.AsF64OrDefault(ctlSig, 0.0)
 			})
 			return nil
 		default:
