@@ -69,6 +69,7 @@ func main() {
 				return nil
 			})
 
+			// @TODO: take this delay from flag to not affect tests
 			time.Sleep(10 * time.Millisecond) // Near real time
 			return nil
 		})
