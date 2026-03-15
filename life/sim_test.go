@@ -93,6 +93,47 @@ func Test_Human(t *testing.T) {
 		{
 			name: "heart is beating",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				var observedCardiacActivity []float64
+				var observedHeartRate []int
+
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sigAct := aggState.OutputByName("human-Leon::heart_cardiac_activation").Signals().First()
+						require.NotNil(t, sigAct)
+						observedCardiacActivity = append(observedCardiacActivity, helper.AsF64(sigAct))
+
+						sigRate := aggState.OutputByName("human-Leon::heart_rate").Signals().First()
+						require.NotNil(t, sigAct)
+						observedHeartRate = append(observedHeartRate, helper.AsInt(sigRate))
+						return nil
+					})
+				})
+
+				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+					assert.NotEmpty(t, observedCardiacActivity)
+					assert.NotEmpty(t, observedHeartRate)
+
+					rPeaksFound := 0
+					inPeak := false
+					// Check for R-peaks
+					for _, v := range observedCardiacActivity {
+						if v > 0.0 && !inPeak {
+							rPeaksFound++
+							inPeak = true
+							continue
+						}
+
+						if v == 0.0 {
+							inPeak = false
+						}
+
+					}
+					assert.Greater(t, rPeaksFound, 1)
+					assert.Less(t, rPeaksFound, 10)
+				})
 			},
 		},
 	}

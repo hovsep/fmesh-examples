@@ -5,6 +5,14 @@ import (
 )
 
 func AsF64(s *signal.Signal) float64 {
+	return AsType[float64](s)
+}
+
+func AsInt(s *signal.Signal) int {
+	return AsType[int](s)
+}
+
+func AsType[T any](s *signal.Signal) T {
 	if s == nil {
 		panic("signal is nil")
 	}
@@ -14,5 +22,13 @@ func AsF64(s *signal.Signal) float64 {
 		panic(err)
 	}
 
-	return payload.(float64)
+	return payload.(T)
+}
+
+func AsTypeOrDefault[T any](s *signal.Signal, defaultValue T) T {
+	if s == nil {
+		return defaultValue
+	}
+
+	return s.PayloadOrDefault(defaultValue).(T)
 }

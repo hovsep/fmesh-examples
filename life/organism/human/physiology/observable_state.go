@@ -8,7 +8,6 @@ import (
 
 const (
 	LastBrainActivity                   common.State = "last_brain_activity"
-	IsAlive                             common.State = "is_alive"
 	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
 	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
 )
@@ -19,7 +18,6 @@ func GetObservableState() *component.Component {
 		WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)").
 		WithInitialState(func(st component.State) {
 			st.Set(LastBrainActivity, 0.0)
-			st.Set(IsAlive, false)
 		}).
 		AddInputs("time", "brain_activity", "heart_cardiac_activation", "heart_rate").
 		AddOutputs("brain_activity", "brain_activity_trend", "is_alive", "heart_cardiac_activation", "heart_rate").
@@ -40,14 +38,18 @@ func GetObservableState() *component.Component {
 }
 
 func handleBrainSignals(this *component.Component) error {
+	var isAlive bool
+
+	defer func() {
+		this.OutputByName("is_alive").PutPayloads(isAlive)
+	}()
+
 	if !this.InputByName("brain_activity").HasSignals() {
 		// If we don't have brain activity signals, we are dead
-		this.State().Set(IsAlive, false)
 		return nil
 	}
 
-	// We are alive
-	this.State().Set(IsAlive, true)
+	isAlive = true
 
 	// Calculate brain activity trend
 	currentBrainActivity := helper.AsF64(this.InputByName("brain_activity").Signals().First())
