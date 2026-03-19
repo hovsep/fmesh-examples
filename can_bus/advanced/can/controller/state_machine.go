@@ -1,5 +1,7 @@
 package controller
 
+import "maps"
+
 import "fmt"
 
 // State is the main DFSM of CAN-controller
@@ -35,9 +37,7 @@ func (state State) To(next State) string {
 }
 
 func (stateMap StateMap) MergeFrom(sourceStateMap StateMap) StateMap {
-	for name, state := range sourceStateMap {
-		stateMap[name] = state
-	}
+	maps.Copy(stateMap, sourceStateMap)
 
 	return stateMap
 }

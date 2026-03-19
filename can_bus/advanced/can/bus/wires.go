@@ -119,7 +119,7 @@ func validateVoltages(allLow, allHigh []physical.Voltage) error {
 	}
 
 	// Detect faulty transceivers
-	for i := 0; i < len(allLow); i++ {
+	for i := range allLow {
 		if allLow[i] > allHigh[i] {
 			return errors.New("voltage on L is higher than on H")
 		}

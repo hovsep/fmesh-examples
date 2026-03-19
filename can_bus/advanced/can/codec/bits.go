@@ -13,7 +13,7 @@ func NewBits(len int) Bits {
 
 func RepeatBit(bit Bit, n int) Bits {
 	bits := NewBits(0)
-	for i := 0; i < n; i++ {
+	for range n {
 		bits = append(bits, bit)
 	}
 	return bits
@@ -111,7 +111,7 @@ func (bits Bits) WithoutStuffing(count int) Bits {
 
 	// Second pass: build result by skipping stuff bit positions
 	var result Bits
-	for i := 0; i < len(bits); i++ {
+	for i := range bits {
 		if !stuffPositions[i] {
 			result = append(result, bits[i])
 		}

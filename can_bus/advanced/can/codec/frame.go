@@ -73,7 +73,7 @@ func FromBits(bits Bits) (*Frame, error) {
 
 	// 1. Decode ID
 	var id uint32
-	for i := 0; i < ProtocolIDSize; i++ {
+	for i := range ProtocolIDSize {
 		if bits[i] {
 			id |= 1 << (ProtocolIDSize - 1 - i)
 		}
@@ -81,7 +81,7 @@ func FromBits(bits Bits) (*Frame, error) {
 
 	// 2. Decode DLC
 	var dlc uint8
-	for i := 0; i < ProtocolDLCSize; i++ {
+	for i := range ProtocolDLCSize {
 		if bits[ProtocolIDSize+i] {
 			dlc |= 1 << (ProtocolDLCSize - 1 - i)
 		}
@@ -102,7 +102,7 @@ func FromBits(bits Bits) (*Frame, error) {
 	offset := ProtocolIDSize + ProtocolDLCSize
 	for i := 0; i < int(dlc); i++ {
 		var b byte
-		for j := 0; j < 8; j++ {
+		for j := range 8 {
 			if bits[offset+i*8+j] {
 				b |= 1 << (7 - j)
 			}
