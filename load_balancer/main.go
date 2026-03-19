@@ -56,22 +56,22 @@ func main() {
 			fmt.Println("Load balancing finished with error:", err)
 			os.Exit(1)
 		}
+
+		// Extract results (responses)
+		results := fm.ComponentByName("lb").OutputByName(portOut).Signals()
+		if results.IsEmpty() {
+			fmt.Println("No results found")
+			os.Exit(2)
+		}
+
+		fmt.Println("Responses:")
+		results.ForEach(func(sig *signal.Signal) error {
+			fmt.Println(sig.PayloadOrDefault("").(string))
+			return nil
+		})
 	}
 
 	fmt.Println("Load balancing finished successfully")
-
-	// Extract results (responses)
-	results := fm.ComponentByName("lb").OutputByName(portOut).Signals()
-	if results.IsEmpty() {
-		fmt.Println("No results found")
-		os.Exit(2)
-	}
-
-	fmt.Println("Responses:")
-	results.ForEach(func(sig *signal.Signal) error {
-		fmt.Println(sig.PayloadOrDefault("").(string))
-		return nil
-	})
 }
 
 func getMesh() *fmesh.FMesh {
