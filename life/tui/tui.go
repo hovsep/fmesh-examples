@@ -21,41 +21,64 @@ func main() {
 
 	scanner := bufio.NewScanner(conn)
 
-	var values []float64
 	const maxPoints = 50 // max points to plot
 	var heartRate int
+	HCAValues := make([]float64, 0, maxPoints)
+	BAValues := make([]float64, 0, maxPoints)
+
 	for scanner.Scan() {
 		line := scanner.Text()
+		redraw := false
 
 		if strings.HasPrefix(line, "human-Leon::heart_rate") {
 			parts := strings.Fields(line)
-			if len(parts) < 2 {
-				continue
+			if len(parts) >= 2 {
+				if r, e := strconv.Atoi(parts[1]); e == nil {
+					heartRate = r
+					redraw = true
+				}
 			}
-			heartRate, err = strconv.Atoi(parts[1])
 		}
 
-		// Extract brain_activity value
 		if strings.HasPrefix(line, "human-Leon::heart_cardiac_activation") {
 			parts := strings.Fields(line)
-			if len(parts) < 2 {
-				continue
+			if len(parts) >= 2 {
+				val, err := strconv.ParseFloat(parts[1], 64)
+				if err == nil {
+					HCAValues = append(HCAValues, val)
+					if len(HCAValues) > maxPoints {
+						HCAValues = HCAValues[1:]
+					}
+					redraw = true
+				}
 			}
-			val, err := strconv.ParseFloat(parts[1], 64)
-			if err != nil {
-				continue
-			}
+		}
 
-			// Append value, keep maxPoints
-			values = append(values, val)
-			if len(values) > maxPoints {
-				values = values[1:]
+		if strings.HasPrefix(line, "human-Leon::brain_activity") {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				val, err := strconv.ParseFloat(parts[1], 64)
+				if err == nil {
+					BAValues = append(BAValues, val)
+					if len(BAValues) > maxPoints {
+						BAValues = BAValues[1:]
+					}
+					redraw = true
+				}
 			}
-			plotValues := append([]float64{}, values...)
-			// Clear terminal and print graph
+		}
+
+		if redraw && (len(HCAValues) > 0 || len(BAValues) > 0) {
 			fmt.Print("\033[H\033[2J") // ANSI clear screen
-			graph := asciigraph.Plot(plotValues, asciigraph.Height(10), asciigraph.Caption("Heart rate: "+strconv.Itoa(heartRate)))
-			fmt.Println(graph)
+
+			if len(HCAValues) > 0 {
+				heartPlot := asciigraph.Plot(HCAValues, asciigraph.Width(80), asciigraph.Height(5), asciigraph.SeriesColors(asciigraph.Red), asciigraph.Caption("ECG (Heart) — BPM: "+strconv.Itoa(heartRate)))
+				fmt.Println(heartPlot)
+			}
+			if len(BAValues) > 0 {
+				brainPlot := asciigraph.Plot(BAValues, asciigraph.Width(80), asciigraph.Height(5), asciigraph.SeriesColors(asciigraph.Blue), asciigraph.Caption("Brain activity"))
+				fmt.Println(brainPlot)
+			}
 		}
 	}
 
