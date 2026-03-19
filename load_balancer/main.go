@@ -43,7 +43,7 @@ func main() {
 		requestsPerWave := 5 + rand.Intn(10)
 		fmt.Println("Wave", i, "will have", requestsPerWave, "requests")
 		requests := signal.NewGroup()
-		for j := 0; j < requestsPerWave; j++ {
+		for j := range requestsPerWave {
 			requests = requests.Add(signal.New(fmt.Sprintf("wave-%d req-%d", i, j)))
 		}
 		fm.ComponentByName("lb").
@@ -85,7 +85,7 @@ func getMesh() *fmesh.FMesh {
 
 func getWorkers(namePrefix string, number int) []*component.Component {
 	workers := make([]*component.Component, number)
-	for i := 0; i < number; i++ {
+	for i := range number {
 		worker := component.New(fmt.Sprintf("%s-%d", namePrefix, i)).
 			AddInputs(portIn).
 			AddOutputs(portOut).
@@ -146,7 +146,7 @@ func getLoadBalancer(name string, workers []*component.Component) *component.Com
 			this.State().Set("last_worker_index", lastWorkerIndex)
 
 			// Handle outbound traffic (workers -> egress)
-			for i := 0; i < workersNum; i++ {
+			for i := range workersNum {
 				// Just forward all signals from workers to egress
 				err := port.ForwardSignals(this.InputByName(indexedPortName("upstream", i)), egressPort)
 				if err != nil {

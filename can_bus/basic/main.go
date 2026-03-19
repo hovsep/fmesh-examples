@@ -140,7 +140,7 @@ func getNode(name string, id int) *component.Component {
 						signal.New(
 							CanFrame{
 								Id:   4,
-								Data: []byte(fmt.Sprintf("register corrupted singal: %v", sig.PayloadOrNil())),
+								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.PayloadOrNil()),
 							}).AddLabels(
 							// Additionally, we can add some meta-data
 							labels.Map{
