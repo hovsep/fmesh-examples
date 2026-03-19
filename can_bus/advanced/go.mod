@@ -1,9 +1,9 @@
 module github.com/hovsep/fmesh-examples/can_bus/advanced
 
-go 1.24.1
+go 1.26
 
 require (
-	github.com/hovsep/fmesh v1.3.1-tigranakert.0.20251120012724-362e2e1b7a36
+	github.com/hovsep/fmesh v1.8.1-Tarsus
 	github.com/hovsep/fmesh-examples v0.0.5
 	github.com/stretchr/testify v1.11.1
 )
