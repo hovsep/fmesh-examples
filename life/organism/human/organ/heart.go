@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	rate   common.State = "rate"
+	rate   common.State = "rate" // Target rate in BPM (can be positive even after denervation)
 	phase  common.State = "phase"
 	minBPM float64      = 40
 	maxBPM float64      = 200
 )
 
-// CardiacActivationWave returns normalized contraction amplitude for a given phase
+// CardiacActivationWave returns ECG-style contraction amplitude for a given phase
 func CardiacActivationWave(phase float64) float64 {
 	if phase < 0.05 {
 		return math.Exp(-30 * phase) // R-Peak (Spike)
