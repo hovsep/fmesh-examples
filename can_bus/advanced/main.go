@@ -80,7 +80,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Mesh stopped after %d cycles and %s", runResult.Cycles.Len(), runResult.Duration)
+	fmt.Printf("Mesh stopped after %d cycles and %s", runResult.Cycles.Len(), runResult.Duration())
 }
 
 func getMesh() *fmesh.FMesh {

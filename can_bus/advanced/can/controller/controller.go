@@ -116,7 +116,7 @@ func runStateMachine(this *component.Component, currentBit codec.Bit) error {
 
 		err = handleStateTransition(this, currentState, nextState)
 		if err != nil {
-			return fmt.Errorf("failed to handle state transition: : %w", currentState.To(nextState), err)
+			return fmt.Errorf("failed to handle state transition: %s : %w", currentState.To(nextState), err)
 		}
 
 		if nextState == currentState {
