@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
@@ -65,6 +66,11 @@ func getMesh() *fmesh.FMesh {
 		components.ByName("organ:heart").InputByName("autonomic_tone"),
 	)
 
+	components.ByName("boundary:respiratory").OutputByName("inspired_gas").PipeTo(
+		components.ByName("organ:lung_left").InputByName("inspired_gas"),
+		components.ByName("organ:lung_right").InputByName("inspired_gas"),
+	)
+
 	return mesh
 }
 
@@ -112,6 +118,8 @@ func getComponents() *component.Collection {
 			// Organs
 			organ.GetBrain(),
 			organ.GetHeart(),
+			organ.GetLung(common.Left),
+			organ.GetLung(common.Right),
 
 			// Distributed anatomy
 			da.GetSkin(),
@@ -133,9 +141,9 @@ func New(name string) *component.Component {
 		AddLabel("species", "sapiens").
 		AddInputs(
 			"habitat_time_tick",
-			"habitat_air_temperature",
-			"habitat_air_humidity",
-			"habitat_air_composition",
+			"habitat_gas_temperature",
+			"habitat_gas_humidity",
+			"habitat_gas_composition",
 		).
 		AddOutputs(
 			"is_alive",
@@ -144,6 +152,7 @@ func New(name string) *component.Component {
 			"body_temperature",
 			"heart_cardiac_activation",
 			"heart_rate",
+			"breathing_phase",
 		).
 		WithInitialState(func(state component.State) {
 
@@ -165,16 +174,16 @@ func New(name string) *component.Component {
 				},
 
 				helper.PortPair{
-					this.InputByName("habitat_air_temperature"),
-					respiratory.InputByName("air_temperature"),
+					this.InputByName("habitat_gas_temperature"),
+					respiratory.InputByName("gas_temperature"),
 				},
 				helper.PortPair{
-					this.InputByName("habitat_air_humidity"),
-					respiratory.InputByName("air_humidity"),
+					this.InputByName("habitat_gas_humidity"),
+					respiratory.InputByName("gas_humidity"),
 				},
 				helper.PortPair{
-					this.InputByName("habitat_air_composition"),
-					respiratory.InputByName("air_composition"),
+					this.InputByName("habitat_gas_composition"),
+					respiratory.InputByName("gas_composition"),
 				})
 			if err != nil {
 				return fmt.Errorf("failed to forward signals into human mesh: %w", err)
@@ -209,6 +218,11 @@ func New(name string) *component.Component {
 				helper.PortPair{
 					humanObservableState.OutputByName("heart_rate"),
 					this.OutputByName("heart_rate"),
+				},
+
+				helper.PortPair{
+					humanObservableState.OutputByName("breathing_phase"),
+					this.OutputByName("breathing_phase"),
 				},
 			)
 			if err != nil {

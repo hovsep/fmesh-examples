@@ -27,7 +27,7 @@ import (
 //	The habitat is forward-predictive:
 //	   - The time component generates a tick.
 //	   - All habitat factors activate on that tick and compute their next state
-//	     (e.g., temperature, humidity, air composition).
+//	     (e.g., temperature, humidity, gas composition).
 //	The human is reactive:
 //	   - The human component activates on the same tick.
 //	   - It receives habitat signals and routes them to appropriate internal

@@ -37,8 +37,8 @@ func getSimulationMesh() *fmesh.FMesh {
 func getHabitat() *env.Habitat {
 	return env.NewHabitat(component.NewCollection().Add(
 		factor.GetTimeComponent(),
-		factor.GetAirComponent(),
-		factor.GetSunComponent(), // @todo: make sun to affect air temperature
+		factor.GetGasComponent(),
+		factor.GetSunComponent(), // @todo: make sun to affect gas temperature
 	))
 }
 
@@ -58,32 +58,32 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 
 	// Print habitat state
 	commands["habitat:show"] = step_sim.NewMeshCommandDescriptor("Print habitat state", func(fm *fmesh.FMesh) {
-		temperature := fm.ComponentByName("air").State().Get("temperature")
-		fmt.Println("Current air temperature: ", temperature)
+		temperature := fm.ComponentByName("gas").State().Get("temperature")
+		fmt.Println("Current gas temperature: ", temperature)
 	})
 
 	// Increase temperature
-	commands["temp:inc"] = step_sim.NewMeshCommandDescriptor("Increase air temperature by 1.0 degree", func(fm *fmesh.FMesh) {
-		fm.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).AddLabel("cmd", "change_temperature"))
+	commands["temp:inc"] = step_sim.NewMeshCommandDescriptor("Increase gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
+		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).AddLabel("cmd", "change_temperature"))
 	})
 
 	// Decrease temperature
-	commands["temp:dec"] = step_sim.NewMeshCommandDescriptor("Decrease air temperature by 1.0 degree", func(fm *fmesh.FMesh) {
-		fm.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).AddLabel("cmd", "change_temperature"))
+	commands["temp:dec"] = step_sim.NewMeshCommandDescriptor("Decrease gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
+		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).AddLabel("cmd", "change_temperature"))
 	})
 
 	// Set the temperature to zero
-	commands["temp:zero"] = step_sim.NewMeshCommandDescriptor("Set air temperature to zeo degrees", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
+	commands["temp:zero"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to zeo degrees", func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
 	})
 
-	// Make the air hot
-	commands["temp:hot"] = step_sim.NewMeshCommandDescriptor("Set air temperature to +38.0", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).AddLabel("cmd", "set_temperature"))
+	// Make the gas hot
+	commands["temp:hot"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to +38.0", func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).AddLabel("cmd", "set_temperature"))
 	})
 
-	// Make the air cold
-	commands["temp:cold"] = step_sim.NewMeshCommandDescriptor("Set air temperature to -35.0", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("air").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).AddLabel("cmd", "set_temperature"))
+	// Make the gas cold
+	commands["temp:cold"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to -35.0", func(fm *fmesh.FMesh) {
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).AddLabel("cmd", "set_temperature"))
 	})
 }

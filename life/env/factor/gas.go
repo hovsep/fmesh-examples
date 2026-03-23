@@ -9,10 +9,10 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// GetAirComponent returns the air component of the habitat
-func GetAirComponent() *component.Component {
-	return component.New("air").
-		WithDescription("Air factor").
+// GetGasComponent returns the gas component of the habitat
+func GetGasComponent() *component.Component {
+	return component.New("gas").
+		WithDescription("Gas factor").
 		AddInputs("time", "ctl").
 		// For the sake of simplicity, we skip parameters like barometric pressure or wind
 		AddOutputs("temperature", "composition", "humidity").
@@ -20,7 +20,7 @@ func GetAirComponent() *component.Component {
 			// Average air conditions in Valencia
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
-			state.Set("composition", getDefaultAirComposition())
+			state.Set("composition", getDefaultComposition())
 		}).
 		WithActivationFunc(func(this *component.Component) error {
 			err := handleControlSignals(this)
@@ -28,7 +28,7 @@ func GetAirComponent() *component.Component {
 				return fmt.Errorf("failed to handle control signals: %v", err)
 			}
 
-			return emitAir(this)
+			return emitGas(this)
 		})
 }
 
@@ -61,7 +61,7 @@ func handleControlSignals(this *component.Component) error {
 	return nil
 }
 
-func emitAir(this *component.Component) error {
+func emitGas(this *component.Component) error {
 	currentTemperature := this.State().Get("temperature").(float64)
 	currentHumidity := this.State().Get("humidity").(float64)
 	currentComposition := this.State().Get("composition").(*signal.Group)
@@ -73,11 +73,11 @@ func emitAir(this *component.Component) error {
 	return nil
 }
 
-// getDefaultAirComposition returns the default air composition
+// getDefaultComposition returns the default composition of the gas
 // represented as a group of signals.
 // Each signal is a float64 value representing the relative amount of a compound.
 // The sum of all components must add up to 100%
-func getDefaultAirComposition() *signal.Group {
+func getDefaultComposition() *signal.Group {
 	return signal.NewGroup().Add(
 		// Major Atmospheric Components
 		signal.New(78.084).AddLabel("name", "nitrogen").AddLabel("alias", "N2"),
