@@ -3,6 +3,7 @@ package controller
 import "github.com/hovsep/fmesh/component"
 
 // GetPhysical returns the physical stress controller component
+// possible input commands or events: phisical activity (time, level, type), breath-hold(time), yoaning, etc.
 func GetPhysical() *component.Component {
 	return component.New("controller:physical_stress").
 		WithDescription("Physical stress perception of the human being").

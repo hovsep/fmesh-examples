@@ -7,6 +7,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
@@ -133,6 +134,28 @@ func Test_Human(t *testing.T) {
 					}
 					assert.Greater(t, rPeaksFound, 1)
 					assert.Less(t, rPeaksFound, 10)
+				})
+			},
+		},
+		{
+			name: "lungs are ventilating",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				var observedBreathing []physiology.BreathingPhase
+
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sig := aggState.OutputByName("human-Leon::breathing_phase").Signals().First()
+						require.NotNil(t, sig)
+						observedBreathing = append(observedBreathing, sig.PayloadOrNil().(physiology.BreathingPhase))
+						return nil
+					})
+				})
+
+				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+					assert.NotEmpty(t, observedBreathing)
 				})
 			},
 		},

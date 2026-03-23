@@ -26,4 +26,7 @@ const (
 	Balanced Trend = "balanced"
 	Rising   Trend = "rising"
 	Falling  Trend = "falling"
+
+	Left  Side = "left"
+	Right Side = "right"
 )
