@@ -12,3 +12,6 @@ func GetMuscularSystem() *component.Component {
 			return nil
 		})
 }
+
+// Receive autonomic tone, drive diaphragm + intercostal muscles
+// connect muscular system to lungs

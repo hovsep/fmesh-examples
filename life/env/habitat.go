@@ -55,16 +55,19 @@ func (h *Habitat) addFactors(factors *component.Collection) *Habitat {
 	return h
 }
 
+// @TODO move this to separate file
 func (h *Habitat) AddAggregatedState() *Habitat {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
-		"air::temperature",
+		"gas::temperature",
 		"sun::uvi",
 		"human-Leon::is_alive",
 		"human-Leon::brain_activity",
 		"human-Leon::brain_activity_trend",
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
 		"human-Leon::heart_rate",
-		"human-Leon::heart_cardiac_activation"})
+		"human-Leon::heart_cardiac_activation",
+		"human-Leon::breathing_phase",
+	})
 
 	if err != nil {
 		panic(err)
@@ -120,6 +123,7 @@ func (h *Habitat) AddAggregatedStatePublisher() *Habitat {
 	return h
 }
 
+// TODO: move to separate file
 func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
 	agg := component.New(name).
 		WithDescription("composes data from multiple sources into one (single source of true for UI)").
