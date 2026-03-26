@@ -63,20 +63,11 @@ func GetObservableState() *component.Component {
 			"heart_cardiac_activation",
 			"heart_rate",
 			"breathing_phase").
-		WithActivationFunc(func(this *component.Component) error {
-			//@TODO: use composite activation function
-			brainErr := handleBrainSignals(this)
-			if brainErr != nil {
-				return brainErr
-			}
-
-			heartErr := handleHeartSignals(this)
-			if heartErr != nil {
-				return heartErr
-			}
-
-			return nil
-		})
+		WithActivationFunc(composeActivationFunction(
+			handleBrainSignals,
+			handleHeartSignals,
+			handleLungsSignals,
+		))
 }
 
 func handleBrainSignals(this *component.Component) error {
@@ -118,4 +109,25 @@ func handleHeartSignals(this *component.Component) error {
 			this.InputByName("heart_rate"),
 			this.OutputByName("heart_rate"),
 		})
+}
+
+func handleLungsSignals(this *component.Component) error {
+	var phase BreathingPhase
+
+	phase = Inhale
+
+	this.OutputByName("breathing_phase").PutPayloads(phase)
+	return nil
+}
+
+// composeActivationFunction allows composing multiple activation functions into one
+func composeActivationFunction(funcs ...component.ActivationFunc) component.ActivationFunc {
+	return func(this *component.Component) error {
+		for _, f := range funcs {
+			if err := f(this); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }
