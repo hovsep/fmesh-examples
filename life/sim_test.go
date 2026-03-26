@@ -156,6 +156,8 @@ func Test_Human(t *testing.T) {
 
 				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedBreathing)
+					assert.Contains(t, observedBreathing, physiology.Inhale)
+					assert.Contains(t, observedBreathing, physiology.Exhale)
 				})
 			},
 		},
