@@ -9,10 +9,8 @@ import (
 )
 
 const (
-	rate   common.State = "rate" // Target rate in BPM (can be positive even after denervation)
-	phase  common.State = "phase"
-	minBPM float64      = 40
-	maxBPM float64      = 200
+	minBPM float64 = 40
+	maxBPM float64 = 200
 )
 
 // CardiacActivationWave returns ECG-style contraction amplitude for a given phase
@@ -31,8 +29,8 @@ func GetHeart() *component.Component {
 	return component.New("organ:heart").
 		WithDescription("Heart").
 		WithInitialState(func(state component.State) {
-			state.Set(rate, 60)   // Initial BPM
-			state.Set(phase, 0.0) // Phase in the current heartbeat cycle
+			state.Set(common.Rate, 60)   // Initial BPM
+			state.Set(common.Phase, 0.0) // Phase in the current heartbeat cycle
 		}).
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("cardiac_activation", "rate").
@@ -48,7 +46,7 @@ func GetHeart() *component.Component {
 			}
 
 			// Always output heart rate
-			this.OutputByName("rate").PutPayloads(this.State().Get(rate).(int))
+			this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
 			return nil
 		})
 }
@@ -65,9 +63,9 @@ func oscillate(this *component.Component) error {
 
 	// Advance phase
 	var nextPhase float64
-	this.State().Update(phase, func(old any) any {
+	this.State().Update(common.Phase, func(old any) any {
 		currentPhase := old.(float64)
-		currentRate := this.State().Get(rate).(int)
+		currentRate := this.State().Get(common.Rate).(int)
 		phaseStep := dt / (60.0 / float64(currentRate))
 		nextPhase = math.Mod(currentPhase+phaseStep, 1.0)
 		return nextPhase
@@ -90,7 +88,7 @@ func handleAutonomicTone(this *component.Component) error {
 	}
 
 	// Update rate
-	this.State().Update(rate, func(v any) any {
+	this.State().Update(common.Rate, func(v any) any {
 		return int(minBPM + (maxBPM-minBPM)*bias)
 	})
 

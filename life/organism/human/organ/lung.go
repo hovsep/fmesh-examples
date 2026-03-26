@@ -5,13 +5,21 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
+const (
+	tidalBreathingRate = 12    // per minute
+	tidalVolume        = 500.0 // ml
+	phaseFullExhale    = -1.0
+)
+
 // GetLung returns single lung organ component
 func GetLung(side common.Side) *component.Component {
 	return component.New("organ:lung_"+side).
 		WithDescription("A lung").
 		WithInitialState(func(state component.State) {
+			state.Set(common.Phase, phaseFullExhale)
+			state.Set(common.Rate, tidalBreathingRate) //
 			state.Set("residual_volume", 1200.00)
-			state.Set("volume", 500.00) // Tidal volume
+			state.Set("volume", tidalVolume) // Tidal volume
 			state.Set("inspiratory_reserve", 1900.00)
 			state.Set("expiratory_reserve", 700.00)
 			state.Set(common.DamageLevel, defaultDamageLevel)

@@ -17,6 +17,8 @@ const (
 	Gain            Label = "gain"
 
 	DamageLevel State = "damage_level"
+	Rate        State = "rate"
+	Phase       State = "phase"
 
 	Cardiac     System = "cardiac"
 	Vascular    System = "vascular"
