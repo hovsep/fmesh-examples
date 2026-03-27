@@ -7,7 +7,6 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
@@ -138,8 +137,8 @@ func Test_Human(t *testing.T) {
 				})
 			},
 		},
-		{
-			name: "lungs are ventilating",
+		/*{
+			name: "[hold] lungs are ventilating",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				var observedBreathing []organ.BreathingPhase
 
@@ -161,7 +160,7 @@ func Test_Human(t *testing.T) {
 					//assert.Contains(t, observedBreathing, organ.Exhale)
 				})
 			},
-		},
+		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

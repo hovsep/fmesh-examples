@@ -24,14 +24,16 @@ type Simulation struct {
 	FM           *fmesh.FMesh
 	MeshCommands MeshCommandMap
 	AutoPause    bool
+	Stream       chan string // Stream of simulation output to UI
 }
 
-func NewSimulation(ctx context.Context, cmdChan chan Command, fm *fmesh.FMesh) *Simulation {
+func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, stream chan string) *Simulation {
 	return &Simulation{
 		ctx:          ctx,
 		FM:           fm,
 		cmdChan:      cmdChan,
 		MeshCommands: getDefaultMeshCommands(),
+		Stream:       stream,
 	}
 }
 

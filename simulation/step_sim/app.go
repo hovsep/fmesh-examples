@@ -23,13 +23,19 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, reader io.Reader) *Applica
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// @TODO: make this optional
+	broadcaster, err := NewStreamBroadcaster(ctx, "/tmp/"+fm.Name()+".sock")
+	if err != nil {
+		panic(err)
+	}
+
 	app := &Application{
 		ctx:     ctx,
 		cancel:  cancel,
 		cmdChan: cmdChan,
 		reader:  reader,
 		REPL:    NewREPL(cmdChan),
-		Sim:     NewSimulation(ctx, cmdChan, fm).Init(simInitFunc),
+		Sim:     NewSimulation(ctx, fm, cmdChan, broadcaster.Stream).Init(simInitFunc),
 	}
 
 	return app
@@ -40,6 +46,7 @@ func (app *Application) Run() {
 
 	defer func() {
 		app.cancel()
+
 		time.Sleep(1 * time.Second) // Just to allow the simulation to shut down gracefully (until we implement more elegant synchronization)
 		fmt.Println("Shutting down the application...")
 	}()

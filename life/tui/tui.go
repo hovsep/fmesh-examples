@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Connect to Unix socket
-	conn, err := net.Dial("unix", "/tmp/sim.sock")
+	conn, err := net.Dial("unix", "/tmp/habitat_mesh.sock")
 	if err != nil {
 		log.Fatal(err)
 	}
