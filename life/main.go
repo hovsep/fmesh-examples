@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
@@ -72,7 +73,7 @@ func initSim(sim *step_sim.Simulation) {
 			})
 
 			// @TODO: take this delay from flag to not affect tests
-			//time.Sleep(10 * time.Millisecond) // Near real time
+			time.Sleep(10 * time.Millisecond) // Near real time
 			return nil
 		})
 	})
