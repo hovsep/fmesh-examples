@@ -5,12 +5,13 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
-	minBPM float64 = 40
-	maxBPM float64 = 200
+	minBPM float64 = 40 * PerMinute
+	maxBPM float64 = 200 * PerMinute
 )
 
 // CardiacActivationWave returns ECG-style contraction amplitude for a given phase

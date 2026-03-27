@@ -3,14 +3,15 @@ package physiology
 import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	criticalNeuralDrive               = organ.MaxNeuralDrive * 0.01
-	defaultAutonomicCoordinationNoise = 0.05
-	defaultRegionalBiasJitter         = 0.05
+	criticalNeuralDrive               = organ.MaxNeuralDrive * 0.01 * DNCS
+	defaultAutonomicCoordinationNoise = 0.05 * DNCS
+	defaultRegionalBiasJitter         = 0.05 * Proportion
 )
 
 // GetAutonomicCoordination ...
