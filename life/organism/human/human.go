@@ -154,9 +154,6 @@ func New(name string) *component.Component {
 			"heart_rate",
 			"breathing_phase",
 		).
-		WithInitialState(func(state component.State) {
-
-		}).
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
 
@@ -219,11 +216,11 @@ func New(name string) *component.Component {
 					humanObservableState.OutputByName("heart_rate"),
 					this.OutputByName("heart_rate"),
 				},
-
-				helper.PortPair{
-					humanObservableState.OutputByName("breathing_phase"),
-					this.OutputByName("breathing_phase"),
-				},
+				/*
+					helper.PortPair{
+						humanObservableState.OutputByName("breathing_phase"),
+						this.OutputByName("breathing_phase"),
+					},*/
 			)
 			if err != nil {
 				return fmt.Errorf("failed to forward signals from human mesh: %w", err)

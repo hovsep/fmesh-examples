@@ -5,18 +5,21 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
+type BreathingPhase string
+
 const (
-	tidalBreathingRate = 12    // per minute
-	tidalVolume        = 500.0 // ml
-	phaseFullExhale    = -1.0
+	tidalBreathingRate                = 12    // per minute
+	tidalVolume                       = 500.0 // ml
+	Inhale             BreathingPhase = "inhale"
+	Exhale             BreathingPhase = "exhale"
 )
 
-// GetLung returns single lung organ component
+// GetLung returns a single lung organ component
 func GetLung(side common.Side) *component.Component {
 	return component.New("organ:lung_"+side).
 		WithDescription("A lung").
 		WithInitialState(func(state component.State) {
-			state.Set(common.Phase, phaseFullExhale)
+			state.Set(common.Phase, 0.00)
 			state.Set(common.Rate, tidalBreathingRate) //
 			state.Set("residual_volume", 1200.00)
 			state.Set("volume", tidalVolume) // Tidal volume
@@ -25,12 +28,12 @@ func GetLung(side common.Side) *component.Component {
 			state.Set(common.DamageLevel, defaultDamageLevel)
 		}).
 		AddInputs(
-			"time", //?
+			"time", //do we really need time?
 			"autonomic_tone",
 			"diaphragm_contraction",
+			// @TODO: add "intercostal_muscles_contraction", and make it as 20% of lung moving contribution along with the diaphragm (but they must trigger only at exercise time, not resting)
 			"inspired_gas",
 		).
-		// @TODO: add "intercostal_muscles_contraction", and make it as 20% of lung moving contribution along with the diaphragm (but they must trigger only at exercise time, not resting)
 		AddOutputs(
 			"exhaled_gas",
 			"phase",
@@ -46,6 +49,7 @@ func GetLung(side common.Side) *component.Component {
 			"stretch_ratio",       //Current volume / maximum lung volume
 		).
 		WithActivationFunc(func(this *component.Component) error {
+			this.OutputByName("phase").PutPayloads(Inhale, Exhale)
 			return nil
 		})
 }

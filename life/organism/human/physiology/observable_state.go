@@ -1,20 +1,17 @@
 package physiology
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 )
 
-type BreathingPhase string
-
 const (
 	LastBrainActivity                   common.State = "last_brain_activity"
 	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
 	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
-
-	Inhale BreathingPhase = "inhale"
-	Exhale BreathingPhase = "exhale"
 )
 
 // GetObservableState ...
@@ -112,14 +109,22 @@ func handleHeartSignals(this *component.Component) error {
 }
 
 func handleLungsSignals(this *component.Component) error {
-	var phase BreathingPhase
+	if !this.InputByName("lung_left_phase").HasSignals() || !this.InputByName("lung_right_phase").HasSignals() {
+		return nil
+	}
 
-	phase = Inhale
+	leftPhase := helper.AsF64(this.InputByName("lung_left_phase").Signals().First())
+	rightPhase := helper.AsF64(this.InputByName("lung_right_phase").Signals().First())
 
-	this.OutputByName("breathing_phase").PutPayloads(phase)
+	if leftPhase != rightPhase {
+		return fmt.Errorf("lung phases are not equal: %f != %f", leftPhase, rightPhase)
+	}
+
+	this.OutputByName("breathing_phase").PutPayloads(leftPhase)
 	return nil
 }
 
+// @TODO: this can be reused, make it part of fmesh (plugin or something)
 // composeActivationFunction allows composing multiple activation functions into one
 func composeActivationFunction(funcs ...component.ActivationFunc) component.ActivationFunc {
 	return func(this *component.Component) error {
