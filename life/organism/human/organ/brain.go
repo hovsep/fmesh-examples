@@ -3,6 +3,7 @@ package organ
 import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -10,14 +11,14 @@ import (
 
 const (
 	NeuralDrive       common.State = "neural_drive"
-	NeuralDriveJitter              = 0.02
-	MinNeuralDrive                 = 0.0
-	MaxNeuralDrive                 = 1.0
+	NeuralDriveJitter              = 0.02 * DNCS
+	MinNeuralDrive                 = 0.0 * DNCS
+	MaxNeuralDrive                 = 1.0 * DNCS
 
 	// 0.0 - 0.2 Sleep
 	// 0.3 - 0.6 Baseline activity
 	// 0.7 - 1.0 Stress, exercise, threat
-	defaultNeuralDrive = 0.3
+	defaultNeuralDrive = 0.3 * DNCS
 )
 
 // GetBrain returns brain organ component

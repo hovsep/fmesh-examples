@@ -5,13 +5,14 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
 	LastBrainActivity                   common.State = "last_brain_activity"
-	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
-	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
+	defaultBrainActivitySmoothingFactor              = 0.1 * DNCS    // alpha in ema
+	defaultBrainActivityThreshold                    = 0.0001 * DNCS // epsilon in ema
 )
 
 // GetObservableState ...
@@ -60,7 +61,7 @@ func GetObservableState() *component.Component {
 			"heart_cardiac_activation",
 			"heart_rate",
 			"breathing_phase").
-		WithActivationFunc(composeActivationFunction(
+		WithActivationFunc(helper.Pipeline(
 			handleBrainSignals,
 			handleHeartSignals,
 			handleLungsSignals,
@@ -122,17 +123,4 @@ func handleLungsSignals(this *component.Component) error {
 
 	this.OutputByName("breathing_phase").PutPayloads(leftPhase)
 	return nil
-}
-
-// @TODO: this can be reused, make it part of fmesh (plugin or something)
-// composeActivationFunction allows composing multiple activation functions into one
-func composeActivationFunction(funcs ...component.ActivationFunc) component.ActivationFunc {
-	return func(this *component.Component) error {
-		for _, f := range funcs {
-			if err := f(this); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
 }

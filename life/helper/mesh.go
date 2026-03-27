@@ -27,3 +27,16 @@ func MultiForward(portPairs ...PortPair) error {
 	}
 	return nil
 }
+
+// @TODO: this can be reused, make it part of fmesh (plugin or something)
+// Pipeline allows composing multiple activation functions into one
+func Pipeline(funcs ...component.ActivationFunc) component.ActivationFunc {
+	return func(this *component.Component) error {
+		for _, f := range funcs {
+			if err := f(this); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
