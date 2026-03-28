@@ -47,7 +47,7 @@ func main() {
 	simMesh := getSimulationMesh()
 
 	// Now run the simulation; the producer is non-blocking
-	err := internal.HandleGraphFlag(simMesh)
+	err := internal.HandleGraphFlag(simMesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)

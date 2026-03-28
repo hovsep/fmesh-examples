@@ -130,7 +130,7 @@ func getMesh() *fmesh.FMesh {
 	outerMesh := fmesh.New("outer").AddComponents(starter, filter, logger, factorizer)
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(outerMesh)
+	err := internal.HandleGraphFlag(outerMesh, true)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)
@@ -216,7 +216,7 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 		AddComponents(starter, d2, dodd, finalPrime, results)
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(algoMesh)
+	err := internal.HandleGraphFlag(algoMesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)

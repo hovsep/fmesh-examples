@@ -73,7 +73,7 @@ func getMesh() *fmesh.FMesh {
 		components.ByName("organ:lung_right").InputByName("inspired_gas"),
 	)
 
-	err := internal.HandleGraphFlag(mesh)
+	err := internal.HandleGraphFlag(mesh, true)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
