@@ -54,7 +54,7 @@ func main() {
 	}
 
 	// Run the mesh in a step simulation
-	step_sim.NewApp(simMesh, initSim, os.Stdin).Run()
+	step_sim.NewApp(simMesh, initSim).Run()
 }
 
 // initSim configures simulation and adds custom commands
@@ -65,14 +65,15 @@ func initSim(sim *step_sim.Simulation) {
 	// Add custom commands
 	setMeshCommands(sim.FM, sim.MeshCommands)
 
+	// Setup hooks to stream data to UI
 	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
-				sim.Stream <- line.PayloadOrNil().(string)
+				sim.Sink.Publish(line.PayloadOrNil().(string))
 				return nil
 			})
 
-			// @TODO: take this delay from flag to not affect tests
+			// @TODO: take this delay from flag or cmd to not affect tests
 			time.Sleep(10 * time.Millisecond) // Near real time
 			return nil
 		})
