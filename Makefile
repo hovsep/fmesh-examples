@@ -17,7 +17,7 @@ build: ## Build all examples
 graph: ## Generate graphs for all examples
 	@for ex in $(EXAMPLES); do \
 		echo "Generating graph for $$ex..."; \
-		(cd $$ex && go run . --graph 2>/dev/null) || echo "  ⊘ Skipped"; \
+		(cd $$ex && FMESH_GRAPH=1 go run . --graph 2>/dev/null) || echo "  ⊘ Skipped"; \
 	done
 
 clean: ## Clean build artifacts

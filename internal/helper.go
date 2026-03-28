@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,18 +13,11 @@ import (
 // HandleGraphFlag handles the -graph flag and generates a graph.dot and graph.svg file if requested
 // @TODO: refactor, allow to export multiple meshes in 1 program
 func HandleGraphFlag(fm *fmesh.FMesh) error {
-	var shouldGenerateGraph bool
-
-	flag.BoolVar(&shouldGenerateGraph, "graph", false, "Generate graph.dot and graph.svg files and exit")
-	flag.Parse()
+	shouldGenerateGraph := os.Getenv("FMESH_GRAPH") == "1"
 
 	if !shouldGenerateGraph {
 		return nil
 	}
-
-	defer func() {
-		os.Exit(0)
-	}()
 
 	// Generate DOT format
 	exporter := dot.NewDotExporter()
