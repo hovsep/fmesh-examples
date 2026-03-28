@@ -10,9 +10,12 @@ import (
 	"github.com/hovsep/fmesh-graphviz/dot"
 )
 
-// HandleGraphFlag handles the -graph flag and generates a graph.dot and graph.svg file if requested
-// @TODO: refactor, allow to export multiple meshes in 1 program
-func HandleGraphFlag(fm *fmesh.FMesh) error {
+// HandleGraphFlag handles the FMESH_GRAPH env flag and generates graph files
+func HandleGraphFlag(fm *fmesh.FMesh, stopAfter bool) error {
+	if stopAfter {
+		defer os.Exit(0)
+	}
+
 	shouldGenerateGraph := os.Getenv("FMESH_GRAPH") == "1"
 
 	if !shouldGenerateGraph {

@@ -21,7 +21,7 @@ func main() {
 	fm := getMesh()
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm)
+	err := internal.HandleGraphFlag(fm, true)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)
