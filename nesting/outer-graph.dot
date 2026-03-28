@@ -1,0 +1,60 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>A mesh with 4 components</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="factorizer";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="factorizer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="factorizer",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="factorizer",height="1.0",label="Prime factorization implemented as separate f-mesh",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n16->n18;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="filter";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="filter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="filter",height="1.0",label="log",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="filter",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="filter",height="1.0",label="In this component we can do some optional filtering",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		n8->n11;
+		
+	}
+	subgraph cluster_s12 {
+		color="black";label="logger";margin="20";penwidth="5";style="rounded";
+		n14[fontname="Courier New",group="logger",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[color="#9dddea",fontname="Courier New",group="logger",height="1.0",label="Simple logger",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n14->n13;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="starter";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="starter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="starter",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="starter",height="1.0",label="This component just holds numbers we want to factorize",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	layout="dot";splines="ortho";
+	n11->n14[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
