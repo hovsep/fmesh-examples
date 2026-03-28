@@ -58,8 +58,9 @@ func (s *UnixSink) Close() error {
 	return nil
 }
 
-func (s *UnixSink) Publish(line string) {
+func (s *UnixSink) Publish(line string) error {
 	s.stream <- line
+	return nil
 }
 
 func (s *UnixSink) acceptConnections() {

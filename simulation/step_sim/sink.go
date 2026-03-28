@@ -1,5 +1,5 @@
 package step_sim
 
 type Sink interface {
-	Publish(line string)
+	Publish(line string) error
 }

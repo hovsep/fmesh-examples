@@ -69,8 +69,7 @@ func initSim(sim *step_sim.Simulation) {
 	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
-				sim.Sink.Publish(line.PayloadOrNil().(string))
-				return nil
+				return sim.Sink.Publish(line.PayloadOrNil().(string))
 			})
 
 			// @TODO: take this delay from flag or cmd to not affect tests
