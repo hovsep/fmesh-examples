@@ -2,9 +2,11 @@ package human
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
@@ -70,6 +72,12 @@ func getMesh() *fmesh.FMesh {
 		components.ByName("organ:lung_left").InputByName("inspired_gas"),
 		components.ByName("organ:lung_right").InputByName("inspired_gas"),
 	)
+
+	err := internal.HandleGraphFlag(mesh)
+	if err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
 
 	return mesh
 }
