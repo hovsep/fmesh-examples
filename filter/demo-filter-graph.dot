@@ -1,0 +1,48 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>A mesh with 3 components</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s8 {
+		color="black";label="dropped-printer";margin="20";penwidth="5";style="rounded";
+		n10[fontname="Courier New",group="dropped-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="dropped-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n10->n9;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="passed-printer";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="passed-printer",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="passed-printer",height="1.0",label="Simple stdout printer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="pop-filter";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="pop-filter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="pop-filter",height="1.0",label="dropped",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="pop-filter",height="1.0",label="passed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="pop-filter",height="1.0",label="Simple filter",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		n4->n7;
+		
+	}
+	layout="dot";splines="ortho";
+	n6->n10[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n13[color="#e437ea",minlen="3",penwidth="2"];
+	
+}

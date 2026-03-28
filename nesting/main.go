@@ -24,13 +24,6 @@ type factorizedNumber struct {
 func main() {
 	outerMesh := getMesh()
 
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(outerMesh)
-	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
-		os.Exit(1)
-	}
-
 	// Set init data
 	outerMesh.Components().
 		ByName("starter").
@@ -38,7 +31,7 @@ func main() {
 		PutSignals(signal.New(315))
 
 	// Run outer mesh
-	_, err = outerMesh.Run()
+	_, err := outerMesh.Run()
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("outer mesh failed with error: %w", err))
@@ -134,7 +127,16 @@ func getMesh() *fmesh.FMesh {
 	filter.OutputByName("out").PipeTo(factorizer.InputByName("in"))
 
 	// Build the mesh
-	return fmesh.New("outer").AddComponents(starter, filter, logger, factorizer)
+	outerMesh := fmesh.New("outer").AddComponents(starter, filter, logger, factorizer)
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(outerMesh)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
+
+	return outerMesh
 }
 
 func getPrimeFactorizationMesh() *fmesh.FMesh {
@@ -209,7 +211,16 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 	dodd.OutputByName("factor").PipeTo(results.InputByName("factor"))
 	finalPrime.OutputByName("factor").PipeTo(results.InputByName("factor"))
 
-	return fmesh.New("prime factors algo").
+	algoMesh := fmesh.New("prime factors algo").
 		WithDescription("Pass single signal to starter").
 		AddComponents(starter, d2, dodd, finalPrime, results)
+
+	// Generate graphs if needed
+	err := internal.HandleGraphFlag(algoMesh)
+	if err != nil {
+		fmt.Println("Failed to generate graph: ", err)
+		os.Exit(1)
+	}
+
+	return algoMesh
 }
