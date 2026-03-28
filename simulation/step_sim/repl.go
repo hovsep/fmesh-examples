@@ -3,7 +3,6 @@ package step_sim
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 )
@@ -18,12 +17,12 @@ func NewREPL(cmdChan chan Command) *REPL {
 	}
 }
 
-func (repl *REPL) Run(r io.Reader) {
+func (repl *REPL) Run() {
 	fmt.Println("Starting REPL...")
 
 	defer close(repl.cmdChan)
 
-	scanner := bufio.NewScanner(r)
+	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		_ = os.Stdout.Sync()
 		if !scanner.Scan() {

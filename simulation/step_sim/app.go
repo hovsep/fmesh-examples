@@ -3,7 +3,6 @@ package step_sim
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -13,18 +12,17 @@ type Application struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	cmdChan chan Command
-	reader  io.Reader
 
 	REPL *REPL
 	Sim  *Simulation
 }
 
-func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, reader io.Reader) *Application {
+func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// @TODO: make this optional
-	broadcaster, err := NewStreamBroadcaster(ctx, "/tmp/"+fm.Name()+".sock")
+	sink, err := NewUnixSink(ctx, "/tmp/"+fm.Name()+".sock")
 	if err != nil {
 		panic(err)
 	}
@@ -33,9 +31,8 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, reader io.Reader) *Applica
 		ctx:     ctx,
 		cancel:  cancel,
 		cmdChan: cmdChan,
-		reader:  reader,
 		REPL:    NewREPL(cmdChan),
-		Sim:     NewSimulation(ctx, fm, cmdChan, broadcaster.Stream).Init(simInitFunc),
+		Sim:     NewSimulation(ctx, fm, cmdChan, sink).Init(simInitFunc),
 	}
 
 	return app
@@ -53,5 +50,5 @@ func (app *Application) Run() {
 
 	go app.Sim.Run()
 
-	app.REPL.Run(app.reader)
+	app.REPL.Run()
 }

@@ -14,11 +14,11 @@ type ClientsRegistry struct {
 	Clients map[net.Conn]struct{}
 }
 
-type StreamBroadcaster struct {
+type UnixSink struct {
 	ctx             context.Context
 	listener        net.Listener
 	clientsRegistry ClientsRegistry
-	Stream          chan string
+	stream          chan string
 }
 
 func newClientsRegistry() ClientsRegistry {
@@ -27,30 +27,30 @@ func newClientsRegistry() ClientsRegistry {
 	}
 }
 
-func NewStreamBroadcaster(ctx context.Context, socketPath string) (*StreamBroadcaster, error) {
+func NewUnixSink(ctx context.Context, socketPath string) (*UnixSink, error) {
 	listener, err := getListener(socketPath)
 	if err != nil {
 		return nil, err
 	}
 
 	streamChan := make(chan string, 1000)
-	broadcaster := &StreamBroadcaster{
+	sink := &UnixSink{
 		ctx:             ctx,
 		clientsRegistry: newClientsRegistry(),
-		Stream:          streamChan,
+		stream:          streamChan,
 		listener:        listener,
 	}
 
 	// Accept connection from socket
-	go broadcaster.acceptConnections()
+	go sink.acceptConnections()
 
 	// Broadcast aggregated state updates among clients
-	go broadcaster.broadcast()
-	return broadcaster, nil
+	go sink.broadcast()
+	return sink, nil
 }
 
-func (s *StreamBroadcaster) Close() error {
-	fmt.Println("Shutting down the broadcaster...")
+func (s *UnixSink) Close() error {
+	fmt.Println("Shutting down the sink...")
 	err := s.listener.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close listener: %w", err)
@@ -58,11 +58,15 @@ func (s *StreamBroadcaster) Close() error {
 	return nil
 }
 
-func (s *StreamBroadcaster) acceptConnections() {
+func (s *UnixSink) Publish(line string) {
+	s.stream <- line
+}
+
+func (s *UnixSink) acceptConnections() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			fmt.Println("Stopping accepting connections to the broadcaster...")
+			fmt.Println("Stopping accepting connections to the sink...")
 			return
 		default:
 			conn, err := s.listener.Accept()
@@ -78,8 +82,8 @@ func (s *StreamBroadcaster) acceptConnections() {
 	}
 }
 
-func (s *StreamBroadcaster) broadcast() {
-	for line := range s.Stream {
+func (s *UnixSink) broadcast() {
+	for line := range s.stream {
 		select {
 		case <-s.ctx.Done():
 			fmt.Println("Stopping broadcasting...")
@@ -117,7 +121,7 @@ func getListener(socketPath string) (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Broadcaster listening on", socketPath)
+	fmt.Println("Sink listening on", socketPath)
 	return listener, nil
 }
 
