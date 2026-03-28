@@ -12,14 +12,14 @@ import (
 
 // HandleGraphFlag handles the FMESH_GRAPH env flag and generates graph files
 func HandleGraphFlag(fm *fmesh.FMesh, stopAfter bool) error {
-	if stopAfter {
-		defer os.Exit(0)
-	}
-
 	shouldGenerateGraph := os.Getenv("FMESH_GRAPH") == "1"
 
 	if !shouldGenerateGraph {
 		return nil
+	}
+
+	if stopAfter {
+		defer os.Exit(0)
 	}
 
 	// Generate DOT format
