@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	step_sim_sink "github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 )
 
 type Application struct {
@@ -22,7 +23,7 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// @TODO: make this optional
-	sink, err := NewUnixSink(ctx, "/tmp/"+fm.Name()+".sock")
+	sink, err := step_sim_sink.NewUnixSocketSink(ctx, "/tmp/"+fm.Name()+".sock")
 	if err != nil {
 		panic(err)
 	}
