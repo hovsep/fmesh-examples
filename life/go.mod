@@ -17,4 +17,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/hovsep/fmesh-examples v0.0.7 => ./../
+replace github.com/hovsep/fmesh-examples => ./../
