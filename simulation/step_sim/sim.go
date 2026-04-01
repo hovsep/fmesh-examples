@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 	"github.com/hovsep/fmesh/cycle"
 )
 
@@ -18,16 +19,16 @@ type SimInitFunc func(sim *Simulation)
 // Simulation is a wrapper around a mesh
 // it runs the mesh in a loop and feeds it with commands from outside (e.g., REPL or another system)
 type Simulation struct {
-	ctx          context.Context
-	cmdChan      chan Command
-	isPaused     bool
-	FM           *fmesh.FMesh
-	MeshCommands MeshCommandMap
-	AutoPause    bool
-	Sink         Sink
+	ctx          context.Context // Context is used to cancel the simulation
+	cmdChan      chan Command    // Channel for commands from outside
+	isPaused     bool            // Flag to pause the simulation
+	FM           *fmesh.FMesh    // The mesh
+	MeshCommands MeshCommandMap  // Commands that can be executed on the mesh
+	AutoPause    bool            // Automatically pause the simulation if nothing happens
+	Sink         sink.Sink       // Sink is useful for sending messages to the outside (ui, metrics, etc.)
 }
 
-func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, sink Sink) *Simulation {
+func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, sink sink.Sink) *Simulation {
 	return &Simulation{
 		ctx:          ctx,
 		FM:           fm,

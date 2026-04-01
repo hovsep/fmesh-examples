@@ -1,4 +1,4 @@
-package step_sim
+package sink
 
 type Sink interface {
 	Publish(line string) error

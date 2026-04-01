@@ -1,4 +1,4 @@
-package step_sim
+package sink
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type ClientsRegistry struct {
 	Clients map[net.Conn]struct{}
 }
 
-type UnixSink struct {
+type UnixSocketSink struct {
 	ctx             context.Context
 	listener        net.Listener
 	clientsRegistry ClientsRegistry
@@ -27,14 +27,14 @@ func newClientsRegistry() ClientsRegistry {
 	}
 }
 
-func NewUnixSink(ctx context.Context, socketPath string) (*UnixSink, error) {
+func NewUnixSocketSink(ctx context.Context, socketPath string) (*UnixSocketSink, error) {
 	listener, err := getListener(socketPath)
 	if err != nil {
 		return nil, err
 	}
 
 	streamChan := make(chan string, 1000)
-	sink := &UnixSink{
+	sink := &UnixSocketSink{
 		ctx:             ctx,
 		clientsRegistry: newClientsRegistry(),
 		stream:          streamChan,
@@ -49,7 +49,7 @@ func NewUnixSink(ctx context.Context, socketPath string) (*UnixSink, error) {
 	return sink, nil
 }
 
-func (s *UnixSink) Close() error {
+func (s *UnixSocketSink) Close() error {
 	fmt.Println("Shutting down the sink...")
 	err := s.listener.Close()
 	if err != nil {
@@ -58,12 +58,12 @@ func (s *UnixSink) Close() error {
 	return nil
 }
 
-func (s *UnixSink) Publish(line string) error {
+func (s *UnixSocketSink) Publish(line string) error {
 	s.stream <- line
 	return nil
 }
 
-func (s *UnixSink) acceptConnections() {
+func (s *UnixSocketSink) acceptConnections() {
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -83,7 +83,7 @@ func (s *UnixSink) acceptConnections() {
 	}
 }
 
-func (s *UnixSink) broadcast() {
+func (s *UnixSocketSink) broadcast() {
 	for line := range s.stream {
 		select {
 		case <-s.ctx.Done():
