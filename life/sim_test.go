@@ -53,7 +53,7 @@ func Test_Time(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
 			fm := getSimulationMesh()
-			sim := step_sim.NewSimulation(context.Background(), cmdChan, fm)
+			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, step_sim.NewNoopSink())
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)
@@ -166,7 +166,7 @@ func Test_Human(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
 			fm := getSimulationMesh()
-			sim := step_sim.NewSimulation(context.Background(), cmdChan, fm)
+			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, step_sim.NewNoopSink())
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)

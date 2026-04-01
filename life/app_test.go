@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -28,7 +27,7 @@ func Test_AppChecks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mesh := getSimulationMesh()
-			app := step_sim.NewApp(mesh, initSim, os.Stdin)
+			app := step_sim.NewApp(mesh, initSim)
 			assert.NotNil(t, app)
 
 			if tt.assertions != nil {
