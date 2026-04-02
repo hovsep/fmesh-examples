@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	tidalBreathingRate = 12 * PerMinute // per minute
+	TidalBreathingRate = 12 * PerMinute // per minute
 	tidalVolume        = 500.0 * Milliliter
 )
 
@@ -20,7 +20,7 @@ func GetLung(side common.Side) *component.Component {
 		WithDescription("A lung").
 		WithInitialState(func(state component.State) {
 			state.Set(common.Phase, 0.0)
-			state.Set(common.Rate, tidalBreathingRate)
+			state.Set(common.Rate, TidalBreathingRate)
 
 			state.Set("inhale_ratio", 0.4)
 			state.Set("pause_after_inhale", 0.05)

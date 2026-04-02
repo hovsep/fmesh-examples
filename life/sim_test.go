@@ -7,6 +7,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 	"github.com/hovsep/fmesh/component"
@@ -139,7 +140,7 @@ func Test_Human(t *testing.T) {
 			},
 		},
 		{
-			name: "diaphragm is moving",
+			name: "diaphragm drives pleural pressure dynamics",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				var observedPleuralPressure []float64
 				var observedRespiratoryRate []int
@@ -163,6 +164,11 @@ func Test_Human(t *testing.T) {
 				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedPleuralPressure)
 					assert.NotEmpty(t, observedRespiratoryRate)
+
+					meanPressure := helper.Mean(observedPleuralPressure)
+					meanRespiratoryRate := helper.Mean(observedRespiratoryRate)
+					assert.Less(t, meanPressure, 0.0)
+					assert.InDelta(t, organ.TidalBreathingRate, meanRespiratoryRate, 1)
 				})
 			},
 		},
