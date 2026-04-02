@@ -3,69 +3,17 @@ package main
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
-	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const defaultSimulationDuration = 100 * time.Millisecond
-
-func Test_Time(t *testing.T) {
-	tests := []struct {
-		name       string
-		assertions func(t *testing.T, sim *step_sim.Simulation)
-	}{
-		{
-			name: "time advances in timer",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				var observedSimWallTime []time.Time
-
-				timeComponent := sim.FM.ComponentByName("time")
-				require.NotNil(t, timeComponent)
-
-				timeComponent.SetupHooks(func(hooks *component.Hooks) {
-					hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
-						tickSig := timeComponent.OutputByName("tick").Signals().First()
-						require.NotNil(t, tickSig)
-
-						_, _, simWallTime, _, err := helper.UnpackTick(tickSig)
-						require.NoError(t, err)
-
-						// Observe and collect sim wall time after every iteration
-						observedSimWallTime = append(observedSimWallTime, simWallTime)
-						return nil
-					})
-				})
-
-				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
-					assert.IsIncreasing(t, observedSimWallTime)
-				})
-
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmdChan := make(chan step_sim.Command)
-			fm := getSimulationMesh()
-			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
-
-			if tt.assertions != nil {
-				tt.assertions(t, sim)
-			}
-		})
-	}
-}
-
-// @TODO: this test becomes too big, split it into multiple tests
-func Test_Human(t *testing.T) {
+func Test_HumanLiveness(t *testing.T) {
 	tests := []struct {
 		name       string
 		assertions func(t *testing.T, sim *step_sim.Simulation)
@@ -87,7 +35,7 @@ func Test_Human(t *testing.T) {
 					})
 				})
 
-				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedIsAlive)
 					assert.NotContains(t, observedIsAlive, false)
 				})
@@ -115,7 +63,7 @@ func Test_Human(t *testing.T) {
 					})
 				})
 
-				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedCardiacActivity)
 					assert.NotEmpty(t, observedHeartRate)
 
@@ -140,7 +88,7 @@ func Test_Human(t *testing.T) {
 			},
 		},
 		{
-			name: "diaphragm drives pleural pressure dynamics",
+			name: "pleural pressure is negative",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				var observedPleuralPressure []float64
 				var observedRespiratoryRate []int
@@ -161,14 +109,41 @@ func Test_Human(t *testing.T) {
 					})
 				})
 
-				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedPleuralPressure)
 					assert.NotEmpty(t, observedRespiratoryRate)
 
 					meanPressure := helper.Mean(observedPleuralPressure)
 					meanRespiratoryRate := helper.Mean(observedRespiratoryRate)
 					assert.Less(t, meanPressure, 0.0)
-					assert.InDelta(t, organ.TidalBreathingRate, meanRespiratoryRate, 1)
+					assert.InDelta(t, organ.TidalRespirationRate, meanRespiratoryRate, 1)
+				})
+			},
+		},
+		{
+			name: "lungs are ventilating",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				var observedLeftLungFlow, observedRightLungFlow []float64
+
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sigFlowLeft := aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()
+						require.NotNil(t, sigFlowLeft)
+						observedLeftLungFlow = append(observedLeftLungFlow, helper.AsF64(sigFlowLeft))
+
+						sigFlowRight := aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()
+						require.NotNil(t, sigFlowRight)
+						observedRightLungFlow = append(observedRightLungFlow, helper.AsF64(sigFlowRight))
+						return nil
+					})
+				})
+
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
+					assert.NotEmpty(t, observedLeftLungFlow)
+					assert.NotEmpty(t, observedRightLungFlow)
 				})
 			},
 		},
