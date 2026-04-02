@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	minRespRate float64 = 8 * PerMinute
-	maxRespRate float64 = 30 * PerMinute
+	TidalRespirationRate         = 12 * PerMinute
+	minRespRate          float64 = 8 * PerMinute
+	maxRespRate          float64 = 30 * PerMinute
 
 	basePleuralPressure          float64 = -5 * CmH2O
 	inspiratoryPressureAmplitude float64 = 8 * CmH2O
@@ -39,8 +40,8 @@ func GetDiaphragm() *component.Component {
 	return component.New("organ:diaphragm").
 		WithDescription("Diaphragm (respiratory actuator)").
 		WithInitialState(func(state component.State) {
-			state.Set(common.Rate, 12)   // breaths per minute
-			state.Set(common.Phase, 0.0) // breathing cycle phase
+			state.Set(common.Rate, TidalRespirationRate) // breaths per minute
+			state.Set(common.Phase, 0.0)                 // breathing cycle phase
 		}).
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("pleural_pressure", "respiratory_rate").

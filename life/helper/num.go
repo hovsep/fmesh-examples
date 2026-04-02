@@ -28,11 +28,12 @@ func Jitter(value, percent float64) float64 {
 }
 
 // Lerp performs linear interpolation between a and b.
-// t is typically in [0,1], but is not clamped.
+// t is typically in [0,1].
 func Lerp(a, b, t float64) float64 {
 	return a + (b-a)*t
 }
 
+// Mean calculates the arithmetic mean of a slice of numbers.
 func Mean[T Number](slice []T) float64 {
 	if len(slice) == 0 {
 		return 0
@@ -44,4 +45,9 @@ func Mean[T Number](slice []T) float64 {
 	}
 
 	return sum / float64(len(slice))
+}
+
+// Smoothstep is a smooth step function.
+func Smoothstep(x float64) float64 {
+	return x * x * (3 - 2*x)
 }
