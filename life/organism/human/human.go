@@ -72,8 +72,10 @@ func getMesh() *fmesh.FMesh {
 	components.ByName("organ:diaphragm").
 		OutputByName("pleural_pressure").
 		PipeTo(
-			// Heart activity is observable
+			// Pleural pressure is observable
 			components.ByName("physiology:observable_state").InputByName("pleural_pressure"),
+			components.ByName("organ:lung_left").InputByName("pleural_pressure"),
+			components.ByName("organ:lung_right").InputByName("pleural_pressure"),
 		)
 
 	components.ByName("organ:diaphragm").
@@ -178,6 +180,8 @@ func New(name string) *component.Component {
 			"heart_rate",
 			"pleural_pressure",
 			"respiratory_rate",
+			"lung_left_flow",
+			"lung_right_flow",
 		).
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
@@ -197,6 +201,14 @@ func New(name string) *component.Component {
 				helper.PortPair{
 					this.InputByName("habitat_time_tick"),
 					mesh.ComponentByName("organ:diaphragm").InputByName("time"),
+				},
+				helper.PortPair{
+					this.InputByName("habitat_time_tick"),
+					mesh.ComponentByName("organ:lung_left").InputByName("time"),
+				},
+				helper.PortPair{
+					this.InputByName("habitat_time_tick"),
+					mesh.ComponentByName("organ:lung_right").InputByName("time"),
 				},
 
 				helper.PortPair{
@@ -252,6 +264,14 @@ func New(name string) *component.Component {
 				helper.PortPair{
 					humanObservableState.OutputByName("respiratory_rate"),
 					this.OutputByName("respiratory_rate"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("lung_left_flow"),
+					this.OutputByName("lung_left_flow"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("lung_right_flow"),
+					this.OutputByName("lung_right_flow"),
 				},
 			)
 			if err != nil {

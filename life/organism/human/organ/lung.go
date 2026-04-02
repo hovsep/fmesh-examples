@@ -1,212 +1,109 @@
 package organ
 
 import (
-	"math"
-
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
-	TidalBreathingRate = 12 * PerMinute // per minute
-	tidalVolume        = 500.0 * Milliliter
+	// Functional tidal baseline volume
+	defaultVolume = 1500.0 * unit.Milliliter
+
+	// Typical lung compliance in a healthy adult lung
+	defaultCompliance = 200.0 * unit.MlPerCmH2O
+
+	// Airway resistance (healthy resting value approximation)
+	defaultResistance = 2.0 * unit.CmH2OPerMlPerSecond
+
+	// Atmospheric mouth pressure reference
+	mouthPressure = 0.0 * unit.CmH2O
+
+	// Jitters make left and right lungs a little bit different
+	lungVolumeAsymmetry     = 5 * unit.Percent
+	lungComplianceAsymmetry = 7 * unit.Percent
+	lungResistanceAsymmetry = 10 * unit.Percent
 )
 
-// GetLung returns a single lung organ component
+// GetLung creates a lung component for a given side (left/right).
 func GetLung(side common.Side) *component.Component {
-	return component.New("organ:lung_"+side).
-		WithDescription("A lung").
-		WithInitialState(func(state component.State) {
-			state.Set(common.Phase, 0.0)
-			state.Set(common.Rate, TidalBreathingRate)
-
-			state.Set("inhale_ratio", 0.4)
-			state.Set("pause_after_inhale", 0.05)
-			state.Set("pause_after_exhale", 0.05)
-
-			state.Set("min_volume", 1200.0)
-			state.Set("max_volume", 1700.0)
-
-			state.Set("volume", tidalVolume)
-			state.Set("prev_volume", tidalVolume)
-
-			state.Set("pleural_pressure", -5.0) // cmH2O baseline
-			state.Set("alveolar_pressure", 0.0)
-
-			state.Set(common.DamageLevel, defaultDamageLevel)
-		}).
+	return component.New("organ:lung_"+string(side)).
+		WithDescription(side+" lung").
 		AddInputs(
-			"time",                  // Simulation clock (dt)
-			"autonomic_tone",        // Controls breathing rate
-			"diaphragm_contraction", // Drives pleural pressure (primary inhale force)
-			"inspired_gas",          // Incoming air composition
+			"time", "pleural_pressure", "inspired_gas",
 		).
 		AddOutputs(
-			"exhaled_gas",          // Gas leaving lungs
-			"phase",                // Breathing cycle phase ∈ [0,1)
-			"flow",                 // Airflow (ml/s), signed (+ inhale, - exhale)
-			"volume",               // Lung volume (ml)
-			"alveolar_pressure",    // Pressure inside alveoli
-			"pleural_pressure",     // Pressure in pleural cavity
-			"gas_composition",      // Alveolar gas composition
-			"respiratory_rate",     // Breaths per minute
-			"inspiration_duration", // Seconds
-			"exhalation_duration",  // Seconds
-			"lung_efficiency",      // Gas exchange efficiency
-			"alveolar_dead_space",  // Non-exchanging volume
-			"stretch_ratio",        // volume / max_volume
+			"volume",            // Current lung volume
+			"flow",              // Instantaneous airflow
+			"alveolar_pressure", // Pressure inside alveoli
+			"gas_composition",   // Alveolar gas mixture
 		).
+		WithInitialState(func(state component.State) {
+			// Lungs have slightly different initial volumes
+			lungVolume := helper.Jitter(defaultVolume, lungVolumeAsymmetry)
+			// Mechanical state
+			state.Set("volume", lungVolume)
+			state.Set("prev_volume", lungVolume)
+
+			// Lung mechanics (tunable for disease simulation)
+			state.Set("compliance", helper.Jitter(defaultCompliance, lungComplianceAsymmetry))
+			state.Set("resistance", helper.Jitter(defaultResistance, lungResistanceAsymmetry))
+			state.Set("pleural_asymmetry", helper.Jitter(0.0, 0.2*unit.CmH2O))
+		}).
 		WithActivationFunc(helper.Pipeline(
-			handleLungAutonomicTone,
-			handleOscillation,
 			handleMechanics,
-			handlePressures,
-			handleGasExchange,
 			publishOutputs,
 		))
 }
 
-func handleLungAutonomicTone(this *component.Component) error {
-	if !this.InputByName("autonomic_tone").HasSignals() {
+func handleMechanics(this *component.Component) error {
+	if !this.InputByName("time").HasSignals() ||
+		!this.InputByName("pleural_pressure").HasSignals() {
 		return nil
 	}
 
-	bias, err := helper.GetBias(this.InputByName("autonomic_tone").Signals().First(), common.Respiratory)
-	if err != nil {
-		return err
-	}
-
-	this.State().Update(common.Rate, func(v any) any {
-		return int(8 + (30-8)*bias) // 8–30 breaths/min
-	})
-
-	return nil
-}
-
-func handleOscillation(this *component.Component) error {
-	if !this.InputByName("time").HasSignals() {
-		return nil
-	}
-
+	// Δt for integration
 	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}
 
-	this.State().Update(common.Phase, func(old any) any {
-		phase := old.(float64)
-		rate := this.State().Get(common.Rate).(int)
+	// External driving pressure (from diaphragm)
+	pleuralPressureSig := this.InputByName("pleural_pressure").Signals().First()
 
-		cycle := 60.0 / float64(rate)
-		step := dt / cycle
+	// Anatomic inaccuracies between lungs
+	pleuralPressure := helper.AsF64(pleuralPressureSig) + this.State().Get("pleural_asymmetry").(float64)
 
-		return math.Mod(phase+step, 1.0)
-	})
+	// Mechanical parameters
+	V := this.State().Get("volume").(float64)
+	C := this.State().Get("compliance").(float64)
+	R := this.State().Get("resistance").(float64)
 
-	return nil
-}
+	alveolarPressure := pleuralPressure + V/C
 
-func handleMechanics(this *component.Component) error {
-	phase := this.State().Get(common.Phase).(float64)
+	flow := -(alveolarPressure - mouthPressure) / R
 
-	volume := computeVolume(this, phase)
+	// Volume integration (Euler step)
+	Vnext := V + flow*dt
 
-	prev := this.State().Get("prev_volume").(float64)
-	dt, _ := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	// Physiological constraints (prevent numerical blow-up)
+	Vnext = helper.Clamp(Vnext, 800, 3500)
 
-	flow := (volume - prev) / dt
-
-	this.State().Set("volume", volume)
-	this.State().Set("prev_volume", volume)
+	// Commit state
+	this.State().Set("volume", Vnext)
+	this.State().Set("prev_volume", V)
 	this.State().Set("flow", flow)
-
-	return nil
-}
-
-func computeVolume(this *component.Component, phase float64) float64 {
-	inhaleRatio := this.State().Get("inhale_ratio").(float64)
-	pauseIn := this.State().Get("pause_after_inhale").(float64)
-	pauseOut := this.State().Get("pause_after_exhale").(float64)
-
-	minVol := this.State().Get("min_volume").(float64)
-	maxVol := this.State().Get("max_volume").(float64)
-
-	inhaleEnd := inhaleRatio
-	hold1End := inhaleEnd + pauseIn
-	exhaleEnd := hold1End + (1 - inhaleRatio - pauseIn - pauseOut)
-
-	var normalized float64
-	var volume float64
-
-	switch {
-	case phase < inhaleEnd:
-		normalized = phase / inhaleRatio
-		volume = lerp(minVol, maxVol, smoothstep(normalized))
-
-	case phase < hold1End:
-		volume = maxVol
-
-	case phase < exhaleEnd:
-		normalized = (phase - hold1End) / (exhaleEnd - hold1End)
-		volume = lerp(maxVol, minVol, smoothstep(normalized))
-
-	default:
-		volume = minVol
-	}
-
-	return volume
-}
-
-func handlePressures(this *component.Component) error {
-	volume := this.State().Get("volume").(float64)
-	minVol := this.State().Get("min_volume").(float64)
-	maxVol := this.State().Get("max_volume").(float64)
-
-	// Normalize stretch
-	stretch := (volume - minVol) / (maxVol - minVol)
-
-	// Pleural pressure: more negative during inhale
-	pleural := -5.0 - 3.0*stretch
-
-	// Alveolar pressure: follows flow (very simplified)
-	flow := this.State().Get("flow").(float64)
-	alveolar := -flow * 0.01
-
-	this.State().Set("pleural_pressure", pleural)
-	this.State().Set("alveolar_pressure", alveolar)
-	this.State().Set("stretch_ratio", stretch)
-
-	return nil
-}
-
-func handleGasExchange(this *component.Component) error {
-	// Placeholder — structure matters more now
-
-	this.State().Set("lung_efficiency", 0.25)
-	this.State().Set("alveolar_dead_space", 150.0)
+	this.State().Set("alveolar_pressure", alveolarPressure)
 
 	return nil
 }
 
 func publishOutputs(this *component.Component) error {
-	this.OutputByName("phase").PutPayloads(this.State().Get(common.Phase))
 	this.OutputByName("volume").PutPayloads(this.State().Get("volume"))
 	this.OutputByName("flow").PutPayloads(this.State().Get("flow"))
 	this.OutputByName("alveolar_pressure").PutPayloads(this.State().Get("alveolar_pressure"))
-	this.OutputByName("pleural_pressure").PutPayloads(this.State().Get("pleural_pressure"))
-	this.OutputByName("stretch_ratio").PutPayloads(this.State().Get("stretch_ratio"))
-
-	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(common.Rate))
+	this.OutputByName("gas_composition").PutPayloads(this.State().Get("gas_composition"))
 
 	return nil
-}
-
-func smoothstep(x float64) float64 {
-	return x * x * (3 - 2*x)
-}
-
-func lerp(a, b, t float64) float64 {
-	return a + (b-a)*t
 }

@@ -28,31 +28,15 @@ func GetObservableState() *component.Component {
 			"pleural_pressure",
 			"respiratory_rate",
 
-			"lung_left_exhaled_gas",
-			"lung_left_phase",
 			"lung_left_volume",
+			"lung_left_flow",
 			"lung_left_alveolar_pressure",
-			"lung_left_pleural_pressure",
 			"lung_left_gas_composition",
-			"lung_left_respiratory_rate",
-			"lung_left_inspiration_duration",
-			"lung_left_exhalation_duration",
-			"lung_left_lung_efficiency",
-			"lung_left_alveolar_dead_space",
-			"lung_left_stretch_ratio",
 
-			"lung_right_exhaled_gas",
-			"lung_right_phase",
 			"lung_right_volume",
+			"lung_right_flow",
 			"lung_right_alveolar_pressure",
-			"lung_right_pleural_pressure",
 			"lung_right_gas_composition",
-			"lung_right_respiratory_rate",
-			"lung_right_inspiration_duration",
-			"lung_right_exhalation_duration",
-			"lung_right_lung_efficiency",
-			"lung_right_alveolar_dead_space",
-			"lung_right_stretch_ratio",
 		).
 		AddOutputs(
 			"is_alive",
@@ -61,11 +45,14 @@ func GetObservableState() *component.Component {
 			"heart_cardiac_activation",
 			"heart_rate",
 			"pleural_pressure",
-			"respiratory_rate").
+			"respiratory_rate",
+			"lung_left_flow",
+			"lung_right_flow").
 		WithActivationFunc(helper.Pipeline(
 			handleBrainSignals,
 			handleHeartSignals,
 			handleDiaphragmSignals,
+			handleLungSignals,
 		))
 }
 
@@ -120,4 +107,17 @@ func handleDiaphragmSignals(this *component.Component) error {
 			this.InputByName("respiratory_rate"),
 			this.OutputByName("respiratory_rate"),
 		})
+}
+
+func handleLungSignals(this *component.Component) error {
+	return helper.MultiForward(
+		helper.PortPair{
+			this.InputByName("lung_left_flow"),
+			this.OutputByName("lung_left_flow"),
+		},
+		helper.PortPair{
+			this.InputByName("lung_right_flow"),
+			this.OutputByName("lung_right_flow"),
+		},
+	)
 }

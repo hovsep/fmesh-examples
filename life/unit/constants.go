@@ -1,6 +1,8 @@
 package unit
 
 const (
+	Percent = 1
+
 	// PerMinute is a value in per minute
 	PerMinute = 1
 
@@ -15,4 +17,10 @@ const (
 
 	// CmH2O is pressure in centimeters of water column (respiratory standard unit)
 	CmH2O = 1.0
+
+	// MlPerCmH2O is a lung compliance (mechanical property defined as a pressure–volume relationship) unit
+	MlPerCmH2O = 1.0
+
+	// CmH2OPerMlPerSecond is a unit of air resistance
+	CmH2OPerMlPerSecond = 1.0
 )
