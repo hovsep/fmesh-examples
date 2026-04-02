@@ -66,7 +66,8 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		"human-Leon::body_temperature", //@TODO: get human component name dynamically
 		"human-Leon::heart_rate",
 		"human-Leon::heart_cardiac_activation",
-		"human-Leon::breathing_phase",
+		"human-Leon::pleural_pressure",
+		"human-Leon::respiratory_rate",
 	})
 
 	if err != nil {

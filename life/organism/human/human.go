@@ -66,7 +66,22 @@ func getMesh() *fmesh.FMesh {
 	components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone").PipeTo(
 		// Autonomic tone affects the heart
 		components.ByName("organ:heart").InputByName("autonomic_tone"),
+		components.ByName("organ:diaphragm").InputByName("autonomic_tone"),
 	)
+
+	components.ByName("organ:diaphragm").
+		OutputByName("pleural_pressure").
+		PipeTo(
+			// Heart activity is observable
+			components.ByName("physiology:observable_state").InputByName("pleural_pressure"),
+		)
+
+	components.ByName("organ:diaphragm").
+		OutputByName("respiratory_rate").
+		PipeTo(
+			// Heart rate is observable
+			components.ByName("physiology:observable_state").InputByName("respiratory_rate"),
+		)
 
 	components.ByName("boundary:respiratory").OutputByName("inspired_gas").PipeTo(
 		components.ByName("organ:lung_left").InputByName("inspired_gas"),
@@ -126,6 +141,7 @@ func getComponents() *component.Collection {
 			// Organs
 			organ.GetBrain(),
 			organ.GetHeart(),
+			organ.GetDiaphragm(),
 			organ.GetLung(common.Left),
 			organ.GetLung(common.Right),
 
@@ -160,7 +176,8 @@ func New(name string) *component.Component {
 			"body_temperature",
 			"heart_cardiac_activation",
 			"heart_rate",
-			"breathing_phase",
+			"pleural_pressure",
+			"respiratory_rate",
 		).
 		WithActivationFunc(func(this *component.Component) error {
 			// read signals from habitat
@@ -176,6 +193,10 @@ func New(name string) *component.Component {
 				helper.PortPair{
 					this.InputByName("habitat_time_tick"),
 					mesh.ComponentByName("organ:heart").InputByName("time"),
+				},
+				helper.PortPair{
+					this.InputByName("habitat_time_tick"),
+					mesh.ComponentByName("organ:diaphragm").InputByName("time"),
 				},
 
 				helper.PortPair{
@@ -224,11 +245,14 @@ func New(name string) *component.Component {
 					humanObservableState.OutputByName("heart_rate"),
 					this.OutputByName("heart_rate"),
 				},
-				/*
-					helper.PortPair{
-						humanObservableState.OutputByName("breathing_phase"),
-						this.OutputByName("breathing_phase"),
-					},*/
+				helper.PortPair{
+					humanObservableState.OutputByName("pleural_pressure"),
+					this.OutputByName("pleural_pressure"),
+				},
+				helper.PortPair{
+					humanObservableState.OutputByName("respiratory_rate"),
+					this.OutputByName("respiratory_rate"),
+				},
 			)
 			if err != nil {
 				return fmt.Errorf("failed to forward signals from human mesh: %w", err)

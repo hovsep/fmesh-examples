@@ -1,8 +1,6 @@
 package physiology
 
 import (
-	"fmt"
-
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -27,6 +25,8 @@ func GetObservableState() *component.Component {
 			"brain_activity",
 			"heart_cardiac_activation",
 			"heart_rate",
+			"pleural_pressure",
+			"respiratory_rate",
 
 			"lung_left_exhaled_gas",
 			"lung_left_phase",
@@ -60,11 +60,12 @@ func GetObservableState() *component.Component {
 			"brain_activity_trend",
 			"heart_cardiac_activation",
 			"heart_rate",
-			"breathing_phase").
+			"pleural_pressure",
+			"respiratory_rate").
 		WithActivationFunc(helper.Pipeline(
 			handleBrainSignals,
 			handleHeartSignals,
-			handleLungsSignals,
+			handleDiaphragmSignals,
 		))
 }
 
@@ -109,18 +110,14 @@ func handleHeartSignals(this *component.Component) error {
 		})
 }
 
-func handleLungsSignals(this *component.Component) error {
-	if !this.InputByName("lung_left_phase").HasSignals() || !this.InputByName("lung_right_phase").HasSignals() {
-		return nil
-	}
-
-	leftPhase := helper.AsF64(this.InputByName("lung_left_phase").Signals().First())
-	rightPhase := helper.AsF64(this.InputByName("lung_right_phase").Signals().First())
-
-	if leftPhase != rightPhase {
-		return fmt.Errorf("lung phases are not equal: %f != %f", leftPhase, rightPhase)
-	}
-
-	this.OutputByName("breathing_phase").PutPayloads(leftPhase)
-	return nil
+func handleDiaphragmSignals(this *component.Component) error {
+	return helper.MultiForward(
+		helper.PortPair{
+			this.InputByName("pleural_pressure"),
+			this.OutputByName("pleural_pressure"),
+		},
+		helper.PortPair{
+			this.InputByName("respiratory_rate"),
+			this.OutputByName("respiratory_rate"),
+		})
 }

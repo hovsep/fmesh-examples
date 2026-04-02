@@ -20,3 +20,9 @@ func Jitter(value, percent float64) float64 {
 
 	return value + delta
 }
+
+// Lerp performs linear interpolation between a and b.
+// t is typically in [0,1], but is not clamped.
+func Lerp(a, b, t float64) float64 {
+	return a + (b-a)*t
+}

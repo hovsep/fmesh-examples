@@ -6,12 +6,9 @@ import "github.com/hovsep/fmesh/component"
 func GetMuscularSystem() *component.Component {
 	return component.New("da:muscular_system").
 		WithDescription("Muscular system").
-		AddInputs("time").
+		AddInputs("time", "autonomic_tone").
 		AddOutputs().
 		WithActivationFunc(func(this *component.Component) error {
 			return nil
 		})
 }
-
-// Receive autonomic tone, drive diaphragm + intercostal muscles
-// connect muscular system to lungs
