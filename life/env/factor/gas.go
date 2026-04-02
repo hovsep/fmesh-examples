@@ -2,7 +2,6 @@ package factor
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
@@ -22,14 +21,12 @@ func GetGasComponent() *component.Component {
 			state.Set("humidity", 58.8)
 			state.Set("composition", getDefaultComposition())
 		}).
-		WithActivationFunc(func(this *component.Component) error {
-			err := handleControlSignals(this)
-			if err != nil {
-				return fmt.Errorf("failed to handle control signals: %v", err)
-			}
-
-			return emitGas(this)
-		})
+		WithActivationFunc(
+			helper.Pipeline(
+				handleControlSignals,
+				emitGas,
+			),
+		)
 }
 
 // The component can receive control signals and change internal state
