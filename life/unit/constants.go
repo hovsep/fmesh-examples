@@ -12,4 +12,7 @@ const (
 
 	// Proportion is a percentage converted to the interval [0,1]
 	Proportion = 1.0
+
+	// CmH2O is pressure in centimeters of water column (respiratory standard unit)
+	CmH2O = 1.0
 )

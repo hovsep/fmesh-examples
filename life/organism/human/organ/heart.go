@@ -14,8 +14,8 @@ const (
 	maxBPM float64 = 200 * PerMinute
 )
 
-// CardiacActivationWave returns ECG-style contraction amplitude for a given phase
-func CardiacActivationWave(phase float64) float64 {
+// cardiacActivationWave returns ECG-style contraction amplitude for a given phase
+func cardiacActivationWave(phase float64) float64 {
 	if phase < 0.05 {
 		return math.Exp(-30 * phase) // R-Peak (Spike)
 	}
@@ -35,24 +35,15 @@ func GetHeart() *component.Component {
 		}).
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("cardiac_activation", "rate").
-		WithActivationFunc(func(this *component.Component) error {
-			oscErr := oscillate(this)
-			if oscErr != nil {
-				return oscErr
-			}
-
-			ATErr := handleAutonomicTone(this)
-			if ATErr != nil {
-				return ATErr
-			}
-
-			// Always output heart rate
-			this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
-			return nil
-		})
+		WithActivationFunc(
+			helper.Pipeline(
+				oscillateHeart,
+				handleCardiacBias,
+			),
+		)
 }
 
-func oscillate(this *component.Component) error {
+func oscillateHeart(this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
@@ -73,12 +64,12 @@ func oscillate(this *component.Component) error {
 	})
 
 	// Compute cardiac activation
-	act := CardiacActivationWave(nextPhase)
+	act := cardiacActivationWave(nextPhase)
 	this.OutputByName("cardiac_activation").PutPayloads(act)
 	return nil
 }
 
-func handleAutonomicTone(this *component.Component) error {
+func handleCardiacBias(this *component.Component) error {
 	if !this.InputByName("autonomic_tone").HasSignals() {
 		return nil
 	}
@@ -90,8 +81,8 @@ func handleAutonomicTone(this *component.Component) error {
 
 	// Update rate
 	this.State().Update(common.Rate, func(v any) any {
-		return int(minBPM + (maxBPM-minBPM)*bias)
+		return int(helper.Lerp(minBPM, maxBPM, bias))
 	})
-
+	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
 	return nil
 }

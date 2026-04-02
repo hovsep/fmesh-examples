@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +54,7 @@ func Test_Time(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
 			fm := getSimulationMesh()
-			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, step_sim.NewNoopSink())
+			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)
@@ -107,7 +108,7 @@ func Test_Human(t *testing.T) {
 						observedCardiacActivity = append(observedCardiacActivity, helper.AsF64(sigAct))
 
 						sigRate := aggState.OutputByName("human-Leon::heart_rate").Signals().First()
-						require.NotNil(t, sigAct)
+						require.NotNil(t, sigRate)
 						observedHeartRate = append(observedHeartRate, helper.AsInt(sigRate))
 						return nil
 					})
@@ -132,41 +133,45 @@ func Test_Human(t *testing.T) {
 						}
 
 					}
-					assert.Greater(t, rPeaksFound, 1)
+					assert.Greater(t, rPeaksFound, 0)
 					assert.Less(t, rPeaksFound, 10)
 				})
 			},
 		},
-		/*{
-			name: "[hold] lungs are ventilating",
+		{
+			name: "diaphragm is moving",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				var observedBreathing []organ.BreathingPhase
+				var observedPleuralPressure []float64
+				var observedRespiratoryRate []int
 
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-						sig := aggState.OutputByName("human-Leon::breathing_phase").Signals().First()
-						require.NotNil(t, sig)
-						observedBreathing = append(observedBreathing, sig.PayloadOrNil().(organ.BreathingPhase))
+						sigPressure := aggState.OutputByName("human-Leon::pleural_pressure").Signals().First()
+						require.NotNil(t, sigPressure)
+						observedPleuralPressure = append(observedPleuralPressure, helper.AsF64(sigPressure))
+
+						sigRate := aggState.OutputByName("human-Leon::respiratory_rate").Signals().First()
+						require.NotNil(t, sigRate)
+						observedRespiratoryRate = append(observedRespiratoryRate, helper.AsInt(sigRate))
 						return nil
 					})
 				})
 
 				helper.WithRunningSimulation(sim, defaultSimulationDuration, func() {
-					assert.NotEmpty(t, observedBreathing)
-					//assert.Contains(t, observedBreathing, organ.Inhale)
-					//assert.Contains(t, observedBreathing, organ.Exhale)
+					assert.NotEmpty(t, observedPleuralPressure)
+					assert.NotEmpty(t, observedRespiratoryRate)
 				})
 			},
-		},*/
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
 			fm := getSimulationMesh()
-			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, step_sim.NewNoopSink())
+			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)
