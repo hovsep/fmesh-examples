@@ -13,17 +13,19 @@ import (
 )
 
 type Event struct {
-	Kind  string
+	Key   string
 	Value float64
-	Int   int
 }
+
 type State struct {
-	HeartRate int
-
-	HCA []float64
-	BA  []float64
-
+	Signals   map[string][]float64
 	MaxPoints int
+}
+
+type SignalConfig struct {
+	Key   string
+	Label string
+	Color asciigraph.AnsiColor
 }
 
 func main() {
@@ -33,17 +35,52 @@ func main() {
 	}
 	defer conn.Close()
 
+	rows := []SignalConfig{
+		{
+			Key:   "human-Leon::heart_rate",
+			Label: "Heart Rate (BPM)",
+			Color: asciigraph.Red,
+		},
+		{
+			Key:   "human-Leon::heart_cardiac_activation",
+			Label: "Cardiac Activation",
+			Color: asciigraph.Green,
+		},
+		{
+			Key:   "human-Leon::brain_activity",
+			Label: "Brain Activity",
+			Color: asciigraph.Blue,
+		},
+		{
+			Key:   "human-Leon::pleural_pressure",
+			Label: "pleural_pressure",
+			Color: asciigraph.Orange,
+		},
+		{
+			Key:   "human-Leon::respiratory_rate",
+			Label: "respiratory_rate",
+			Color: asciigraph.Pink,
+		},
+	}
+
+	configMap := make(map[string]SignalConfig)
+	for _, r := range rows {
+		configMap[r.Key] = r
+	}
+
 	const maxPoints = 50
 
 	events := make(chan Event, 1000)
 	stateCh := make(chan State, 1)
 
-	go ingest(conn, events)
+	go ingest(conn, events, configMap)
 	go stateManager(events, stateCh, maxPoints)
-	renderLoop(stateCh)
+	renderLoop(stateCh, rows)
 }
 
-func parseLine(line string) (Event, bool) {
+// ---------------- parsing ----------------
+
+func parseLine(line string, cfg map[string]SignalConfig) (Event, bool) {
 	fields := strings.Fields(line)
 	if len(fields) < 2 {
 		return Event{}, false
@@ -52,58 +89,49 @@ func parseLine(line string) (Event, bool) {
 	key := fields[0]
 	val := fields[1]
 
-	switch {
-	case strings.HasPrefix(key, "human-Leon::heart_rate"):
-		i, err := strconv.Atoi(val)
-		if err != nil {
-			return Event{}, false
-		}
-		return Event{Kind: "hr", Int: i}, true
+	for _, s := range cfg {
+		if strings.HasPrefix(key, s.Key) {
 
-	case strings.HasPrefix(key, "human-Leon::heart_cardiac_activation"):
-		f, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			return Event{}, false
+			f, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return Event{}, false
+			}
+			return Event{Key: s.Key, Value: f}, true
 		}
-		return Event{Kind: "hca", Value: f}, true
-
-	case strings.HasPrefix(key, "human-Leon::brain_activity"):
-		f, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			return Event{}, false
-		}
-		return Event{Kind: "ba", Value: f}, true
 	}
 
 	return Event{}, false
 }
 
+func ingest(conn net.Conn, out chan<- Event, cfg map[string]SignalConfig) {
+	scanner := bufio.NewScanner(conn)
+
+	for scanner.Scan() {
+		if e, ok := parseLine(scanner.Text(), cfg); ok {
+			out <- e
+		}
+	}
+}
+
+// ---------------- state ----------------
+
 func stateManager(events <-chan Event, stateCh chan<- State, maxPoints int) {
 	state := State{
+		Signals:   map[string][]float64{},
 		MaxPoints: maxPoints,
-		HCA:       make([]float64, 0, maxPoints),
-		BA:        make([]float64, 0, maxPoints),
 	}
 
 	for e := range events {
-		switch e.Kind {
-		case "hr":
-			state.HeartRate = e.Int
 
-		case "hca":
-			state.HCA = append(state.HCA, e.Value)
-			if len(state.HCA) > state.MaxPoints {
-				state.HCA = state.HCA[1:]
-			}
+		buf := state.Signals[e.Key]
+		buf = append(buf, e.Value)
 
-		case "ba":
-			state.BA = append(state.BA, e.Value)
-			if len(state.BA) > state.MaxPoints {
-				state.BA = state.BA[1:]
-			}
+		if len(buf) > state.MaxPoints {
+			buf = buf[1:]
 		}
 
-		// non-blocking snapshot publish
+		state.Signals[e.Key] = buf
+
 		select {
 		case stateCh <- state:
 		default:
@@ -111,18 +139,10 @@ func stateManager(events <-chan Event, stateCh chan<- State, maxPoints int) {
 	}
 }
 
-func ingest(conn net.Conn, out chan<- Event) {
-	scanner := bufio.NewScanner(conn)
+// ---------------- render ----------------
 
-	for scanner.Scan() {
-		if e, ok := parseLine(scanner.Text()); ok {
-			out <- e
-		}
-	}
-}
-
-func renderLoop(stateCh <-chan State) {
-	ticker := time.NewTicker(100 * time.Millisecond) // ~30 FPS
+func renderLoop(stateCh <-chan State, rows []SignalConfig) {
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	var latest State
@@ -133,34 +153,30 @@ func renderLoop(stateCh <-chan State) {
 			latest = s
 
 		case <-ticker.C:
-			draw(latest)
+			draw(latest, rows)
 		}
 	}
 }
 
-func draw(s State) {
+func draw(s State, rows []SignalConfig) {
 	fmt.Print("\033[H\033[2J")
 
-	if len(s.HCA) > 0 {
-		fmt.Println(
-			asciigraph.Plot(
-				s.HCA,
-				asciigraph.Width(80),
-				asciigraph.Height(5),
-				asciigraph.SeriesColors(asciigraph.Red),
-				asciigraph.Caption("ECG (Heart) — BPM: "+strconv.Itoa(s.HeartRate)),
-			),
-		)
-	}
+	for _, sig := range rows {
+		data := s.Signals[sig.Key]
 
-	if len(s.BA) > 0 {
+		if len(data) == 0 {
+			continue
+		}
+
+		caption := sig.Label
+
 		fmt.Println(
 			asciigraph.Plot(
-				s.BA,
+				data,
 				asciigraph.Width(80),
 				asciigraph.Height(5),
-				asciigraph.SeriesColors(asciigraph.Blue),
-				asciigraph.Caption("Brain activity"),
+				asciigraph.SeriesColors(sig.Color),
+				asciigraph.Caption(caption),
 			),
 		)
 	}
