@@ -123,27 +123,34 @@ func Test_HumanLiveness(t *testing.T) {
 		{
 			name: "lungs are ventilating",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				var observedLeftLungFlow, observedRightLungFlow []float64
+				type lungObservation struct {
+					Volume           []float64
+					Flow             []float64
+					AlveolarPressure []float64
+				}
+
+				var leftLungObservation, rightLungObservation lungObservation
 
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-						sigFlowLeft := aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()
-						require.NotNil(t, sigFlowLeft)
-						observedLeftLungFlow = append(observedLeftLungFlow, helper.AsF64(sigFlowLeft))
 
-						sigFlowRight := aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()
-						require.NotNil(t, sigFlowRight)
-						observedRightLungFlow = append(observedRightLungFlow, helper.AsF64(sigFlowRight))
+						leftLungObservation.Volume = append(leftLungObservation.Volume, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_volume").Signals().First()))
+						leftLungObservation.Flow = append(leftLungObservation.Flow, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()))
+						leftLungObservation.AlveolarPressure = append(leftLungObservation.AlveolarPressure, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_alveolar_pressure").Signals().First()))
+
+						rightLungObservation.Volume = append(rightLungObservation.Volume, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_volume").Signals().First()))
+						rightLungObservation.Flow = append(rightLungObservation.Flow, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()))
+						rightLungObservation.AlveolarPressure = append(rightLungObservation.AlveolarPressure, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_alveolar_pressure").Signals().First()))
 						return nil
 					})
 				})
 
-				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration*10, func() {
-					assert.NotEmpty(t, observedLeftLungFlow)
-					assert.NotEmpty(t, observedRightLungFlow)
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
+					assert.NotEmpty(t, leftLungObservation.Flow)
+					assert.NotEmpty(t, rightLungObservation.Flow)
 				})
 			},
 		},

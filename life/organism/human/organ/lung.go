@@ -80,57 +80,41 @@ func handleMechanics(this *component.Component) error {
 	pleuralPressure := helper.AsF64(this.InputByName("pleural_pressure").Signals().First()) +
 		this.State().Get(statePleuralAsymmetry).(float64)
 
-	// State
+	// Lung mechanics parameters
 	V := this.State().Get(common.Volume).(float64)
 	V0 := this.State().Get(stateRestVolume).(float64)
 	C := this.State().Get(common.Compliance).(float64)
 	R := this.State().Get(common.Resistance).(float64)
 
-	// --- Mechanics ---
+	// --- Second-order flow dynamics ---
+	// flow inertia (mass of air column, small value for oscillation)
+	const airMass = 0.05 // arbitrary scaling to create underdamped oscillation
+
+	// Previous flow (store in state)
+	flowPrev := 0.0
+	if v := this.State().Get("flow"); v != nil {
+		flowPrev = v.(float64)
+	}
 
 	// Elastic recoil relative to resting volume
 	alveolarPressure := pleuralPressure + (V-V0)/C
 
-	// Flow driven by pressure gradient
-	flow := -(alveolarPressure - mouthPressure) / R
+	// Flow derivative: dFlow/dt = (PressureGradient - R*flow) / Mass
+	flowDot := (-(alveolarPressure - mouthPressure) - R*flowPrev) / airMass
+	flowNext := flowPrev + flowDot*dt
 
-	// Volume integration (Euler)
-	Vnext := V + flow*dt
+	// Volume update
+	Vnext := V + flowNext*dt
 
-	// Persist updated state (this was missing before)
+	// Persist state
 	this.State().Set(common.Volume, Vnext)
+	this.State().Set("flow", flowNext)
 
 	// Outputs
 	this.OutputByName("volume").PutPayloads(Vnext)
-	this.OutputByName("flow").PutPayloads(flow)
+	this.OutputByName("flow").PutPayloads(flowNext)
 	this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure)
-
-	// Pass-through (not modeled yet)
 	this.OutputByName("gas_composition").PutPayloads(this.State().Get("gas_composition"))
-
-	// --- Nice-to-have / future improvements ---
-	//
-	// 1. Nonlinear compliance:
-	//    Replace (V-V0)/C with a curve:
-	//    - stiff at low/high volumes
-	//    - compliant near V0
-	//
-	// 2. Dynamic airway resistance:
-	//    R could depend on volume or flow (airway collapse, turbulence)
-	//
-	// 3. Flow inertia:
-	//    Add second-order dynamics (mass of air column)
-	//
-	// 4. Recruitment/derecruitment:
-	//    Parts of lung open/close → affects effective compliance
-	//
-	// 5. Coupling with chest wall:
-	//    Right now pleural pressure is external.
-	//    Eventually: lung + chest system equilibrium
-	//
-	// 6. Gas exchange:
-	//    Once mechanics are stable, layer in O2/CO2 transport
-	//
 
 	return nil
 }

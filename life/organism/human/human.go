@@ -122,13 +122,30 @@ func wireRespiratoryBoundary(components *component.Collection) {
 }
 
 func wireLungs(components *component.Collection) {
-	// Lung flow is observable
+	components.ByName("organ:lung_left").OutputByName("volume").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_left_volume"),
+	)
 	components.ByName("organ:lung_left").OutputByName("flow").PipeTo(
 		components.ByName("physiology:observable_state").InputByName("lung_left_flow"),
 	)
+	components.ByName("organ:lung_left").OutputByName("alveolar_pressure").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_left_alveolar_pressure"),
+	)
+	components.ByName("organ:lung_left").OutputByName("gas_composition").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_left_gas_composition"),
+	)
 
+	components.ByName("organ:lung_right").OutputByName("volume").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_right_volume"),
+	)
 	components.ByName("organ:lung_right").OutputByName("flow").PipeTo(
 		components.ByName("physiology:observable_state").InputByName("lung_right_flow"),
+	)
+	components.ByName("organ:lung_right").OutputByName("alveolar_pressure").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_right_alveolar_pressure"),
+	)
+	components.ByName("organ:lung_right").OutputByName("gas_composition").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_right_gas_composition"),
 	)
 }
 
@@ -213,8 +230,14 @@ func New(name string) *component.Component {
 			"heart_rate",
 			"pleural_pressure",
 			"respiratory_rate",
+			"lung_left_volume",
 			"lung_left_flow",
+			"lung_left_alveolar_pressure",
+			"lung_left_gas_composition",
+			"lung_right_volume",
 			"lung_right_flow",
+			"lung_right_alveolar_pressure",
+			"lung_right_gas_composition",
 		).
 		WithActivationFunc(helper.Pipeline(
 			getHabibatToHumanAF(mesh),
@@ -315,12 +338,36 @@ func getHumanToObservableStateAF(mesh *fmesh.FMesh) component.ActivationFunc {
 				this.OutputByName("respiratory_rate"),
 			},
 			helper.PortPair{
+				humanObservableState.OutputByName("lung_left_volume"),
+				this.OutputByName("lung_left_volume"),
+			},
+			helper.PortPair{
 				humanObservableState.OutputByName("lung_left_flow"),
 				this.OutputByName("lung_left_flow"),
 			},
 			helper.PortPair{
+				humanObservableState.OutputByName("lung_left_alveolar_pressure"),
+				this.OutputByName("lung_left_alveolar_pressure"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("lung_left_gas_composition"),
+				this.OutputByName("lung_left_gas_composition"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("lung_right_volume"),
+				this.OutputByName("lung_right_volume"),
+			},
+			helper.PortPair{
 				humanObservableState.OutputByName("lung_right_flow"),
 				this.OutputByName("lung_right_flow"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("lung_right_alveolar_pressure"),
+				this.OutputByName("lung_right_alveolar_pressure"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("lung_right_gas_composition"),
+				this.OutputByName("lung_right_gas_composition"),
 			},
 		)
 		if err != nil {
