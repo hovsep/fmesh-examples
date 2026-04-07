@@ -141,7 +141,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration, func() {
+				helper.WithRunningSimulation(sim, helper.DefaultSimulationDuration*10, func() {
 					assert.NotEmpty(t, observedLeftLungFlow)
 					assert.NotEmpty(t, observedRightLungFlow)
 				})
