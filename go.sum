@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emicklei/dot v1.9.2 h1:E/Wjz+BAH+JDhybEpISbo+QyDMNSiu/wqmIW9y922P8=
 github.com/emicklei/dot v1.9.2/go.mod h1:DeV7GvQtIw4h2u73RKBkkFdvVAz0D9fzeJrgPW6gy/s=
-github.com/hovsep/fmesh v1.8.1-Tarsus h1:JYT2ii4doldmiEtOcs25Pqh274dQWk65Fj5VuQuo07I=
-github.com/hovsep/fmesh v1.8.1-Tarsus/go.mod h1:YdaP7A0d7HV9ZlYyOADpvmVpooJSaE05SSPdIsxLEyU=
+github.com/hovsep/fmesh v1.8.2-Tarsus h1:4zGhB6xfdG/oWp82eM4zjdj3PZRIQ19A/Z9MiqF/1Gk=
+github.com/hovsep/fmesh v1.8.2-Tarsus/go.mod h1:YdaP7A0d7HV9ZlYyOADpvmVpooJSaE05SSPdIsxLEyU=
 github.com/hovsep/fmesh-graphviz v1.3.1 h1:4Kh5CHLoqxMjQes9qmQ+IWDYmiFDrxSWskp3hedLYLA=
 github.com/hovsep/fmesh-graphviz v1.3.1/go.mod h1:2mTAfV0OSQhONUZ596++ATLOqt5DVkUJkLe7GLHzoDM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
