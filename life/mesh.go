@@ -46,6 +46,9 @@ func getHabitat() *env.Habitat {
 func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 	timeComponent := mesh.ComponentByName("time")
 
+	//@TODO: ability to pass params to commands
+	//@TODO: a cmd that allows to schedule another cmd at\after exact wall\sim time
+
 	// Print current time
 	commands["time:now"] = step_sim.NewMeshCommandDescriptor("Print current time", func(_ *fmesh.FMesh) {
 		tickCount := timeComponent.State().Get("tick_count")

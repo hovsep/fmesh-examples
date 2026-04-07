@@ -62,13 +62,13 @@ func main() {
 			Color: asciigraph.Pink,
 		},
 		{
-			Key:   "human-Leon::lung_left_flow",
-			Label: "Left lung flow ",
+			Key:   "human-Leon::lung_left_volume",
+			Label: "Left lung volume ",
 			Color: asciigraph.Blue,
 		},
 		{
-			Key:   "human-Leon::lung_right_flow",
-			Label: "Right lung flow ",
+			Key:   "human-Leon::lung_right_volume",
+			Label: "Right lung volume ",
 			Color: asciigraph.Red,
 		},
 	}
