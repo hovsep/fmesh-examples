@@ -5,9 +5,12 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 )
 
 const (
+	statePleuralAsymmetry common.State = "pleural_asymmetry"
+
 	// Functional tidal baseline volume
 	defaultVolume = 1500.0 * unit.Milliliter
 
@@ -31,7 +34,9 @@ func GetLung(side common.Side) *component.Component {
 	return component.New("organ:lung_"+string(side)).
 		WithDescription(side+" lung").
 		AddInputs(
-			"time", "pleural_pressure", "inspired_gas",
+			"time", // There is no guarantee that a time signal arrives with other inputs. Each organ must track its own clock
+			"pleural_pressure",
+			"inspired_gas",
 		).
 		AddOutputs(
 			"volume",            // Current lung volume
@@ -43,28 +48,28 @@ func GetLung(side common.Side) *component.Component {
 			// Lungs have slightly different initial volumes
 			lungVolume := helper.Jitter(defaultVolume, lungVolumeAsymmetry)
 			// Mechanical state
-			state.Set("volume", lungVolume)
-			state.Set("prev_volume", lungVolume)
+			state.Set(common.Volume, lungVolume)
 
 			// Lung mechanics (tunable for disease simulation)
-			state.Set("compliance", helper.Jitter(defaultCompliance, lungComplianceAsymmetry))
-			state.Set("resistance", helper.Jitter(defaultResistance, lungResistanceAsymmetry))
-			state.Set("pleural_asymmetry", helper.Jitter(0.0, 0.2*unit.CmH2O))
+			state.Set(common.Compliance, helper.Jitter(defaultCompliance, lungComplianceAsymmetry))
+			state.Set(common.Resistance, helper.Jitter(defaultResistance, lungResistanceAsymmetry))
+			state.Set(statePleuralAsymmetry, helper.Jitter(0.0, 0.2*unit.CmH2O))
 		}).
 		WithActivationFunc(helper.Pipeline(
 			handleMechanics,
-			publishOutputs,
 		))
 }
 
 func handleMechanics(this *component.Component) error {
-	if !this.InputByName("time").HasSignals() ||
-		!this.InputByName("pleural_pressure").HasSignals() {
-		return nil
+	// Time signal comes earlier, so we can just wait for both
+	if !this.Inputs().Filter(func(p *port.Port) bool {
+		return p.Name() == "time" || p.Name() == "pleural_pressure"
+	}).AllHaveSignals() {
+		return component.NewErrWaitForInputs(true)
 	}
 
 	// Δt for integration
-	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	dt, err := helper.TickDurationInSec(currentTickSig)
 	if err != nil {
 		return err
 	}
@@ -90,19 +95,9 @@ func handleMechanics(this *component.Component) error {
 	// Physiological constraints (prevent numerical blow-up)
 	Vnext = helper.Clamp(Vnext, 800, 3500)
 
-	// Commit state
-	this.State().Set("volume", Vnext)
-	this.State().Set("prev_volume", V)
-	this.State().Set("flow", flow)
-	this.State().Set("alveolar_pressure", alveolarPressure)
-
-	return nil
-}
-
-func publishOutputs(this *component.Component) error {
-	this.OutputByName("volume").PutPayloads(this.State().Get("volume"))
-	this.OutputByName("flow").PutPayloads(this.State().Get("flow"))
-	this.OutputByName("alveolar_pressure").PutPayloads(this.State().Get("alveolar_pressure"))
+	this.OutputByName("volume").PutPayloads(Vnext)
+	this.OutputByName("flow").PutPayloads(flow)
+	this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure)
 	this.OutputByName("gas_composition").PutPayloads(this.State().Get("gas_composition"))
 
 	return nil
