@@ -36,7 +36,7 @@ func main() {
 	defer conn.Close()
 
 	rows := []SignalConfig{
-		{
+		/*{
 			Key:   "human-Leon::heart_rate",
 			Label: "Heart Rate (BPM)",
 			Color: asciigraph.Red,
@@ -50,7 +50,7 @@ func main() {
 			Key:   "human-Leon::brain_activity",
 			Label: "Brain Activity",
 			Color: asciigraph.Blue,
-		},
+		},*/
 		{
 			Key:   "human-Leon::pleural_pressure",
 			Label: "pleural_pressure",
@@ -60,6 +60,16 @@ func main() {
 			Key:   "human-Leon::respiratory_rate",
 			Label: "respiratory_rate",
 			Color: asciigraph.Pink,
+		},
+		{
+			Key:   "human-Leon::lung_left_flow",
+			Label: "Left lung flow ",
+			Color: asciigraph.Blue,
+		},
+		{
+			Key:   "human-Leon::lung_right_flow",
+			Label: "Right lung flow ",
+			Color: asciigraph.Red,
 		},
 	}
 
