@@ -65,7 +65,7 @@ func handleMechanics(this *component.Component) error {
 	if !this.Inputs().Filter(func(p *port.Port) bool {
 		return p.Name() == "time" || p.Name() == "pleural_pressure"
 	}).AllHaveSignals() {
-		return component.NewErrWaitForInputs(true)
+		return component.NewErrWaitForInputs(component.KeepAllInputs)
 	}
 
 	// Δt for integration
