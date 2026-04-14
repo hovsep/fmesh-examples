@@ -36,7 +36,7 @@ func main() {
 	defer conn.Close()
 
 	rows := []SignalConfig{
-		/*{
+		{
 			Key:   "human-Leon::heart_rate",
 			Label: "Heart Rate (BPM)",
 			Color: asciigraph.Red,
@@ -50,25 +50,25 @@ func main() {
 			Key:   "human-Leon::brain_activity",
 			Label: "Brain Activity",
 			Color: asciigraph.Blue,
-		},*/
+		},
 		{
 			Key:   "human-Leon::pleural_pressure",
-			Label: "pleural_pressure",
+			Label: "Pleural Pressure (cmH₂O)",
 			Color: asciigraph.Orange,
 		},
 		{
-			Key:   "human-Leon::respiratory_rate",
-			Label: "respiratory_rate",
+			Key:   "human-Leon::lung_left_flow",
+			Label: "Left Lung Airflow (mL/s)  [+ = inspiration, - = expiration]",
 			Color: asciigraph.Pink,
 		},
 		{
 			Key:   "human-Leon::lung_left_volume",
-			Label: "Left lung volume ",
+			Label: "Left Lung Volume (mL)",
 			Color: asciigraph.Blue,
 		},
 		{
 			Key:   "human-Leon::lung_right_volume",
-			Label: "Right lung volume ",
+			Label: "Right Lung Volume (mL)",
 			Color: asciigraph.Red,
 		},
 	}
@@ -78,7 +78,10 @@ func main() {
 		configMap[r.Key] = r
 	}
 
-	const maxPoints = 50
+	// One breath cycle at 12 BPM ≈ 5 s. With ~100 data points/second (10 ms
+	// real-time sleep per tick in initSim), 500 points covers exactly one cycle,
+	// filling the 80-column plot with a complete, readable waveform.
+	const maxPoints = 500
 
 	events := make(chan Event, 1000)
 	stateCh := make(chan State, 1)
