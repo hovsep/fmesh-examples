@@ -67,7 +67,7 @@ func GetLung(side common.Side) *component.Component {
 func handleMechanics(this *component.Component) error {
 	// Wait for required inputs
 	if !this.Inputs().ByNames("time", "pleural_pressure").AllHaveSignals() {
-		return component.NewErrWaitForInputs(component.KeepAllInputs)
+		return component.ErrWaitingForInputsKeep
 	}
 
 	// Δt for integration
