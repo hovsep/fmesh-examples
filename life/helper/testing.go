@@ -8,8 +8,8 @@ import (
 
 const DefaultSimulationDuration = 100 * time.Millisecond
 
-// WithRunningSimulation is a helper function that runs the simulation and executes a callback after a given duration
-func WithRunningSimulation(sim *step_sim.Simulation, duration time.Duration, f func()) {
+// RunSimulationAndThen is a helper function that runs the simulation and executes a callback after a given duration
+func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f func()) {
 	go sim.Run()
 	defer func() {
 		sim.SendCommand(step_sim.Exit)
