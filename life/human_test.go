@@ -116,7 +116,7 @@ func Test_HumanLiveness(t *testing.T) {
 					meanPressure := helper.Mean(observedPleuralPressure)
 					meanRespiratoryRate := helper.Mean(observedRespiratoryRate)
 					assert.Less(t, meanPressure, 0.0)
-					assert.InDelta(t, organ.TidalRespirationRate, meanRespiratoryRate, 1)
+					assert.InDelta(t, organ.TidalRespiratoryRate, meanRespiratoryRate, 1)
 				})
 			},
 		},

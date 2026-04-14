@@ -10,45 +10,45 @@ import (
 )
 
 const (
-	TidalRespirationRate         = 12 * PerMinute
-	minRespRate          float64 = 8 * PerMinute
-	maxRespRate          float64 = 30 * PerMinute
+	TidalRespiratoryRate = 12 * PerMinute
 
-	basePleuralPressure          float64 = -5 * CmH2O
-	inspiratoryPressureAmplitude float64 = 8 * CmH2O
+	MinRespiratoryRate = 8 * PerMinute
+	MaxRespiratoryRate = 30 * PerMinute
+
+	BasePleuralPressure          = -5 * CmH2O // resting pleural pressure at FRC
+	InspiratoryPressureAmplitude = 5 * CmH2O  // peak swing during quiet breathing
+
+	inhaleFraction = 1.0 / 3.0 // I:E = 1:2
+	exhaleDecay    = 5.0       // exp(-5) ≈ 0.007 residual — negligible pressure step at cycle restart
 )
 
-// diaphragmPressureWave defines breathing-driven pleural pressure
 func diaphragmPressureWave(phase float64) float64 {
 	var effort float64
 
-	// Inhale (active contraction → more negative pressure)
-	if phase < 0.4 {
-		x := phase / 0.4
-		effort = math.Sin(x * math.Pi / 2) // smooth 0 → 1
+	if phase < inhaleFraction {
+		x := phase / inhaleFraction
+		effort = math.Sin(x * math.Pi / 2)
 	} else {
-		// Exhale (passive relaxation → return to baseline)
-		x := (phase - 0.4) / 0.6
-		effort = math.Exp(-3 * x)
+		x := (phase - inhaleFraction) / (1.0 - inhaleFraction)
+		effort = math.Exp(-exhaleDecay * x)
 	}
 
-	return basePleuralPressure - inspiratoryPressureAmplitude*effort
+	return BasePleuralPressure - InspiratoryPressureAmplitude*effort
 }
 
-// GetDiaphragm returns diaphragm component
 func GetDiaphragm() *component.Component {
 	return component.New("organ:diaphragm").
-		WithDescription("Diaphragm (respiratory actuator)").
+		WithDescription("Diaphragm (primary respiratory actuator)").
 		WithInitialState(func(state component.State) {
-			state.Set(common.Rate, TidalRespirationRate) // breaths per minute
-			state.Set(common.Phase, 0.0)                 // breathing cycle phase
+			state.Set(common.Rate, TidalRespiratoryRate)
+			state.Set(common.Phase, 0.0)
 		}).
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("pleural_pressure", "respiratory_rate").
 		WithActivationFunc(
 			helper.Pipeline(
+				handleRespiratoryBias, // update rate before advancing phase
 				oscillateBreathing,
-				handleRespiratoryBias,
 			),
 		)
 }
@@ -63,21 +63,13 @@ func oscillateBreathing(this *component.Component) error {
 		return err
 	}
 
-	var nextPhase float64
+	currentPhase := this.State().Get(common.Phase).(float64)
+	currentRate := this.State().Get(common.Rate).(int)
+	nextPhase := math.Mod(currentPhase+dt/(60.0/float64(currentRate)), 1.0)
+	this.State().Set(common.Phase, nextPhase)
 
-	this.State().Update(common.Phase, func(old any) any {
-		currentPhase := old.(float64)
-		currentRate := this.State().Get(common.Rate).(int)
-
-		phaseStep := dt / (60.0 / float64(currentRate))
-		nextPhase = math.Mod(currentPhase+phaseStep, 1.0)
-
-		return nextPhase
-	})
-
-	pressure := diaphragmPressureWave(nextPhase)
-
-	this.OutputByName("pleural_pressure").PutPayloads(pressure)
+	this.OutputByName("pleural_pressure").PutPayloads(diaphragmPressureWave(nextPhase))
+	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(common.Rate).(int))
 
 	return nil
 }
@@ -96,10 +88,8 @@ func handleRespiratoryBias(this *component.Component) error {
 	}
 
 	this.State().Update(common.Rate, func(v any) any {
-		return int(helper.Lerp(minRespRate, maxRespRate, bias))
+		return int(helper.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias))
 	})
-
-	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(common.Rate).(int))
 
 	return nil
 }
