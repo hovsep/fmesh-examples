@@ -98,7 +98,7 @@ func getMesh() *fmesh.FMesh {
 		AddOutputs("errors", "headers").
 		WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("url").HasSignals() {
-				return component.NewErrWaitForInputs(component.SkipAllInputs)
+				return component.ErrWaitingForInputs
 			}
 
 			allUrls, err := this.InputByName("url").Signals().AllPayloads()
@@ -135,7 +135,7 @@ func getMesh() *fmesh.FMesh {
 		AddInputs("error").
 		WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("error").HasSignals() {
-				return component.NewErrWaitForInputs(component.SkipAllInputs)
+				return component.ErrWaitingForInputs
 			}
 
 			allErrors, err := this.InputByName("error").Signals().AllPayloads()
