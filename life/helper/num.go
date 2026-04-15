@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"log"
 	"math/rand"
 )
 
@@ -13,6 +14,14 @@ type Number interface {
 // Clamp restricts value to the range [min, max]
 func Clamp(value, minVal, maxVal float64) float64 {
 	return max(minVal, min(maxVal, value))
+}
+
+func ClampAndLogAnomaly(value, minVal, maxVal float64, logger *log.Logger, key string) float64 {
+	valueClamped := Clamp(value, minVal, maxVal)
+	if valueClamped != value {
+		logger.Printf("clamped %s from %f to %f\n", key, value, valueClamped)
+	}
+	return valueClamped
 }
 
 // Jitter returns a value randomly jittered by ±percent%
@@ -45,9 +54,4 @@ func Mean[T Number](slice []T) float64 {
 	}
 
 	return sum / float64(len(slice))
-}
-
-// Smoothstep is a smooth step function.
-func Smoothstep(x float64) float64 {
-	return x * x * (3 - 2*x)
 }

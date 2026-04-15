@@ -36,29 +36,36 @@ func main() {
 	defer conn.Close()
 
 	rows := []SignalConfig{
-		{
-			Key:   "human-Leon::heart_rate",
-			Label: "Heart Rate (BPM)",
-			Color: asciigraph.Red,
-		},
-		{
+		//{
+		//	Key:   "human-Leon::heart_rate",
+		//	Label: "Heart Rate (BPM)",
+		//	Color: asciigraph.Red,
+		//},
+		/*{
 			Key:   "human-Leon::heart_cardiac_activation",
 			Label: "Cardiac Activation",
 			Color: asciigraph.Green,
-		},
-		{
+		},*/
+		/*{
 			Key:   "human-Leon::brain_activity",
 			Label: "Brain Activity",
 			Color: asciigraph.Blue,
 		},
+		*/
 		{
 			Key:   "human-Leon::pleural_pressure",
 			Label: "Pleural Pressure (cmH₂O)",
 			Color: asciigraph.Orange,
 		},
+
 		{
 			Key:   "human-Leon::lung_left_flow",
 			Label: "Left Lung Airflow (mL/s)  [+ = inspiration, - = expiration]",
+			Color: asciigraph.Pink,
+		},
+		{
+			Key:   "human-Leon::lung_right_flow",
+			Label: "Right Lung Airflow (mL/s)  [+ = inspiration, - = expiration]",
 			Color: asciigraph.Pink,
 		},
 		{
@@ -71,6 +78,16 @@ func main() {
 			Label: "Right Lung Volume (mL)",
 			Color: asciigraph.Red,
 		},
+		{
+			Key:   "human-Leon::lung_left_alveolar_pressure",
+			Label: "Left Lung AP",
+			Color: asciigraph.Blue,
+		},
+		{
+			Key:   "human-Leon::lung_right_alveolar_pressure",
+			Label: "Right Lung AP",
+			Color: asciigraph.Red,
+		},
 	}
 
 	configMap := make(map[string]SignalConfig)
@@ -81,7 +98,7 @@ func main() {
 	// One breath cycle at 12 BPM ≈ 5 s. With ~100 data points/second (10 ms
 	// real-time sleep per tick in initSim), 500 points covers exactly one cycle,
 	// filling the 80-column plot with a complete, readable waveform.
-	const maxPoints = 500
+	const maxPoints = 2000
 
 	events := make(chan Event, 1000)
 	stateCh := make(chan State, 1)
@@ -186,8 +203,8 @@ func draw(s State, rows []SignalConfig) {
 		fmt.Println(
 			asciigraph.Plot(
 				data,
-				asciigraph.Width(80),
-				asciigraph.Height(5),
+				asciigraph.Width(1000),
+				asciigraph.Height(50),
 				asciigraph.SeriesColors(sig.Color),
 				asciigraph.Caption(caption),
 			),

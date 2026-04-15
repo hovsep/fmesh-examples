@@ -19,9 +19,6 @@ const (
 	DamageLevel State = "damage_level"
 	Rate        State = "rate"
 	Phase       State = "phase"
-	Volume      State = "volume"
-	Resistance  State = "resistance"
-	Compliance  State = "compliance"
 
 	Cardiac     System = "cardiac"
 	Vascular    System = "vascular"

@@ -1,42 +1,51 @@
 package organ
 
 import (
+	"math"
+
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	"github.com/hovsep/fmesh-examples/life/unit"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
+	restingLungVolume = 700.0 * Milliliter
+
+	ResidualLungVolume = 600.0 * Milliliter
+	TotalLungCapacity  = 3000.0 * Milliliter
+
+	defaultLungCompliance   = 100.0 * MlPerCmH2O
+	defaultAirwayResistance = 0.002 * CmH2OPerMlPerSecond
+
+	lungVolumeAsymmetry     = 5 * Percent
+	lungComplianceAsymmetry = 5 * Percent
+	lungResistanceAsymmetry = 5 * Percent
+
+	pleuralPressureAsymmetryBase = 0.3 * CmH2O
+	pleuralPressureAsymmetry     = 30 * Percent
+
+	// Below are per-instance lung params that makes left and
+	// right lungs slightly different (anatomically, the left one has less space due to the heart).
 	statePleuralAsymmetry common.State = "pleural_asymmetry"
-	stateRestVolume       common.State = "rest_volume"
-
-	// Functional residual capacity (resting volume, V₀)
-	defaultRestVolume = 1100.0 * unit.Milliliter
-
-	// Typical lung compliance in a healthy adult lung
-	defaultCompliance = 200.0 * unit.MlPerCmH2O
-
-	// Airway resistance (healthy resting value approximation)
-	defaultResistance = 2.0 * unit.CmH2OPerMlPerSecond
-
-	// Atmospheric mouth pressure reference
-	mouthPressure = 0.0 * unit.CmH2O
-
-	// Jitters make left and right lungs slightly different
-	lungVolumeAsymmetry     = 5 * unit.Percent
-	lungComplianceAsymmetry = 7 * unit.Percent
-	lungResistanceAsymmetry = 10 * unit.Percent
+	stateCompliance       common.State = "compliance"
+	stateVolume           common.State = "volume"
+	stateResistance       common.State = "resistance"
 )
 
-// GetLung creates a lung component for a given side (left/right).
+var (
+	// FRC is Functional Residual Capacity (equilibrium volume at the end of passive expiration).
+	// FRC = V₀ + C·|BasePleuralPressure| = 700 + 100·5 = 1200 mL.
+	FRC = restingLungVolume + defaultLungCompliance*math.Abs(BasePleuralPressure)*Milliliter
+)
+
 func GetLung(side common.Side) *component.Component {
 	return component.New("organ:lung_"+string(side)).
-		WithDescription(side+" lung").
+		WithDescription(string(side)+" lung").
 		AddInputs(
 			"time",
 			"pleural_pressure",
-			"inspired_gas", // currently unused (mechanics-only model)
+			"inspired_gas", // not used yet
 		).
 		AddOutputs(
 			"volume",            // Current lung volume (dynamic)
@@ -45,74 +54,38 @@ func GetLung(side common.Side) *component.Component {
 			"gas_composition",   // passthrough (not modeled yet)
 		).
 		WithInitialState(func(state component.State) {
-			// Establish resting volume (V₀) with asymmetry
-			restVolume := helper.Jitter(defaultRestVolume, lungVolumeAsymmetry)
-
-			// Start at equilibrium (important: avoids artificial initial transients)
-			state.Set(common.Volume, restVolume)
-
-			// Mechanics (these are static → fine to keep in state)
-			state.Set(common.Compliance, helper.Jitter(defaultCompliance, lungComplianceAsymmetry))
-			state.Set(common.Resistance, helper.Jitter(defaultResistance, lungResistanceAsymmetry))
-
-			// Small anatomical asymmetry in pleural pressure
-			state.Set(statePleuralAsymmetry, helper.Jitter(0.0, 0.2*unit.CmH2O))
-			state.Set(stateRestVolume, restVolume)
+			state.Set(stateVolume, helper.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
+			state.Set(stateCompliance, helper.Jitter(defaultLungCompliance, lungComplianceAsymmetry))
+			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
+			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
 		}).
-		WithActivationFunc(helper.Pipeline(
-			handleMechanics,
-		))
+		WithActivationFunc(handleMechanics)
 }
 
 func handleMechanics(this *component.Component) error {
-	// Wait for required inputs
 	if !this.Inputs().ByNames("time", "pleural_pressure").AllHaveSignals() {
 		return component.ErrWaitingForInputsKeep
 	}
 
-	// Δt for integration
 	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}
 
-	// External driving pressure (diaphragm)
-	pleuralPressure := helper.AsF64(this.InputByName("pleural_pressure").Signals().First()) +
-		this.State().Get(statePleuralAsymmetry).(float64)
+	pleuralPressure := helper.AsF64(this.InputByName("pleural_pressure").Signals().First()) + this.State().Get(statePleuralAsymmetry).(float64)
 
-	// Lung mechanics parameters
-	V := this.State().Get(common.Volume).(float64)
-	V0 := this.State().Get(stateRestVolume).(float64)
-	C := this.State().Get(common.Compliance).(float64)
-	R := this.State().Get(common.Resistance).(float64)
+	V := this.State().Get(stateVolume).(float64)
+	C := this.State().Get(stateCompliance).(float64)
+	R := this.State().Get(stateResistance).(float64)
 
-	// --- Second-order flow dynamics ---
-	// flow inertia (mass of air column, small value for oscillation)
-	const airMass = 0.05 // arbitrary scaling to create underdamped oscillation
+	alveolarPressure := pleuralPressure + (V-restingLungVolume)/C
+	flow := -alveolarPressure / R
+	Vnext := helper.ClampAndLogAnomaly(V+flow*dt, ResidualLungVolume, TotalLungCapacity, this.Logger(), "lung volume")
 
-	// Previous flow (store in state)
-	flowPrev := 0.0
-	if v := this.State().Get("flow"); v != nil {
-		flowPrev = v.(float64)
-	}
+	this.State().Set(stateVolume, Vnext)
 
-	// Elastic recoil relative to resting volume
-	alveolarPressure := pleuralPressure + (V-V0)/C
-
-	// Flow derivative: dFlow/dt = (PressureGradient - R*flow) / Mass
-	flowDot := (-(alveolarPressure - mouthPressure) - R*flowPrev) / airMass
-	flowNext := flowPrev + flowDot*dt
-
-	// Volume update
-	Vnext := V + flowNext*dt
-
-	// Persist state
-	this.State().Set(common.Volume, Vnext)
-	this.State().Set("flow", flowNext)
-
-	// Outputs
 	this.OutputByName("volume").PutPayloads(Vnext)
-	this.OutputByName("flow").PutPayloads(flowNext)
+	this.OutputByName("flow").PutPayloads(flow)
 	this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure)
 	this.OutputByName("gas_composition").PutPayloads(this.State().Get("gas_composition"))
 
