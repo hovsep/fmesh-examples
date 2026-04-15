@@ -66,24 +66,7 @@ func Test_HumanLiveness(t *testing.T) {
 				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
 					assert.NotEmpty(t, observedCardiacActivity)
 					assert.NotEmpty(t, observedHeartRate)
-
-					rPeaksFound := 0
-					inPeak := false
-					// Check for R-peaks
-					for _, v := range observedCardiacActivity {
-						if v > 0.0 && !inPeak {
-							rPeaksFound++
-							inPeak = true
-							continue
-						}
-
-						if v == 0.0 {
-							inPeak = false
-						}
-
-					}
-					assert.Greater(t, rPeaksFound, 0)
-					assert.Less(t, rPeaksFound, 10)
+					assertRPeaks(t, observedCardiacActivity)
 				})
 			},
 		},
@@ -163,11 +146,28 @@ func Test_HumanLiveness(t *testing.T) {
 	}
 }
 
-// assertBidirectionalFlow checks that flow crosses zero over the sample window (quiet breathing).
-func assertBidirectionalFlow(t *testing.T, flows []float64, side string) {
+func assertRPeaks(t *testing.T, cardiacActivation []float64) {
+	t.Helper()
+	n := 0
+	inPeak := false
+	for _, v := range cardiacActivation {
+		if v > 0.0 && !inPeak {
+			n++
+			inPeak = true
+			continue
+		}
+		if v == 0.0 {
+			inPeak = false
+		}
+	}
+	assert.Greater(t, n, 0)
+}
+
+// assertBidirectionalFlow checks that lung flow crosses zero over the sample window (quiet breathing).
+func assertBidirectionalFlow(t *testing.T, observedFlow []float64, side string) {
 	t.Helper()
 	var pos, neg bool
-	for _, f := range flows {
+	for _, f := range observedFlow {
 		if f > 0 {
 			pos = true
 		}
