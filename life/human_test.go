@@ -123,34 +123,29 @@ func Test_HumanLiveness(t *testing.T) {
 		{
 			name: "lungs are ventilating",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				type lungObservation struct {
-					Volume           []float64
-					Flow             []float64
-					AlveolarPressure []float64
-				}
-
-				var leftLungObservation, rightLungObservation lungObservation
+				var observedLeftFlow, observedRightFlow []float64
 
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sigLeft := aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()
+						require.NotNil(t, sigLeft)
+						observedLeftFlow = append(observedLeftFlow, helper.AsF64(sigLeft))
 
-						leftLungObservation.Volume = append(leftLungObservation.Volume, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_volume").Signals().First()))
-						leftLungObservation.Flow = append(leftLungObservation.Flow, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()))
-						leftLungObservation.AlveolarPressure = append(leftLungObservation.AlveolarPressure, helper.AsF64(aggState.OutputByName("human-Leon::lung_left_alveolar_pressure").Signals().First()))
-
-						rightLungObservation.Volume = append(rightLungObservation.Volume, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_volume").Signals().First()))
-						rightLungObservation.Flow = append(rightLungObservation.Flow, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()))
-						rightLungObservation.AlveolarPressure = append(rightLungObservation.AlveolarPressure, helper.AsF64(aggState.OutputByName("human-Leon::lung_right_alveolar_pressure").Signals().First()))
+						sigRight := aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()
+						require.NotNil(t, sigRight)
+						observedRightFlow = append(observedRightFlow, helper.AsF64(sigRight))
 						return nil
 					})
 				})
 
 				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
-					assert.NotEmpty(t, leftLungObservation.Flow)
-					assert.NotEmpty(t, rightLungObservation.Flow)
+					assert.NotEmpty(t, observedLeftFlow)
+					assert.NotEmpty(t, observedRightFlow)
+					assertBidirectionalFlow(t, observedLeftFlow, "left")
+					assertBidirectionalFlow(t, observedRightFlow, "right")
 				})
 			},
 		},
@@ -166,4 +161,19 @@ func Test_HumanLiveness(t *testing.T) {
 			}
 		})
 	}
+}
+
+// assertBidirectionalFlow checks that flow crosses zero over the sample window (quiet breathing).
+func assertBidirectionalFlow(t *testing.T, flows []float64, side string) {
+	t.Helper()
+	var pos, neg bool
+	for _, f := range flows {
+		if f > 0 {
+			pos = true
+		}
+		if f < 0 {
+			neg = true
+		}
+	}
+	assert.True(t, pos && neg, "%s lung: expected both positive and negative flow over the run", side)
 }
