@@ -16,7 +16,7 @@ const (
 	MaxRespiratoryRate = 30 * PerMinute
 
 	BasePleuralPressure          = -5 * CmH2O // resting pleural pressure at FRC
-	InspiratoryPressureAmplitude = 5 * CmH2O  // peak swing during quiet breathing
+	InspiratoryPressureAmplitude = 3 * CmH2O  // peak swing during quiet breathing (−5 → −8 cmH₂O)
 
 	inhaleFraction = 1.0 / 3.0 // I:E = 1:2
 	exhaleDecay    = 5.0       // exp(-5) ≈ 0.007 residual — negligible pressure step at cycle restart
@@ -47,7 +47,7 @@ func GetDiaphragm() *component.Component {
 		AddOutputs("pleural_pressure", "respiratory_rate").
 		WithActivationFunc(
 			helper.Pipeline(
-				handleRespiratoryBias, // update rate before advancing phase
+				handleRespiratoryBias,
 				oscillateBreathing,
 			),
 		)
@@ -79,6 +79,7 @@ func handleRespiratoryBias(this *component.Component) error {
 		return nil
 	}
 
+	// @TODO: mixin noise
 	bias, err := helper.GetBias(
 		this.InputByName("autonomic_tone").Signals().First(),
 		common.Respiratory,
