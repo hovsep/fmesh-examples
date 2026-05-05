@@ -26,7 +26,7 @@ func GetAutonomicCoordination() *component.Component {
 				return nil
 			}
 
-			neuralDrive := this.InputByName("neural_drive").Signals().FirstPayloadOrDefault(0.0).(float64)
+			neuralDrive := helper.AsF64OrDefault(this.InputByName("neural_drive").Signals().First(), 0.0)
 
 			if neuralDrive <= criticalNeuralDrive {
 				this.Logger().Println("Neural drive too low")

@@ -43,7 +43,7 @@ func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, res
 
 // UnpackAutonomicTone unpacks a signal that represents autonomic tone
 func UnpackAutonomicTone(tone *signal.Signal) (sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) {
-	group := tone.PayloadOrNil().(*signal.Group)
+	group := AsType[*signal.Group](tone)
 	group.ForEach(func(sig *signal.Signal) error {
 		if IsLevel(sig) {
 			switch sig.Labels().ValueOrDefault(common.Axis, "") {
@@ -94,8 +94,10 @@ func GetBias(tone *signal.Signal, region string) (float64, error) {
 		return 0, fmt.Errorf("tone is nil")
 	}
 
-	return tone.PayloadOrNil().(*signal.Group).Filter(func(sig *signal.Signal) bool {
-		return IsBias(sig) && sig.Labels().ValueIs(common.Region, region)
-	}).First().PayloadOrNil().(float64), nil
+	return AsF64(
+		AsType[*signal.Group](tone).Filter(
+			func(sig *signal.Signal) bool {
+				return IsBias(sig) && sig.Labels().ValueIs(common.Region, region)
+			}).First()), nil
 
 }
