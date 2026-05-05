@@ -17,16 +17,6 @@ func NewBias(value float64, region string) *signal.Signal {
 	return signal.New(value).AddLabel(common.Type, common.Bias).AddLabel(common.Region, region)
 }
 
-// IsLevel checks if a signal represents a level
-func IsLevel(s *signal.Signal) bool {
-	return s.Labels().ValueIs(common.Type, common.Level)
-}
-
-// NewLevel builds a signal that represents a level
-func NewLevel(value float64, axis string) *signal.Signal {
-	return signal.New(value).AddLabel(common.Type, common.Level).AddLabel(common.Axis, axis)
-}
-
 // PackAutonomicTone builds a signal that represents autonomic tone
 func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) *signal.Signal {
 	return signal.New(signal.NewGroup().Add(
