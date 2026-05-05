@@ -14,10 +14,10 @@ func GetTimeComponent() *component.Component {
 	c := component.New("time").
 		WithDescription("Time management for the simulation").
 		WithInitialState(func(state component.State) {
-			state.Set("tick_count", uint64(0))      // Discrete step counter
-			state.Set("sim_time", time.Duration(0)) // Elapsed simulated duration
-			state.Set("sim_start_time", time.Now()) // Fixed wall-clock anchor
-			state.Set("sim_wall_time", time.Now())  // Simulation wall-clock time
+			state.Set("tick_count", uint64(0))          // Discrete step counter
+			state.Set("sim_duration", time.Duration(0)) // Elapsed simulated duration
+			state.Set("sim_start_time", time.Now())     // Fixed wall-clock anchor
+			state.Set("sim_wall_time", time.Now())      // Simulation wall-clock time
 		}).
 		AddInputs("ctl").
 		AddOutputs("tick").
@@ -28,19 +28,19 @@ func GetTimeComponent() *component.Component {
 				return v.(uint64) + 1
 			})
 
-			this.State().Update("sim_time", func(v any) any {
+			this.State().Update("sim_duration", func(v any) any {
 				return v.(time.Duration) + durationPerTick
 			})
 
 			simStartTime := this.State().Get("sim_start_time").(time.Time)
-			simTime := this.State().Get("sim_time").(time.Duration)
+			simDuration := this.State().Get("sim_duration").(time.Duration)
 			this.State().Update("sim_wall_time", func(v any) any {
-				return simStartTime.Add(simTime)
+				return simStartTime.Add(simDuration)
 			})
 
 			nextTick := helper.PackTick(
 				this.State().Get("tick_count").(uint64),
-				this.State().Get("sim_time").(time.Duration),
+				this.State().Get("sim_duration").(time.Duration),
 				this.State().Get("sim_wall_time").(time.Time),
 				durationPerTick,
 			)

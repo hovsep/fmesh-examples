@@ -7,7 +7,7 @@ const (
 	Axis            Label = "axis"
 	Region          Label = "region"
 	TickCount       Label = "tick_count"
-	SimTime         Label = "sim_time"
+	SimDuration     Label = "sim_duration"
 	SimWallTime     Label = "sim_wall_time"
 	DeltaT          Label = "dt"
 	TickMeta        Label = "tick_meta"
