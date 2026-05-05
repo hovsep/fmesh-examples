@@ -26,7 +26,7 @@ const (
 func getMesh() *fmesh.FMesh {
 	// Create the mesh
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
-		Debug:       false,
+		Debug:       true,
 		CyclesLimit: 1000,
 		TimeLimit:   5 * time.Second,
 	})
@@ -131,8 +131,8 @@ func wireLungs(components *component.Collection) {
 	components.ByName("organ:lung_left").OutputByName("alveolar_pressure").PipeTo(
 		components.ByName("physiology:observable_state").InputByName("lung_left_alveolar_pressure"),
 	)
-	components.ByName("organ:lung_left").OutputByName("gas_composition").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_left_gas_composition"),
+	components.ByName("organ:lung_left").OutputByName("exhaled_gas").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_left_exhaled_gas"),
 	)
 
 	components.ByName("organ:lung_right").OutputByName("volume").PipeTo(
@@ -144,8 +144,8 @@ func wireLungs(components *component.Collection) {
 	components.ByName("organ:lung_right").OutputByName("alveolar_pressure").PipeTo(
 		components.ByName("physiology:observable_state").InputByName("lung_right_alveolar_pressure"),
 	)
-	components.ByName("organ:lung_right").OutputByName("gas_composition").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_right_gas_composition"),
+	components.ByName("organ:lung_right").OutputByName("exhaled_gas").PipeTo(
+		components.ByName("physiology:observable_state").InputByName("lung_right_exhaled_gas"),
 	)
 }
 
@@ -217,9 +217,7 @@ func New(name string) *component.Component {
 		AddLabel("species", "sapiens").
 		AddInputs(
 			"habitat_time_tick",
-			"habitat_gas_temperature",
-			"habitat_gas_humidity",
-			"habitat_gas_composition",
+			"habitat_gas_environmental_gas",
 		).
 		AddOutputs(
 			"is_alive",
@@ -233,11 +231,11 @@ func New(name string) *component.Component {
 			"lung_left_volume",
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
-			"lung_left_gas_composition",
+			"lung_left_exhaled_gas",
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
-			"lung_right_gas_composition",
+			"lung_right_exhaled_gas",
 		).
 		WithActivationFunc(helper.Pipeline(
 			getHabibatToHumanAF(mesh),
@@ -273,16 +271,8 @@ func getHabibatToHumanAF(mesh *fmesh.FMesh) component.ActivationFunc {
 				mesh.ComponentByName("organ:lung_right").InputByName("time"),
 			},
 			helper.PortPair{
-				this.InputByName("habitat_gas_temperature"),
-				respiratory.InputByName("gas_temperature"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_gas_humidity"),
-				respiratory.InputByName("gas_humidity"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_gas_composition"),
-				respiratory.InputByName("gas_composition"),
+				this.InputByName("habitat_gas_environmental_gas"),
+				respiratory.InputByName("environmental_gas"),
 			})
 		if err != nil {
 			return fmt.Errorf("failed to forward signals into human mesh: %w", err)
@@ -350,8 +340,8 @@ func getHumanToObservableStateAF(mesh *fmesh.FMesh) component.ActivationFunc {
 				this.OutputByName("lung_left_alveolar_pressure"),
 			},
 			helper.PortPair{
-				humanObservableState.OutputByName("lung_left_gas_composition"),
-				this.OutputByName("lung_left_gas_composition"),
+				humanObservableState.OutputByName("lung_left_exhaled_gas"),
+				this.OutputByName("lung_left_exhaled_gas"),
 			},
 			helper.PortPair{
 				humanObservableState.OutputByName("lung_right_volume"),
@@ -366,8 +356,8 @@ func getHumanToObservableStateAF(mesh *fmesh.FMesh) component.ActivationFunc {
 				this.OutputByName("lung_right_alveolar_pressure"),
 			},
 			helper.PortPair{
-				humanObservableState.OutputByName("lung_right_gas_composition"),
-				this.OutputByName("lung_right_gas_composition"),
+				humanObservableState.OutputByName("lung_right_exhaled_gas"),
+				this.OutputByName("lung_right_exhaled_gas"),
 			},
 		)
 		if err != nil {

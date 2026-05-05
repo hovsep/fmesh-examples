@@ -31,12 +31,12 @@ func GetObservableState() *component.Component {
 			"lung_left_volume",
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
-			"lung_left_gas_composition",
+			"lung_left_exhaled_gas",
 
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
-			"lung_right_gas_composition",
+			"lung_right_exhaled_gas",
 		).
 		AddOutputs(
 			"is_alive",
@@ -49,11 +49,11 @@ func GetObservableState() *component.Component {
 			"lung_left_volume",
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
-			"lung_left_gas_composition",
+			"lung_left_exhaled_gas",
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
-			"lung_right_gas_composition").
+			"lung_right_exhaled_gas").
 		WithActivationFunc(helper.Pipeline(
 			handleBrainSignals,
 			handleHeartSignals,
@@ -130,8 +130,8 @@ func handleLungSignals(this *component.Component) error {
 			this.OutputByName("lung_left_alveolar_pressure"),
 		},
 		helper.PortPair{
-			this.InputByName("lung_left_gas_composition"),
-			this.OutputByName("lung_left_gas_composition"),
+			this.InputByName("lung_left_exhaled_gas"),
+			this.OutputByName("lung_left_exhaled_gas"),
 		},
 		helper.PortPair{
 			this.InputByName("lung_right_volume"),
@@ -146,8 +146,8 @@ func handleLungSignals(this *component.Component) error {
 			this.OutputByName("lung_right_alveolar_pressure"),
 		},
 		helper.PortPair{
-			this.InputByName("lung_right_gas_composition"),
-			this.OutputByName("lung_right_gas_composition"),
+			this.InputByName("lung_right_exhaled_gas"),
+			this.OutputByName("lung_right_exhaled_gas"),
 		},
 	)
 }
