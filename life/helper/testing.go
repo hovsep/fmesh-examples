@@ -18,7 +18,7 @@ func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f fu
 			}
 
 			if simDuration >= duration {
-				fmt.Println("Sim duration: ", simDuration, " > ", duration, "")
+				fmt.Println("Sim duration reached:", simDuration)
 				go sim.SendCommand(step_sim.Exit)
 				return nil
 			}

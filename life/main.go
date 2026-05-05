@@ -7,6 +7,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -69,7 +70,7 @@ func initSim(sim *step_sim.Simulation) {
 	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
-				return sim.Sink.Publish(line.PayloadOrNil().(string))
+				return sim.Sink.Publish(helper.AsString(line))
 			})
 
 			// @TODO: take this delay from flag or cmd to not affect tests
