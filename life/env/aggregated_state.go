@@ -77,7 +77,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 
 func (h *Habitat) AddAggregatedState() *Habitat {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
-		"gas::temperature",
+		"gas::environmental_gas",
 		"sun::uvi",
 		"human-Leon::is_alive",
 		"human-Leon::brain_activity",
@@ -90,12 +90,12 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		"human-Leon::lung_left_volume",
 		"human-Leon::lung_left_flow",
 		"human-Leon::lung_left_alveolar_pressure",
-		"human-Leon::lung_left_gas_composition",
+		"human-Leon::lung_left_exhaled_gas",
 
 		"human-Leon::lung_right_volume",
 		"human-Leon::lung_right_flow",
 		"human-Leon::lung_right_alveolar_pressure",
-		"human-Leon::lung_right_gas_composition",
+		"human-Leon::lung_right_exhaled_gas",
 	})
 
 	if err != nil {

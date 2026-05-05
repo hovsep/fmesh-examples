@@ -51,7 +51,7 @@ func GetLung(side common.Side) *component.Component {
 			"volume",            // Current lung volume (dynamic)
 			"flow",              // Instantaneous airflow
 			"alveolar_pressure", // Pressure inside alveoli
-			"gas_composition",   // passthrough (not modeled yet)
+			"exhaled_gas",       // passthrough (not modeled yet)
 		).
 		WithInitialState(func(state component.State) {
 			state.Set(stateVolume, helper.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
@@ -59,11 +59,14 @@ func GetLung(side common.Side) *component.Component {
 			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
 			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
 		}).
-		WithActivationFunc(handleMechanics)
+		WithActivationFunc(helper.Pipeline(
+			handleMechanics,
+			handleGasExchange,
+		))
 }
 
 func handleMechanics(this *component.Component) error {
-	if !this.Inputs().ByNames("time", "pleural_pressure").AllHaveSignals() {
+	if !this.Inputs().ByNames("time", "pleural_pressure", "inspired_gas").AllHaveSignals() {
 		return component.ErrWaitingForInputsKeep
 	}
 
@@ -87,7 +90,10 @@ func handleMechanics(this *component.Component) error {
 	this.OutputByName("volume").PutPayloads(Vnext)
 	this.OutputByName("flow").PutPayloads(flow)
 	this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure)
-	this.OutputByName("gas_composition").PutPayloads(this.State().Get("gas_composition"))
 
+	return nil
+}
+
+func handleGasExchange(this *component.Component) error {
 	return nil
 }
