@@ -40,7 +40,7 @@ func Test_Time(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
+				helper.RunSimulationAndThen(sim, time.Millisecond*100, func() {
 					assert.NotEmpty(t, observedSimWallTime)
 					assert.IsIncreasing(t, observedSimWallTime)
 				})

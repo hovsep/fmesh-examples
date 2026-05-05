@@ -1,22 +1,39 @@
 package helper
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh/component"
 )
 
-const DefaultSimulationDuration = 100 * time.Millisecond
-
-// RunSimulationAndThen is a helper function that runs the simulation and executes a callback after a given duration
 func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f func()) {
-	go sim.Run()
-	defer func() {
-		sim.SendCommand(step_sim.Exit)
+	timeComponent := sim.FM.ComponentByName("time")
+	timeComponent.SetupHooks(func(hooks *component.Hooks) {
+		hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
+			_, simDuration, _, _, err := UnpackTick(activationContext.Component.OutputByName("tick").Signals().First())
+			if err != nil {
+				return err
+			}
+
+			if simDuration >= duration {
+				fmt.Println("Sim duration: ", simDuration, " > ", duration, "")
+				go sim.SendCommand(step_sim.Exit)
+				return nil
+			}
+			return nil
+		})
+	})
+
+	done := make(chan struct{})
+
+	go func() {
+		sim.Run()
+		close(done)
 	}()
 
-	// Let the simulation run for a while
-	time.Sleep(duration)
+	<-done
 
 	f()
 }

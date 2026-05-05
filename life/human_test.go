@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -35,8 +36,9 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
+				helper.RunSimulationAndThen(sim, time.Second, func() {
 					assert.NotEmpty(t, observedIsAlive)
+					assert.Contains(t, observedIsAlive, true)
 					assert.NotContains(t, observedIsAlive, false)
 				})
 			},
@@ -63,7 +65,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
+				helper.RunSimulationAndThen(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedCardiacActivity)
 					assert.NotEmpty(t, observedHeartRate)
 					assertRPeaks(t, observedCardiacActivity)
@@ -92,7 +94,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
+				helper.RunSimulationAndThen(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedPleuralPressure)
 					assert.NotEmpty(t, observedRespiratoryRate)
 
@@ -124,7 +126,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, helper.DefaultSimulationDuration, func() {
+				helper.RunSimulationAndThen(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedLeftFlow)
 					assert.NotEmpty(t, observedRightFlow)
 					assertBidirectionalFlow(t, observedLeftFlow, "left")
