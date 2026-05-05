@@ -20,6 +20,10 @@ func AsInt(s *signal.Signal) int {
 	return AsType[int](s)
 }
 
+func AsString(s *signal.Signal) string {
+	return AsType[string](s)
+}
+
 func AsType[T any](s *signal.Signal) T {
 	if s == nil {
 		panic("signal is nil")
