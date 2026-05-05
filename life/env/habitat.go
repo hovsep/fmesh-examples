@@ -22,7 +22,7 @@ type Habitat struct {
 func NewHabitat(factors *component.Collection) *Habitat {
 	habitat := &Habitat{}
 	habitat.FM = fmesh.NewWithConfig(meshName, &fmesh.Config{
-		Debug:       false,
+		Debug:       true,
 		CyclesLimit: fmesh.UnlimitedCycles,
 		TimeLimit:   60 * time.Second, // One mesh run (or 1 simulation tick) must not exceed this limit
 	})
