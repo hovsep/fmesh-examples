@@ -8,19 +8,19 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// PackTick returns a signal containing the tick meta-data
-func PackTick(seq uint64, simTime time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
+// PackTick builds a tick signal
+func PackTick(seq uint64, simDuration time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
 	return signal.New(signal.NewGroup().Add(
 		signal.New(seq).AddLabel(common.TickMeta, common.TickCount),
-		signal.New(simTime).AddLabel(common.TickMeta, common.SimTime),
+		signal.New(simDuration).AddLabel(common.TickMeta, common.SimDuration),
 		signal.New(simWallTime).AddLabel(common.TickMeta, common.SimWallTime),
 		signal.New(duration).AddLabel(common.TickMeta, common.DeltaT),
 	),
 	)
 }
 
-// UnpackTick unpacks a tick signal into its meta-data components
-func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWallTime time.Time, duration time.Duration, err error) {
+// UnpackTick returns components of tick
+func UnpackTick(tick *signal.Signal) (seq uint64, simDuration time.Duration, simWallTime time.Time, duration time.Duration, err error) {
 	if tick == nil {
 		err = fmt.Errorf("tick signal cannot be nil")
 		return
@@ -50,8 +50,8 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simTime time.Duration, simWall
 			seq = tickMeta.(uint64)
 			return nil
 
-		case common.SimTime:
-			simTime = tickMeta.(time.Duration)
+		case common.SimDuration:
+			simDuration = tickMeta.(time.Duration)
 			return nil
 
 		case common.SimWallTime:
