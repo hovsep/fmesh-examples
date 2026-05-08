@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/env"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
@@ -29,6 +31,12 @@ func getSimulationMesh() *fmesh.FMesh {
 		})
 
 	})
+
+	err := internal.HandleGraphFlag(habitat.FM, false)
+	if err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
 
 	return habitat.FM
 }
