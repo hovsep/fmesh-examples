@@ -8,6 +8,10 @@ func GetBloodSystem() *component.Component {
 		WithDescription("Blood system").
 		AddInputs("time").
 		AddOutputs().
+		WithInitialState(func(state component.State) {
+			state.Set("PO2", 0.0)
+			state.Set("PCO2", 0.0)
+		}).
 		WithActivationFunc(func(this *component.Component) error {
 			return nil
 		})
