@@ -1,6 +1,7 @@
 package boundary
 
 import (
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
@@ -15,7 +16,21 @@ func GetRespiratory() *component.Component {
 		AddOutputs(
 			"inspired_gas", // to lungs
 		).
-		WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName("environmental_gas"), this.OutputByName("inspired_gas"))
-		})
+		WithActivationFunc(helper.Pipeline(
+			getFilterAF(),
+			getHumidifyAF(),
+		))
+}
+
+// getFilterAF returns an activation function in which environmental gas is filtered
+func getFilterAF() component.ActivationFunc {
+	return func(this *component.Component) error {
+		return port.ForwardSignals(this.InputByName("environmental_gas"), this.OutputByName("inspired_gas"))
+	}
+}
+
+func getHumidifyAF() component.ActivationFunc {
+	return func(this *component.Component) error {
+		return port.ForwardSignals(this.InputByName("environmental_gas"), this.OutputByName("inspired_gas"))
+	}
 }
