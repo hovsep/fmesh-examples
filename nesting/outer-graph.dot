@@ -28,8 +28,8 @@ digraph  {
 	subgraph cluster_s7 {
 		color="black";label="filter";margin="20";penwidth="5";style="rounded";
 		n9[fontname="Courier New",group="filter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="filter",height="1.0",label="log",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="filter",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="filter",height="1.0",label="log",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="filter",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n8[color="#9dddea",fontname="Courier New",group="filter",height="1.0",label="In this component we can do some optional filtering",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n9->n8;
 		n8->n10;
@@ -53,8 +53,8 @@ digraph  {
 		
 	}
 	layout="dot";splines="ortho";
-	n11->n14[color="#e437ea",minlen="3",penwidth="2"];
-	n10->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n14[color="#e437ea",minlen="3",penwidth="2"];
+	n11->n17[color="#e437ea",minlen="3",penwidth="2"];
 	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
 	
 }
