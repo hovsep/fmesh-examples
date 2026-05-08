@@ -40,19 +40,28 @@ func New(name string) *component.Component {
 			"lung_right_exhaled_gas",
 		).
 		WithActivationFunc(helper.Pipeline(
+			validate(),
 			sense(mesh),
 			act(mesh),
 			feedback(mesh),
 		))
 }
 
-// Sense activation function
-// In this phase a human component receives inputs from the environment
-func sense(mesh *fmesh.FMesh) component.ActivationFunc {
+// validate activation function
+// Check if all required inputs are received
+func validate() component.ActivationFunc {
 	return func(this *component.Component) error {
 		if !this.Inputs().ByNames("habitat_time_tick", "habitat_gas_environmental_gas").AllHaveSignals() {
 			return component.ErrWaitingForInputsKeep
 		}
+		return nil
+	}
+}
+
+// Sense activation function
+// In this phase a human component receives inputs from the environment
+func sense(mesh *fmesh.FMesh) component.ActivationFunc {
+	return func(this *component.Component) error {
 		respiratory := mesh.ComponentByName("boundary:respiratory")
 		err := helper.MultiForward(
 			// Time effect
