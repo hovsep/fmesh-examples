@@ -8,13 +8,9 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
-	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
-	"github.com/hovsep/fmesh-examples/life/organism/human/regulation"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -22,8 +18,8 @@ const (
 	meshName = "human_mesh"
 )
 
-// getMesh builds the mesh that simulates the human being
-func getMesh() *fmesh.FMesh {
+// getHumanMesh builds the mesh that simulates the human being
+func getHumanMesh() *fmesh.FMesh {
 	// Create the mesh
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
 		Debug:       true,
@@ -46,7 +42,7 @@ func getMesh() *fmesh.FMesh {
 	wireRespiratoryBoundary(components)
 	wireLungs(components)
 
-	err := internal.HandleGraphFlag(mesh, true)
+	err := internal.HandleGraphFlag(mesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
@@ -169,26 +165,26 @@ func getComponents() *component.Collection {
 	return component.NewCollection().
 		Add(
 			// Boundaries (interfaces between the environment and a human body)
-			boundary.GetThermal(),
-			boundary.GetMechanical(),
+			//boundary.GetThermal(),
+			//boundary.GetMechanical(),
 			boundary.GetRespiratory(),
-			boundary.GetIngestion(),
+			//boundary.GetIngestion(),
 
 			// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
-			controller.GetIntake(),
-			controller.GetPhysical(),
-			controller.GetMental(),
-			controller.GetExcretion(),
+			//controller.GetIntake(),
+			//controller.GetPhysical(),
+			//controller.GetMental(),
+			//controller.GetExcretion(),
 
 			// Physiological systems
 			physiology.GetAutonomicCoordination(),
-			physiology.GetPhysiologicalLoad(),
-			physiology.GetEndocrineAxis(),
+			//physiology.GetPhysiologicalLoad(),
+			//physiology.GetEndocrineAxis(),
 			physiology.GetObservableState(),
-			physiology.GetPhysiologicalState(),
+			//physiology.GetPhysiologicalState(),
 
 			// Regulation systems
-			regulation.GetHomeostasis(),
+			//regulation.GetHomeostasis(),
 
 			// Organs
 			organ.GetBrain(),
@@ -198,171 +194,10 @@ func getComponents() *component.Collection {
 			organ.GetLung(common.Right),
 
 			// Distributed anatomy
-			da.GetSkin(),
-			da.GetBloodSystem(),
-			da.GetMuscularSystem(),
-			da.GetNervousSystem(),
-			da.GetGITract(),
+			//da.GetSkin(),
+			//da.GetBloodSystem(),
+			//da.GetMuscularSystem(),
+			//da.GetNervousSystem(),
+			//da.GetGITract(),
 		)
-}
-
-// New returns a new human as a component (for simplicity we skip a clothing insulation factor, so the human being is naked)
-func New(name string) *component.Component {
-	mesh := getMesh()
-
-	return component.New("human-"+name).
-		WithDescription("A human being").
-		AddLabel("role", "organism").
-		AddLabel("genus", "homo").
-		AddLabel("species", "sapiens").
-		AddInputs(
-			"habitat_time_tick",
-			"habitat_gas_environmental_gas",
-		).
-		AddOutputs(
-			"is_alive",
-			"brain_activity",
-			"brain_activity_trend",
-			"body_temperature",
-			"heart_cardiac_activation",
-			"heart_rate",
-			"pleural_pressure",
-			"respiratory_rate",
-			"lung_left_volume",
-			"lung_left_flow",
-			"lung_left_alveolar_pressure",
-			"lung_left_exhaled_gas",
-			"lung_right_volume",
-			"lung_right_flow",
-			"lung_right_alveolar_pressure",
-			"lung_right_exhaled_gas",
-		).
-		WithActivationFunc(helper.Pipeline(
-			getHabibatToHumanAF(mesh),
-			getRunHumanAF(mesh),
-			getHumanToObservableStateAF(mesh),
-		),
-		)
-}
-
-func getHabibatToHumanAF(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
-		respiratory := mesh.ComponentByName("boundary:respiratory")
-		err := helper.MultiForward(
-			// Time to organs
-			helper.PortPair{
-				this.InputByName("habitat_time_tick"),
-				mesh.ComponentByName("organ:brain").InputByName("time"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_time_tick"),
-				mesh.ComponentByName("organ:heart").InputByName("time"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_time_tick"),
-				mesh.ComponentByName("organ:diaphragm").InputByName("time"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_time_tick"),
-				mesh.ComponentByName("organ:lung_left").InputByName("time"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_time_tick"),
-				mesh.ComponentByName("organ:lung_right").InputByName("time"),
-			},
-			helper.PortPair{
-				this.InputByName("habitat_gas_environmental_gas"),
-				respiratory.InputByName("environmental_gas"),
-			})
-		if err != nil {
-			return fmt.Errorf("failed to forward signals into human mesh: %w", err)
-		}
-		return nil
-	}
-}
-
-func getRunHumanAF(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
-		_, err := mesh.Run()
-		if err != nil {
-			return fmt.Errorf("failed to run human mesh: %w", err)
-		}
-		return nil
-	}
-}
-
-func getHumanToObservableStateAF(mesh *fmesh.FMesh) component.ActivationFunc {
-
-	return func(this *component.Component) error {
-
-		humanObservableState := mesh.ComponentByName("physiology:observable_state")
-
-		// Propagate signals from human mesh to the human component outputs
-		err := helper.MultiForward(
-			helper.PortPair{
-				humanObservableState.OutputByName("is_alive"),
-				this.OutputByName("is_alive"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("brain_activity"),
-				this.OutputByName("brain_activity"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("brain_activity_trend"),
-				this.OutputByName("brain_activity_trend"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("heart_cardiac_activation"),
-				this.OutputByName("heart_cardiac_activation"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("heart_rate"),
-				this.OutputByName("heart_rate"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("pleural_pressure"),
-				this.OutputByName("pleural_pressure"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("respiratory_rate"),
-				this.OutputByName("respiratory_rate"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_left_volume"),
-				this.OutputByName("lung_left_volume"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_left_flow"),
-				this.OutputByName("lung_left_flow"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_left_alveolar_pressure"),
-				this.OutputByName("lung_left_alveolar_pressure"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_left_exhaled_gas"),
-				this.OutputByName("lung_left_exhaled_gas"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_right_volume"),
-				this.OutputByName("lung_right_volume"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_right_flow"),
-				this.OutputByName("lung_right_flow"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_right_alveolar_pressure"),
-				this.OutputByName("lung_right_alveolar_pressure"),
-			},
-			helper.PortPair{
-				humanObservableState.OutputByName("lung_right_exhaled_gas"),
-				this.OutputByName("lung_right_exhaled_gas"),
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to forward signals from human mesh: %w", err)
-		}
-		return nil
-	}
 }
