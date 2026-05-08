@@ -40,3 +40,12 @@ func Pipeline(funcs ...component.ActivationFunc) component.ActivationFunc {
 		return nil
 	}
 }
+
+func CountInputSignals(c *component.Component) map[string]int {
+	res := make(map[string]int)
+	c.Inputs().ForEach(func(p *port.Port) error {
+		res[p.Name()] = p.Signals().Len()
+		return nil
+	})
+	return res
+}
