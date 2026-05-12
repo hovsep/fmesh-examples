@@ -46,7 +46,7 @@ func GetDiaphragm() *component.Component {
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("pleural_pressure", "respiratory_rate").
 		WithActivationFunc(
-			helper.Pipeline(
+			helper.SequentialActivationFunc(
 				handleRespiratoryBias,
 				oscillateBreathing,
 			),

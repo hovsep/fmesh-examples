@@ -1,9 +1,12 @@
 package helper
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
+	"github.com/hovsep/fmesh/signal"
 )
 
 type PortPair [2]*port.Port
@@ -29,8 +32,8 @@ func MultiForward(portPairs ...PortPair) error {
 }
 
 // @TODO: this can be reused, make it part of fmesh (plugin or something)
-// Pipeline allows composing multiple activation functions into one
-func Pipeline(funcs ...component.ActivationFunc) component.ActivationFunc {
+// SequentialActivationFunc allows composing multiple activation functions into one
+func SequentialActivationFunc(funcs ...component.ActivationFunc) component.ActivationFunc {
 	return func(this *component.Component) error {
 		for _, f := range funcs {
 			if err := f(this); err != nil {
@@ -38,6 +41,22 @@ func Pipeline(funcs ...component.ActivationFunc) component.ActivationFunc {
 			}
 		}
 		return nil
+	}
+}
+
+func PipelineActivationFunc(inputPortNames []string, outputPortName string, stageFuncs ...func(signals *signal.Group) (*signal.Group, error)) component.ActivationFunc {
+	return func(this *component.Component) error {
+		signals := this.Inputs().ByNames(inputPortNames...).Signals()
+		var stageErr error
+
+		for _, stageFunc := range stageFuncs {
+			signals, stageErr = stageFunc(signals)
+			if stageErr != nil {
+				return fmt.Errorf("pipeline stage %s failed: %w", stageFunc, stageErr)
+			}
+		}
+
+		return this.OutputByName(outputPortName).PutSignalGroups(signals).ChainableErr()
 	}
 }
 

@@ -22,7 +22,7 @@ const (
 func getHumanMesh() *fmesh.FMesh {
 	// Create the mesh
 	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
-		Debug:       true,
+		Debug:       false,
 		CyclesLimit: 1000,
 		TimeLimit:   5 * time.Second,
 	})
