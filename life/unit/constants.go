@@ -23,4 +23,7 @@ const (
 
 	// CmH2OPerMlPerSecond is a unit of air resistance
 	CmH2OPerMlPerSecond = 1.0
+
+	// Celsius is a temperature unit
+	Celsius = 1.0
 )

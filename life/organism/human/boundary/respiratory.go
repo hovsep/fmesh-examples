@@ -6,6 +6,10 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+//@TODO: reducing any level of air signal brakes the sum()=100% rule as we do not have any rebalance\renormalization in place
+// this must be fixed in generalized way, we need some tooling to model mixtures with explicit Filter("axis", x%) api which will rebalance compounds
+// ideally it must support both gas or fluid mixtures, but can be 2 separate packages as well
+
 func GetRespiratory() *component.Component {
 	return component.New("boundary:respiratory").
 		WithDescription("Transforms environmental gas signals into chemical levels and lung input for circulation").
@@ -14,36 +18,43 @@ func GetRespiratory() *component.Component {
 			"environmental_gas",
 		).
 		AddOutputs(
-			"inspired_gas", // to lungs
-		). // TODO: use PipelineActivationFunc to transform gas (filter, humidify, warm up)
-		WithActivationFunc(helper.PipelineActivationFunc([]string{"environmental_gas"}, "inspired_gas", sp1, dummySignalProcessor, sp2, sp3))
+			"inspired_gas",
+		).
+		WithActivationFunc(
+			helper.PipelineActivationFunc([]string{"environmental_gas"}, "inspired_gas", filterInspiredGas, humidifyInspiredGas, warmUpInspiredGas))
 }
 
-func dummySignalProcessor(sigs *signal.Group) (*signal.Group, error) {
-	return sigs, nil
+// Applies pollution reduction.
+func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
+	return getRespiratoryEffect("pollution", func(p float64) float64 {
+		return p * 0.5
+	})(sigs)
 }
 
-// This one adds labels
-func sp1(sigs *signal.Group) (*signal.Group, error) {
-	return sigs.Map(func(signal *signal.Signal) *signal.Signal {
-		return signal.AddLabel("stage", "sp1").AddLabel("todo", "will be removed in sp2")
-	}), nil
+// Applies humidity increase.
+func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
+	return getRespiratoryEffect("humidity", func(h float64) float64 {
+		return h * 1.1
+	})(sigs)
 }
 
-// Adds signals and removes labels
-func sp2(sigs *signal.Group) (*signal.Group, error) {
-	return sigs.Map(func(signal *signal.Signal) *signal.Signal {
-		return signal.WithoutLabels("todo")
-	}).AddFromPayloads(111, 222, 333), nil
+// Applies temperature increase.
+func warmUpInspiredGas(sigs *signal.Group) (*signal.Group, error) {
+	return getRespiratoryEffect("temperature", func(t float64) float64 {
+		return t + 0.2
+	})(sigs)
 }
 
-// Multiplies ints
-func sp3(sigs *signal.Group) (*signal.Group, error) {
-	return sigs.MapPayloads(func(payload any) any {
-		_, isInt := payload.(int)
-		if isInt {
-			return payload.(int) * 2
-		}
-		return payload
-	}), nil
+// getRespiratoryEffect returns a pipeline stage function that applies a basic transformation to air signal.
+func getRespiratoryEffect(axis string, mapFunc func(old float64) float64) helper.PipeLineStageFunction {
+	return func(respiratorySignals *signal.Group) (*signal.Group, error) {
+		return respiratorySignals.Map(func(s *signal.Signal) *signal.Signal {
+			if !helper.IsAir(s) {
+				// No change
+				return s
+			}
+
+			return helper.MapAirLevel(s, axis, mapFunc)
+		}), nil
+	}
 }

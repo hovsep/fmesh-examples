@@ -55,3 +55,8 @@ func IsLevel(s *signal.Signal) bool {
 func NewLevel(value float64, axis string) *signal.Signal {
 	return signal.New(value).AddLabel(common.Type, common.Level).AddLabel(common.Axis, axis)
 }
+
+// IsLevelWithAxis checks if a signal represents a level with a specific axis
+func IsLevelWithAxis(s *signal.Signal, axis string) bool {
+	return IsLevel(s) && s.Labels().ValueIs(common.Axis, axis)
+}

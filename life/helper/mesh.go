@@ -11,6 +11,8 @@ import (
 
 type PortPair [2]*port.Port
 
+type PipeLineStageFunction func(signals *signal.Group) (*signal.Group, error)
+
 // FindHumanComponent finds the first component that represents a human organism
 func FindHumanComponent(fm *fmesh.FMesh) *component.Component {
 	return fm.Components().FindAny(func(c *component.Component) bool {
@@ -44,7 +46,7 @@ func SequentialActivationFunc(funcs ...component.ActivationFunc) component.Activ
 	}
 }
 
-func PipelineActivationFunc(inputPortNames []string, outputPortName string, stageFuncs ...func(signals *signal.Group) (*signal.Group, error)) component.ActivationFunc {
+func PipelineActivationFunc(inputPortNames []string, outputPortName string, stageFuncs ...PipeLineStageFunction) component.ActivationFunc {
 	return func(this *component.Component) error {
 		signals := this.Inputs().ByNames(inputPortNames...).Signals()
 		var stageErr error
