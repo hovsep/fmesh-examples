@@ -36,7 +36,7 @@ func GetHeart() *component.Component {
 		AddInputs("time", "autonomic_tone").
 		AddOutputs("cardiac_activation", "rate").
 		WithActivationFunc(
-			helper.Pipeline(
+			helper.SequentialActivationFunc(
 				oscillateHeart,
 				handleCardiacBias,
 			),

@@ -22,7 +22,7 @@ func GetGasComponent() *component.Component {
 			state.Set("composition", getDefaultComposition())
 		}).
 		WithActivationFunc(
-			helper.Pipeline(
+			helper.SequentialActivationFunc(
 				handleControlSignals,
 				emitEnvironmentalGas,
 			),

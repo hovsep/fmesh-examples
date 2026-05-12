@@ -39,7 +39,7 @@ func New(name string) *component.Component {
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
 		).
-		WithActivationFunc(helper.Pipeline(
+		WithActivationFunc(helper.SequentialActivationFunc(
 			validate(),
 			sense(mesh),
 			act(mesh),

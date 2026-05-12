@@ -59,7 +59,7 @@ func GetLung(side common.Side) *component.Component {
 			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
 			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
 		}).
-		WithActivationFunc(helper.Pipeline(
+		WithActivationFunc(helper.SequentialActivationFunc(
 			handleMechanics,
 			handleGasExchange,
 		))
@@ -95,5 +95,7 @@ func handleMechanics(this *component.Component) error {
 }
 
 func handleGasExchange(this *component.Component) error {
+	gas, _ := this.InputByName("inspired_gas").Signals().All()
+	_ = gas
 	return nil
 }
