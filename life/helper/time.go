@@ -10,13 +10,15 @@ import (
 
 // PackTick builds a tick signal
 func PackTick(seq uint64, simDuration time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
-	return signal.New(signal.NewGroup().Add(
-		signal.New(seq).AddLabel(common.TickMeta, common.TickCount),
-		signal.New(simDuration).AddLabel(common.TickMeta, common.SimDuration),
-		signal.New(simWallTime).AddLabel(common.TickMeta, common.SimWallTime),
-		signal.New(duration).AddLabel(common.TickMeta, common.DeltaT),
-	),
-	)
+	return signal.New(
+		signal.NewGroup().Add(
+			signal.New(seq).AddLabel(common.TickMeta, common.TickCount),
+			signal.New(simDuration).AddLabel(common.TickMeta, common.SimDuration),
+			signal.New(simWallTime).AddLabel(common.TickMeta, common.SimWallTime),
+			signal.New(duration).AddLabel(common.TickMeta, common.DeltaT),
+		),
+	).AddLabel("category", "time").
+		AddLabel("type", "tick")
 }
 
 // UnpackTick returns components of tick
