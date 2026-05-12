@@ -8,6 +8,14 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+const (
+	// We use constants for simplicity, but in future those params can be moved to reusable gas-profiles (per city\country\planet)
+	nitrogenFraction  = 77.6
+	oxygenFraction    = 21
+	argonFraction     = 1
+	pollutionFraction = 0.4
+)
+
 // GetGasComponent returns the gas component of the habitat
 func GetGasComponent() *component.Component {
 	return component.New("gas").
@@ -19,7 +27,6 @@ func GetGasComponent() *component.Component {
 			// Average air conditions in Valencia
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
-			state.Set("composition", getDefaultComposition())
 		}).
 		WithActivationFunc(
 			helper.SequentialActivationFunc(
@@ -61,24 +68,8 @@ func handleControlSignals(this *component.Component) error {
 func emitEnvironmentalGas(this *component.Component) error {
 	currentTemperature := this.State().Get("temperature").(float64)
 	currentHumidity := this.State().Get("humidity").(float64)
-	currentComposition := this.State().Get("composition").(*signal.Group)
 
-	this.OutputByName("environmental_gas").PutPayloads(
-		signal.NewGroup().Add(
-			helper.NewLevel(currentTemperature, "temperature"),
-			helper.NewLevel(currentHumidity, "humidity"),
-			signal.New(currentComposition).AddLabel("param", "composition"),
-		))
-
-	return nil
-}
-
-// getDefaultComposition returns the default composition of the gas
-func getDefaultComposition() *signal.Group {
-	return signal.NewGroup().Add(
-		// Major Atmospheric Components
-		helper.NewLevel(78.0, "nitrogen").AddLabel("formula", "N2"),
-		helper.NewLevel(21.0, "oxygen").AddLabel("formula", "O2"),
-		helper.NewLevel(1.0, "argon").AddLabel("formula", "Ar"),
-	)
+	return this.OutputByName("environmental_gas").PutSignals(
+		helper.PackAir(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity),
+	).ChainableErr()
 }
