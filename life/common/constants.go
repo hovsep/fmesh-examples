@@ -1,6 +1,7 @@
 package common
 
 const (
+	Param           Label = "param"
 	Type            Label = "type"
 	Level           Label = "level"
 	Bias            Label = "bias"
