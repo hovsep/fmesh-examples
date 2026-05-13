@@ -32,16 +32,16 @@ func MapAirLevel(airSignal *signal.Signal, axis string, mapFunc func(old float64
 		panic("Signal is not air")
 	}
 
-	AsGroup(airSignal).
-		Filter(func(s *signal.Signal) bool {
-			return IsLevelWithAxis(s, axis)
-		}).
-		First().
-		MapPayload(func(payload any) any {
-			return mapFunc(payload.(float64))
-		})
+	newGroup := AsGroup(airSignal).MapIf(
+		func(s *signal.Signal) bool { return IsLevelWithAxis(s, axis) },
+		func(s *signal.Signal) *signal.Signal {
+			return s.MapPayload(func(payload any) any {
+				return mapFunc(payload.(float64))
+			})
+		},
+	)
 
-	return airSignal
+	return airSignal.MapPayload(func(_ any) any { return newGroup })
 }
 
 // MapAirComposition allows modifying a given air component (nitrogen, oxygen, argon, pollution)
@@ -50,22 +50,22 @@ func MapAirComposition(airSignal *signal.Signal, axis string, mapFunc func(old f
 		panic("Signal is not air")
 	}
 
-	compositionSig := AsGroup(airSignal).
-		Filter(func(s *signal.Signal) bool {
-			return s.Labels().ValueIs(common.Param, "composition")
-		}).
-		First()
+	newAirGroup := AsGroup(airSignal).MapIf(
+		func(s *signal.Signal) bool { return s.Labels().ValueIs(common.Param, "composition") },
+		func(compositionSig *signal.Signal) *signal.Signal {
+			newCompositionGroup := AsGroup(compositionSig).MapIf(
+				func(s *signal.Signal) bool { return IsLevelWithAxis(s, axis) },
+				func(s *signal.Signal) *signal.Signal {
+					return s.MapPayload(func(payload any) any {
+						return mapFunc(payload.(float64))
+					})
+				},
+			)
+			return compositionSig.MapPayload(func(_ any) any { return newCompositionGroup })
+		},
+	)
 
-	AsGroup(compositionSig).
-		Filter(func(s *signal.Signal) bool {
-			return IsLevelWithAxis(s, axis)
-		}).
-		First().
-		MapPayload(func(payload any) any {
-			return mapFunc(payload.(float64))
-		})
-
-	return airSignal
+	return airSignal.MapPayload(func(_ any) any { return newAirGroup })
 }
 
 func IsAir(signal *signal.Signal) bool {
