@@ -95,7 +95,8 @@ func handleMechanics(this *component.Component) error {
 }
 
 func handleGasExchange(this *component.Component) error {
-	gas, _ := this.InputByName("inspired_gas").Signals().All()
-	_ = gas
+	gas := this.InputByName("inspired_gas").Signals().First()
+	nitrogen, oxygen, argon, pollution, temp, humid := helper.UnpackAir(gas)
+	_, _, _, _, _, _, _ = gas, nitrogen, oxygen, argon, pollution, temp, humid
 	return nil
 }
