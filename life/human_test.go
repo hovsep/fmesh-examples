@@ -134,6 +134,16 @@ func Test_HumanLiveness(t *testing.T) {
 				})
 			},
 		},
+		/*{@TODO: implement this test
+			name:       "inhaled air is different",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+
+
+				helper.RunSimulationAndThen(sim, time.Millisecond * 100, func() {
+
+				}
+			},
+		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
