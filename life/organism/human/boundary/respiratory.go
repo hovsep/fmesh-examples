@@ -26,39 +26,27 @@ func GetRespiratory() *component.Component {
 
 // Applies pollution reduction.
 func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	return mapInspiredGas(func(airSignal *signal.Signal) *signal.Signal {
+	return sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
 		return helper.MapAirComposition(airSignal, "pollution", func(p float64) float64 {
 			return p * 0.5
 		})
-	})(sigs)
+	}), nil
 }
 
 // Applies humidity increase.
 func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	return mapInspiredGas(func(airSignal *signal.Signal) *signal.Signal {
+	return sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
 		return helper.MapAirLevel(airSignal, "humidity", func(h float64) float64 {
 			return h * 1.1
 		})
-	})(sigs)
+	}), nil
 }
 
 // Applies temperature increase.
 func warmUpInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	return mapInspiredGas(func(airSignal *signal.Signal) *signal.Signal {
+	return sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
 		return helper.MapAirLevel(airSignal, "temperature", func(t float64) float64 {
 			return t + 0.2
 		})
-	})(sigs)
-}
-
-// mapInspiredGas returns a pipeline stage function that applies a basic transformation to air signal.
-func mapInspiredGas(mapFunc signal.Mapper) helper.PipeLineStageFunction {
-	return func(sigs *signal.Group) (*signal.Group, error) {
-		airSig := sigs.Filter(func(s *signal.Signal) bool {
-			return helper.IsAir(s)
-		}).First()
-		airSig = airSig.Map(mapFunc)
-
-		return sigs, nil
-	}
+	}), nil
 }
