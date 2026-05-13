@@ -27,12 +27,10 @@ func NewLaptop(name string) *Laptop {
 			WithActivationFunc(func(this *component.Component) error {
 
 				// Process programmatic commands
-				this.InputByName(portProgrammaticIn).Signals().ForEach(func(sig *signal.Signal) error {
-					// Handle signals routed to usb port
-					if sig.Labels().ValueIs(labelTo, labelUSB) {
-						this.OutputByName(portUSBOut).PutSignals(sig)
-					}
-					return nil
+				this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
+					return sig.Labels().ValueIs(labelTo, labelUSB)
+				}, func(sig *signal.Signal) error {
+					return this.OutputByName(portUSBOut).PutSignals(sig).ChainableErr()
 				})
 
 				// Process incoming usb data
