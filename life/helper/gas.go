@@ -89,7 +89,8 @@ func MapAirLevel(airSignal *signal.Signal, axis string, mapFunc func(old float64
 	return airSignal.MapPayload(func(_ any) any { return newGroup })
 }
 
-// MapAirComposition allows modifying a given air component (nitrogen, oxygen, argon, pollution)
+// MapAirComposition allows modifying a given air component (nitrogen, oxygen, argon, pollution).
+// The composition is automatically rebalanced after the modification so all levels sum to 100%.
 func MapAirComposition(airSignal *signal.Signal, axis string, mapFunc func(old float64) float64) *signal.Signal {
 	if !IsAir(airSignal) {
 		panic("Signal is not air")
@@ -106,7 +107,8 @@ func MapAirComposition(airSignal *signal.Signal, axis string, mapFunc func(old f
 					})
 				},
 			)
-			return compositionSig.MapPayload(func(_ any) any { return newCompositionGroup })
+			modified := compositionSig.MapPayload(func(_ any) any { return newCompositionGroup })
+			return RebalanceDistribution(modified)
 		},
 	)
 

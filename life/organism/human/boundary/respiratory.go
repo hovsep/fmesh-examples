@@ -6,10 +6,7 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-//@TODO: reducing any level of air signal brakes the sum()=100% rule as we do not have any rebalance\renormalization in place
-// this must be fixed in generalized way, we need some tooling to model mixtures with explicit Filter("axis", x%) api which will rebalance compounds
-// ideally it must support both gas or fluid mixtures, but can be 2 separate packages as well
-
+// @TODO: emit inspired gas only in inhale phase (derive from diaphragm)
 func GetRespiratory() *component.Component {
 	return component.New("boundary:respiratory").
 		WithDescription("Transforms environmental gas signals into chemical levels and lung input for circulation").

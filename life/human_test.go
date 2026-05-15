@@ -134,10 +134,19 @@ func Test_HumanLiveness(t *testing.T) {
 				})
 			},
 		},
-		/*{@TODO: implement this test
+		/*{
 			name:       "inhaled air is different",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
 
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+
+							return nil
+						})
+				})
 
 				helper.RunSimulationAndThen(sim, time.Millisecond * 100, func() {
 
