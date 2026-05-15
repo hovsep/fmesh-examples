@@ -20,7 +20,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 				// Add all signals from the input port to the aggregated state (for later publishing)
 
 				err := port.ForwardWithMap(in, this.OutputByName("aggregated_state"), func(sig *signal.Signal) *signal.Signal {
-					return sig.AddLabel("from", in.Name())
+					return sig.MapPayload(func(p any) any { return p }).AddLabel("from", in.Name())
 				})
 
 				if err != nil {
