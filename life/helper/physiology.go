@@ -14,12 +14,12 @@ func IsBias(s *signal.Signal) bool {
 
 // NewBias builds a signal that represents a regional bias
 func NewBias(value float64, region string) *signal.Signal {
-	return signal.New(value).AddLabel(common.Type, common.Bias).AddLabel(common.Region, region)
+	return signal.New(value).WithLabel(common.Type, common.Bias).WithLabel(common.Region, region)
 }
 
 // PackAutonomicTone builds a signal that represents autonomic tone
 func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) *signal.Signal {
-	return signal.New(signal.NewGroup().Add(
+	return signal.New(signal.NewGroup().With(
 		NewLevel(sym, common.Sympathetic),
 		NewLevel(paraSym, common.Parasympathetic),
 		NewLevel(noise, common.Noise),

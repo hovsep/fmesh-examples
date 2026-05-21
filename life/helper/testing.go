@@ -29,8 +29,8 @@ func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f fu
 	done := make(chan struct{})
 
 	go func() {
+		defer close(done)
 		sim.Run()
-		close(done)
 	}()
 
 	<-done

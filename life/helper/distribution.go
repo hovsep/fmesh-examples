@@ -24,10 +24,10 @@ func NewDistribution(distributionMap DistributionMap) *signal.Signal {
 	distGroup := signal.NewGroup()
 
 	for axis, value := range distributionMap {
-		distGroup.Add(NewLevel(value, axis))
+		distGroup = distGroup.With(NewLevel(value, axis))
 	}
 
-	return signal.New(distGroup).AddLabel(common.Type, "distribution")
+	return signal.New(distGroup).WithLabel(common.Type, "distribution")
 }
 
 // RebalanceDistribution rebalances a distribution ensuring that all levels sum up to 100%.
@@ -55,5 +55,5 @@ func RebalanceDistribution(s *signal.Signal) *signal.Signal {
 	})
 
 	allLabels, _ := s.Labels().All()
-	return NewDistribution(rebalanced).AddLabels(maps.Clone(allLabels))
+	return NewDistribution(rebalanced).WithLabels(maps.Clone(allLabels))
 }

@@ -13,7 +13,7 @@ func PackAir(nitrogen, oxygen, argon, pollution, temperature, humidity float64) 
 	}
 
 	return signal.New(
-		signal.NewGroup().Add(
+		signal.NewGroup().With(
 			NewLevel(temperature*unit.Celsius, "temperature"),
 			NewLevel(humidity*unit.Percent, "humidity"),
 			NewDistribution(DistributionMap{
@@ -21,10 +21,10 @@ func PackAir(nitrogen, oxygen, argon, pollution, temperature, humidity float64) 
 				"oxygen":    oxygen * unit.Percent,
 				"argon":     argon * unit.Percent,
 				"pollution": pollution * unit.Percent,
-			}).AddLabel(common.Param, "composition"),
+			}).WithLabel(common.Param, "composition"),
 		)).
-		AddLabel("category", "gas").
-		AddLabel("type", "air")
+		WithLabel("category", "gas").
+		WithLabel("type", "air")
 }
 
 // UnpackAir extracts all components of an air signal produced by PackAir.

@@ -242,7 +242,7 @@ func getFilter(name string, blockList map[string]bool) *component.Component {
 
 			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				if !blockList[sig.PayloadOrDefault("").(string)] {
-					filtered = filtered.Add(sig)
+					filtered = filtered.With(sig)
 				}
 				return nil
 			})

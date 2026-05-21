@@ -75,26 +75,26 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 
 	// Increase temperature
 	commands["temp:inc"] = step_sim.NewMeshCommandDescriptor("Increase gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
-		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).AddLabel("cmd", "change_temperature"))
+		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).WithLabel("cmd", "change_temperature"))
 	})
 
 	// Decrease temperature
 	commands["temp:dec"] = step_sim.NewMeshCommandDescriptor("Decrease gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
-		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).AddLabel("cmd", "change_temperature"))
+		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).WithLabel("cmd", "change_temperature"))
 	})
 
 	// Set the temperature to zero
 	commands["temp:zero"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to zeo degrees", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(0.0).AddLabel("cmd", "set_temperature"))
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(0.0).WithLabel("cmd", "set_temperature"))
 	})
 
 	// Make the gas hot
 	commands["temp:hot"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to +38.0", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).AddLabel("cmd", "set_temperature"))
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).WithLabel("cmd", "set_temperature"))
 	})
 
 	// Make the gas cold
 	commands["temp:cold"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to -35.0", func(fm *fmesh.FMesh) {
-		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).AddLabel("cmd", "set_temperature"))
+		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).WithLabel("cmd", "set_temperature"))
 	})
 }

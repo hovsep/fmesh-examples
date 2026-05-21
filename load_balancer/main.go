@@ -44,7 +44,7 @@ func main() {
 		fmt.Println("Wave", i, "will have", requestsPerWave, "requests")
 		requests := signal.NewGroup()
 		for j := range requestsPerWave {
-			requests = requests.Add(signal.New(fmt.Sprintf("wave-%d req-%d", i, j)))
+			requests = requests.With(signal.New(fmt.Sprintf("wave-%d req-%d", i, j)))
 		}
 		fm.ComponentByName("lb").
 			InputByName(portIn).

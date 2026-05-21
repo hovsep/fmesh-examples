@@ -45,7 +45,7 @@ func GetBrain() *component.Component {
 
 			// Brain failure
 			if currentDamage >= criticalDamageLevel {
-				return this.OutputByName("failure").PutSignals(signal.New("brain_failure").AddLabel("type", "acute")).ChainableErr()
+				return this.OutputByName("failure").PutSignals(signal.New("brain_failure").WithLabel("type", "acute")).ChainableErr()
 			}
 
 			var nextND float64

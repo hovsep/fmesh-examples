@@ -91,8 +91,7 @@ func getMesh() *fmesh.FMesh {
 				AddInputs("start").
 				AddOutputs("rotation").
 				WithActivationFunc(func(this *component.Component) error {
-					revolution := signal.New(10)
-					revolution.AddLabel("direction", "clockwise")
+					revolution := signal.New(10).WithLabel("direction", "clockwise")
 
 					this.OutputByName("rotation").PutSignals(revolution)
 					return nil

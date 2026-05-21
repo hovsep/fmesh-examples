@@ -81,48 +81,48 @@ func getFilter(name string, disallowedLabels *labels.Collection) *component.Comp
 }
 
 func getSignals() *signal.Group {
-	return signal.NewGroup().Add(
-		signal.New("Justice").AddLabels(labels.Map{
+	return signal.NewGroup().With(
+		signal.New("Justice").WithLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Justin Bieber",
 			"year":   "2021",
 		}),
-		signal.New("Dysania").AddLabels(labels.Map{
+		signal.New("Dysania").WithLabels(labels.Map{
 			"genre":  "rock",
 			"artist": "Elita",
 			"year":   "2023",
 		}),
-		signal.New("After Hours").AddLabels(labels.Map{
+		signal.New("After Hours").WithLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "The Weekend",
 			"year":   "2020",
 		}),
-		signal.New("Random Access Memories").AddLabels(labels.Map{
+		signal.New("Random Access Memories").WithLabels(labels.Map{
 			"genre":  "electronic",
 			"artist": "Daft Punk",
 			"year":   "2013",
 		}),
-		signal.New("Evermore").AddLabels(labels.Map{
+		signal.New("Evermore").WithLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2020",
 		}),
-		signal.New("1989").AddLabels(labels.Map{
+		signal.New("1989").WithLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2014",
 		}),
-		signal.New("To Pimp a Butterfly").AddLabels(labels.Map{
+		signal.New("To Pimp a Butterfly").WithLabels(labels.Map{
 			"genre":  "hip-hop",
 			"artist": "Kendrick Lamar",
 			"year":   "2015",
 		}),
-		signal.New("Ghost Stories").AddLabels(labels.Map{
+		signal.New("Ghost Stories").WithLabels(labels.Map{
 			"genre":  "alternative",
 			"artist": "Coldplay",
 			"year":   "2014",
 		}),
-		signal.New("Future Nostalgia").AddLabels(labels.Map{
+		signal.New("Future Nostalgia").WithLabels(labels.Map{
 			"genre":  "pop",
 			"artist": "Dua Lipa",
 			"year":   "2020",
