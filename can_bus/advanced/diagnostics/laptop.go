@@ -48,9 +48,8 @@ func NewLaptop(name string) *Laptop {
 func (l *Laptop) SendDataToUSB(payloads ...any) {
 	l.laptopComponent.InputByName(portProgrammaticIn).
 		PutSignalGroups(
-			signal.NewGroup(payloads...).ForEach(func(sig *signal.Signal) error {
-				sig.AddLabel(labelTo, labelUSB)
-				return nil
+			signal.NewGroup(payloads...).Map(func(sig *signal.Signal) *signal.Signal {
+				return sig.WithLabel(labelTo, labelUSB)
 			}),
 		)
 }

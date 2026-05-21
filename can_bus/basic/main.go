@@ -141,7 +141,7 @@ func getNode(name string, id int) *component.Component {
 							CanFrame{
 								Id:   4,
 								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.PayloadOrNil()),
-							}).AddLabels(
+							}).WithLabels(
 							// Additionally, we can add some meta-data
 							labels.Map{
 								"from":       this.Name(),
