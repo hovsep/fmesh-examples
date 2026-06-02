@@ -1,24 +1,28 @@
 package sink
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 )
 
 type ClientsRegistry struct {
-	sync.Mutex
+	mu      sync.Mutex
 	Clients map[net.Conn]struct{}
 }
 
 type UnixSocketSink struct {
-	ctx             context.Context
+	socketPath      string
 	listener        net.Listener
 	clientsRegistry ClientsRegistry
 	stream          chan string
+	done            chan struct{}
+	closeOnce       sync.Once
+	wg              sync.WaitGroup
+	dropped         uint64
 }
 
 func newClientsRegistry() ClientsRegistry {
@@ -27,7 +31,7 @@ func newClientsRegistry() ClientsRegistry {
 	}
 }
 
-func NewUnixSocketSink(ctx context.Context, socketPath string) (*UnixSocketSink, error) {
+func NewUnixSocketSink(socketPath string) (*UnixSocketSink, error) {
 	listener, err := getListener(socketPath)
 	if err != nil {
 		return nil, err
@@ -35,75 +39,116 @@ func NewUnixSocketSink(ctx context.Context, socketPath string) (*UnixSocketSink,
 
 	streamChan := make(chan string, 1000)
 	sink := &UnixSocketSink{
-		ctx:             ctx,
+		socketPath:      socketPath,
 		clientsRegistry: newClientsRegistry(),
 		stream:          streamChan,
+		done:            make(chan struct{}),
 		listener:        listener,
 	}
 
 	// Accept connection from socket
+	sink.wg.Add(1)
 	go sink.acceptConnections()
 
 	// Broadcast aggregated state updates among clients
+	sink.wg.Add(1)
 	go sink.broadcast()
 	return sink, nil
 }
 
+// Close stops the sink goroutines and releases the listener.
+// It is safe to call multiple times.
 func (s *UnixSocketSink) Close() error {
-	fmt.Println("Shutting down the sink...")
-	err := s.listener.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close listener: %w", err)
-	}
-	return nil
+	var err error
+	s.closeOnce.Do(func() {
+		fmt.Println("Shutting down the sink...")
+
+		// Signal goroutines to stop and unblock the blocking Accept call
+		close(s.done)
+		if closeErr := s.listener.Close(); closeErr != nil {
+			err = fmt.Errorf("failed to close listener: %w", closeErr)
+		}
+
+		// Wait for acceptConnections and broadcast to finish
+		s.wg.Wait()
+
+		// Close any remaining client connections
+		s.clientsRegistry.mu.Lock()
+		for c := range s.clientsRegistry.Clients {
+			_ = c.Close()
+			delete(s.clientsRegistry.Clients, c)
+		}
+		s.clientsRegistry.mu.Unlock()
+	})
+	return err
 }
 
+// Publish is non-blocking and lossy on purpose: telemetry must never
+// apply back-pressure to the simulation loop. Dropped lines are counted.
 func (s *UnixSocketSink) Publish(line string) error {
-	s.stream <- line
-	return nil
+	select {
+	case <-s.done:
+		return nil
+	case s.stream <- line:
+		return nil
+	default:
+		atomic.AddUint64(&s.dropped, 1)
+		return nil
+	}
+}
+
+// Dropped returns the number of lines dropped because the buffer was full.
+func (s *UnixSocketSink) Dropped() uint64 {
+	return atomic.LoadUint64(&s.dropped)
 }
 
 func (s *UnixSocketSink) acceptConnections() {
-	for {
-		select {
-		case <-s.ctx.Done():
-			fmt.Println("Stopping accepting connections to the sink...")
-			return
-		default:
-			conn, err := s.listener.Accept()
-			if err != nil {
-				fmt.Println("accept error:", err)
-				continue
-			}
+	defer s.wg.Done()
 
-			fmt.Println("New client connected")
-			s.clientsRegistry.Add(conn)
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			// Stop cleanly when the sink is shutting down or the listener is closed
+			select {
+			case <-s.done:
+				fmt.Println("Stopping accepting connections to the sink...")
+				return
+			default:
+			}
+			if errors.Is(err, net.ErrClosed) {
+				fmt.Println("Stopping accepting connections to the sink...")
+				return
+			}
+			fmt.Println("accept error:", err)
+			continue
 		}
 
+		fmt.Println("New client connected")
+		s.clientsRegistry.Add(conn)
 	}
 }
 
 func (s *UnixSocketSink) broadcast() {
-	for line := range s.stream {
+	defer s.wg.Done()
+
+	for {
 		select {
-		case <-s.ctx.Done():
+		case <-s.done:
 			fmt.Println("Stopping broadcasting...")
 			return
-		default:
-			s.clientsRegistry.Lock()
+		case line := <-s.stream:
+			s.clientsRegistry.mu.Lock()
 			for c := range s.clientsRegistry.Clients {
-				_, err := fmt.Fprintln(c, line)
-				if err != nil {
-					// Remove disconnected clients
-					err := c.Close()
-					if err != nil {
-						return
+				if _, err := fmt.Fprintln(c, line); err != nil {
+					// Remove disconnected clients (always drop, regardless of Close result)
+					if closeErr := c.Close(); closeErr != nil {
+						fmt.Println("error closing client:", closeErr)
 					}
-					fmt.Println("Client disconnected")
 					delete(s.clientsRegistry.Clients, c)
+					fmt.Println("Client disconnected")
 				}
 			}
-			s.clientsRegistry.Unlock()
+			s.clientsRegistry.mu.Unlock()
 		}
 	}
 }
@@ -127,7 +172,7 @@ func getListener(socketPath string) (net.Listener, error) {
 }
 
 func (c *ClientsRegistry) Add(conn net.Conn) {
-	c.Lock()
-	defer c.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.Clients[conn] = struct{}{}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
@@ -57,14 +56,20 @@ func (s *Simulation) Init(initFunc func(sim *Simulation)) *Simulation {
 	return s
 }
 
-// Run starts the simulation loop
+// Run starts the simulation loop.
+//
+// Concurrency invariant: the mesh is only ever touched from this single
+// goroutine. Both command handling and FM.Run() happen here, serialized,
+// so no locking is required around the mesh or component state. New
+// simulations must mutate the mesh exclusively via commands sent on cmdChan,
+// never directly from the sink, UI, or other goroutines.
 func (s *Simulation) Run() {
 	fmt.Println("Starting simulation...")
 
 	for {
-		// Process incoming commands
-		checkCommands := true
-		for checkCommands {
+		// Drain all pending commands without blocking
+		drainCommands := true
+		for drainCommands {
 			select {
 			case <-s.ctx.Done():
 				fmt.Println("Shutting down simulation...")
@@ -74,26 +79,31 @@ func (s *Simulation) Run() {
 					fmt.Println("Command channel closed, shutting down simulation...")
 					return
 				}
-				switch cmd {
-				case Pause:
-					s.Pause()
-				case Resume:
-					s.Resume()
-				case Exit:
-					fmt.Println("Exiting simulation...")
+				if s.dispatchCommand(cmd) {
 					return
-				default:
-					s.handleCommand(cmd)
 				}
 			default:
-				// No more commands in the channel, break the inner loop
-				checkCommands = false
+				// No more commands in the channel, stop draining
+				drainCommands = false
 			}
 		}
 
-		// Sleep if paused to avoid a busy-wait
+		// While paused, block until a command arrives (or shutdown) instead of
+		// busy-waiting, so we react immediately and consume no CPU.
 		if s.isPaused {
-			time.Sleep(time.Second)
+			select {
+			case <-s.ctx.Done():
+				fmt.Println("Shutting down simulation...")
+				return
+			case cmd, ok := <-s.cmdChan:
+				if !ok {
+					fmt.Println("Command channel closed, shutting down simulation...")
+					return
+				}
+				if s.dispatchCommand(cmd) {
+					return
+				}
+			}
 			continue
 		}
 
@@ -106,6 +116,23 @@ func (s *Simulation) Run() {
 
 		s.MaybeAutoPause(runResult)
 	}
+}
+
+// dispatchCommand executes a single command and returns true if the
+// simulation loop should stop.
+func (s *Simulation) dispatchCommand(cmd Command) (stop bool) {
+	switch cmd {
+	case Pause:
+		s.Pause()
+	case Resume:
+		s.Resume()
+	case Exit:
+		fmt.Println("Exiting simulation...")
+		return true
+	default:
+		s.handleCommand(cmd)
+	}
+	return false
 }
 
 func (s *Simulation) MaybeAutoPause(runResult *fmesh.RuntimeInfo) {
