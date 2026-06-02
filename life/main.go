@@ -82,7 +82,8 @@ func initSim(sim *step_sim.Simulation) {
 			})
 
 			// @TODO: take this delay from flag or cmd to not affect tests
-			time.Sleep(10 * time.Millisecond) // Near real time
+			// Slow down to near real time (useful with TUI)
+			time.Sleep(10 * time.Millisecond)
 			return nil
 		})
 	})

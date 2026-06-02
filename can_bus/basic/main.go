@@ -8,7 +8,6 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/labels"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )

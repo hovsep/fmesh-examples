@@ -15,12 +15,9 @@ const (
 
 // GetObservableState ...
 func GetObservableState() *component.Component {
-	return component.New("physiology:observable_state").
-		WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)").
-		WithInitialState(func(st component.State) {
-			st.Set(LastBrainActivity, 0.0)
-		}).
-		AddInputs(
+	c, err := component.New("physiology:observable_state",
+		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
+		component.WithInputs(
 			"time",
 			"brain_activity",
 			"heart_cardiac_activation",
@@ -37,8 +34,8 @@ func GetObservableState() *component.Component {
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
-		).
-		AddOutputs(
+		),
+		component.WithOutputs(
 			"is_alive",
 			"brain_activity",
 			"brain_activity_trend",
@@ -53,13 +50,22 @@ func GetObservableState() *component.Component {
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
-			"lung_right_exhaled_gas").
-		WithActivationFunc(helper.SequentialActivationFunc(
+			"lung_right_exhaled_gas",
+		),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
 			handleBrainSignals,
 			handleHeartSignals,
 			handleDiaphragmSignals,
 			handleLungSignals,
-		))
+		)),
+		component.WithInitialState(func(st component.State) {
+			st.Set(LastBrainActivity, 0.0)
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func handleBrainSignals(this *component.Component) error {

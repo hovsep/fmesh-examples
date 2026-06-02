@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/guptarohit/asciigraph v0.8.1
-	github.com/hovsep/fmesh v1.9.0-Sis
+	github.com/hovsep/fmesh v1.9.2-Sis
 	github.com/hovsep/fmesh-examples v0.0.7
 	github.com/stretchr/testify v1.11.1
 )

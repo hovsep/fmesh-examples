@@ -4,11 +4,15 @@ import "github.com/hovsep/fmesh/component"
 
 // GetPhysiologicalLoad ...
 func GetPhysiologicalLoad() *component.Component {
-	return component.New("physiology:physiological_load").
-		WithDescription("Physiological load (e.g., thermal, mechanical, radiation etc)").
-		AddInputs("time").
-		AddOutputs().
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("physiology:physiological_load",
+		component.WithDescription("Physiological load (e.g., thermal, mechanical, radiation etc)"),
+		component.WithInputs("time"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }

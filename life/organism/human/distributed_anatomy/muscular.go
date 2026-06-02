@@ -2,13 +2,17 @@ package da
 
 import "github.com/hovsep/fmesh/component"
 
-// GetMuscularSystem ...
+// GetMuscularSystem returns the muscular system component
 func GetMuscularSystem() *component.Component {
-	return component.New("da:muscular_system").
-		WithDescription("Muscular system").
-		AddInputs("time", "autonomic_tone").
-		AddOutputs().
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("da:muscular_system",
+		component.WithDescription("Muscular system"),
+		component.WithInputs("time", "autonomic_tone"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }

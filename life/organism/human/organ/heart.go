@@ -27,20 +27,25 @@ func cardiacActivationWave(phase float64) float64 {
 
 // GetHeart returns heart component
 func GetHeart() *component.Component {
-	return component.New("organ:heart").
-		WithDescription("Heart").
-		WithInitialState(func(state component.State) {
-			state.Set(common.Rate, 60)   // Initial BPM
-			state.Set(common.Phase, 0.0) // Phase in the current heartbeat cycle
-		}).
-		AddInputs("time", "autonomic_tone").
-		AddOutputs("cardiac_activation", "rate").
-		WithActivationFunc(
+	c, err := component.New("organ:heart",
+		component.WithDescription("Heart"),
+		component.WithInputs("time", "autonomic_tone"),
+		component.WithOutputs("cardiac_activation", "rate"),
+		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				oscillateHeart,
 				handleCardiacBias,
 			),
-		)
+		),
+		component.WithInitialState(func(state component.State) {
+			state.Set(common.Rate, 60)   // Initial BPM
+			state.Set(common.Phase, 0.0) // Phase in the current heartbeat cycle
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func oscillateHeart(this *component.Component) error {

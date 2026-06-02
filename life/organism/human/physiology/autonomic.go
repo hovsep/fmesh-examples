@@ -16,11 +16,11 @@ const (
 
 // GetAutonomicCoordination ...
 func GetAutonomicCoordination() *component.Component {
-	return component.New("physiology:autonomic_coordination").
-		WithDescription("Autonomic coordination system").
-		AddInputs("time", "neural_drive").
-		AddOutputs("autonomic_tone").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("physiology:autonomic_coordination",
+		component.WithDescription("Autonomic coordination system"),
+		component.WithInputs("time", "neural_drive"),
+		component.WithOutputs("autonomic_tone"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("neural_drive").HasSignals() {
 				this.Logger().Println("No signal from brain")
 				return nil
@@ -35,8 +35,12 @@ func GetAutonomicCoordination() *component.Component {
 
 			this.OutputByName("autonomic_tone").PutSignals(getAutonomicToneSignal(neuralDrive))
 			return nil
-		})
-
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func getAutonomicToneSignal(neuralDrive float64) *signal.Signal {

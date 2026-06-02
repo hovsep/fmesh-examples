@@ -21,18 +21,21 @@ const (
 // getHumanMesh builds the mesh that simulates the human being
 func getHumanMesh() *fmesh.FMesh {
 	// Create the mesh
-	mesh := fmesh.NewWithConfig(meshName, &fmesh.Config{
-		Debug:       false,
-		CyclesLimit: 1000,
-		TimeLimit:   5 * time.Second,
-	})
+	mesh, err := fmesh.New(meshName,
+		fmesh.WithCyclesLimit(1000),
+		fmesh.WithTimeLimit(5*time.Second),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create human mesh: %v", err))
+	}
 
 	components := getComponents()
 	// Add components to the mesh
-	components.ForEach(func(c *component.Component) error {
-		mesh.AddComponents(c)
-		return mesh.ChainableErr()
-	})
+	if err := components.ForEach(func(c *component.Component) error {
+		return mesh.AddComponents(c)
+	}); err != nil {
+		panic(fmt.Sprintf("failed to add components to human mesh: %v", err))
+	}
 
 	// Do the wiring
 	wireBrain(components)
@@ -42,7 +45,7 @@ func getHumanMesh() *fmesh.FMesh {
 	wireRespiratoryBoundary(components)
 	wireLungs(components)
 
-	err := internal.HandleGraphFlag(mesh, false)
+	err = internal.HandleGraphFlag(mesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
@@ -162,42 +165,45 @@ func getComponents() *component.Collection {
 	// internal physiological load
 	// aggregated state (heart rate, breath, oxygen saturation, body temp, systemic stress index, fatigue, blood pH, blood volume, pain level, inflammation level)
 
-	return component.NewCollection().
-		Add(
-			// Boundaries (interfaces between the environment and a human body)
-			//boundary.GetThermal(),
-			//boundary.GetMechanical(),
-			boundary.GetRespiratory(),
-			//boundary.GetIngestion(),
+	coll := component.NewCollection()
+	if err := coll.Add(
+		// Boundaries (interfaces between the environment and a human body)
+		//boundary.GetThermal(),
+		//boundary.GetMechanical(),
+		boundary.GetRespiratory(),
+		//boundary.GetIngestion(),
 
-			// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
-			//controller.GetIntake(),
-			//controller.GetPhysical(),
-			//controller.GetMental(),
-			//controller.GetExcretion(),
+		// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
+		//controller.GetIntake(),
+		//controller.GetPhysical(),
+		//controller.GetMental(),
+		//controller.GetExcretion(),
 
-			// Physiological systems
-			physiology.GetAutonomicCoordination(),
-			//physiology.GetPhysiologicalLoad(),
-			//physiology.GetEndocrineAxis(),
-			physiology.GetObservableState(),
-			//physiology.GetPhysiologicalState(),
+		// Physiological systems
+		physiology.GetAutonomicCoordination(),
+		//physiology.GetPhysiologicalLoad(),
+		//physiology.GetEndocrineAxis(),
+		physiology.GetObservableState(),
+		//physiology.GetPhysiologicalState(),
 
-			// Regulation systems
-			//regulation.GetHomeostasis(),
+		// Regulation systems
+		//regulation.GetHomeostasis(),
 
-			// Organs
-			organ.GetBrain(),
-			organ.GetHeart(),
-			organ.GetDiaphragm(),
-			organ.GetLung(common.Left),
-			organ.GetLung(common.Right),
+		// Organs
+		organ.GetBrain(),
+		organ.GetHeart(),
+		organ.GetDiaphragm(),
+		organ.GetLung(common.Left),
+		organ.GetLung(common.Right),
 
-			// Distributed anatomy
-			//da.GetSkin(),
-			//da.GetBloodSystem(),
-			//da.GetMuscularSystem(),
-			//da.GetNervousSystem(),
-			//da.GetGITract(),
-		)
+		// Distributed anatomy
+		//da.GetSkin(),
+		//da.GetBloodSystem(),
+		//da.GetMuscularSystem(),
+		//da.GetNervousSystem(),
+		//da.GetGITract(),
+	); err != nil {
+		panic(fmt.Sprintf("failed to build human components: %v", err))
+	}
+	return coll
 }

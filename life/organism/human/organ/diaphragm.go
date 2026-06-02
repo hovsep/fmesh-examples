@@ -37,20 +37,25 @@ func diaphragmPressureWave(phase float64) float64 {
 }
 
 func GetDiaphragm() *component.Component {
-	return component.New("organ:diaphragm").
-		WithDescription("Diaphragm (primary respiratory actuator)").
-		WithInitialState(func(state component.State) {
-			state.Set(common.Rate, TidalRespiratoryRate)
-			state.Set(common.Phase, 0.0)
-		}).
-		AddInputs("time", "autonomic_tone").
-		AddOutputs("pleural_pressure", "respiratory_rate").
-		WithActivationFunc(
+	c, err := component.New("organ:diaphragm",
+		component.WithDescription("Diaphragm (primary respiratory actuator)"),
+		component.WithInputs("time", "autonomic_tone"),
+		component.WithOutputs("pleural_pressure", "respiratory_rate"),
+		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				handleRespiratoryBias,
 				oscillateBreathing,
 			),
-		)
+		),
+		component.WithInitialState(func(state component.State) {
+			state.Set(common.Rate, TidalRespiratoryRate)
+			state.Set(common.Phase, 0.0)
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func oscillateBreathing(this *component.Component) error {

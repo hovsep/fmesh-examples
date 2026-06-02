@@ -18,22 +18,27 @@ const (
 
 // GetGasComponent returns the gas component of the habitat
 func GetGasComponent() *component.Component {
-	return component.New("gas").
-		WithDescription("Gas factor").
-		AddInputs("time", "ctl").
+	c, err := component.New("gas",
+		component.WithDescription("Gas factor"),
+		component.WithInputs("time", "ctl"),
 		// For the sake of simplicity, we skip parameters like barometric pressure or wind
-		AddOutputs("environmental_gas").
-		WithInitialState(func(state component.State) {
-			// Average air conditions in Valencia
-			state.Set("temperature", +26.0)
-			state.Set("humidity", 58.8)
-		}).
-		WithActivationFunc(
+		component.WithOutputs("environmental_gas"),
+		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				handleControlSignals,
 				emitEnvironmentalGas,
 			),
-		)
+		),
+		component.WithInitialState(func(state component.State) {
+			// Average air conditions in Valencia
+			state.Set("temperature", +26.0)
+			state.Set("humidity", 58.8)
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 // The component can receive control signals and change internal state
@@ -71,5 +76,5 @@ func emitEnvironmentalGas(this *component.Component) error {
 
 	return this.OutputByName("environmental_gas").PutSignals(
 		helper.PackAir(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity),
-	).ChainableErr()
+	)
 }

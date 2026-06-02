@@ -12,16 +12,16 @@ import (
 func New(name string) *component.Component {
 	mesh := getHumanMesh()
 
-	return component.New("human-"+name).
-		WithDescription("A human being").
-		AddLabel("role", "organism").
-		AddLabel("genus", "homo").
-		AddLabel("species", "sapiens").
-		AddInputs(
+	c, err := component.New("human-"+name,
+		component.WithDescription("A human being"),
+		component.WithLabel("role", "organism"),
+		component.WithLabel("genus", "homo"),
+		component.WithLabel("species", "sapiens"),
+		component.WithInputs(
 			"habitat_time_tick",
 			"habitat_gas_environmental_gas",
-		).
-		AddOutputs(
+		),
+		component.WithOutputs(
 			"is_alive",
 			"brain_activity",
 			"brain_activity_trend",
@@ -38,13 +38,18 @@ func New(name string) *component.Component {
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
-		).
-		WithActivationFunc(helper.SequentialActivationFunc(
+		),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
 			validate(),
 			sense(mesh),
 			act(mesh),
 			feedback(mesh),
-		))
+		)),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create human component: %v", err))
+	}
+	return c
 }
 
 // validate activation function

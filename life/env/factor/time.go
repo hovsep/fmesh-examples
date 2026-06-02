@@ -11,17 +11,11 @@ const durationPerTick = 10 * time.Millisecond
 
 // GetTimeComponent returns the time component of the habitat
 func GetTimeComponent() *component.Component {
-	c := component.New("time").
-		WithDescription("Time management for the simulation").
-		WithInitialState(func(state component.State) {
-			state.Set("tick_count", uint64(0))          // Discrete step counter
-			state.Set("sim_duration", time.Duration(0)) // Elapsed simulated duration
-			state.Set("sim_start_time", time.Now())     // Fixed wall-clock anchor
-			state.Set("sim_wall_time", time.Now())      // Simulation wall-clock time
-		}).
-		AddInputs("ctl").
-		AddOutputs("tick").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("time",
+		component.WithDescription("Time management for the simulation"),
+		component.WithInputs("ctl"),
+		component.WithOutputs("tick"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// No need to check for inputs, just tick on every activation
 
 			this.State().Update("tick_count", func(v any) any {
@@ -44,10 +38,17 @@ func GetTimeComponent() *component.Component {
 				this.State().Get("sim_wall_time").(time.Time),
 				durationPerTick,
 			)
-			this.OutputByName("tick").PutSignals(nextTick)
-
-			return this.ChainableErr()
-		})
-
+			return this.OutputByName("tick").PutSignals(nextTick)
+		}),
+		component.WithInitialState(func(state component.State) {
+			state.Set("tick_count", uint64(0))          // Discrete step counter
+			state.Set("sim_duration", time.Duration(0)) // Elapsed simulated duration
+			state.Set("sim_start_time", time.Now())     // Fixed wall-clock anchor
+			state.Set("sim_wall_time", time.Now())      // Simulation wall-clock time
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
 	return c
 }
