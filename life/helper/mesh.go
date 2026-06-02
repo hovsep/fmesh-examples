@@ -51,10 +51,10 @@ func PipelineActivationFunc(inputPortNames []string, outputPortName string, stag
 		signals := this.Inputs().ByNames(inputPortNames...).Signals()
 		var stageErr error
 
-		for _, stageFunc := range stageFuncs {
+		for i, stageFunc := range stageFuncs {
 			signals, stageErr = stageFunc(signals)
 			if stageErr != nil {
-				return fmt.Errorf("pipeline stage %s failed: %w", stageFunc, stageErr)
+				return fmt.Errorf("pipeline stage %d failed: %w", i, stageErr)
 			}
 		}
 

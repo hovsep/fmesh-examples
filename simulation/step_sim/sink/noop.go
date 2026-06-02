@@ -11,3 +11,7 @@ func (s *NoopSink) Publish(line string) error {
 	_ = line
 	return nil
 }
+
+func (s *NoopSink) Close() error {
+	return nil
+}

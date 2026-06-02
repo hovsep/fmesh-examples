@@ -60,7 +60,7 @@ func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
 	// Print current time
 	commands["time:now"] = step_sim.NewMeshCommandDescriptor("Print current time", func(_ *fmesh.FMesh) {
 		tickCount := timeComponent.State().Get("tick_count")
-		simTime := timeComponent.State().Get("sim_time")
+		simTime := timeComponent.State().Get("sim_duration")
 		simWallTime := timeComponent.State().Get("sim_wall_time")
 		fmt.Println("Current tick count:", tickCount)
 		fmt.Println("Simulation duration:", simTime)

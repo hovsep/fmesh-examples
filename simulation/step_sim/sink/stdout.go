@@ -13,3 +13,7 @@ func (s *StdOutSink) Publish(line string) error {
 	_, err := fmt.Println(line)
 	return err
 }
+
+func (s *StdOutSink) Close() error {
+	return nil
+}

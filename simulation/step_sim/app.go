@@ -3,38 +3,50 @@ package step_sim
 import (
 	"context"
 	"fmt"
-	"time"
+	"sync"
 
 	"github.com/hovsep/fmesh"
 	step_sim_sink "github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 )
 
 type Application struct {
-	ctx     context.Context
 	cancel  context.CancelFunc
 	cmdChan chan Command
+	sink    step_sim_sink.Sink
 
 	REPL *REPL
 	Sim  *Simulation
 }
 
-func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
+// Option configures an Application before it starts.
+type Option func(*Application)
+
+// WithSink overrides the default sink (e.g. for tests or alternative transports).
+func WithSink(s step_sim_sink.Sink) Option {
+	return func(app *Application) {
+		app.sink = s
+	}
+}
+
+func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, opts ...Option) *Application {
 	cmdChan := make(chan Command)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// @TODO: make this optional
-	sink, err := step_sim_sink.NewUnixSocketSink(ctx, "/tmp/"+fm.Name()+".sock")
-	if err != nil {
-		panic(err)
-	}
-
 	app := &Application{
-		ctx:     ctx,
 		cancel:  cancel,
 		cmdChan: cmdChan,
-		REPL:    NewREPL(cmdChan),
-		Sim:     NewSimulation(ctx, fm, cmdChan, sink).Init(simInitFunc),
 	}
+
+	// Default to a no-op sink; callers that want telemetry streaming opt in
+	// explicitly via WithSink (e.g. WithSink(step_sim_sink.NewUnixSocketSink(...))).
+	app.sink = step_sim_sink.NewNoopSink()
+
+	for _, opt := range opts {
+		opt(app)
+	}
+
+	app.REPL = NewREPL(cmdChan)
+	app.Sim = NewSimulation(ctx, fm, cmdChan, app.sink).Init(simInitFunc)
 
 	return app
 }
@@ -42,14 +54,23 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc) *Application {
 func (app *Application) Run() {
 	fmt.Println("Starting the application...")
 
-	defer func() {
-		app.cancel()
-
-		time.Sleep(1 * time.Second) // Just to allow the simulation to shut down gracefully (until we implement more elegant synchronization)
-		fmt.Println("Shutting down the application...")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.Sim.Run()
 	}()
 
-	go app.Sim.Run()
-
+	// Blocks until the user exits the REPL (which closes cmdChan)
 	app.REPL.Run()
+
+	// Stop the simulation if it has not already stopped via the closed cmdChan,
+	// then wait for it to fully finish so no further Publish calls race the sink shutdown.
+	app.cancel()
+	wg.Wait()
+
+	if err := app.sink.Close(); err != nil {
+		fmt.Println("error closing sink:", err)
+	}
+	fmt.Println("Shutting down the application...")
 }

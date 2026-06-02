@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// REPL reads commands from stdin and forwards them to the simulation.
+//
+// Channel ownership: the REPL is the owner of cmdChan and is the only place
+// that closes it (see Run). Once Run returns, the channel is closed, so
+// Simulation.SendCommand must not be called afterwards (sending on a closed
+// channel panics). Callers that send commands from elsewhere are responsible
+// for ensuring they do so only while the REPL is still running.
 type REPL struct {
 	cmdChan chan Command
 }

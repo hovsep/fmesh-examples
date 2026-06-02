@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -54,8 +55,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create the unix socket sink so the TUI can connect and visualize state
+	uiSink, err := sink.NewUnixSocketSink("/tmp/" + simMesh.Name() + ".sock")
+	if err != nil {
+		fmt.Println("Failed to create sink:", err)
+		os.Exit(1)
+	}
+
 	// Run the mesh in a step simulation
-	step_sim.NewApp(simMesh, initSim).Run()
+	step_sim.NewApp(simMesh, initSim, step_sim.WithSink(uiSink)).Run()
 }
 
 // initSim configures simulation and adds custom commands

@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
@@ -9,6 +10,11 @@ import (
 )
 
 func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f func()) {
+	// Ensure Exit is sent exactly once: the hook fires on every tick past the
+	// threshold, and after the first Exit the Sim stops reading cmdChan, so
+	// further sends would block forever and leak goroutines.
+	var exitOnce sync.Once
+
 	timeComponent := sim.FM.ComponentByName("time")
 	timeComponent.SetupHooks(func(hooks *component.Hooks) {
 		hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
@@ -18,8 +24,10 @@ func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f fu
 			}
 
 			if simDuration >= duration {
-				fmt.Println("Sim duration reached:", simDuration)
-				go sim.SendCommand(step_sim.Exit)
+				exitOnce.Do(func() {
+					fmt.Println("Sim duration reached:", simDuration)
+					go sim.SendCommand(step_sim.Exit)
+				})
 				return nil
 			}
 			return nil

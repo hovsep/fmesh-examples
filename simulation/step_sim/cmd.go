@@ -16,9 +16,7 @@ const (
 	Help   Command = "help"
 )
 
-var NoopMeshCommand = func(*fmesh.FMesh) {
-	return
-}
+var NoopMeshCommand = func(*fmesh.FMesh) {}
 
 func NewMeshCommandDescriptor(desc string, cmdFunc func(*fmesh.FMesh)) MeshCommandDescriptor {
 	return MeshCommandDescriptor{desc, cmdFunc}
