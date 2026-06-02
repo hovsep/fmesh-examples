@@ -4,11 +4,15 @@ import "github.com/hovsep/fmesh/component"
 
 // GetPhysiologicalState ...
 func GetPhysiologicalState() *component.Component {
-	return component.New("physiology:physiological_state").
-		WithDescription("Internal physiological state (e.g., temperature, blood pressure etc)").
-		AddInputs("time").
-		AddOutputs().
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("physiology:physiological_state",
+		component.WithDescription("Internal physiological state (e.g., temperature, blood pressure etc)"),
+		component.WithInputs("time"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }

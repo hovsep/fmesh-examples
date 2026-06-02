@@ -17,10 +17,8 @@ func Test_AppChecks(t *testing.T) {
 			name: "mesh is created and human component is present",
 			assertions: func(t *testing.T, app *step_sim.Application) {
 				assert.NotNil(t, app)
-				humanComponent := helper.FindHumanComponent(app.Sim.FM)
-				assert.NotNil(t, humanComponent)
-				assert.False(t, humanComponent.HasChainableErr())
-				assert.NoError(t, humanComponent.ChainableErr())
+			humanComponent := helper.FindHumanComponent(app.Sim.FM)
+			assert.NotNil(t, humanComponent)
 			},
 		},
 	}

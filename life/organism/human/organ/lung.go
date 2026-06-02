@@ -40,29 +40,34 @@ var (
 )
 
 func GetLung(side common.Side) *component.Component {
-	return component.New("organ:lung_"+string(side)).
-		WithDescription(string(side)+" lung").
-		AddInputs(
+	c, err := component.New("organ:lung_"+string(side),
+		component.WithDescription(string(side)+" lung"),
+		component.WithInputs(
 			"time",
 			"pleural_pressure",
 			"inspired_gas", // not used yet
-		).
-		AddOutputs(
+		),
+		component.WithOutputs(
 			"volume",            // Current lung volume (dynamic)
 			"flow",              // Instantaneous airflow
 			"alveolar_pressure", // Pressure inside alveoli
 			"exhaled_gas",       // passthrough (not modeled yet)
-		).
-		WithInitialState(func(state component.State) {
+		),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
+			handleMechanics,
+			handleGasExchange,
+		)),
+		component.WithInitialState(func(state component.State) {
 			state.Set(stateVolume, helper.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
 			state.Set(stateCompliance, helper.Jitter(defaultLungCompliance, lungComplianceAsymmetry))
 			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
 			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
-		}).
-		WithActivationFunc(helper.SequentialActivationFunc(
-			handleMechanics,
-			handleGasExchange,
-		))
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func handleMechanics(this *component.Component) error {

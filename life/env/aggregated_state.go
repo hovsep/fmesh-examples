@@ -11,14 +11,13 @@ import (
 )
 
 func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
-	agg := component.New(name).
-		WithDescription("composes data from multiple sources into one (single source of true for UI)").
-		AddLabel("role", "aggregator"). //@TODO: generalise and refactor components taxonomy (same as signals)
-		AddOutputs("aggregated_state").
-		WithActivationFunc(func(this *component.Component) error {
+	agg, err := component.New(name,
+		component.WithDescription("composes data from multiple sources into one (single source of true for UI)"),
+		component.WithLabel("role", "aggregator"), //@TODO: generalise and refactor components taxonomy (same as signals)
+		component.WithOutputs("aggregated_state"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return this.Inputs().ForEach(func(in *port.Port) error {
 				// Add all signals from the input port to the aggregated state (for later publishing)
-
 				err := port.ForwardWithMap(in, this.OutputByName("aggregated_state"), func(sig *signal.Signal) *signal.Signal {
 					return sig.MapPayload(func(p any) any { return p }).WithLabel("from", in.Name())
 				})
@@ -28,15 +27,14 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 				}
 
 				// Just proxy "in -> out" with the same port name
-				err = port.ForwardSignals(in, this.OutputByName(in.Name()))
-				if err != nil {
-					return err
-				}
-				return nil
-			}).ChainableErr()
-		})
-
-	// Dynamic piping (extract to plugin or helper)
+				return port.ForwardSignals(in, this.OutputByName(in.Name()))
+			})
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	// Dynamic piping
 	for _, inputPath := range inputPaths {
 		if inputPath == "" {
 			return nil, fmt.Errorf("empty input path")
@@ -65,9 +63,13 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 		}
 
 		// Add input and output with the same name and connect to the source
-		agg.AddInputs(inputPath).AddOutputs(inputPath)
-		err := sourcePort.PipeTo(agg.InputByName(inputPath)).ChainableErr()
-		if err != nil {
+		if err := agg.AddInputs(inputPath); err != nil {
+			return nil, err
+		}
+		if err := agg.AddOutputs(inputPath); err != nil {
+			return nil, err
+		}
+		if err := sourcePort.PipeTo(agg.InputByName(inputPath)); err != nil {
 			return nil, err
 		}
 	}
@@ -103,7 +105,9 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 		panic(err)
 	}
 
-	h.FM.AddComponents(agg)
+	if err := h.FM.AddComponents(agg); err != nil {
+		panic(fmt.Sprintf("failed to add aggregated_state component: %v", err))
+	}
 	return h
 }
 
@@ -116,25 +120,32 @@ func (h *Habitat) AddAggregatedStatePublisher() *Habitat {
 		panic("Aggregator not found")
 	}
 
-	publisher := component.New("aggregated_state_publisher").
-		WithDescription("publishes aggregated state to unit socket").
-		AddLabel("role", "publisher").
-		AddInputs("aggregated_state").
-		AddOutputs("stream").
-		WithActivationFunc(func(this *component.Component) error {
-			this.InputByName("aggregated_state").Signals().ForEach(func(sig *signal.Signal) error {
+	publisher, err := component.New("aggregated_state_publisher",
+		component.WithDescription("publishes aggregated state to unit socket"),
+		component.WithLabel("role", "publisher"),
+		component.WithInputs("aggregated_state"),
+		component.WithOutputs("stream"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			err := this.InputByName("aggregated_state").Signals().ForEach(func(sig *signal.Signal) error {
 				if !sig.Labels().Has("from") {
 					return fmt.Errorf("missing 'from' label")
 				}
 
-				return this.OutputByName("stream").PutPayloads(fmt.Sprintf("%s %v \n", sig.Labels().ValueOrDefault("from", "unknown"), sig.PayloadOrNil())).ChainableErr()
+				return this.OutputByName("stream").PutPayloads(fmt.Sprintf("%s %v \n", sig.Labels().ValueOrDefault("from", "unknown"), sig.PayloadOrNil()))
 			})
+			return err
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create aggregated_state_publisher: %v", err))
+	}
 
-			return nil
-		})
+	if err := agg.OutputByName("aggregated_state").PipeTo(publisher.InputByName("aggregated_state")); err != nil {
+		panic(fmt.Sprintf("failed to pipe aggregated state to publisher: %v", err))
+	}
 
-	agg.OutputByName("aggregated_state").PipeTo(publisher.InputByName("aggregated_state"))
-
-	h.FM.AddComponents(publisher)
+	if err := h.FM.AddComponents(publisher); err != nil {
+		panic(fmt.Sprintf("failed to add publisher component: %v", err))
+	}
 	return h
 }

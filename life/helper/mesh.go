@@ -58,7 +58,7 @@ func PipelineActivationFunc(inputPortNames []string, outputPortName string, stag
 			}
 		}
 
-		return this.OutputByName(outputPortName).PutSignalGroups(signals).ChainableErr()
+		return this.OutputByName(outputPortName).PutSignalGroups(signals)
 	}
 }
 

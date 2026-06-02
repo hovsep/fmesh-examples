@@ -54,6 +54,6 @@ func RebalanceDistribution(s *signal.Signal) *signal.Signal {
 		return nil
 	})
 
-	allLabels, _ := s.Labels().All()
+	allLabels := s.Labels().All()
 	return NewDistribution(rebalanced).WithLabels(maps.Clone(allLabels))
 }

@@ -8,17 +8,22 @@ import (
 
 // @TODO: emit inspired gas only in inhale phase (derive from diaphragm)
 func GetRespiratory() *component.Component {
-	return component.New("boundary:respiratory").
-		WithDescription("Transforms environmental gas signals into chemical levels and lung input for circulation").
-		AddInputs(
+	c, err := component.New("boundary:respiratory",
+		component.WithDescription("Transforms environmental gas signals into chemical levels and lung input for circulation"),
+		component.WithInputs(
 			"time",
 			"environmental_gas",
-		).
-		AddOutputs(
+		),
+		component.WithOutputs(
 			"inspired_gas",
-		).
-		WithActivationFunc(
-			helper.PipelineActivationFunc([]string{"environmental_gas"}, "inspired_gas", filterInspiredGas, humidifyInspiredGas, warmUpInspiredGas))
+		),
+		component.WithActivationFunc(
+			helper.PipelineActivationFunc([]string{"environmental_gas"}, "inspired_gas", filterInspiredGas, humidifyInspiredGas, warmUpInspiredGas)),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 // Applies pollution reduction.

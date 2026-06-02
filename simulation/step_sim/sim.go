@@ -141,7 +141,7 @@ func (s *Simulation) MaybeAutoPause(runResult *fmesh.RuntimeInfo) {
 	}
 
 	// Auto-pause if nothing is happening
-	if runResult.Cycles.CountMatch(func(c *cycle.Cycle) bool {
+	if runResult.Cycles.Count(func(c *cycle.Cycle) bool {
 		return c.HasActivatedComponents()
 	}) == 0 {
 		fmt.Println("Simulation does not progress and will be paused (nothing happens in your mesh)")

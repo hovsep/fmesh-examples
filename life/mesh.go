@@ -43,11 +43,15 @@ func getSimulationMesh() *fmesh.FMesh {
 
 // getHabitat builds the habitat mesh
 func getHabitat() *env.Habitat {
-	return env.NewHabitat(component.NewCollection().Add(
+	factors := component.NewCollection()
+	if err := factors.Add(
 		factor.GetTimeComponent(),
 		factor.GetGasComponent(),
 		factor.GetSunComponent(), // @todo: make sun to affect gas temperature
-	))
+	); err != nil {
+		panic(fmt.Sprintf("failed to build habitat factors: %v", err))
+	}
+	return env.NewHabitat(factors)
 }
 
 // setMeshCommands sets the commands that can be executed on the mesh
