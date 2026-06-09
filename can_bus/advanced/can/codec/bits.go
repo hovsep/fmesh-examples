@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -31,13 +32,13 @@ func (bits Bits) String() string {
 	return sb.String()
 }
 
-func (bits Bits) WithStuffing(count int) Bits {
+func (bits Bits) WithStuffing(count int) (Bits, error) {
 	if count <= 0 {
-		panic("count must be > 0")
+		return nil, fmt.Errorf("count must be > 0")
 	}
 
 	if len(bits) == 0 {
-		return bits
+		return bits, nil
 	}
 
 	var result Bits
@@ -68,17 +69,16 @@ func (bits Bits) WithStuffing(count int) Bits {
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func (bits Bits) WithoutStuffing(count int) Bits {
-
+func (bits Bits) WithoutStuffing(count int) (Bits, error) {
 	if count <= 0 {
-		panic("count must be > 0")
+		return nil, fmt.Errorf("count must be > 0")
 	}
 
 	if len(bits) <= count {
-		return bits // Too short to have any stuffing
+		return bits, nil // Too short to have any stuffing
 	}
 
 	// First pass: identify stuff bit positions
@@ -117,7 +117,7 @@ func (bits Bits) WithoutStuffing(count int) Bits {
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func (bits Bits) WithEOF() Bits {

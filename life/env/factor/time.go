@@ -1,6 +1,7 @@
 package factor
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -10,7 +11,7 @@ import (
 const durationPerTick = 10 * time.Millisecond
 
 // GetTimeComponent returns the time component of the habitat
-func GetTimeComponent() *component.Component {
+func GetTimeComponent() (*component.Component, error) {
 	c, err := component.New("time",
 		component.WithDescription("Time management for the simulation"),
 		component.WithInputs("ctl"),
@@ -48,7 +49,7 @@ func GetTimeComponent() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("time component: %w", err)
 	}
-	return c
+	return c, nil
 }

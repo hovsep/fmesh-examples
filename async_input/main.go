@@ -12,15 +12,15 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// This example processes 1 url every 3 seconds
-// NOTE: urls are not crawled concurrently, because fm has only 1 worker (crawler component)
 func main() {
-	fm := getMesh()
-
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	fm, err := getMesh()
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to build mesh:", err)
+		os.Exit(1)
+	}
+
+	if err := internal.HandleGraphFlag(fm, true); err != nil {
+		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
 	}
 
@@ -37,9 +37,8 @@ func main() {
 
 	ticker := time.NewTicker(3 * time.Second)
 	resultsChan := make(chan []any)
-	doneChan := make(chan struct{}) // Signals when all urls are processed
+	doneChan := make(chan struct{})
 
-	// Producer goroutine
 	go func() {
 		for {
 			<-ticker.C
@@ -47,7 +46,6 @@ func main() {
 				close(resultsChan)
 				return
 			}
-			// Pop url
 			url := urls[0]
 			urls = urls[1:]
 
@@ -64,13 +62,12 @@ func main() {
 				if err != nil {
 					fmt.Println("Failed to get results ", err)
 				}
-				fm.Components().ByName("web crawler").OutputByName("headers").Clear() // @TODO maybe we can add fm.Reset() for cases when FMesh is reused (instead of cleaning ports explicitly)
+				fm.Components().ByName("web crawler").OutputByName("headers").Clear()
 				resultsChan <- results
 			}
 		}
 	}()
 
-	// Consumer goroutine
 	go func() {
 		for {
 			r, ok := <-resultsChan
@@ -80,18 +77,15 @@ func main() {
 				return
 			}
 			fmt.Printf("consume: %v \n", r)
-
 		}
 	}()
 
 	<-doneChan
 }
 
-func getMesh() *fmesh.FMesh {
-	// Setup dependencies
+func getMesh() (*fmesh.FMesh, error) {
 	client := &http.Client{}
 
-	// Define components
 	crawler, err := component.New("web crawler",
 		component.WithDescription("gets http headers from given url"),
 		component.WithInputs("url"),
@@ -107,10 +101,7 @@ func getMesh() *fmesh.FMesh {
 			}
 
 			for _, urlVal := range allUrls {
-
 				url := urlVal.(string)
-				// All urls will be crawled sequentially
-				// in order to call them concurrently we need run each request in separate goroutine and handle synchronization (e.g. waitgroup)
 				response, err := client.Get(url)
 				if err != nil {
 					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url)))
@@ -131,7 +122,7 @@ func getMesh() *fmesh.FMesh {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create crawler component: %v", err))
+		return nil, fmt.Errorf("crawler component: %w", err)
 	}
 
 	logger, err := component.New("error logger",
@@ -158,23 +149,22 @@ func getMesh() *fmesh.FMesh {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create logger component: %v", err))
+		return nil, fmt.Errorf("logger component: %w", err)
 	}
 
-	// Define pipes
 	if err := crawler.OutputByName("errors").PipeTo(logger.InputByName("error")); err != nil {
-		panic(fmt.Sprintf("failed to pipe crawler to logger: %v", err))
+		return nil, fmt.Errorf("pipe crawler→logger: %w", err)
 	}
 
 	fm, err := fmesh.New("web scraper",
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 	if err := fm.AddComponents(crawler, logger); err != nil {
-		panic(fmt.Sprintf("failed to add components: %v", err))
+		return nil, fmt.Errorf("add components: %w", err)
 	}
 
-	return fm
+	return fm, nil
 }

@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/common"
@@ -39,7 +40,7 @@ var (
 	FRC = restingLungVolume + defaultLungCompliance*math.Abs(BasePleuralPressure)*Milliliter
 )
 
-func GetLung(side common.Side) *component.Component {
+func GetLung(side common.Side) (*component.Component, error) {
 	c, err := component.New("organ:lung_"+string(side),
 		component.WithDescription(string(side)+" lung"),
 		component.WithInputs(
@@ -65,9 +66,9 @@ func GetLung(side common.Side) *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("organ:lung_%s: %w", side, err)
 	}
-	return c
+	return c, nil
 }
 
 func handleMechanics(this *component.Component) error {
@@ -80,7 +81,11 @@ func handleMechanics(this *component.Component) error {
 		return err
 	}
 
-	pleuralPressure := helper.AsF64(this.InputByName("pleural_pressure").Signals().First()) + this.State().Get(statePleuralAsymmetry).(float64)
+	pp, err := helper.AsF64(this.InputByName("pleural_pressure").Signals().First())
+	if err != nil {
+		return err
+	}
+	pleuralPressure := pp + this.State().Get(statePleuralAsymmetry).(float64)
 
 	V := this.State().Get(stateVolume).(float64)
 	C := this.State().Get(stateCompliance).(float64)
@@ -101,7 +106,10 @@ func handleMechanics(this *component.Component) error {
 
 func handleGasExchange(this *component.Component) error {
 	gas := this.InputByName("inspired_gas").Signals().First()
-	nitrogen, oxygen, argon, pollution, temp, humid := helper.UnpackAir(gas)
-	_, _, _, _, _, _, _ = gas, nitrogen, oxygen, argon, pollution, temp, humid
+	nitrogen, oxygen, argon, pollution, temp, humid, err := helper.UnpackAir(gas)
+	if err != nil {
+		return err
+	}
+	_, _, _, _, _, _, _, _ = gas, nitrogen, oxygen, argon, pollution, temp, humid, err
 	return nil
 }

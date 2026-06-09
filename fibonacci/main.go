@@ -10,25 +10,18 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// This example demonstrates how a component can have a pipe looped back into its own input,
-// enabling a pattern that reactivates the component multiple times.
-// By looping the output back into the input, the component can perform repeated calculations
-// without explicit looping constructs in the code.
-//
-// For instance, this approach can be used to calculate Fibonacci numbers without needing
-// traditional looping code. Instead, the loop is achieved by configuring ports and pipes,
-// where each cycle processes a new Fibonacci term.
 func main() {
-	fm := getMesh()
-
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	fm, err := getMesh()
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
 	}
 
-	// Set inputs (first 2 Fibonacci numbers)
+	if err := internal.HandleGraphFlag(fm, true); err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+
 	f0, f1 := signal.New(0), signal.New(1)
 
 	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0)
@@ -37,15 +30,13 @@ func main() {
 	fmt.Println(f0.PayloadOrNil())
 	fmt.Println(f1.PayloadOrNil())
 
-	// Run the mesh
 	_, err = fm.Run()
-
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func getMesh() *fmesh.FMesh {
+func getMesh() (*fmesh.FMesh, error) {
 	c1, err := component.New("fibonacci number generator",
 		component.WithInputs("i_cur", "i_prev"),
 		component.WithOutputs("o_cur", "o_prev"),
@@ -55,7 +46,6 @@ func getMesh() *fmesh.FMesh {
 
 			next := cur + prev
 
-			// Hardcoded limit
 			if next < 100 {
 				fmt.Println(next)
 				this.OutputByName("o_cur").PutSignals(signal.New(next))
@@ -66,24 +56,22 @@ func getMesh() *fmesh.FMesh {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create fibonacci component: %v", err))
+		return nil, fmt.Errorf("new component: %w", err)
 	}
 
-	// Define pipes
 	if err := c1.Outputs().ByName("o_cur").PipeTo(c1.Inputs().ByName("i_cur")); err != nil {
-		panic(fmt.Sprintf("failed to pipe o_cur to i_cur: %v", err))
+		return nil, fmt.Errorf("pipe o_cur→i_cur: %w", err)
 	}
 	if err := c1.Outputs().ByName("o_prev").PipeTo(c1.Inputs().ByName("i_prev")); err != nil {
-		panic(fmt.Sprintf("failed to pipe o_prev to i_prev: %v", err))
+		return nil, fmt.Errorf("pipe o_prev→i_prev: %w", err)
 	}
 
-	// Build mesh
 	fm, err := fmesh.New("fibonacci example")
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 	if err := fm.AddComponents(c1); err != nil {
-		panic(fmt.Sprintf("failed to add components: %v", err))
+		return nil, fmt.Errorf("add components: %w", err)
 	}
-	return fm
+	return fm, nil
 }

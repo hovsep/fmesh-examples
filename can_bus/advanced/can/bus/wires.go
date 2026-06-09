@@ -17,7 +17,7 @@ const (
 	initialRecessiveBitsRequest = codec.ProtocolEOFSize + codec.ProtocolIFSSize + 1
 )
 
-func newWires(name string) *component.Component {
+func newWires(name string) (*component.Component, error) {
 	wires, err := component.New(name,
 		component.WithDescription("Simulates differential low/high pair, performs wire-and logic"),
 		component.WithInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest),
@@ -48,19 +48,19 @@ func newWires(name string) *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create wires component: %v", err))
+		return nil, fmt.Errorf("wires %s: %w", name, err)
 	}
 
 	// Set up self-activation pipe
 	if err := wires.OutputByName(portRecessiveBitRequest).PipeTo(wires.InputByName(portRecessiveBitRequest)); err != nil {
-		panic(fmt.Sprintf("failed to pipe recessive bit request: %v", err))
+		return nil, fmt.Errorf("pipe self-activation %s: %w", name, err)
 	}
 
 	// Initially drive the bus with 11 recessive bits to simulate a passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
 	wires.InputByName(portRecessiveBitRequest).PutSignals(signal.New(initialRecessiveBitsRequest))
 
-	return wires
+	return wires, nil
 }
 
 // Process recessive bit request (the very first idle state, when the bus is just powered or control signal from watchdog)

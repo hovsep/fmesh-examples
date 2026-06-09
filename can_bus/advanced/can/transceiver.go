@@ -13,7 +13,7 @@ import (
 
 // NewTransceiver creates a stateless CAN transceiver component
 // which converts bits to voltage and vice versa
-func NewTransceiver(unitName string) *component.Component {
+func NewTransceiver(unitName string) (*component.Component, error) {
 	c, err := component.New("can_transceiver-"+unitName,
 		component.WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL),  // Bits in (write to bus), voltage in (read from bus)
 		component.WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL), // Bits out (read from bus), voltage out (write to bus)
@@ -32,9 +32,9 @@ func NewTransceiver(unitName string) *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create transceiver: %v", err))
+		return nil, fmt.Errorf("transceiver %s: %w", unitName, err)
 	}
-	return c
+	return c, nil
 }
 
 // Write path: transceiver -> bus

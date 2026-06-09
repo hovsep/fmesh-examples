@@ -1,6 +1,8 @@
 package physiology
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -14,7 +16,7 @@ const (
 )
 
 // GetObservableState ...
-func GetObservableState() *component.Component {
+func GetObservableState() (*component.Component, error) {
 	c, err := component.New("physiology:observable_state",
 		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
 		component.WithInputs(
@@ -63,9 +65,9 @@ func GetObservableState() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("physiology:observable_state: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 func handleBrainSignals(this *component.Component) error {
@@ -83,7 +85,10 @@ func handleBrainSignals(this *component.Component) error {
 	isAlive = true
 
 	// Calculate brain activity trend
-	currentBrainActivity := helper.AsF64(this.InputByName("brain_activity").Signals().First())
+	currentBrainActivity, err := helper.AsF64(this.InputByName("brain_activity").Signals().First())
+	if err != nil {
+		return err
+	}
 	lastSmoothedBrainActivity := this.State().Get(LastBrainActivity).(float64)
 
 	// Exponential Moving Average helps to determine trend without storing historical data

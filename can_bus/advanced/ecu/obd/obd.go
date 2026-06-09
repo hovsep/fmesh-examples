@@ -19,8 +19,8 @@ const (
 // NewNode creates an OBD can node
 // in real life OBD socket is not a can node, but for simplicity
 // we simulate OBD socket with plugged-in OBD adapter as a single CAN node
-func NewNode() *can.Node {
-	obdDevice := can.NewNode(OBDUnitName, func(state component.State) {
+func NewNode() (*can.Node, error) {
+	obdDevice, err := can.NewNode(OBDUnitName, func(state component.State) {
 	},
 		func(this *component.Component) error {
 
@@ -31,14 +31,17 @@ func NewNode() *can.Node {
 
 			return errors.Join(errRx, errTx)
 		})
+	if err != nil {
+		return nil, fmt.Errorf("obd node: %w", err)
+	}
 
 	// Add custom ports
 	if err := obdDevice.MCU.AddInputs(PortOBDIn); err != nil {
-		panic(fmt.Sprintf("failed to add OBD input port: %v", err))
+		return nil, fmt.Errorf("obd add inputs: %w", err)
 	}
 	if err := obdDevice.MCU.AddOutputs(PortOBDOut); err != nil {
-		panic(fmt.Sprintf("failed to add OBD output port: %v", err))
+		return nil, fmt.Errorf("obd add outputs: %w", err)
 	}
 
-	return obdDevice
+	return obdDevice, nil
 }

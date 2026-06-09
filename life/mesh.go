@@ -15,12 +15,28 @@ import (
 )
 
 // getSimulationMesh returns the main mesh of the simulation
-func getSimulationMesh() *fmesh.FMesh {
+func getSimulationMesh() (*fmesh.FMesh, error) {
 	// Set up the world
-	habitat := getHabitat().
-		AddOrganisms(human.New("Leon")).
-		AddAggregatedState().
-		AddAggregatedStatePublisher()
+	leon, err := human.New("Leon")
+	if err != nil {
+		return nil, fmt.Errorf("human.New: %w", err)
+	}
+	habitat, err := getHabitat()
+	if err != nil {
+		return nil, fmt.Errorf("getHabitat: %w", err)
+	}
+	habitat, err = habitat.AddOrganisms(leon)
+	if err != nil {
+		return nil, fmt.Errorf("AddOrganisms: %w", err)
+	}
+	habitat, err = habitat.AddAggregatedState()
+	if err != nil {
+		return nil, fmt.Errorf("AddAggregatedState: %w", err)
+	}
+	habitat, err = habitat.AddAggregatedStatePublisher()
+	if err != nil {
+		return nil, fmt.Errorf("AddAggregatedStatePublisher: %w", err)
+	}
 
 	// Set up the mesh
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
@@ -32,24 +48,38 @@ func getSimulationMesh() *fmesh.FMesh {
 
 	})
 
-	err := internal.HandleGraphFlag(habitat.FM, false)
+	err = internal.HandleGraphFlag(habitat.FM, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
 	}
 
-	return habitat.FM
+	return habitat.FM, nil
 }
 
 // getHabitat builds the habitat mesh
-func getHabitat() *env.Habitat {
+func getHabitat() (*env.Habitat, error) {
 	factors := component.NewCollection()
+
+	timeComponent, err := factor.GetTimeComponent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
+	}
+	gasComponent, err := factor.GetGasComponent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
+	}
+	sunComponent, err := factor.GetSunComponent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
+	}
+
 	if err := factors.Add(
-		factor.GetTimeComponent(),
-		factor.GetGasComponent(),
-		factor.GetSunComponent(), // @todo: make sun to affect gas temperature
+		timeComponent,
+		gasComponent,
+		sunComponent, // @todo: make sun to affect gas temperature
 	); err != nil {
-		panic(fmt.Sprintf("failed to build habitat factors: %v", err))
+		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
 	return env.NewHabitat(factors)
 }

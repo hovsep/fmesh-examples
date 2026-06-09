@@ -19,31 +19,46 @@ const (
 )
 
 // getHumanMesh builds the mesh that simulates the human being
-func getHumanMesh() *fmesh.FMesh {
+func getHumanMesh() (*fmesh.FMesh, error) {
 	// Create the mesh
 	mesh, err := fmesh.New(meshName,
 		fmesh.WithCyclesLimit(1000),
 		fmesh.WithTimeLimit(5*time.Second),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create human mesh: %v", err))
+		return nil, fmt.Errorf("failed to create human mesh: %w", err)
 	}
 
-	components := getComponents()
+	components, err := getComponents()
+	if err != nil {
+		return nil, fmt.Errorf("getComponents: %w", err)
+	}
 	// Add components to the mesh
 	if err := components.ForEach(func(c *component.Component) error {
 		return mesh.AddComponents(c)
 	}); err != nil {
-		panic(fmt.Sprintf("failed to add components to human mesh: %v", err))
+		return nil, fmt.Errorf("failed to add components to human mesh: %w", err)
 	}
 
 	// Do the wiring
-	wireBrain(components)
-	wireHeart(components)
-	wireAutotomicCoordination(components)
-	wireDiaphragm(components)
-	wireRespiratoryBoundary(components)
-	wireLungs(components)
+	if err := wireBrain(components); err != nil {
+		return nil, fmt.Errorf("wireBrain: %w", err)
+	}
+	if err := wireHeart(components); err != nil {
+		return nil, fmt.Errorf("wireHeart: %w", err)
+	}
+	if err := wireAutotomicCoordination(components); err != nil {
+		return nil, fmt.Errorf("wireAutotomicCoordination: %w", err)
+	}
+	if err := wireDiaphragm(components); err != nil {
+		return nil, fmt.Errorf("wireDiaphragm: %w", err)
+	}
+	if err := wireRespiratoryBoundary(components); err != nil {
+		return nil, fmt.Errorf("wireRespiratoryBoundary: %w", err)
+	}
+	if err := wireLungs(components); err != nil {
+		return nil, fmt.Errorf("wireLungs: %w", err)
+	}
 
 	err = internal.HandleGraphFlag(mesh, false)
 	if err != nil {
@@ -51,11 +66,11 @@ func getHumanMesh() *fmesh.FMesh {
 		os.Exit(1)
 	}
 
-	return mesh
+	return mesh, nil
 }
 
-func wireBrain(components *component.Collection) {
-	components.ByName("organ:brain").
+func wireBrain(components *component.Collection) error {
+	return components.ByName("organ:brain").
 		OutputByName("neural_drive").
 		PipeTo(
 			// Brain drives the autonomic coordination system
@@ -66,8 +81,8 @@ func wireBrain(components *component.Collection) {
 		)
 }
 
-func wireAutotomicCoordination(components *component.Collection) {
-	components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone").PipeTo(
+func wireAutotomicCoordination(components *component.Collection) error {
+	return components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone").PipeTo(
 		// Affect the heart (cardiac bias)
 		components.ByName("organ:heart").InputByName("autonomic_tone"),
 
@@ -76,15 +91,17 @@ func wireAutotomicCoordination(components *component.Collection) {
 	)
 }
 
-func wireHeart(components *component.Collection) {
-	components.ByName("organ:heart").
+func wireHeart(components *component.Collection) error {
+	if err := components.ByName("organ:heart").
 		OutputByName("cardiac_activation").
 		PipeTo(
 			// Heart activity is observable
 			components.ByName("physiology:observable_state").InputByName("heart_cardiac_activation"),
-		)
+		); err != nil {
+		return err
+	}
 
-	components.ByName("organ:heart").
+	return components.ByName("organ:heart").
 		OutputByName("rate").
 		PipeTo(
 			// Heart rate is observable
@@ -92,8 +109,8 @@ func wireHeart(components *component.Collection) {
 		)
 }
 
-func wireDiaphragm(components *component.Collection) {
-	components.ByName("organ:diaphragm").
+func wireDiaphragm(components *component.Collection) error {
+	if err := components.ByName("organ:diaphragm").
 		OutputByName("pleural_pressure").
 		PipeTo(
 			// Pleural pressure is observable
@@ -102,9 +119,11 @@ func wireDiaphragm(components *component.Collection) {
 			// And it drives the lungs
 			components.ByName("organ:lung_left").InputByName("pleural_pressure"),
 			components.ByName("organ:lung_right").InputByName("pleural_pressure"),
-		)
+		); err != nil {
+		return err
+	}
 
-	components.ByName("organ:diaphragm").
+	return components.ByName("organ:diaphragm").
 		OutputByName("respiratory_rate").
 		PipeTo(
 			// Respiratory rate is observable
@@ -112,98 +131,88 @@ func wireDiaphragm(components *component.Collection) {
 		)
 }
 
-func wireRespiratoryBoundary(components *component.Collection) {
+func wireRespiratoryBoundary(components *component.Collection) error {
 	// Air flows from respiratory system to lungs
-	components.ByName("boundary:respiratory").OutputByName("inspired_gas").PipeTo(
+	return components.ByName("boundary:respiratory").OutputByName("inspired_gas").PipeTo(
 		components.ByName("organ:lung_left").InputByName("inspired_gas"),
 		components.ByName("organ:lung_right").InputByName("inspired_gas"),
 	)
 }
 
-func wireLungs(components *component.Collection) {
-	components.ByName("organ:lung_left").OutputByName("volume").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_left_volume"),
-	)
-	components.ByName("organ:lung_left").OutputByName("flow").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_left_flow"),
-	)
-	components.ByName("organ:lung_left").OutputByName("alveolar_pressure").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_left_alveolar_pressure"),
-	)
-	components.ByName("organ:lung_left").OutputByName("exhaled_gas").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_left_exhaled_gas"),
-	)
-
-	components.ByName("organ:lung_right").OutputByName("volume").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_right_volume"),
-	)
-	components.ByName("organ:lung_right").OutputByName("flow").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_right_flow"),
-	)
-	components.ByName("organ:lung_right").OutputByName("alveolar_pressure").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_right_alveolar_pressure"),
-	)
-	components.ByName("organ:lung_right").OutputByName("exhaled_gas").PipeTo(
-		components.ByName("physiology:observable_state").InputByName("lung_right_exhaled_gas"),
-	)
+func wireLungs(components *component.Collection) error {
+	for _, side := range []string{"left", "right"} {
+		c := components.ByName("organ:lung_" + side)
+		if err := c.OutputByName("volume").PipeTo(
+			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_volume"),
+		); err != nil {
+			return err
+		}
+		if err := c.OutputByName("flow").PipeTo(
+			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_flow"),
+		); err != nil {
+			return err
+		}
+		if err := c.OutputByName("alveolar_pressure").PipeTo(
+			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_alveolar_pressure"),
+		); err != nil {
+			return err
+		}
+		if err := c.OutputByName("exhaled_gas").PipeTo(
+			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_exhaled_gas"),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // getComponents returns the collection of human components (organs, systems, etc.)
-func getComponents() *component.Collection {
-	// @TODO:
-
-	// other organs:
-	// liver,
-	// kidneys,
-
-	// distributed anatomy:
-	// immune system
-	// nutritional/metabolic system
-	// fluid balance
-
-	// logical components:
-	// internal physiological load
-	// aggregated state (heart rate, breath, oxygen saturation, body temp, systemic stress index, fatigue, blood pH, blood volume, pain level, inflammation level)
+func getComponents() (*component.Collection, error) {
+	resp, err := boundary.GetRespiratory()
+	if err != nil {
+		return nil, fmt.Errorf("boundary.GetRespiratory: %w", err)
+	}
+	autonomic, err := physiology.GetAutonomicCoordination()
+	if err != nil {
+		return nil, fmt.Errorf("physiology.GetAutonomicCoordination: %w", err)
+	}
+	obsState, err := physiology.GetObservableState()
+	if err != nil {
+		return nil, fmt.Errorf("physiology.GetObservableState: %w", err)
+	}
+	brain, err := organ.GetBrain()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetBrain: %w", err)
+	}
+	heart, err := organ.GetHeart()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetHeart: %w", err)
+	}
+	diaphragm, err := organ.GetDiaphragm()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetDiaphragm: %w", err)
+	}
+	lungLeft, err := organ.GetLung(common.Left)
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetLung(left): %w", err)
+	}
+	lungRight, err := organ.GetLung(common.Right)
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetLung(right): %w", err)
+	}
 
 	coll := component.NewCollection()
 	if err := coll.Add(
-		// Boundaries (interfaces between the environment and a human body)
-		//boundary.GetThermal(),
-		//boundary.GetMechanical(),
-		boundary.GetRespiratory(),
-		//boundary.GetIngestion(),
-
-		// Controllers (intention input from simulation operator, like eating food, drinking water or receiving emotional stimuli)
-		//controller.GetIntake(),
-		//controller.GetPhysical(),
-		//controller.GetMental(),
-		//controller.GetExcretion(),
-
-		// Physiological systems
-		physiology.GetAutonomicCoordination(),
-		//physiology.GetPhysiologicalLoad(),
-		//physiology.GetEndocrineAxis(),
-		physiology.GetObservableState(),
-		//physiology.GetPhysiologicalState(),
-
-		// Regulation systems
-		//regulation.GetHomeostasis(),
-
-		// Organs
-		organ.GetBrain(),
-		organ.GetHeart(),
-		organ.GetDiaphragm(),
-		organ.GetLung(common.Left),
-		organ.GetLung(common.Right),
-
-		// Distributed anatomy
-		//da.GetSkin(),
-		//da.GetBloodSystem(),
-		//da.GetMuscularSystem(),
-		//da.GetNervousSystem(),
-		//da.GetGITract(),
+		resp,
+		autonomic,
+		obsState,
+		brain,
+		heart,
+		diaphragm,
+		lungLeft,
+		lungRight,
 	); err != nil {
-		panic(fmt.Sprintf("failed to build human components: %v", err))
+		return nil, fmt.Errorf("failed to build human components: %w", err)
 	}
-	return coll
+	return coll, nil
 }

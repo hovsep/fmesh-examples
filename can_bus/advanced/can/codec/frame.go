@@ -35,7 +35,7 @@ func (frame *Frame) IsValid() bool {
 
 // ToBits encodes the CAN frame into a slice of bits
 // Format: 1 bit SOF| 11 bits ID | 4-bit DLC | DLC * 8-bit Data
-func (frame *Frame) ToBits() Bits {
+func (frame *Frame) ToBits() (Bits, error) {
 	var bits Bits
 
 	// SOF (Start Of the Frame)
@@ -62,7 +62,12 @@ func (frame *Frame) ToBits() Bits {
 		}
 	}
 
-	return bits.WithStuffing(ProtocolBitStuffingStep).WithEOF()
+	stuffed, err := bits.WithStuffing(ProtocolBitStuffingStep)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stuff bits: %w", err)
+	}
+
+	return stuffed.WithEOF(), nil
 }
 
 // FromBits decodes a CAN frame from a Bits slice
@@ -124,8 +129,14 @@ func FromBits(bits Bits) (*Frame, error) {
 }
 
 func (frame *Frame) String() string {
-	frameBits := frame.ToBits()
-	frameBitsUnstuffed := frameBits.WithoutStuffing(ProtocolBitStuffingStep)
+	frameBits, err := frame.ToBits()
+	if err != nil {
+		return fmt.Sprintf("<error: %v>", err)
+	}
+	frameBitsUnstuffed, err := frameBits.WithoutStuffing(ProtocolBitStuffingStep)
+	if err != nil {
+		return fmt.Sprintf("<error: %v>", err)
+	}
 
 	ranges := struct {
 		sof  [2]byte

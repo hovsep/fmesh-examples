@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/common"
@@ -36,7 +37,7 @@ func diaphragmPressureWave(phase float64) float64 {
 	return BasePleuralPressure - InspiratoryPressureAmplitude*effort
 }
 
-func GetDiaphragm() *component.Component {
+func GetDiaphragm() (*component.Component, error) {
 	c, err := component.New("organ:diaphragm",
 		component.WithDescription("Diaphragm (primary respiratory actuator)"),
 		component.WithInputs("time", "autonomic_tone"),
@@ -53,9 +54,9 @@ func GetDiaphragm() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("organ:diaphragm: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 func oscillateBreathing(this *component.Component) error {

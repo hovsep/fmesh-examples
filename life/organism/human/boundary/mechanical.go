@@ -1,8 +1,12 @@
 package boundary
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
 
-func GetMechanical() *component.Component {
+	"github.com/hovsep/fmesh/component"
+)
+
+func GetMechanical() (*component.Component, error) {
 	c, err := component.New("boundary:mechanical",
 		component.WithDescription("Transforms mechanical stimuli (loads, movement, posture) into signals for musculoskeletal and cardiovascular systems"),
 		component.WithInputs(
@@ -20,7 +24,7 @@ func GetMechanical() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("boundary:mechanical: %w", err)
 	}
-	return c
+	return c, nil
 }

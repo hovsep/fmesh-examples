@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/microcontroller"
 	"github.com/hovsep/fmesh/component"
@@ -61,8 +63,8 @@ var (
 	}
 )
 
-func NewNode() *can.Node {
-	return can.NewNode(ECMUnitName, func(state component.State) {
+func NewNode() (*can.Node, error) {
+	node, err := can.NewNode(ECMUnitName, func(state component.State) {
 		// Current state of params
 		paramsState := microcontroller.ParamsState{
 			ecmPIDRPM:                1984,
@@ -84,6 +86,10 @@ func NewNode() *can.Node {
 
 		state.Set(stateKeyDTCs, DTCsState)
 	}, logicDescriptor.ToActivationFunc())
+	if err != nil {
+		return nil, fmt.Errorf("engine node: %w", err)
+	}
+	return node, nil
 }
 
 func getSpeedParam(mode microcontroller.AddressingMode, request *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {

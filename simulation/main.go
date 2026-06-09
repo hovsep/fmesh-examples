@@ -13,9 +13,13 @@ import (
 // This example shows how to turn your fmesh into a simple step simulation program
 // @TODO: make it more interesting
 func main() {
-	fm := getMesh()
+	fm, err := getMesh()
+	if err != nil {
+		fmt.Println("Failed to build mesh:", err)
+		os.Exit(1)
+	}
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	err = internal.HandleGraphFlag(fm, true)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)

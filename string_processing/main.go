@@ -11,49 +11,44 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// This example is used in fmesh repo readme.md
 func main() {
-	fm := getMesh()
-
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	fm, err := getMesh()
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
 	}
 
-	// Init inputs
+	if err := internal.HandleGraphFlag(fm, true); err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+
 	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
 	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
 
-	// Run the mesh
 	_, err = fm.Run()
-
-	// Check for errors
 	if err != nil {
 		fmt.Println("F-Mesh returned an error")
 		os.Exit(1)
 	}
 
-	// Extract results
 	result := fm.Components().ByName("case").OutputByName("res").Signals().FirstPayloadOrNil()
 	fmt.Printf("Result is : %v", result)
 }
 
-func getMesh() *fmesh.FMesh {
+func getMesh() (*fmesh.FMesh, error) {
 	concat, err := component.New("concat",
 		component.WithInputs("i1", "i2"),
 		component.WithOutputs("res"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
 			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
-
 			this.OutputByName("res").PutSignals(signal.New(word1 + word2))
 			return nil
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create concat component: %v", err))
+		return nil, fmt.Errorf("concat component: %w", err)
 	}
 
 	caseComp, err := component.New("case",
@@ -61,13 +56,12 @@ func getMesh() *fmesh.FMesh {
 		component.WithOutputs("res"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
-
 			this.OutputByName("res").PutSignals(signal.New(strings.ToTitle(inputString)))
 			return nil
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create case component: %v", err))
+		return nil, fmt.Errorf("case component: %w", err)
 	}
 
 	fm, err := fmesh.New("hello world",
@@ -75,18 +69,18 @@ func getMesh() *fmesh.FMesh {
 		fmesh.WithCyclesLimit(10),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 
 	if err := fm.AddComponents(concat, caseComp); err != nil {
-		panic(fmt.Sprintf("failed to add components: %v", err))
+		return nil, fmt.Errorf("add components: %w", err)
 	}
 
 	if err := fm.Components().ByName("concat").Outputs().ByName("res").PipeTo(
 		fm.Components().ByName("case").Inputs().ByName("i1"),
 	); err != nil {
-		panic(fmt.Sprintf("failed to pipe concat to case: %v", err))
+		return nil, fmt.Errorf("pipe concat→case: %w", err)
 	}
 
-	return fm
+	return fm, nil
 }

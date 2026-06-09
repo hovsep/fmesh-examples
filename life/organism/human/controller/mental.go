@@ -1,9 +1,13 @@
 package controller
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetMental returns the mental stress component of the human being
-func GetMental() *component.Component {
+func GetMental() (*component.Component, error) {
 	c, err := component.New("controller:mental_stress",
 		component.WithDescription("Mental stress perception of the human being"),
 		component.WithInputs("time", "emotional_stimulus"),
@@ -12,7 +16,7 @@ func GetMental() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("controller:mental_stress: %w", err)
 	}
-	return c
+	return c, nil
 }

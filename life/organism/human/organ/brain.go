@@ -1,6 +1,8 @@
 package organ
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -22,14 +24,14 @@ const (
 )
 
 // GetBrain returns brain organ component
-func GetBrain() *component.Component {
+func GetBrain() (*component.Component, error) {
 	neuralDrivePort, err := port.NewOutput("neural_drive", port.WithDescription("Oscillator signal that drives the autonomic phisiology"))
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("port.NewOutput(neural_drive): %w", err)
 	}
 	failurePort, err := port.NewOutput("failure", port.WithDescription("Failure event"))
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("port.NewOutput(failure): %w", err)
 	}
 
 	c, err := component.New("organ:brain",
@@ -66,11 +68,11 @@ func GetBrain() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("component.New: %w", err)
 	}
 
 	if err := c.AttachOutputPorts(neuralDrivePort, failurePort); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("AttachOutputPorts: %w", err)
 	}
-	return c
+	return c, nil
 }

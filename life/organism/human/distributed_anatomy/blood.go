@@ -1,9 +1,13 @@
 package da
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetBloodSystem returns the blood system component
-func GetBloodSystem() *component.Component {
+func GetBloodSystem() (*component.Component, error) {
 	c, err := component.New("da:blood_system",
 		component.WithDescription("Blood system"),
 		component.WithInputs("time"),
@@ -16,7 +20,7 @@ func GetBloodSystem() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("da:blood_system: %w", err)
 	}
-	return c
+	return c, nil
 }

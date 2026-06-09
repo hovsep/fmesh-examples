@@ -19,13 +19,13 @@ type Habitat struct {
 }
 
 // NewHabitat builds the new habitat
-func NewHabitat(factors *component.Collection) *Habitat {
+func NewHabitat(factors *component.Collection) (*Habitat, error) {
 	fm, err := fmesh.New(meshName,
 		fmesh.WithUnlimitedCycles(),
 		fmesh.WithTimeLimit(60*time.Second), // One mesh run (or 1 simulation tick) must not exceed this limit
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create habitat mesh: %v", err))
+		return nil, fmt.Errorf("failed to create habitat mesh: %w", err)
 	}
 
 	habitat := &Habitat{FM: fm}
@@ -33,34 +33,34 @@ func NewHabitat(factors *component.Collection) *Habitat {
 }
 
 // addFactors adds all exposure factors to the habitat mesh
-func (h *Habitat) addFactors(factors *component.Collection) *Habitat {
+func (h *Habitat) addFactors(factors *component.Collection) (*Habitat, error) {
 	if !factors.AnyMatch(func(factor *component.Component) bool {
 		return factor.Name() == "time"
 	}) {
-		panic("Time factor is required for the habitat mesh")
+		return nil, fmt.Errorf("time factor is required for the habitat mesh")
 	}
 
 	// Add all factors to the mesh
 	if err := factors.ForEach(func(c *component.Component) error {
 		return h.FM.AddComponents(c)
 	}); err != nil {
-		panic(fmt.Sprintf("failed to add factors to habitat mesh: %v", err))
+		return nil, fmt.Errorf("failed to add factors to habitat mesh: %w", err)
 	}
 
 	// Connect inter-factor pipes
 	if err := h.FM.Components().ForEach(func(c *component.Component) error {
 		return h.connectToTimeFactor(c)
 	}); err != nil {
-		panic(fmt.Sprintf("failed to connect time factor: %v", err))
+		return nil, fmt.Errorf("failed to connect time factor: %w", err)
 	}
-	return h
+	return h, nil
 }
 
 // AddOrganisms adds organism components to the habitat mesh
-func (h *Habitat) AddOrganisms(organisms ...*component.Component) *Habitat {
+func (h *Habitat) AddOrganisms(organisms ...*component.Component) (*Habitat, error) {
 	for _, organism := range organisms {
 		if err := h.FM.AddComponents(organism); err != nil {
-			panic(fmt.Sprintf("failed to add organism to habitat: %v", err))
+			return nil, fmt.Errorf("failed to add organism to habitat: %w", err)
 		}
 
 		// Connect to habitat factors
@@ -79,10 +79,10 @@ func (h *Habitat) AddOrganisms(organisms ...*component.Component) *Habitat {
 				return factorOutput.PipeTo(orgInput)
 			})
 		}); err != nil {
-			panic(fmt.Sprintf("failed to connect organism to habitat factors: %v", err))
+			return nil, fmt.Errorf("failed to connect organism to habitat factors: %w", err)
 		}
 	}
-	return h
+	return h, nil
 }
 
 // getTimeFactor returns the time factor component

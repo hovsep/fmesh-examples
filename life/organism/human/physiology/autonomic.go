@@ -1,6 +1,8 @@
 package physiology
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -15,7 +17,7 @@ const (
 )
 
 // GetAutonomicCoordination ...
-func GetAutonomicCoordination() *component.Component {
+func GetAutonomicCoordination() (*component.Component, error) {
 	c, err := component.New("physiology:autonomic_coordination",
 		component.WithDescription("Autonomic coordination system"),
 		component.WithInputs("time", "neural_drive"),
@@ -38,9 +40,9 @@ func GetAutonomicCoordination() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("physiology:autonomic_coordination: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 func getAutonomicToneSignal(neuralDrive float64) *signal.Signal {

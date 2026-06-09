@@ -1,8 +1,12 @@
 package boundary
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
 
-func GetThermal() *component.Component {
+	"github.com/hovsep/fmesh/component"
+)
+
+func GetThermal() (*component.Component, error) {
 	c, err := component.New("boundary:thermal",
 		component.WithDescription("Transforms environmental thermal signals into body heat load, cold/heat stress signals"),
 		component.WithInputs(
@@ -20,7 +24,7 @@ func GetThermal() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("boundary:thermal: %w", err)
 	}
-	return c
+	return c, nil
 }

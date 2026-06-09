@@ -8,7 +8,7 @@ import (
 )
 
 // New creates a microcontroller unit component
-func New(name string, initState func(state component.State), af component.ActivationFunc) *component.Component {
+func New(name string, initState func(state component.State), af component.ActivationFunc) (*component.Component, error) {
 	c, err := component.New("mcu-"+name,
 		component.WithInputs(common.PortCANRx),  // Frame in
 		component.WithOutputs(common.PortCANTx), // Frame out
@@ -16,7 +16,7 @@ func New(name string, initState func(state component.State), af component.Activa
 		component.WithActivationFunc(af),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create MCU: %v", err))
+		return nil, fmt.Errorf("mcu %s: %w", name, err)
 	}
-	return c
+	return c, nil
 }

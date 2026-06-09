@@ -1,9 +1,13 @@
 package physiology
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetEndocrineAxis ...
-func GetEndocrineAxis() *component.Component {
+func GetEndocrineAxis() (*component.Component, error) {
 	c, err := component.New("physiology:endocrine_axis",
 		component.WithDescription("Endocrine system"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetEndocrineAxis() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("physiology:endocrine_axis: %w", err)
 	}
-	return c
+	return c, nil
 }
