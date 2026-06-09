@@ -26,6 +26,7 @@ func New(name string) (*component.Component, error) {
 		),
 		component.WithOutputs(
 			"is_alive",
+			"inspired_gas",
 			"brain_activity",
 			"brain_activity_trend",
 			"body_temperature",
@@ -132,6 +133,10 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 
 		// Propagate signals from human mesh to the human component outputs
 		err := helper.MultiForward(
+			helper.PortPair{
+				humanObservableState.OutputByName("inspired_gas"),
+				this.OutputByName("inspired_gas"),
+			},
 			helper.PortPair{
 				humanObservableState.OutputByName("is_alive"),
 				this.OutputByName("is_alive"),
