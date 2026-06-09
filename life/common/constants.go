@@ -1,17 +1,6 @@
 package common
 
 const (
-	Param           Label = "param"
-	Type            Label = "type"
-	Level           Label = "level"
-	Bias            Label = "bias"
-	Axis            Label = "axis"
-	Region          Label = "region"
-	TickCount       Label = "tick_count"
-	SimDuration     Label = "sim_duration"
-	SimWallTime     Label = "sim_wall_time"
-	DeltaT          Label = "dt"
-	TickMeta        Label = "tick_meta"
 	Sympathetic     Label = "sympathetic"
 	Parasympathetic Label = "parasympathetic"
 	Noise           Label = "noise"
