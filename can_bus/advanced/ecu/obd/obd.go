@@ -2,6 +2,7 @@ package obd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
@@ -32,10 +33,12 @@ func NewNode() *can.Node {
 		})
 
 	// Add custom ports
-	obdDevice.MCU.
-		// Physical 16 pin OBD socket (io)
-		AddInputs(PortOBDIn).
-		AddOutputs(PortOBDOut)
+	if err := obdDevice.MCU.AddInputs(PortOBDIn); err != nil {
+		panic(fmt.Sprintf("failed to add OBD input port: %v", err))
+	}
+	if err := obdDevice.MCU.AddOutputs(PortOBDOut); err != nil {
+		panic(fmt.Sprintf("failed to add OBD output port: %v", err))
+	}
 
 	return obdDevice
 }

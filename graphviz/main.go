@@ -83,58 +83,86 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	fm := fmesh.New("graph").
-		WithDescription("Simple car mechanics simulation").
-		AddComponents(
-			component.New("engine").
-				WithDescription("Sends out rotation signal once started").
-				AddInputs("start").
-				AddOutputs("rotation").
-				WithActivationFunc(func(this *component.Component) error {
-					revolution := signal.New(10).WithLabel("direction", "clockwise")
+	engine, err := component.New("engine",
+		component.WithDescription("Sends out rotation signal once started"),
+		component.WithInputs("start"),
+		component.WithOutputs("rotation"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			revolution := signal.New(10).WithLabel("direction", "clockwise")
 
-					this.OutputByName("rotation").PutSignals(revolution)
-					return nil
-				}),
+			this.OutputByName("rotation").PutSignals(revolution)
+			return nil
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create engine component: %v", err))
+	}
 
-			component.New("clutch").
-				WithDescription("Simple clutch").
-				AddInputs("rotation").
-				AddOutputs("rotation").
-				WithActivationFunc(func(this *component.Component) error {
-					// Assume clutch is always engaged
-					return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
-				}),
+	clutch, err := component.New("clutch",
+		component.WithDescription("Simple clutch"),
+		component.WithInputs("rotation"),
+		component.WithOutputs("rotation"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			// Assume clutch is always engaged
+			return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create clutch component: %v", err))
+	}
 
-			component.New("gearbox").
-				WithDescription("⚙️").
-				AddInputs("rotation").
-				AddOutputs("rotation").
-				WithActivationFunc(func(this *component.Component) error {
-					return this.InputByName("rotation").Signals().ForEach(func(s *signal.Signal) error {
-						rotationAfter := s.MapPayload(func(payload any) any {
-							// Simulate gear ratio
-							return payload.(int) / 2
-						})
+	gearbox, err := component.New("gearbox",
+		component.WithDescription("⚙️"),
+		component.WithInputs("rotation"),
+		component.WithOutputs("rotation"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			return this.InputByName("rotation").Signals().ForEach(func(s *signal.Signal) error {
+				rotationAfter := s.MapPayload(func(payload any) any {
+					// Simulate gear ratio
+					return payload.(int) / 2
+				})
 
-						return this.OutputByName("rotation").PutSignals(rotationAfter).ChainableErr()
+				return this.OutputByName("rotation").PutSignals(rotationAfter)
 
-					}).ChainableErr()
-				}),
+			})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create gearbox component: %v", err))
+	}
 
-			component.New("wheels").
-				WithDescription("🚗").
-				AddInputs("rotation").
-				AddOutputs("rotation").
-				WithActivationFunc(func(this *component.Component) error {
-					return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
-				}),
-		)
+	wheels, err := component.New("wheels",
+		component.WithDescription("🚗"),
+		component.WithInputs("rotation"),
+		component.WithOutputs("rotation"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create wheels component: %v", err))
+	}
 
 	// Piping
-	fm.ComponentByName("engine").OutputByName("rotation").PipeTo(fm.ComponentByName("clutch").InputByName("rotation"))
-	fm.ComponentByName("clutch").OutputByName("rotation").PipeTo(fm.ComponentByName("gearbox").InputByName("rotation"))
-	fm.ComponentByName("gearbox").OutputByName("rotation").PipeTo(fm.ComponentByName("wheels").InputByName("rotation"))
+	if err := engine.OutputByName("rotation").PipeTo(clutch.InputByName("rotation")); err != nil {
+		panic(fmt.Sprintf("failed to pipe engine to clutch: %v", err))
+	}
+	if err := clutch.OutputByName("rotation").PipeTo(gearbox.InputByName("rotation")); err != nil {
+		panic(fmt.Sprintf("failed to pipe clutch to gearbox: %v", err))
+	}
+	if err := gearbox.OutputByName("rotation").PipeTo(wheels.InputByName("rotation")); err != nil {
+		panic(fmt.Sprintf("failed to pipe gearbox to wheels: %v", err))
+	}
+
+	fm, err := fmesh.New("graph",
+		fmesh.WithDescription("Simple car mechanics simulation"),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+	if err := fm.AddComponents(engine, clutch, gearbox, wheels); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
 
 	return fm
 }

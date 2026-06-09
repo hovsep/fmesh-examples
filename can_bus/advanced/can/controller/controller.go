@@ -28,17 +28,17 @@ var (
 // New creates a stateful CAN controller
 // which converts frames to bits and vice versa
 func New(unitName string) *component.Component {
-	return component.New("can_controller-"+unitName).
-		AddInputs(common.PortCANTx, common.PortCANRx).                              // Frame in, bits in
-		AddOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState). // Bits out, frame out, notify when bus is idle
-		WithInitialState(func(state component.State) {
+	c, err := component.New("can_controller-"+unitName,
+		component.WithInputs(common.PortCANTx, common.PortCANRx),                              // Frame in, bits in
+		component.WithOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState), // Bits out, frame out, notify when bus is idle
+		component.WithInitialState(func(state component.State) {
 			state.Set(stateKeyTxQueue, TxQueue{})
 			state.Set(stateKeyRxBuffer, codec.NewBits(0))
 			state.Set(stateKeyControllerState, StateIdle)
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 			state.Set(stateKeyBitsExpected, 0)
-		}).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithActivationFunc(func(this *component.Component) error {
 			defer func() {
 				// Report current state to bus watchdog
 				ctlState := this.State().Get(stateKeyControllerState).(State)
@@ -65,7 +65,12 @@ func New(unitName string) *component.Component {
 
 			// Run the main state machine:
 			return runStateMachine(this, currentBit)
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create controller: %v", err))
+	}
+	return c
 }
 
 // Enqueue new frames coming from MCU
@@ -89,7 +94,7 @@ func handleIncomingFrames(this *component.Component) error {
 		})
 		this.Logger().Printf("got a frame from MCU to send: %s items in tx-queue: %d", frame, len(txQueue))
 		return nil
-	}).ChainableErr()
+	})
 }
 
 func getCurrentBit(this *component.Component) (codec.Bit, error) {

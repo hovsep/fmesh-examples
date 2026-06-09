@@ -46,47 +46,59 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	starter := component.New("starter").
-		WithDescription("This component just holds numbers we want to factorize").
-		AddInputs("in"). // A single port is enough, as it can hold any number of signals (as long as they fit into1 memory)
-		AddOutputs("out").
-		WithActivationFunc(func(this *component.Component) error {
+	starter, err := component.New("starter",
+		component.WithDescription("This component just holds numbers we want to factorize"),
+		component.WithInputs("in"),
+		component.WithOutputs("out"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// Pure bypass
 			return port.ForwardSignals(this.InputByName("in"), this.OutputByName("out"))
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create starter: %v", err))
+	}
 
-	filter := component.New("filter").
-		WithDescription("In this component we can do some optional filtering").
-		AddInputs("in").
-		AddOutputs("out", "log").
-		WithActivationFunc(func(this *component.Component) error {
+	filter, err := component.New("filter",
+		component.WithDescription("In this component we can do some optional filtering"),
+		component.WithInputs("in"),
+		component.WithOutputs("out", "log"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			isValid := func(num int) bool {
 				return num < 1000
 			}
 
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				if isValid(sig.PayloadOrNil().(int)) {
-					return this.OutputByName("out").PutSignals(sig).ChainableErr()
+					return this.OutputByName("out").PutSignals(sig)
 				}
-				return this.OutputByName("log").PutSignals(sig).ChainableErr()
-			}).ChainableErr()
-		})
+				return this.OutputByName("log").PutSignals(sig)
+			})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create filter: %v", err))
+	}
 
-	logger := component.New("logger").
-		WithDescription("Simple logger").
-		AddInputs("in").
-		WithActivationFunc(func(this *component.Component) error {
+	logger, err := component.New("logger",
+		component.WithDescription("Simple logger"),
+		component.WithInputs("in"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				this.Logger().Println(sig.PayloadOrNil())
 				return nil
-			}).ChainableErr()
-		})
+			})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create logger: %v", err))
+	}
 
-	factorizer := component.New("factorizer").
-		WithDescription("Prime factorization implemented as separate f-mesh").
-		AddInputs("in").
-		AddOutputs("out").
-		WithActivationFunc(func(this *component.Component) error {
+	factorizer, err := component.New("factorizer",
+		component.WithDescription("Prime factorization implemented as separate f-mesh"),
+		component.WithInputs("in"),
+		component.WithOutputs("out"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// This activation function has no implementation of the factorization algorithm,
 			// it only runs another f-mesh to get results
 
@@ -117,20 +129,36 @@ func getMesh() *fmesh.FMesh {
 				return this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
 					Num:     number,
 					Factors: factors,
-				})).ChainableErr()
-			}).ChainableErr()
-		})
+				}))
+			})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create factorizer: %v", err))
+	}
 
 	// Setup pipes
-	starter.OutputByName("out").PipeTo(filter.InputByName("in"))
-	filter.OutputByName("log").PipeTo(logger.InputByName("in"))
-	filter.OutputByName("out").PipeTo(factorizer.InputByName("in"))
+	if err := starter.OutputByName("out").PipeTo(filter.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe starter to filter: %v", err))
+	}
+	if err := filter.OutputByName("log").PipeTo(logger.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe filter to logger: %v", err))
+	}
+	if err := filter.OutputByName("out").PipeTo(factorizer.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe filter to factorizer: %v", err))
+	}
 
 	// Build the mesh
-	outerMesh := fmesh.New("outer").AddComponents(starter, filter, logger, factorizer)
+	outerMesh, err := fmesh.New("outer")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create outer mesh: %v", err))
+	}
+	if err := outerMesh.AddComponents(starter, filter, logger, factorizer); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(outerMesh, true)
+	err = internal.HandleGraphFlag(outerMesh, true)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)
@@ -140,20 +168,24 @@ func getMesh() *fmesh.FMesh {
 }
 
 func getPrimeFactorizationMesh() *fmesh.FMesh {
-	starter := component.New("starter").
-		WithDescription("Load the number to be factorized").
-		AddInputs("in").
-		AddOutputs("out").
-		WithActivationFunc(func(this *component.Component) error {
+	starter, err := component.New("starter",
+		component.WithDescription("Load the number to be factorized"),
+		component.WithInputs("in"),
+		component.WithOutputs("out"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// For simplicity this f-mesh processes only one signal per run, so ignore all except the first
-			return this.OutputByName("out").PutSignals(this.InputByName("in").Signals().First()).ChainableErr()
-		})
+			return this.OutputByName("out").PutSignals(this.InputByName("in").Signals().First())
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create starter: %v", err))
+	}
 
-	d2 := component.New("d2").
-		WithDescription("Divide by smallest prime (2) to handle even factors").
-		AddInputs("in").
-		AddOutputs("out", "factor").
-		WithActivationFunc(func(this *component.Component) error {
+	d2, err := component.New("d2",
+		component.WithDescription("Divide by smallest prime (2) to handle even factors"),
+		component.WithInputs("in"),
+		component.WithOutputs("out", "factor"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 
 			for number%2 == 0 {
@@ -161,14 +193,18 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 				number /= 2
 			}
 
-			return this.OutputByName("out").PutSignals(signal.New(number)).ChainableErr()
-		})
+			return this.OutputByName("out").PutSignals(signal.New(number))
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create d2: %v", err))
+	}
 
-	dodd := component.New("dodd").
-		WithDescription("Divide by odd primes starting from 3").
-		AddInputs("in").
-		AddOutputs("out", "factor").
-		WithActivationFunc(func(this *component.Component) error {
+	dodd, err := component.New("dodd",
+		component.WithDescription("Divide by odd primes starting from 3"),
+		component.WithInputs("in"),
+		component.WithOutputs("out", "factor"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			divisor := 3
 			for number > 1 && divisor*divisor <= number {
@@ -178,45 +214,75 @@ func getPrimeFactorizationMesh() *fmesh.FMesh {
 				}
 				divisor += 2
 			}
-			return this.OutputByName("out").PutSignals(signal.New(number)).ChainableErr()
-		})
+			return this.OutputByName("out").PutSignals(signal.New(number))
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create dodd: %v", err))
+	}
 
-	finalPrime := component.New("final_prime").
-		WithDescription("Store the last remaining prime factor, if any").
-		AddInputs("in").
-		AddOutputs("factor").
-		WithActivationFunc(func(this *component.Component) error {
+	finalPrime, err := component.New("final_prime",
+		component.WithDescription("Store the last remaining prime factor, if any"),
+		component.WithInputs("in"),
+		component.WithOutputs("factor"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			if number > 1 {
-				return this.OutputByName("factor").PutSignals(signal.New(number)).ChainableErr()
+				return this.OutputByName("factor").PutSignals(signal.New(number))
 			}
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create finalPrime: %v", err))
+	}
 
-	results := component.New("results").
-		WithDescription("factors holder").
-		AddInputs("factor").
-		AddOutputs("factors").
-		WithActivationFunc(func(this *component.Component) error {
+	results, err := component.New("results",
+		component.WithDescription("factors holder"),
+		component.WithInputs("factor"),
+		component.WithOutputs("factors"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return port.ForwardSignals(this.InputByName("factor"), this.OutputByName("factors"))
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create results: %v", err))
+	}
 
 	// Main pipeline starter->d2->dodd->finalPrime
-	starter.OutputByName("out").PipeTo(d2.InputByName("in"))
-	d2.OutputByName("out").PipeTo(dodd.InputByName("in"))
-	dodd.OutputByName("out").PipeTo(finalPrime.InputByName("in"))
+	if err := starter.OutputByName("out").PipeTo(d2.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe starter to d2: %v", err))
+	}
+	if err := d2.OutputByName("out").PipeTo(dodd.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe d2 to dodd: %v", err))
+	}
+	if err := dodd.OutputByName("out").PipeTo(finalPrime.InputByName("in")); err != nil {
+		panic(fmt.Sprintf("failed to pipe dodd to finalPrime: %v", err))
+	}
 
 	// All found factors are accumulated in results
-	d2.OutputByName("factor").PipeTo(results.InputByName("factor"))
-	dodd.OutputByName("factor").PipeTo(results.InputByName("factor"))
-	finalPrime.OutputByName("factor").PipeTo(results.InputByName("factor"))
+	if err := d2.OutputByName("factor").PipeTo(results.InputByName("factor")); err != nil {
+		panic(fmt.Sprintf("failed to pipe d2 factor: %v", err))
+	}
+	if err := dodd.OutputByName("factor").PipeTo(results.InputByName("factor")); err != nil {
+		panic(fmt.Sprintf("failed to pipe dodd factor: %v", err))
+	}
+	if err := finalPrime.OutputByName("factor").PipeTo(results.InputByName("factor")); err != nil {
+		panic(fmt.Sprintf("failed to pipe finalPrime factor: %v", err))
+	}
 
-	algoMesh := fmesh.New("prime factors algo").
-		WithDescription("Pass single signal to starter").
-		AddComponents(starter, d2, dodd, finalPrime, results)
+	algoMesh, err := fmesh.New("prime factors algo",
+		fmesh.WithDescription("Pass single signal to starter"),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create algo mesh: %v", err))
+	}
+	if err := algoMesh.AddComponents(starter, d2, dodd, finalPrime, results); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(algoMesh, false)
+	err = internal.HandleGraphFlag(algoMesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph: ", err)
 		os.Exit(1)

@@ -72,14 +72,14 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	battery := component.New("battery").
-		WithDescription("electric battery with initial charge level").
-		AddInputs("power_demand").
-		AddOutputs("power_supply").
-		WithInitialState(func(state component.State) {
+	battery, err := component.New("battery",
+		component.WithDescription("electric battery with initial charge level"),
+		component.WithInputs("power_demand"),
+		component.WithOutputs("power_supply"),
+		component.WithInitialState(func(state component.State) {
 			state.Set("level", 1000)
-		}).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// Read state
 			level := this.State().Get("level").(int)
 
@@ -112,16 +112,20 @@ func getMesh() *fmesh.FMesh {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create battery component: %v", err))
+	}
 
-	lightbulb := component.New("lightbulb").
-		WithDescription("electric lightbulb").
-		AddInputs("power_supply", "start_power_demand").
-		AddOutputs("light_supply", "power_demand").
-		WithInitialState(func(state component.State) {
+	lightbulb, err := component.New("lightbulb",
+		component.WithDescription("electric lightbulb"),
+		component.WithInputs("power_supply", "start_power_demand"),
+		component.WithOutputs("light_supply", "power_demand"),
+		component.WithInitialState(func(state component.State) {
 			state.Set("temperature", 26.0)
-		}).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithActivationFunc(func(this *component.Component) error {
 
 			// Read state
 			temperature := this.State().Get("temperature").(float64)
@@ -163,15 +167,29 @@ func getMesh() *fmesh.FMesh {
 			// Always continue demanding power
 			this.OutputByName("power_demand").PutSignals(signal.New(lightBulbPowerConsumption))
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create lightbulb component: %v", err))
+	}
 
-	battery.OutputByName("power_supply").PipeTo(lightbulb.InputByName("power_supply"))
-	lightbulb.OutputByName("power_demand").PipeTo(battery.InputByName("power_demand"))
+	if err := battery.OutputByName("power_supply").PipeTo(lightbulb.InputByName("power_supply")); err != nil {
+		panic(fmt.Sprintf("failed to pipe battery to lightbulb: %v", err))
+	}
+	if err := lightbulb.OutputByName("power_demand").PipeTo(battery.InputByName("power_demand")); err != nil {
+		panic(fmt.Sprintf("failed to pipe lightbulb to battery: %v", err))
+	}
 
-	return fmesh.NewWithConfig("battery_and_lightbulb", &fmesh.Config{
-		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-		Debug:                 false,
-	}).
-		WithDescription("simple electric simulation").
-		AddComponents(battery, lightbulb)
+	fm, err := fmesh.New("battery_and_lightbulb",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+		fmesh.WithDescription("simple electric simulation"),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+	if err := fm.AddComponents(battery, lightbulb); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
+
+	return fm
 }

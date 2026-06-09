@@ -18,12 +18,12 @@ const (
 )
 
 func newWires(name string) *component.Component {
-	wires := component.New(name).
-		WithDescription("Simulates differential low/high pair, performs wire-and logic").
-		AddInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
-		AddOutputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest).
-		WithLogger(common.NewNoopLogger()).
-		WithActivationFunc(func(this *component.Component) error {
+	wires, err := component.New(name,
+		component.WithDescription("Simulates differential low/high pair, performs wire-and logic"),
+		component.WithInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest),
+		component.WithOutputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest),
+		component.WithLogger(common.NewNoopLogger()),
+		component.WithActivationFunc(func(this *component.Component) error {
 			allLow, allHigh, err := processRecessiveBitRequest(this)
 			if err != nil {
 				return fmt.Errorf("failed to process recessive bits request: %w", err)
@@ -45,10 +45,16 @@ func newWires(name string) *component.Component {
 			}
 
 			return doWiredAND(this, allLow, allHigh)
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create wires component: %v", err))
+	}
 
 	// Set up self-activation pipe
-	wires.OutputByName(portRecessiveBitRequest).PipeTo(wires.InputByName(portRecessiveBitRequest))
+	if err := wires.OutputByName(portRecessiveBitRequest).PipeTo(wires.InputByName(portRecessiveBitRequest)); err != nil {
+		panic(fmt.Sprintf("failed to pipe recessive bit request: %v", err))
+	}
 
 	// Initially drive the bus with 11 recessive bits to simulate a passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.

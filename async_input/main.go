@@ -92,11 +92,11 @@ func getMesh() *fmesh.FMesh {
 	client := &http.Client{}
 
 	// Define components
-	crawler := component.New("web crawler").
-		WithDescription("gets http headers from given url").
-		AddInputs("url").
-		AddOutputs("errors", "headers").
-		WithActivationFunc(func(this *component.Component) error {
+	crawler, err := component.New("web crawler",
+		component.WithDescription("gets http headers from given url"),
+		component.WithInputs("url"),
+		component.WithOutputs("errors", "headers"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("url").HasSignals() {
 				return component.ErrWaitingForInputs
 			}
@@ -128,12 +128,16 @@ func getMesh() *fmesh.FMesh {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create crawler component: %v", err))
+	}
 
-	logger := component.New("error logger").
-		WithDescription("logs http errors").
-		AddInputs("error").
-		WithActivationFunc(func(this *component.Component) error {
+	logger, err := component.New("error logger",
+		component.WithDescription("logs http errors"),
+		component.WithInputs("error"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("error").HasSignals() {
 				return component.ErrWaitingForInputs
 			}
@@ -151,13 +155,26 @@ func getMesh() *fmesh.FMesh {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create logger component: %v", err))
+	}
 
 	// Define pipes
-	crawler.OutputByName("errors").PipeTo(logger.InputByName("error"))
+	if err := crawler.OutputByName("errors").PipeTo(logger.InputByName("error")); err != nil {
+		panic(fmt.Sprintf("failed to pipe crawler to logger: %v", err))
+	}
 
-	return fmesh.NewWithConfig("web scraper", &fmesh.Config{
-		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-	}).AddComponents(crawler, logger)
+	fm, err := fmesh.New("web scraper",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+	if err := fm.AddComponents(crawler, logger); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
 
+	return fm
 }

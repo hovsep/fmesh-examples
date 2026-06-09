@@ -1,6 +1,8 @@
 package diagnostics
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/ecu/obd"
 	"github.com/hovsep/fmesh/component"
@@ -20,28 +22,34 @@ const (
 )
 
 func NewLaptop(name string) *Laptop {
-	return &Laptop{
-		laptopComponent: component.New(name).
-			AddInputs(portUSBIn, portProgrammaticIn).
-			AddOutputs(portUSBOut).
-			WithActivationFunc(func(this *component.Component) error {
+	laptopComponent, err := component.New(name,
+		component.WithInputs(portUSBIn, portProgrammaticIn),
+		component.WithOutputs(portUSBOut),
+		component.WithActivationFunc(func(this *component.Component) error {
 
-				// Process programmatic commands
-				this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
-					return sig.Labels().ValueIs(labelTo, labelUSB)
-				}, func(sig *signal.Signal) error {
-					return this.OutputByName(portUSBOut).PutSignals(sig).ChainableErr()
-				})
+			// Process programmatic commands
+			this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
+				return sig.Labels().ValueIs(labelTo, labelUSB)
+			}, func(sig *signal.Signal) error {
+				return this.OutputByName(portUSBOut).PutSignals(sig)
+			})
 
-				// Process incoming usb data
-				this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
-					// Just print everything to STDOUT
-					this.Logger().Printf("Got data on USB port: %v", sig.PayloadOrNil())
-					return nil
-				})
-
+			// Process incoming usb data
+			this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
+				// Just print everything to STDOUT
+				this.Logger().Printf("Got data on USB port: %v", sig.PayloadOrNil())
 				return nil
-			}),
+			})
+
+			return nil
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create laptop component: %v", err))
+	}
+
+	return &Laptop{
+		laptopComponent: laptopComponent,
 	}
 }
 
@@ -55,14 +63,11 @@ func (l *Laptop) SendDataToUSB(payloads ...any) {
 }
 
 func (l *Laptop) ConnectToOBD(OBDSocket *can.Node) error {
-	l.laptopComponent.OutputByName(portUSBOut).PipeTo(OBDSocket.MCU.InputByName(obd.PortOBDIn))
-	OBDSocket.MCU.OutputByName(obd.PortOBDOut).PipeTo(l.laptopComponent.InputByName(portUSBIn))
-	if l.laptopComponent.HasChainableErr() {
-		return l.laptopComponent.ChainableErr()
+	if err := l.laptopComponent.OutputByName(portUSBOut).PipeTo(OBDSocket.MCU.InputByName(obd.PortOBDIn)); err != nil {
+		return fmt.Errorf("failed to pipe laptop to OBD: %w", err)
 	}
-
-	if OBDSocket.MCU.HasChainableErr() {
-		return OBDSocket.MCU.ChainableErr()
+	if err := OBDSocket.MCU.OutputByName(obd.PortOBDOut).PipeTo(l.laptopComponent.InputByName(portUSBIn)); err != nil {
+		return fmt.Errorf("failed to pipe OBD to laptop: %w", err)
 	}
 
 	return nil

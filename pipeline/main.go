@@ -88,9 +88,9 @@ func getMesh() *fmesh.FMesh {
 // in: one signal with file name
 // out: file contents as single signal
 func getFileReader(name string) *component.Component {
-	return component.New(name).
-		WithDescription("read file").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("read file"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			// We expect exactly one signal with file name
 			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if fileName == "" {
@@ -125,7 +125,12 @@ func getFileReader(name string) *component.Component {
 
 			this.OutputByName(portOut).PutSignals(signal.New(string(contents)))
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create file reader: %v", err))
+	}
+	return c
 }
 
 // getFileWriter creates a component that writes data into file
@@ -133,9 +138,9 @@ func getFileReader(name string) *component.Component {
 // out: 1 signal with file name
 // NOTE: the filename is generated dynamically, newline is added to each signal payload when written to file
 func getFileWriter(name string) *component.Component {
-	return component.New(name).
-		WithDescription("write to file").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("write to file"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			root, err := os.OpenRoot(".")
 			if err != nil {
 				return err
@@ -158,13 +163,12 @@ func getFileWriter(name string) *component.Component {
 			}()
 
 			// Write all signals into the file (we assume they all are strings)
-			this.InputByName(portIn).Signals().ForEach(func(s *signal.Signal) error {
+			writeErr := this.InputByName(portIn).Signals().ForEach(func(s *signal.Signal) error {
 				_, err = file.WriteString(s.PayloadOrDefault("").(string) + "\n")
 				return err
 			})
-
-			if this.HasChainableErr() {
-				return this.ChainableErr()
+			if writeErr != nil {
+				return writeErr
 			}
 
 			err = file.Sync()
@@ -173,16 +177,21 @@ func getFileWriter(name string) *component.Component {
 			}
 			this.OutputByName(portOut).PutSignals(signal.New(fileName))
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create file writer: %v", err))
+	}
+	return c
 }
 
 // getStdInReader creates a component that blocks and reads text from STDIN
 // in: any signal(s) to activate
 // out: 1 signal with whole scanned text
 func getStdInReader(name, prompt string) *component.Component {
-	return component.New(name).
-		WithDescription("read a line from stdin").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("read a line from stdin"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			scanner := bufio.NewScanner(os.Stdin)
 
 			fmt.Println(prompt)
@@ -197,16 +206,21 @@ func getStdInReader(name, prompt string) *component.Component {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create stdin reader: %v", err))
+	}
+	return c
 }
 
 // getTokenizer creates a component that splits a string into tokens
 // in: 1 signal with string
 // out: multiple signals each containing one token
 func getTokenizer(name, delimiter string) *component.Component {
-	return component.New(name).
-		WithDescription("tokenize text").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("tokenize text"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if text == "" {
 				this.Logger().Println("got empty text. Aborting activation")
@@ -228,16 +242,21 @@ func getTokenizer(name, delimiter string) *component.Component {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create tokenizer: %v", err))
+	}
+	return c
 }
 
 // getFilter creates a component that filters out tokens from blockedList
 // in: multiple signals with tokens
 // out: multiple signals with tokens (filtered)
 func getFilter(name string, blockList map[string]bool) *component.Component {
-	return component.New(name).
-		WithDescription("filter-tokens").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("filter-tokens"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			filtered := signal.NewGroup()
 
 			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
@@ -249,16 +268,21 @@ func getFilter(name string, blockList map[string]bool) *component.Component {
 
 			this.OutputByName(portOut).PutSignalGroups(filtered)
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create filter: %v", err))
+	}
+	return c
 }
 
 // getTokenCounter creates a component that counts tokens
 // in: multiple signals with tokens
 // out: multiple signals with strings "<token>:<frequency>"
 func getTokenCounter(name string) *component.Component {
-	return component.New(name).
-		WithDescription("count tokens").
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(name,
+		component.WithDescription("count tokens"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			counters := make(map[string]int)
 
 			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
@@ -269,7 +293,12 @@ func getTokenCounter(name string) *component.Component {
 				this.OutputByName(portOut).PutSignals(signal.New(fmt.Sprintf("%s:%d", t, count)))
 			}
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create token counter: %v", err))
+	}
+	return c
 }
 
 // buildPipeline accepts multiple components and builds a pipeline of them
@@ -280,30 +309,43 @@ func getTokenCounter(name string) *component.Component {
 // to components by stage index instead of the name
 func buildPipeline(name string, components ...*component.Component) *fmesh.FMesh {
 	stageIndex := 1
-	fm := fmesh.New(name)
 
 	for _, c := range components {
 		// We can add custom labels
 		c.AddLabel("stage", strconv.Itoa(stageIndex))
 
-		fm = fm.AddComponents(withPipelineInterface(c))
+		if err := c.AddInputs(portIn); err != nil {
+			panic(fmt.Sprintf("failed to add input port to %s: %v", c.Name(), err))
+		}
+		if err := c.AddOutputs(portOut); err != nil {
+			panic(fmt.Sprintf("failed to add output port to %s: %v", c.Name(), err))
+		}
 
+		stageIndex++
+	}
+
+	fm, err := fmesh.New(name)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+
+	for _, c := range components {
+		if err := fm.AddComponents(c); err != nil {
+			panic(fmt.Sprintf("failed to add component %s: %v", c.Name(), err))
+		}
+	}
+
+	stageIndex = 1
+	for _, c := range components {
 		// Connect stages with pipes
 		if stageIndex > 1 {
-			// Use stage-index semantics to connect components
-			fm.Components().FindAny(func(c *component.Component) bool {
-				return c.Labels().ValueIs("stage", strconv.Itoa(stageIndex-1))
-			}).OutputByName(portOut). // Connect from
-							PipeTo(c.InputByName(portIn)) // Connect to
+			prev := components[stageIndex-2]
+			if err := prev.OutputByName(portOut).PipeTo(c.InputByName(portIn)); err != nil {
+				panic(fmt.Sprintf("failed to pipe stage %d to %d: %v", stageIndex-1, stageIndex, err))
+			}
 		}
 		stageIndex++
 	}
 
 	return fm
-}
-
-// withPipelineInterface defines the common interface shared by all components
-// as we are building a pipeline each component will have one input and one output
-func withPipelineInterface(c *component.Component) *component.Component {
-	return c.AddInputs(portIn).AddOutputs(portOut)
 }
