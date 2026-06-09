@@ -20,8 +20,8 @@ digraph  {
 		color="black";label="fibonacci number generator";margin="20";penwidth="5";style="rounded";
 		n5[fontname="Courier New",group="fibonacci number generator",height="1.0",label="i_cur",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n6[fontname="Courier New",group="fibonacci number generator",height="1.0",label="i_prev",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[fontname="Courier New",group="fibonacci number generator",height="1.0",label="o_cur",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[fontname="Courier New",group="fibonacci number generator",height="1.0",label="o_prev",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="fibonacci number generator",height="1.0",label="o_cur",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[fontname="Courier New",group="fibonacci number generator",height="1.0",label="o_prev",penwidth="2.5",shape="circle",style="filled",width="1.0"];
 		n4[color="#9dddea",fontname="Courier New",group="fibonacci number generator",height="1.0",label="𝑓",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
 		n6->n4;
@@ -30,7 +30,7 @@ digraph  {
 		
 	}
 	layout="dot";splines="ortho";
-	n8->n5[color="#e437ea",minlen="3",penwidth="2"];
-	n7->n6[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n8->n6[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

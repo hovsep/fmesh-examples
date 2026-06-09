@@ -16,186 +16,186 @@ digraph  {
 	>,shape="plaintext"];
 		
 	}
-	subgraph cluster_s3 {
+	subgraph cluster_s74 {
 		color="black";label="boundary:respiratory";margin="20";penwidth="5";style="rounded";
-		n6[fontname="Courier New",group="boundary:respiratory",height="1.0",label="environmental_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n5[fontname="Courier New",group="boundary:respiratory",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[fontname="Courier New",group="boundary:respiratory",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="boundary:respiratory",height="1.0",label="Transforms environmental gas signals into chemical levels and lung input for circulation",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n6->n4;
-		n5->n4;
-		n4->n7;
+		n77[fontname="Courier New",group="boundary:respiratory",height="1.0",label="environmental_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="boundary:respiratory",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[fontname="Courier New",group="boundary:respiratory",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n75[color="#9dddea",fontname="Courier New",group="boundary:respiratory",height="1.0",label="Transforms environmental gas signals into chemical levels and lung input for circulation",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n77->n75;
+		n76->n75;
+		n75->n78;
+		
+	}
+	subgraph cluster_s39 {
+		color="black";label="organ:brain";margin="20";penwidth="5";style="rounded";
+		n41[fontname="Courier New",group="organ:brain",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n43[fontname="Courier New",group="organ:brain",height="1.0",label="failure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[fontname="Courier New",group="organ:brain",height="1.0",label="neural_drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[color="#9dddea",fontname="Courier New",group="organ:brain",height="1.0",label="The Brain",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n41->n40;
+		n40->n42;
+		n40->n43;
+		
+	}
+	subgraph cluster_s50 {
+		color="black";label="organ:diaphragm";margin="20";penwidth="5";style="rounded";
+		n53[fontname="Courier New",group="organ:diaphragm",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="organ:diaphragm",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[fontname="Courier New",group="organ:diaphragm",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n55[fontname="Courier New",group="organ:diaphragm",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n51[color="#9dddea",fontname="Courier New",group="organ:diaphragm",height="1.0",label="Diaphragm (primary respiratory actuator)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n53->n51;
+		n52->n51;
+		n51->n54;
+		n51->n55;
 		
 	}
 	subgraph cluster_s44 {
-		color="black";label="organ:brain";margin="20";penwidth="5";style="rounded";
-		n46[fontname="Courier New",group="organ:brain",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n48[fontname="Courier New",group="organ:brain",height="1.0",label="failure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n47[fontname="Courier New",group="organ:brain",height="1.0",label="neural_drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n45[color="#9dddea",fontname="Courier New",group="organ:brain",height="1.0",label="The Brain",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n46->n45;
-		n45->n47;
-		n45->n48;
-		
-	}
-	subgraph cluster_s55 {
-		color="black";label="organ:diaphragm";margin="20";penwidth="5";style="rounded";
-		n58[fontname="Courier New",group="organ:diaphragm",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n57[fontname="Courier New",group="organ:diaphragm",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n59[fontname="Courier New",group="organ:diaphragm",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n60[fontname="Courier New",group="organ:diaphragm",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n56[color="#9dddea",fontname="Courier New",group="organ:diaphragm",height="1.0",label="Diaphragm (primary respiratory actuator)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n58->n56;
-		n57->n56;
-		n56->n59;
-		n56->n60;
-		
-	}
-	subgraph cluster_s49 {
 		color="black";label="organ:heart";margin="20";penwidth="5";style="rounded";
-		n52[fontname="Courier New",group="organ:heart",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n51[fontname="Courier New",group="organ:heart",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n53[fontname="Courier New",group="organ:heart",height="1.0",label="cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n54[fontname="Courier New",group="organ:heart",height="1.0",label="rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n50[color="#9dddea",fontname="Courier New",group="organ:heart",height="1.0",label="Heart",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n52->n50;
-		n51->n50;
-		n50->n53;
-		n50->n54;
+		n47[fontname="Courier New",group="organ:heart",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="organ:heart",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n49[fontname="Courier New",group="organ:heart",height="1.0",label="cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[fontname="Courier New",group="organ:heart",height="1.0",label="rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n45[color="#9dddea",fontname="Courier New",group="organ:heart",height="1.0",label="Heart",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n47->n45;
+		n46->n45;
+		n45->n48;
+		n45->n49;
 		
 	}
-	subgraph cluster_s61 {
+	subgraph cluster_s56 {
 		color="black";label="organ:lung_left";margin="20";penwidth="5";style="rounded";
-		n65[fontname="Courier New",group="organ:lung_left",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n64[fontname="Courier New",group="organ:lung_left",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n63[fontname="Courier New",group="organ:lung_left",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n67[fontname="Courier New",group="organ:lung_left",height="1.0",label="alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n68[fontname="Courier New",group="organ:lung_left",height="1.0",label="exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n66[fontname="Courier New",group="organ:lung_left",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n69[fontname="Courier New",group="organ:lung_left",height="1.0",label="volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n62[color="#9dddea",fontname="Courier New",group="organ:lung_left",height="1.0",label="left lung",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n65->n62;
-		n64->n62;
-		n63->n62;
-		n62->n66;
-		n62->n67;
-		n62->n68;
-		n62->n69;
+		n60[fontname="Courier New",group="organ:lung_left",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n59[fontname="Courier New",group="organ:lung_left",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="organ:lung_left",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n63[fontname="Courier New",group="organ:lung_left",height="1.0",label="alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[fontname="Courier New",group="organ:lung_left",height="1.0",label="exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[fontname="Courier New",group="organ:lung_left",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n61[fontname="Courier New",group="organ:lung_left",height="1.0",label="volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n57[color="#9dddea",fontname="Courier New",group="organ:lung_left",height="1.0",label="left lung",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n60->n57;
+		n59->n57;
+		n58->n57;
+		n57->n61;
+		n57->n62;
+		n57->n63;
+		n57->n64;
 		
 	}
-	subgraph cluster_s70 {
+	subgraph cluster_s65 {
 		color="black";label="organ:lung_right";margin="20";penwidth="5";style="rounded";
-		n74[fontname="Courier New",group="organ:lung_right",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n73[fontname="Courier New",group="organ:lung_right",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n72[fontname="Courier New",group="organ:lung_right",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n75[fontname="Courier New",group="organ:lung_right",height="1.0",label="alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n76[fontname="Courier New",group="organ:lung_right",height="1.0",label="exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n78[fontname="Courier New",group="organ:lung_right",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n77[fontname="Courier New",group="organ:lung_right",height="1.0",label="volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n71[color="#9dddea",fontname="Courier New",group="organ:lung_right",height="1.0",label="right lung",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n74->n71;
-		n73->n71;
-		n72->n71;
-		n71->n75;
-		n71->n76;
-		n71->n77;
-		n71->n78;
+		n69[fontname="Courier New",group="organ:lung_right",height="1.0",label="inspired_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n68[fontname="Courier New",group="organ:lung_right",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[fontname="Courier New",group="organ:lung_right",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[fontname="Courier New",group="organ:lung_right",height="1.0",label="alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n73[fontname="Courier New",group="organ:lung_right",height="1.0",label="exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="organ:lung_right",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="organ:lung_right",height="1.0",label="volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[color="#9dddea",fontname="Courier New",group="organ:lung_right",height="1.0",label="right lung",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n69->n66;
+		n68->n66;
+		n67->n66;
+		n66->n70;
+		n66->n71;
+		n66->n72;
+		n66->n73;
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="physiology:autonomic_coordination";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="neural_drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="Autonomic coordination system",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n6->n4;
+		n4->n7;
 		
 	}
 	subgraph cluster_s8 {
-		color="black";label="physiology:autonomic_coordination";margin="20";penwidth="5";style="rounded";
-		n11[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="neural_drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="autonomic_tone",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n9[color="#9dddea",fontname="Courier New",group="physiology:autonomic_coordination",height="1.0",label="Autonomic coordination system",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="physiology:observable_state";margin="20";penwidth="5";style="rounded";
+		n19[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n23[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n15[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="physiology:observable_state",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="physiology:observable_state",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="physiology:observable_state",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n37[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity_trend",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n25[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="physiology:observable_state",height="1.0",label="is_alive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n33[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n29[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n35[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="physiology:observable_state",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n27[fontname="Courier New",group="physiology:observable_state",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="physiology:observable_state",height="1.0",label="Observable state of the human being (e.g., temperature, blood pressure etc)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n19->n9;
+		n13->n9;
+		n20->n9;
+		n23->n9;
+		n16->n9;
+		n15->n9;
+		n14->n9;
+		n17->n9;
+		n18->n9;
 		n11->n9;
 		n10->n9;
-		n9->n12;
-		
-	}
-	subgraph cluster_s13 {
-		color="black";label="physiology:observable_state";margin="20";penwidth="5";style="rounded";
-		n24[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n25[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n17[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n27[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n21[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n20[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n19[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n15[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n23[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n22[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n28[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[fontname="Courier New",group="physiology:observable_state",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n26[fontname="Courier New",group="physiology:observable_state",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n16[fontname="Courier New",group="physiology:observable_state",height="1.0",label="time",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n38[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n30[fontname="Courier New",group="physiology:observable_state",height="1.0",label="brain_activity_trend",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n31[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_cardiac_activation",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n39[fontname="Courier New",group="physiology:observable_state",height="1.0",label="heart_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n29[fontname="Courier New",group="physiology:observable_state",height="1.0",label="is_alive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n41[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n34[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n33[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n36[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_left_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n32[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_alveolar_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n37[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_exhaled_gas",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n43[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n42[fontname="Courier New",group="physiology:observable_state",height="1.0",label="lung_right_volume",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n40[fontname="Courier New",group="physiology:observable_state",height="1.0",label="pleural_pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n35[fontname="Courier New",group="physiology:observable_state",height="1.0",label="respiratory_rate",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n14[color="#9dddea",fontname="Courier New",group="physiology:observable_state",height="1.0",label="Observable state of the human being (e.g., temperature, blood pressure etc)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n24->n14;
-		n25->n14;
-		n17->n14;
-		n27->n14;
-		n21->n14;
-		n20->n14;
-		n19->n14;
-		n15->n14;
-		n23->n14;
-		n22->n14;
-		n28->n14;
-		n18->n14;
-		n26->n14;
-		n16->n14;
-		n14->n29;
-		n14->n30;
-		n14->n31;
-		n14->n32;
-		n14->n33;
-		n14->n34;
-		n14->n35;
-		n14->n36;
-		n14->n37;
-		n14->n38;
-		n14->n39;
-		n14->n40;
-		n14->n41;
-		n14->n42;
-		n14->n43;
+		n21->n9;
+		n22->n9;
+		n12->n9;
+		n9->n24;
+		n9->n25;
+		n9->n26;
+		n9->n27;
+		n9->n28;
+		n9->n29;
+		n9->n30;
+		n9->n31;
+		n9->n32;
+		n9->n33;
+		n9->n34;
+		n9->n35;
+		n9->n36;
+		n9->n37;
+		n9->n38;
 		
 	}
 	layout="dot";splines="ortho";
-	n7->n65[color="#e437ea",minlen="3",penwidth="2"];
-	n7->n74[color="#e437ea",minlen="3",penwidth="2"];
-	n47->n11[color="#e437ea",minlen="3",penwidth="2"];
-	n47->n24[color="#e437ea",minlen="3",penwidth="2"];
-	n59->n18[color="#e437ea",minlen="3",penwidth="2"];
-	n59->n64[color="#e437ea",minlen="3",penwidth="2"];
-	n59->n73[color="#e437ea",minlen="3",penwidth="2"];
-	n60->n26[color="#e437ea",minlen="3",penwidth="2"];
-	n53->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n54->n17[color="#e437ea",minlen="3",penwidth="2"];
-	n67->n27[color="#e437ea",minlen="3",penwidth="2"];
-	n68->n21[color="#e437ea",minlen="3",penwidth="2"];
-	n66->n20[color="#e437ea",minlen="3",penwidth="2"];
-	n69->n19[color="#e437ea",minlen="3",penwidth="2"];
-	n75->n15[color="#e437ea",minlen="3",penwidth="2"];
-	n76->n23[color="#e437ea",minlen="3",penwidth="2"];
-	n78->n22[color="#e437ea",minlen="3",penwidth="2"];
-	n77->n28[color="#e437ea",minlen="3",penwidth="2"];
-	n12->n52[color="#e437ea",minlen="3",penwidth="2"];
-	n12->n58[color="#e437ea",minlen="3",penwidth="2"];
+	n78->n60[color="#e437ea",minlen="3",penwidth="2"];
+	n78->n69[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n19[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n59[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n68[color="#e437ea",minlen="3",penwidth="2"];
+	n55->n22[color="#e437ea",minlen="3",penwidth="2"];
+	n49->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n48->n20[color="#e437ea",minlen="3",penwidth="2"];
+	n63->n23[color="#e437ea",minlen="3",penwidth="2"];
+	n64->n16[color="#e437ea",minlen="3",penwidth="2"];
+	n62->n15[color="#e437ea",minlen="3",penwidth="2"];
+	n61->n14[color="#e437ea",minlen="3",penwidth="2"];
+	n72->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n73->n18[color="#e437ea",minlen="3",penwidth="2"];
+	n71->n11[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n10[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n47[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n53[color="#e437ea",minlen="3",penwidth="2"];
 	
 }
