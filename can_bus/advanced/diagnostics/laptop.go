@@ -21,7 +21,7 @@ const (
 	labelUSB           = "usb"
 )
 
-func NewLaptop(name string) *Laptop {
+func NewLaptop(name string) (*Laptop, error) {
 	laptopComponent, err := component.New(name,
 		component.WithInputs(portUSBIn, portProgrammaticIn),
 		component.WithOutputs(portUSBOut),
@@ -45,12 +45,12 @@ func NewLaptop(name string) *Laptop {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create laptop component: %v", err))
+		return nil, fmt.Errorf("laptop %s: %w", name, err)
 	}
 
 	return &Laptop{
 		laptopComponent: laptopComponent,
-	}
+	}, nil
 }
 
 func (l *Laptop) SendDataToUSB(payloads ...any) {

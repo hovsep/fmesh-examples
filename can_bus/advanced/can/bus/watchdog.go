@@ -17,7 +17,7 @@ const (
 	stopBusAfterIdleCycles     = 11 + 1            // If the bus remains idle for 12 (11 signals are needed for controller to start arbitration) consecutive cycles, stop watchdog self-activation to allow the bus to stop naturally)
 )
 
-func newWatchdog(name string) *component.Component {
+func newWatchdog(name string) (*component.Component, error) {
 	watchdog, err := component.New(name,
 		component.WithDescription("Simulates terminal resistors and halts the bus when all nodes are idle"),
 		component.WithInputs(
@@ -86,12 +86,12 @@ func newWatchdog(name string) *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create watchdog: %v", err))
+		return nil, fmt.Errorf("watchdog %s: %w", name, err)
 	}
 
 	if err := watchdog.OutputByName(common.PortSelfActivation).PipeTo(watchdog.InputByName(common.PortSelfActivation)); err != nil {
-		panic(fmt.Sprintf("failed to pipe watchdog self activation: %v", err))
+		return nil, fmt.Errorf("pipe self-activation %s: %w", name, err)
 	}
 
-	return watchdog
+	return watchdog, nil
 }

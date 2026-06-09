@@ -11,8 +11,7 @@ import (
 
 const meshName = "simulation_template"
 
-// GetMesh returns the main mesh for the simulation
-func getMesh() *fmesh.FMesh {
+func getMesh() (*fmesh.FMesh, error) {
 	bypassComponent, err := component.New("bypass",
 		component.WithDescription("Bypasses all signals"),
 		component.WithInputs("in"),
@@ -22,27 +21,25 @@ func getMesh() *fmesh.FMesh {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create bypass component: %v", err))
+		return nil, fmt.Errorf("bypass component: %w", err)
 	}
 
 	loggerComponent, err := component.New("logger",
 		component.WithDescription("Simple logger"),
 		component.WithInputs("line"),
 		component.WithActivationFunc(func(this *component.Component) error {
-			this.InputByName("line").Signals().ForEach(func(sig *signal.Signal) error {
+			return this.InputByName("line").Signals().ForEach(func(sig *signal.Signal) error {
 				this.Logger().Println(sig.PayloadOrNil())
 				return nil
 			})
-
-			return nil
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create logger component: %v", err))
+		return nil, fmt.Errorf("logger component: %w", err)
 	}
 
 	if err := bypassComponent.OutputByName("out").PipeTo(loggerComponent.InputByName("line")); err != nil {
-		panic(fmt.Sprintf("failed to pipe bypass to logger: %v", err))
+		return nil, fmt.Errorf("pipe bypass→logger: %w", err)
 	}
 
 	fm, err := fmesh.New(meshName,
@@ -50,12 +47,12 @@ func getMesh() *fmesh.FMesh {
 		fmesh.WithUnlimitedTime(),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 
 	if err := fm.AddComponents(bypassComponent, loggerComponent); err != nil {
-		panic(fmt.Sprintf("failed to add components: %v", err))
+		return nil, fmt.Errorf("add components: %w", err)
 	}
 
-	return fm
+	return fm, nil
 }

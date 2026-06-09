@@ -1,9 +1,13 @@
 package regulation
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetHomeostasis ...
-func GetHomeostasis() *component.Component {
+func GetHomeostasis() (*component.Component, error) {
 	c, err := component.New("regulation:homeostasis",
 		component.WithDescription("Homeostasis regulation system. Runs all the time and tries to keep important levels within ranges"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetHomeostasis() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("homeostasis: %w", err)
 	}
-	return c
+	return c, nil
 }

@@ -1,9 +1,13 @@
 package controller
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetExcretion returns the excretion controller component
-func GetExcretion() *component.Component {
+func GetExcretion() (*component.Component, error) {
 	c, err := component.New("controller:excretion",
 		component.WithDescription("Manages urine and feces excretion"),
 		component.WithInputs("time"),
@@ -13,7 +17,7 @@ func GetExcretion() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("controller:excretion: %w", err)
 	}
-	return c
+	return c, nil
 }

@@ -46,10 +46,21 @@ import (
 //	The simulation is single-directional (habitat → human), as the primary
 //	goal is studying human physiology rather than environmental dynamics.
 func main() {
-	simMesh := getSimulationMesh()
+	simMesh, err := getSimulationMesh()
+	if err != nil {
+		fmt.Println("Failed to build simulation mesh:", err)
+		os.Exit(1)
+	}
 
 	// Now run the simulation; the producer is non-blocking
-	err := internal.HandleGraphFlag(simMesh, false)
+	err = internal.HandleGraphFlag(simMesh, false)
+	if err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+
+	// Now run the simulation; the producer is non-blocking
+	err = internal.HandleGraphFlag(simMesh, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
@@ -78,7 +89,11 @@ func initSim(sim *step_sim.Simulation) {
 	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
-				return sim.Sink.Publish(helper.AsString(line))
+				s, err := helper.AsString(line)
+				if err != nil {
+					return err
+				}
+				return sim.Sink.Publish(s)
 			})
 
 			// @TODO: take this delay from flag or cmd to not affect tests

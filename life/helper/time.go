@@ -28,7 +28,10 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simDuration time.Duration, sim
 		return
 	}
 
-	payload := AsType[*signal.Group](tick)
+	payload, err := AsType[*signal.Group](tick)
+	if err != nil {
+		return 0, 0, time.Time{}, 0, fmt.Errorf("tick signal payload: %w", err)
+	}
 
 	if payload == nil {
 		err = fmt.Errorf("tick signal payload cannot be nil")

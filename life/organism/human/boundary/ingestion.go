@@ -1,8 +1,12 @@
 package boundary
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
 
-func GetIngestion() *component.Component {
+	"github.com/hovsep/fmesh/component"
+)
+
+func GetIngestion() (*component.Component, error) {
 	c, err := component.New("boundary:ingestion",
 		component.WithDescription("Transforms intake signals (food, water, substances) into physiological ingestion and absorption signals"),
 		component.WithInputs(
@@ -20,7 +24,7 @@ func GetIngestion() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("boundary:ingestion: %w", err)
 	}
-	return c
+	return c, nil
 }

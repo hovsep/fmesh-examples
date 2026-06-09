@@ -27,7 +27,7 @@ var (
 
 // New creates a stateful CAN controller
 // which converts frames to bits and vice versa
-func New(unitName string) *component.Component {
+func New(unitName string) (*component.Component, error) {
 	c, err := component.New("can_controller-"+unitName,
 		component.WithInputs(common.PortCANTx, common.PortCANRx),                              // Frame in, bits in
 		component.WithOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState), // Bits out, frame out, notify when bus is idle
@@ -68,9 +68,9 @@ func New(unitName string) *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create controller: %v", err))
+		return nil, fmt.Errorf("controller %s: %w", unitName, err)
 	}
-	return c
+	return c, nil
 }
 
 // Enqueue new frames coming from MCU
@@ -86,7 +86,10 @@ func handleIncomingFrames(this *component.Component) error {
 			return errors.New("received corrupted frame")
 		}
 
-		frameBits := frame.ToBits()
+		frameBits, err := frame.ToBits()
+		if err != nil {
+			return fmt.Errorf("failed to encode frame to bits: %w", err)
+		}
 
 		txQueue = append(txQueue, &TxQueueItem{
 			// Add IFS and 1 extra recessive bit
@@ -212,10 +215,17 @@ func handleArbitrationState(this *component.Component, previousState State, curr
 	}
 
 	// Check if arbitration is won
-	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	rxUnstuffed, err := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	if err != nil {
+		return StateArbitration, fmt.Errorf("failed to unstuff rx buffer: %w", err)
+	}
 	if rxUnstuffed.Len() == codec.ProtocolIDSize+1 {
 		idReceived := rxUnstuffed[1:]
-		idTransmitted := txItem.Buf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)[1 : codec.ProtocolIDSize+1]
+		txUnstuffed, err := txItem.Buf.Bits.WithoutStuffing(codec.ProtocolBitStuffingStep)
+		if err != nil {
+			return StateArbitration, fmt.Errorf("failed to unstuff tx buffer: %w", err)
+		}
+		idTransmitted := txUnstuffed[1 : codec.ProtocolIDSize+1]
 		wonArbitration := idReceived.Equals(idTransmitted)
 		if wonArbitration {
 			this.Logger().Println("won arbitration")
@@ -262,7 +272,10 @@ func handleReceiveState(this *component.Component, previousState State, currentB
 	rxBuf := this.State().Get(stateKeyRxBuffer).(codec.Bits)
 	bitsExpected := this.State().Get(stateKeyBitsExpected).(int)
 
-	rxUnstuffed := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	rxUnstuffed, err := rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	if err != nil {
+		return StateReceive, fmt.Errorf("failed to unstuff rx buffer: %w", err)
+	}
 	bitsReceived := rxUnstuffed.Len()
 
 	if bitsExpected == 0 {
@@ -286,7 +299,10 @@ func handleReceiveState(this *component.Component, previousState State, currentB
 		rxBuf = rxBuf.WithBits(currentBit)
 	}
 
-	rxUnstuffed = rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	rxUnstuffed, err = rxBuf.WithoutStuffing(codec.ProtocolBitStuffingStep)
+	if err != nil {
+		return StateReceive, fmt.Errorf("failed to unstuff rx buffer: %w", err)
+	}
 	bitsReceived = rxUnstuffed.Len()
 
 	// All CAN frames begin with 3 fixed-size fields: SOF (1), ID(11) and DLC

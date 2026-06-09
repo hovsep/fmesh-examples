@@ -1,11 +1,13 @@
 package factor
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh/component"
 )
 
 // GetSunComponent returns the sun radiation exposure factor component of the habitat
-func GetSunComponent() *component.Component {
+func GetSunComponent() (*component.Component, error) {
 	c, err := component.New("sun",
 		component.WithDescription("Sun radiation exposure factor"),
 		component.WithInputs("time", "ctl"),
@@ -15,7 +17,7 @@ func GetSunComponent() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("sun component: %w", err)
 	}
-	return c
+	return c, nil
 }

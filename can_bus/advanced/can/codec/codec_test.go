@@ -28,8 +28,14 @@ func FuzzStuffingSymmetry(f *testing.F) {
 			}
 		}
 
-		stuffed := bits.WithStuffing(5)
-		unstuffed := stuffed.WithoutStuffing(5)
+		stuffed, err := bits.WithStuffing(5)
+		if err != nil {
+			t.Fatalf("WithStuffing failed: %v", err)
+		}
+		unstuffed, err := stuffed.WithoutStuffing(5)
+		if err != nil {
+			t.Fatalf("WithoutStuffing failed: %v", err)
+		}
 
 		if !bits.Equals(unstuffed) {
 			t.Errorf("Mismatch:\noriginal = %s\nunstuffed = %s", bits.String(), unstuffed.String())
@@ -54,8 +60,14 @@ func TestWithStuffingAndWithoutStuffing_Symmetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stuffed := tt.input.WithStuffing(tt.count)
-			unstuffed := stuffed.WithoutStuffing(tt.count)
+			stuffed, err := tt.input.WithStuffing(tt.count)
+			if err != nil {
+				t.Fatalf("WithStuffing failed: %v", err)
+			}
+			unstuffed, err := stuffed.WithoutStuffing(tt.count)
+			if err != nil {
+				t.Fatalf("WithoutStuffing failed: %v", err)
+			}
 
 			assert.True(t, tt.input.Equals(unstuffed), "Original and unstuffed should match")
 		})
@@ -64,13 +76,19 @@ func TestWithStuffingAndWithoutStuffing_Symmetry(t *testing.T) {
 
 func TestStuffingActuallyAddsBit(t *testing.T) {
 	bits := bitSeq(false, false, false, false, false, false) // 6 dominant
-	stuffed := bits.WithStuffing(5)
+	stuffed, err := bits.WithStuffing(5)
+	if err != nil {
+		t.Fatalf("WithStuffing failed: %v", err)
+	}
 	assert.Greater(t, stuffed.Len(), bits.Len(), "Stuffing should add bits")
 }
 
 func TestWithoutStuffingWithNoStuffBits(t *testing.T) {
 	bits := bitSeq(true, false, true, false)
-	unstuffed := bits.WithoutStuffing(5)
+	unstuffed, err := bits.WithoutStuffing(5)
+	if err != nil {
+		t.Fatalf("WithoutStuffing failed: %v", err)
+	}
 	assert.True(t, bits.Equals(unstuffed), "WithoutStuffing should not modify bits without stuffing")
 }
 

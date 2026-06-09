@@ -15,19 +15,18 @@ const (
 	portIn = "in"
 )
 
-// This demo demonstrates F-Mesh's signal filtering and routing capabilities.
-// It showcases how components can filter and route signals based on conditions
 func main() {
-	fm := getMesh()
-
-	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	fm, err := getMesh()
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
 	}
 
-	// Init with data
+	if err := internal.HandleGraphFlag(fm, true); err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+
 	signalsToFilter := getSignals()
 	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignalGroups(signalsToFilter)
 
@@ -40,31 +39,42 @@ func main() {
 	fmt.Println("Filtering finished successfully")
 }
 
-func getMesh() *fmesh.FMesh {
-	filter := getFilter("pop-filter", meta.NewLabels().Set("genre", "pop"))
-	printer1 := getPrinter("dropped-printer")
-	printer2 := getPrinter("passed-printer")
+func getMesh() (*fmesh.FMesh, error) {
+	filter, err := getFilter("pop-filter", meta.NewLabels().Set("genre", "pop"))
+	if err != nil {
+		return nil, fmt.Errorf("filter: %w", err)
+	}
+
+	printer1, err := getPrinter("dropped-printer")
+	if err != nil {
+		return nil, fmt.Errorf("printer1: %w", err)
+	}
+
+	printer2, err := getPrinter("passed-printer")
+	if err != nil {
+		return nil, fmt.Errorf("printer2: %w", err)
+	}
 
 	if err := filter.OutputByName("dropped").PipeTo(printer1.InputByName(portIn)); err != nil {
-		panic(fmt.Sprintf("failed to pipe filter to printer1: %v", err))
+		return nil, fmt.Errorf("pipe filter→printer1: %w", err)
 	}
 	if err := filter.OutputByName("passed").PipeTo(printer2.InputByName(portIn)); err != nil {
-		panic(fmt.Sprintf("failed to pipe filter to printer2: %v", err))
+		return nil, fmt.Errorf("pipe filter→printer2: %w", err)
 	}
 
 	fm, err := fmesh.New("demo-filter")
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 	if err := fm.AddComponents(filter, printer1, printer2); err != nil {
-		panic(fmt.Sprintf("failed to add components: %v", err))
+		return nil, fmt.Errorf("add components: %w", err)
 	}
 
-	return fm
+	return fm, nil
 }
 
-func getPrinter(name string) *component.Component {
-	c, err := component.New(name,
+func getPrinter(name string) (*component.Component, error) {
+	return component.New(name,
 		component.WithDescription("Simple stdout printer"),
 		component.WithInputs(portIn),
 		component.WithActivationFunc(func(this *component.Component) error {
@@ -74,14 +84,10 @@ func getPrinter(name string) *component.Component {
 			})
 		}),
 	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create printer component: %v", err))
-	}
-	return c
 }
 
-func getFilter(name string, disallowedLabels *meta.Labels) *component.Component {
-	c, err := component.New(name,
+func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component, error) {
+	return component.New(name,
 		component.WithDescription("Simple filter"),
 		component.WithInputs(portIn),
 		component.WithOutputs("dropped", "passed"),
@@ -90,15 +96,10 @@ func getFilter(name string, disallowedLabels *meta.Labels) *component.Component 
 				if sig.Labels().HasAnyFrom(disallowedLabels) {
 					return this.OutputByName("dropped").PutSignals(sig)
 				}
-
 				return this.OutputByName("passed").PutSignals(sig)
 			})
 		}),
 	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create filter component: %v", err))
-	}
-	return c
 }
 
 func getSignals() *signal.Group {

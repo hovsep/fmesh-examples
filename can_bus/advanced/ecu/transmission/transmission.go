@@ -1,6 +1,8 @@
 package transmission
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/microcontroller"
 	"github.com/hovsep/fmesh/component"
@@ -56,8 +58,8 @@ var (
 	}
 )
 
-func NewNode() *can.Node {
-	return can.NewNode(TCMUnitName, func(state component.State) {
+func NewNode() (*can.Node, error) {
+	node, err := can.NewNode(TCMUnitName, func(state component.State) {
 		// Set parameter values
 		paramState := microcontroller.ParamsState{
 			tcmPIDFluidTemp:     byte(88),
@@ -74,6 +76,10 @@ func NewNode() *can.Node {
 		}
 		state.Set(tcmStateKeyDTCs, dtcs)
 	}, tcmLogic.ToActivationFunc())
+	if err != nil {
+		return nil, fmt.Errorf("transmission node: %w", err)
+	}
+	return node, nil
 }
 
 func getFluidTemperature(mode microcontroller.AddressingMode, req *microcontroller.ISOTPMessage, mcu *component.Component) (*microcontroller.ISOTPMessage, error) {

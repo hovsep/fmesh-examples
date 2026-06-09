@@ -2,6 +2,7 @@ package factor
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
@@ -17,7 +18,7 @@ const (
 )
 
 // GetGasComponent returns the gas component of the habitat
-func GetGasComponent() *component.Component {
+func GetGasComponent() (*component.Component, error) {
 	c, err := component.New("gas",
 		component.WithDescription("Gas factor"),
 		component.WithInputs("time", "ctl"),
@@ -36,9 +37,9 @@ func GetGasComponent() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("gas component: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 // The component can receive control signals and change internal state
@@ -74,7 +75,10 @@ func emitEnvironmentalGas(this *component.Component) error {
 	currentTemperature := this.State().Get("temperature").(float64)
 	currentHumidity := this.State().Get("humidity").(float64)
 
-	return this.OutputByName("environmental_gas").PutSignals(
-		helper.PackAir(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity),
-	)
+	air, err := helper.PackAir(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity)
+	if err != nil {
+		return fmt.Errorf("emit environmental gas: %w", err)
+	}
+
+	return this.OutputByName("environmental_gas").PutSignals(air)
 }

@@ -54,12 +54,16 @@ import (
 var laptopInstance *diagnostics.Laptop
 
 func main() {
-	fm := getMesh()
+	fm, err := getMesh()
+	if err != nil {
+		fmt.Println("Failed to build mesh:", err)
+		os.Exit(1)
+	}
 
 	// Generate graphs if needed
-	err := internal.HandleGraphFlag(fm, true)
+	err = internal.HandleGraphFlag(fm, true)
 	if err != nil {
-		fmt.Println("Failed to generate graph: ", err)
+		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
 	}
 
@@ -76,51 +80,70 @@ func main() {
 
 	runResult, err := fm.Run()
 	if err != nil {
-		fmt.Println("The mesh finished with error: ", err)
+		fmt.Println("The mesh finished with error:", err)
 		os.Exit(1)
 	}
 
 	fmt.Printf("Mesh stopped after %d cycles and %s", runResult.Cycles.Len(), runResult.Duration())
 }
 
-func getMesh() *fmesh.FMesh {
+func getMesh() (*fmesh.FMesh, error) {
 	// Create components:
-	ptBus := bus.New("PT-CAN")                                   // Modern vehicles have multiple buses, this one is called "powertrain bus"
-	laptopInstance = diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
-
-	// Build CAN nodes:
-	obdDevice := obd.NewNode() // putting this into a variable, so we can connect it to the laptop
-	allCanNodes := can.Nodes{
-		engine.NewNode(),       // Engine Control Module
-		transmission.NewNode(), // Transmission Control Module
-		obdDevice,              // On Board Diagnostics
+	ptBus, err := bus.New("PT-CAN") // Modern vehicles have multiple buses, this one is called "powertrain bus"
+	if err != nil {
+		return nil, fmt.Errorf("bus: %w", err)
+	}
+	laptopInstance, err = diagnostics.NewLaptop("lenovo-ideapad-340") // Laptop running diagnostic software and connected to vehicle via OBD socket
+	if err != nil {
+		return nil, fmt.Errorf("laptop: %w", err)
 	}
 
-	allCanNodes.ConnectToBus(ptBus)
+	// Build CAN nodes:
+	obdDevice, err := obd.NewNode() // putting this into a variable, so we can connect it to the laptop
+	if err != nil {
+		return nil, fmt.Errorf("obd: %w", err)
+	}
+	engineNode, err := engine.NewNode()
+	if err != nil {
+		return nil, fmt.Errorf("engine: %w", err)
+	}
+	transmissionNode, err := transmission.NewNode()
+	if err != nil {
+		return nil, fmt.Errorf("transmission: %w", err)
+	}
+	allCanNodes := can.Nodes{
+		engineNode,       // Engine Control Module
+		transmissionNode, // Transmission Control Module
+		obdDevice,        // On Board Diagnostics
+	}
+
+	if err := allCanNodes.ConnectToBus(ptBus); err != nil {
+		return nil, fmt.Errorf("connect to bus: %w", err)
+	}
 
 	// Connect laptop to OBD socket
-	err := laptopInstance.ConnectToOBD(obdDevice)
+	err = laptopInstance.ConnectToOBD(obdDevice)
 	if err != nil {
-		panic("Failed to connect laptop to OBD: " + err.Error())
+		return nil, fmt.Errorf("laptop→OBD: %w", err)
 	}
 
 	// Build the mesh
 	fm, err := fmesh.New("can_bus_sim_v1",
-		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic), fmesh.WithUnlimitedCycles(),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create mesh: %v", err))
+		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 
 	if err := fm.AddComponents(laptopInstance.GetAllComponents()...); err != nil {
-		panic(fmt.Sprintf("failed to add laptop components: %v", err))
+		return nil, fmt.Errorf("add laptop: %w", err)
 	}
 	if err := fm.AddComponents(ptBus.GetAllComponents()...); err != nil {
-		panic(fmt.Sprintf("failed to add bus components: %v", err))
+		return nil, fmt.Errorf("add bus: %w", err)
 	}
 	if err := fm.AddComponents(allCanNodes.GetAllComponents()...); err != nil {
-		panic(fmt.Sprintf("failed to add node components: %v", err))
+		return nil, fmt.Errorf("add nodes: %w", err)
 	}
 
-	return fm
+	return fm, nil
 }

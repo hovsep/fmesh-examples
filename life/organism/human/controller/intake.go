@@ -1,9 +1,13 @@
 package controller
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetIntake returns the intake controller component
-func GetIntake() *component.Component {
+func GetIntake() (*component.Component, error) {
 	c, err := component.New("controller:intake",
 		component.WithDescription("Intake (e.g., water, food etc)"),
 		component.WithInputs("time", "intake"),
@@ -12,7 +16,7 @@ func GetIntake() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("controller:intake: %w", err)
 	}
-	return c
+	return c, nil
 }

@@ -77,7 +77,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 	return agg, nil
 }
 
-func (h *Habitat) AddAggregatedState() *Habitat {
+func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
 		"gas::environmental_gas",
 		"sun::uvi",
@@ -101,23 +101,22 @@ func (h *Habitat) AddAggregatedState() *Habitat {
 	})
 
 	if err != nil {
-		// @TODO: handle error
-		panic(err)
+		return nil, fmt.Errorf("failed to create aggregator: %w", err)
 	}
 
 	if err := h.FM.AddComponents(agg); err != nil {
-		panic(fmt.Sprintf("failed to add aggregated_state component: %v", err))
+		return nil, fmt.Errorf("failed to add aggregated_state component: %w", err)
 	}
-	return h
+	return h, nil
 }
 
-func (h *Habitat) AddAggregatedStatePublisher() *Habitat {
+func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
 	agg := h.FM.Components().FindAny(func(c *component.Component) bool {
 		return c.Labels().ValueIs("role", "aggregator")
 	})
 
 	if agg == nil {
-		panic("Aggregator not found")
+		return nil, fmt.Errorf("aggregator not found")
 	}
 
 	publisher, err := component.New("aggregated_state_publisher",
@@ -137,15 +136,15 @@ func (h *Habitat) AddAggregatedStatePublisher() *Habitat {
 		}),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create aggregated_state_publisher: %v", err))
+		return nil, fmt.Errorf("failed to create aggregated_state_publisher: %w", err)
 	}
 
 	if err := agg.OutputByName("aggregated_state").PipeTo(publisher.InputByName("aggregated_state")); err != nil {
-		panic(fmt.Sprintf("failed to pipe aggregated state to publisher: %v", err))
+		return nil, fmt.Errorf("failed to pipe aggregated state to publisher: %w", err)
 	}
 
 	if err := h.FM.AddComponents(publisher); err != nil {
-		panic(fmt.Sprintf("failed to add publisher component: %v", err))
+		return nil, fmt.Errorf("failed to add publisher component: %w", err)
 	}
-	return h
+	return h, nil
 }

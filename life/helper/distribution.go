@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"maps"
 
 	"github.com/hovsep/fmesh-examples/life/common"
@@ -11,14 +12,14 @@ import (
 type DistributionMap map[string]float64
 
 // NewDistribution builds a signal that represents a distribution of levels
-func NewDistribution(distributionMap DistributionMap) *signal.Signal {
+func NewDistribution(distributionMap DistributionMap) (*signal.Signal, error) {
 	sum := 0.0
 	for v := range maps.Values(distributionMap) {
 		sum += v
 	}
 
 	if sum != 100 {
-		panic("distribution does not sum up to 100")
+		return nil, fmt.Errorf("distribution does not sum up to 100")
 	}
 
 	distGroup := signal.NewGroup()
@@ -27,33 +28,51 @@ func NewDistribution(distributionMap DistributionMap) *signal.Signal {
 		distGroup = distGroup.With(NewLevel(value, axis))
 	}
 
-	return signal.New(distGroup).WithLabel(common.Type, "distribution")
+	return signal.New(distGroup).WithLabel(common.Type, "distribution"), nil
 }
 
 // RebalanceDistribution rebalances a distribution ensuring that all levels sum up to 100%.
 // Each level is scaled proportionally, so the total remains 100%.
-func RebalanceDistribution(s *signal.Signal) *signal.Signal {
-	group := AsGroup(s)
+func RebalanceDistribution(s *signal.Signal) (*signal.Signal, error) {
+	group, err := AsGroup(s)
+	if err != nil {
+		return nil, fmt.Errorf("rebalance distribution: %w", err)
+	}
 
 	sum := 0.0
 	group.ForEach(func(level *signal.Signal) error {
-		sum += AsF64(level)
+		v, err := AsF64(level)
+		if err != nil {
+			return err
+		}
+		sum += v
 		return nil
 	})
 
 	if sum == 0 {
-		panic("cannot rebalance a distribution where all levels are zero")
+		return nil, fmt.Errorf("cannot rebalance a distribution where all levels are zero")
 	}
 
 	scaleFactor := 100.0 / sum
 
 	rebalanced := DistributionMap{}
-	group.ForEach(func(level *signal.Signal) error {
+	err = group.ForEach(func(level *signal.Signal) error {
 		axis, _ := level.Labels().Value(common.Axis)
-		rebalanced[axis] = AsF64(level) * scaleFactor
+		v, err := AsF64(level)
+		if err != nil {
+			return err
+		}
+		rebalanced[axis] = v * scaleFactor
 		return nil
 	})
+	if err != nil {
+		return nil, fmt.Errorf("rebalance distribution: %w", err)
+	}
 
 	allLabels := s.Labels().All()
-	return NewDistribution(rebalanced).WithLabels(maps.Clone(allLabels))
+	result, err := NewDistribution(rebalanced)
+	if err != nil {
+		return nil, err
+	}
+	return result.WithLabels(maps.Clone(allLabels)), nil
 }

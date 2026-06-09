@@ -9,8 +9,11 @@ import (
 )
 
 // New returns a new human as a component (for simplicity we skip a clothing insulation factor, so the human being is naked)
-func New(name string) *component.Component {
-	mesh := getHumanMesh()
+func New(name string) (*component.Component, error) {
+	mesh, err := getHumanMesh()
+	if err != nil {
+		return nil, fmt.Errorf("human.New: %w", err)
+	}
 
 	c, err := component.New("human-"+name,
 		component.WithDescription("A human being"),
@@ -47,9 +50,9 @@ func New(name string) *component.Component {
 		)),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create human component: %v", err))
+		return nil, fmt.Errorf("failed to create human component: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 // validate activation function

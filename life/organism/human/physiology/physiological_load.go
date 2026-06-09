@@ -1,9 +1,13 @@
 package physiology
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetPhysiologicalLoad ...
-func GetPhysiologicalLoad() *component.Component {
+func GetPhysiologicalLoad() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_load",
 		component.WithDescription("Physiological load (e.g., thermal, mechanical, radiation etc)"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetPhysiologicalLoad() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("physiology:physiological_load: %w", err)
 	}
-	return c
+	return c, nil
 }

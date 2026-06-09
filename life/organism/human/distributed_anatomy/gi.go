@@ -1,9 +1,13 @@
 package da
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetGITract returns the GI tract component
-func GetGITract() *component.Component {
+func GetGITract() (*component.Component, error) {
 	c, err := component.New("da:gi_tract",
 		component.WithDescription("GI / Digestive Tract"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetGITract() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("da:gi_tract: %w", err)
 	}
-	return c
+	return c, nil
 }

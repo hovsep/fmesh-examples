@@ -1,9 +1,13 @@
 package physiology
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetPhysiologicalState ...
-func GetPhysiologicalState() *component.Component {
+func GetPhysiologicalState() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_state",
 		component.WithDescription("Internal physiological state (e.g., temperature, blood pressure etc)"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetPhysiologicalState() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("physiology:physiological_state: %w", err)
 	}
-	return c
+	return c, nil
 }

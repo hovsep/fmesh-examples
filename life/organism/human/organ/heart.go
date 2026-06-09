@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/common"
@@ -26,7 +27,7 @@ func cardiacActivationWave(phase float64) float64 {
 }
 
 // GetHeart returns heart component
-func GetHeart() *component.Component {
+func GetHeart() (*component.Component, error) {
 	c, err := component.New("organ:heart",
 		component.WithDescription("Heart"),
 		component.WithInputs("time", "autonomic_tone"),
@@ -43,9 +44,9 @@ func GetHeart() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("organ:heart: %w", err)
 	}
-	return c
+	return c, nil
 }
 
 func oscillateHeart(this *component.Component) error {

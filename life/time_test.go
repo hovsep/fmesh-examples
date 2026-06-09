@@ -51,7 +51,8 @@ func Test_Time(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
-			fm := getSimulationMesh()
+			fm, err := getSimulationMesh()
+			require.NoError(t, err)
 			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
 
 			if tt.assertions != nil {

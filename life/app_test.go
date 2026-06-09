@@ -17,14 +17,15 @@ func Test_AppChecks(t *testing.T) {
 			name: "mesh is created and human component is present",
 			assertions: func(t *testing.T, app *step_sim.Application) {
 				assert.NotNil(t, app)
-			humanComponent := helper.FindHumanComponent(app.Sim.FM)
-			assert.NotNil(t, humanComponent)
+				humanComponent := helper.FindHumanComponent(app.Sim.FM)
+				assert.NotNil(t, humanComponent)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mesh := getSimulationMesh()
+			mesh, err := getSimulationMesh()
+			assert.NoError(t, err)
 			app := step_sim.NewApp(mesh, initSim)
 			assert.NotNil(t, app)
 

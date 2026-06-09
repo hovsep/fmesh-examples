@@ -60,13 +60,21 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigAct == nil {
 							return nil
 						}
-						observedCardiacActivity = append(observedCardiacActivity, helper.AsF64(sigAct))
+						v, err := helper.AsF64(sigAct)
+						if err != nil {
+							return err
+						}
+						observedCardiacActivity = append(observedCardiacActivity, v)
 
 						sigRate := aggState.OutputByName("human-Leon::heart_rate").Signals().First()
 						if sigRate == nil {
 							return nil
 						}
-						observedHeartRate = append(observedHeartRate, helper.AsInt(sigRate))
+						vRate, err := helper.AsInt(sigRate)
+						if err != nil {
+							return err
+						}
+						observedHeartRate = append(observedHeartRate, vRate)
 						return nil
 					})
 				})
@@ -93,13 +101,21 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigPressure == nil {
 							return nil
 						}
-						observedPleuralPressure = append(observedPleuralPressure, helper.AsF64(sigPressure))
+						v, err := helper.AsF64(sigPressure)
+						if err != nil {
+							return err
+						}
+						observedPleuralPressure = append(observedPleuralPressure, v)
 
 						sigRate := aggState.OutputByName("human-Leon::respiratory_rate").Signals().First()
 						if sigRate == nil {
 							return nil
 						}
-						observedRespiratoryRate = append(observedRespiratoryRate, helper.AsInt(sigRate))
+						vRate, err := helper.AsInt(sigRate)
+						if err != nil {
+							return err
+						}
+						observedRespiratoryRate = append(observedRespiratoryRate, vRate)
 						return nil
 					})
 				})
@@ -129,13 +145,21 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigLeft == nil {
 							return nil
 						}
-						observedLeftFlow = append(observedLeftFlow, helper.AsF64(sigLeft))
+						vLeft, err := helper.AsF64(sigLeft)
+						if err != nil {
+							return err
+						}
+						observedLeftFlow = append(observedLeftFlow, vLeft)
 
 						sigRight := aggState.OutputByName("human-Leon::lung_right_flow").Signals().First()
 						if sigRight == nil {
 							return nil
 						}
-						observedRightFlow = append(observedRightFlow, helper.AsF64(sigRight))
+						vRight, err := helper.AsF64(sigRight)
+						if err != nil {
+							return err
+						}
+						observedRightFlow = append(observedRightFlow, vRight)
 						return nil
 					})
 				})
@@ -171,7 +195,8 @@ func Test_HumanLiveness(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdChan := make(chan step_sim.Command)
-			fm := getSimulationMesh()
+			fm, err := getSimulationMesh()
+			require.NoError(t, err)
 			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
 
 			if tt.assertions != nil {

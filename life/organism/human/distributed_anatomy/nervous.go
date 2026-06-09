@@ -1,9 +1,13 @@
 package da
 
-import "github.com/hovsep/fmesh/component"
+import (
+	"fmt"
+
+	"github.com/hovsep/fmesh/component"
+)
 
 // GetNervousSystem returns the nervous system component
-func GetNervousSystem() *component.Component {
+func GetNervousSystem() (*component.Component, error) {
 	c, err := component.New("da:nervous_system",
 		component.WithDescription("Nervous system"),
 		component.WithInputs("time"),
@@ -12,7 +16,7 @@ func GetNervousSystem() *component.Component {
 		}),
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("da:nervous_system: %w", err)
 	}
-	return c
+	return c, nil
 }
