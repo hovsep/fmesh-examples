@@ -12,6 +12,10 @@ import (
 )
 
 func main() {
+	fmt.Println("=== String Processing Pipeline ===")
+	fmt.Println("Architecture: concat (joins two strings) → case (converts to title case)")
+	fmt.Println()
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -23,6 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println("Feeding inputs into the concat component...")
 	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
 	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
 
@@ -33,7 +38,8 @@ func main() {
 	}
 
 	result := fm.Components().ByName("case").OutputByName("res").Signals().FirstPayloadOrNil()
-	fmt.Printf("Result is : %v", result)
+	fmt.Printf("Result is : %v\n", result)
+	fmt.Println("Done! The pipeline successfully concatenated and title-cased the strings.")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -43,7 +49,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithActivationFunc(func(this *component.Component) error {
 			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
 			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
-			this.OutputByName("res").PutSignals(signal.New(word1 + word2))
+			concatenated := word1 + word2
+			fmt.Printf("  Component 'concat': input1=%q + input2=%q => %q\n", word1, word2, concatenated)
+			this.OutputByName("res").PutSignals(signal.New(concatenated))
 			return nil
 		}),
 	)
@@ -56,7 +64,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithOutputs("res"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
-			this.OutputByName("res").PutSignals(signal.New(strings.ToTitle(inputString)))
+			result := strings.ToTitle(inputString)
+			fmt.Printf("  Component 'case': %q => %q (title case)\n", inputString, result)
+			this.OutputByName("res").PutSignals(signal.New(result))
 			return nil
 		}),
 	)

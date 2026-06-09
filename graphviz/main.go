@@ -15,6 +15,10 @@ import (
 )
 
 func main() {
+	fmt.Println("=== Car Drivetrain Simulation with DOT Graph Export ===")
+	fmt.Println("Architecture: Engine -> Clutch -> Gearbox -> Wheels")
+	fmt.Println("Each activation cycle, signals flow through the chain, and every activated component is highlighted in the DOT output.")
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -26,9 +30,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println("Starting engine...")
 	fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch"))
 
 	runtimeInfo, err := fm.Run()
+	fmt.Printf("Simulation completed — %d activation cycle(s) executed\n", runtimeInfo.Cycles.Len())
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
 		os.Exit(1)
@@ -80,6 +86,7 @@ func main() {
 	fmt.Println("Want to convert all .dot files to images? Run the following command:")
 	bashCmd := `for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done`
 	fmt.Println(bashCmd)
+	fmt.Println("=== DOT Export Complete ===")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -150,6 +157,7 @@ func getMesh() (*fmesh.FMesh, error) {
 
 	fm, err := fmesh.New("graph",
 		fmesh.WithDescription("Simple car mechanics simulation"),
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)

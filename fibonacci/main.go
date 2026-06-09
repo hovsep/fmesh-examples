@@ -11,6 +11,11 @@ import (
 )
 
 func main() {
+	fmt.Println("=== Fibonacci Generator Demo ===")
+	fmt.Println("This example demonstrates a self-feedback pipe: outputs are wired")
+	fmt.Println("back to inputs, generating Fibonacci numbers until next >= 100.")
+	fmt.Println()
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -27,13 +32,13 @@ func main() {
 	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0)
 	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_cur").PutSignals(f1)
 
-	fmt.Println(f0.PayloadOrNil())
-	fmt.Println(f1.PayloadOrNil())
+	fmt.Printf("Seeds: F(0) = %v, F(1) = %v\n", f0.PayloadOrNil(), f1.PayloadOrNil())
 
 	_, err = fm.Run()
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println("=== Fibonacci Generator Demo Complete ===")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -47,9 +52,11 @@ func getMesh() (*fmesh.FMesh, error) {
 			next := cur + prev
 
 			if next < 100 {
-				fmt.Println(next)
+				fmt.Printf("  Fibonacci: %d\n", next)
 				this.OutputByName("o_cur").PutSignals(signal.New(next))
 				this.OutputByName("o_prev").PutSignals(signal.New(cur))
+			} else {
+				fmt.Printf("  %d >= 100, sequence complete\n", next)
 			}
 
 			return nil
@@ -66,7 +73,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("pipe o_prev→i_prev: %w", err)
 	}
 
-	fm, err := fmesh.New("fibonacci example")
+	fm, err := fmesh.New("fibonacci example",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
 	}
