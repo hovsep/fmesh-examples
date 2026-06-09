@@ -7,128 +7,41 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// IsBias checks if a signal represents a regional bias
-func IsBias(s *signal.Signal) bool {
-	return s.Labels().ValueIs(common.Type, common.Bias)
-}
-
-// NewBias builds a signal that represents a regional bias
-func NewBias(value float64, region string) *signal.Signal {
-	return signal.New(value).WithLabel(common.Type, common.Bias).WithLabel(common.Region, region)
-}
-
-// PackAutonomicTone builds a signal that represents autonomic tone
+// PackAutonomicTone builds a signal that represents autonomic tone with scalars
 func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) *signal.Signal {
-	return signal.New(signal.NewGroup().With(
-		NewLevel(sym, common.Sympathetic),
-		NewLevel(paraSym, common.Parasympathetic),
-		NewLevel(noise, common.Noise),
-		NewLevel(gain, common.Gain),
-		NewBias(cardiacBias, common.Cardiac),
-		NewBias(vascularBias, common.Vascular),
-		NewBias(respiratoryBias, common.Respiratory),
-		NewBias(giBias, common.GI),
-	))
+	return signal.New("autonomic_tone").
+		WithScalar(common.Sympathetic, sym).
+		WithScalar(common.Parasympathetic, paraSym).
+		WithScalar(common.Noise, noise).
+		WithScalar(common.Gain, gain).
+		WithScalar(common.Cardiac, cardiacBias).
+		WithScalar(common.Vascular, vascularBias).
+		WithScalar(common.Respiratory, respiratoryBias).
+		WithScalar(common.GI, giBias)
 }
 
 // UnpackAutonomicTone unpacks a signal that represents autonomic tone
 func UnpackAutonomicTone(tone *signal.Signal) (sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64, err error) {
-	group, err := AsType[*signal.Group](tone)
-	if err != nil {
-		return 0, 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("unpack autonomic tone: %w", err)
+	if tone == nil {
+		return 0, 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("autonomic tone signal is nil")
 	}
 
-	err = group.ForEach(func(sig *signal.Signal) error {
-		if IsLevel(sig) {
-			switch sig.Labels().ValueOrDefault(common.Axis, "") {
-			case common.Sympathetic:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				sym = v
-				return nil
-			case common.Parasympathetic:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				paraSym = v
-				return nil
-			case common.Noise:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				noise = v
-				return nil
-			case common.Gain:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				gain = v
-				return nil
-			default:
-				return fmt.Errorf("unsupported level: %s", sig.Labels().ValueOrDefault(common.Axis, ""))
-			}
-		}
-
-		if IsBias(sig) {
-			switch sig.Labels().ValueOrDefault(common.Region, "") {
-			case common.Cardiac:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				cardiacBias = v
-				return nil
-			case common.Vascular:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				vascularBias = v
-				return nil
-			case common.Respiratory:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				respiratoryBias = v
-				return nil
-			case common.GI:
-				v, err := AsF64(sig)
-				if err != nil {
-					return err
-				}
-				giBias = v
-				return nil
-			default:
-				return fmt.Errorf("unsupported bias: %s", sig.Labels().ValueOrDefault(common.Region, ""))
-			}
-		}
-
-		return fmt.Errorf("unsupported signal type in autonomic tone")
-	})
-
+	s := tone.Scalars()
+	sym = s.GetOrDefault(common.Sympathetic, 0)
+	paraSym = s.GetOrDefault(common.Parasympathetic, 0)
+	noise = s.GetOrDefault(common.Noise, 0)
+	gain = s.GetOrDefault(common.Gain, 0)
+	cardiacBias = s.GetOrDefault(common.Cardiac, 0)
+	vascularBias = s.GetOrDefault(common.Vascular, 0)
+	respiratoryBias = s.GetOrDefault(common.Respiratory, 0)
+	giBias = s.GetOrDefault(common.GI, 0)
 	return
 }
 
+// GetBias retrieves a regional bias from an autonomic tone signal
 func GetBias(tone *signal.Signal, region string) (float64, error) {
 	if tone == nil {
 		return 0, fmt.Errorf("tone is nil")
 	}
-
-	group, err := AsType[*signal.Group](tone)
-	if err != nil {
-		return 0, fmt.Errorf("get bias: %w", err)
-	}
-
-	return AsF64(
-		group.Filter(
-			func(sig *signal.Signal) bool {
-				return IsBias(sig) && sig.Labels().ValueIs(common.Region, region)
-			}).First())
-
+	return tone.Scalars().GetOrDefault(region, 0), nil
 }

@@ -4,73 +4,32 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// PackTick builds a tick signal
+// PackTick builds a tick signal with scalars for numeric fields and wall time
 func PackTick(seq uint64, simDuration time.Duration, simWallTime time.Time, duration time.Duration) *signal.Signal {
-	return signal.New(
-		signal.NewGroup().With(
-			signal.New(seq).WithLabel(common.TickMeta, common.TickCount),
-			signal.New(simDuration).WithLabel(common.TickMeta, common.SimDuration),
-			signal.New(simWallTime).WithLabel(common.TickMeta, common.SimWallTime),
-			signal.New(duration).WithLabel(common.TickMeta, common.DeltaT),
-		),
-	).WithLabel("category", "time").
-		WithLabel("type", "tick")
+	return signal.New("tick").
+		WithLabel("category", "time").
+		WithLabel("type", "tick").
+		WithScalar("tick_count", float64(seq)).
+		WithScalar("sim_duration_ms", float64(simDuration.Milliseconds())).
+		WithScalar("sim_wall_time_sec", float64(simWallTime.Unix())).
+		WithScalar("sim_wall_time_nsec", float64(simWallTime.Nanosecond())).
+		WithScalar("delta_t_ms", float64(duration.Milliseconds()))
 }
 
-// UnpackTick returns components of tick
+// UnpackTick returns components of a tick signal
 func UnpackTick(tick *signal.Signal) (seq uint64, simDuration time.Duration, simWallTime time.Time, duration time.Duration, err error) {
 	if tick == nil {
-		err = fmt.Errorf("tick signal cannot be nil")
-		return
+		return 0, 0, time.Time{}, 0, fmt.Errorf("tick signal cannot be nil")
 	}
 
-	payload, err := AsType[*signal.Group](tick)
-	if err != nil {
-		return 0, 0, time.Time{}, 0, fmt.Errorf("tick signal payload: %w", err)
-	}
-
-	if payload == nil {
-		err = fmt.Errorf("tick signal payload cannot be nil")
-		return
-	}
-
-	payload.ForEach(func(tickMetaSig *signal.Signal) error {
-
-		tickMetaLabel, labelErr := tickMetaSig.Labels().Value(common.TickMeta)
-		if labelErr != nil {
-			return labelErr
-		}
-
-		tickMeta := tickMetaSig.PayloadOrNil()
-		if tickMeta == nil {
-			return fmt.Errorf("tick signal payload cannot be nil")
-		}
-
-		switch tickMetaLabel {
-		case common.TickCount:
-			seq = tickMeta.(uint64)
-			return nil
-
-		case common.SimDuration:
-			simDuration = tickMeta.(time.Duration)
-			return nil
-
-		case common.SimWallTime:
-			simWallTime = tickMeta.(time.Time)
-			return nil
-
-		case common.DeltaT:
-			duration = tickMeta.(time.Duration)
-			return nil
-
-		default:
-			return fmt.Errorf("tick signal label %s not supported", tickMetaLabel)
-		}
-	})
+	s := tick.Scalars()
+	seq = uint64(s.GetOrDefault("tick_count", 0))
+	simDuration = time.Duration(s.GetOrDefault("sim_duration_ms", 0)) * time.Millisecond
+	simWallTime = time.Unix(int64(s.GetOrDefault("sim_wall_time_sec", 0)), int64(s.GetOrDefault("sim_wall_time_nsec", 0)))
+	duration = time.Duration(s.GetOrDefault("delta_t_ms", 0)) * time.Millisecond
 	return
 }
 
