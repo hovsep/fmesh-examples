@@ -16,29 +16,50 @@ import (
 
 // getSimulationMesh returns the main mesh of the simulation
 func getSimulationMesh() (*fmesh.FMesh, error) {
+	fmt.Println("Building simulation mesh...")
+	fmt.Println()
+
 	// Set up the world
-	leon, err := human.New("Leon")
-	if err != nil {
-		return nil, fmt.Errorf("human.New: %w", err)
-	}
+	fmt.Println("Phase 1: Setting up habitat...")
 	habitat, err := getHabitat()
 	if err != nil {
 		return nil, fmt.Errorf("getHabitat: %w", err)
 	}
+	fmt.Println("Habitat ready (time + gas + sun factors).")
+	fmt.Println()
+
+	fmt.Println("Phase 2: Creating human organism 'Leon'...")
+	leon, err := human.New("Leon")
+	if err != nil {
+		return nil, fmt.Errorf("human.New: %w", err)
+	}
+	fmt.Println("Human organism created with organs, boundaries, controllers,")
+	fmt.Println("distributed anatomy (blood, nerves, skin), and physiology.")
+	fmt.Println()
+
+	fmt.Println("Phase 3: Placing organism into habitat...")
 	habitat, err = habitat.AddOrganisms(leon)
 	if err != nil {
 		return nil, fmt.Errorf("AddOrganisms: %w", err)
 	}
+	fmt.Println("Leon placed in habitat.")
+	fmt.Println()
+
+	fmt.Println("Phase 4: Adding aggregated state tracking...")
 	habitat, err = habitat.AddAggregatedState()
 	if err != nil {
 		return nil, fmt.Errorf("AddAggregatedState: %w", err)
 	}
+
+	fmt.Println("Phase 5: Adding state publisher (Unix socket stream)...")
 	habitat, err = habitat.AddAggregatedStatePublisher()
 	if err != nil {
 		return nil, fmt.Errorf("AddAggregatedStatePublisher: %w", err)
 	}
 
 	// Set up the mesh
+	fmt.Println()
+	fmt.Println("Phase 6: Wiring environment factors (time tick generator)...")
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		// Generate a tick signal before each run (time step simulation)
 		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
@@ -47,6 +68,7 @@ func getSimulationMesh() (*fmesh.FMesh, error) {
 		})
 
 	})
+	fmt.Println("Tick generator wired: the 'time' component receives a 'tick' signal before each run.")
 
 	err = internal.HandleGraphFlag(habitat.FM, false)
 	if err != nil {
@@ -54,21 +76,27 @@ func getSimulationMesh() (*fmesh.FMesh, error) {
 		os.Exit(1)
 	}
 
+	fmt.Println()
+	fmt.Println("Simulation mesh fully built and ready.")
 	return habitat.FM, nil
 }
 
 // getHabitat builds the habitat mesh
 func getHabitat() (*env.Habitat, error) {
+	fmt.Println("  Creating habitat factors...")
 	factors := component.NewCollection()
 
+	fmt.Println("    - Time factor (drives step simulation)")
 	timeComponent, err := factor.GetTimeComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
+	fmt.Println("    - Gas factor (temperature, humidity, gas composition)")
 	gasComponent, err := factor.GetGasComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
+	fmt.Println("    - Sun factor (sunlight / radiation)")
 	sunComponent, err := factor.GetSunComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)

@@ -32,13 +32,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println("========================================")
+	fmt.Println("  CAN Bus Basic Simulation")
+	fmt.Println("========================================")
+	fmt.Println("Architecture:")
+	fmt.Println("  1 bus component forwards every frame to all connected ECUs")
+	fmt.Println("  Each ECU processes only frames matching its own ID")
+	fmt.Println("  Invalid payloads are reported as corrupted signals")
+	fmt.Println()
+
 	if err := internal.HandleGraphFlag(fm, true); err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
 	}
 
 	runCycle := 0
-	signal.NewGroup(
+
+	frames := signal.NewGroup(
 		CanFrame{Id: 0, Data: []byte("ignition-start")},
 		CanFrame{Id: 2, Data: []byte("impact-detected-front-left")},
 		CanFrame{Id: 1, Data: []byte("deploy-airbag")},
@@ -51,7 +61,11 @@ func main() {
 		CanFrame{Id: 1, Data: []byte("airbag-status:ok")},
 		CanFrame{Id: 2, Data: []byte("sensor-selfcheck:pass")},
 		CanFrame{Id: 3, Data: []byte("lock-status:locked")},
-	).ForEach(func(sig *signal.Signal) error {
+	)
+	fmt.Printf("Injecting %d CAN frames into the bus...\n", frames.Len())
+	fmt.Println()
+
+	frames.ForEach(func(sig *signal.Signal) error {
 		fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig)
 
 		fm.Logger().Println("======================")
@@ -68,8 +82,11 @@ func main() {
 		return nil
 	})
 
-	fm.Logger().Println("======================")
-	fm.Logger().Println("Simulation completed successfully.")
+	fmt.Println()
+	fmt.Println("========================================")
+	fmt.Println("  Simulation Complete")
+	fmt.Println("========================================")
+	fmt.Println()
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -81,7 +98,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		"obd",
 	}
 
-	fm, err := fmesh.New("can_bus_sim_v0")
+	fm, err := fmesh.New("can_bus_sim_v0",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
 	}

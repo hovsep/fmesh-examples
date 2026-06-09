@@ -25,8 +25,9 @@ func main() {
 
 	outerMesh.Components().ByName("starter").InputByName("in").PutSignals(signal.New(315))
 
-	if err != nil {
-		fmt.Println(fmt.Errorf("outer mesh failed with error: %w", err))
+	if _, err := outerMesh.Run(); err != nil {
+		fmt.Println("outer mesh failed with error:", err)
+		os.Exit(1)
 	}
 
 	outerMesh.Components().ByName("factorizer").OutputByName("out").Signals().ForEach(func(sig *signal.Signal) error {
@@ -123,7 +124,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("pipe filter→factorizer: %w", err)
 	}
 
-	outerMesh, err := fmesh.New("outer")
+	outerMesh, err := fmesh.New("outer",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("new outer mesh: %w", err)
 	}
@@ -238,6 +241,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 
 	algoMesh, err := fmesh.New("prime factors algo",
 		fmesh.WithDescription("Pass single signal to starter"),
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new algo mesh: %w", err)

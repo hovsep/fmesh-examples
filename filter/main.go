@@ -16,6 +16,11 @@ const (
 )
 
 func main() {
+	fmt.Println("=== Song Filter Demo ===")
+	fmt.Println("This example demonstrates signal filtering by labels.")
+	fmt.Println("Signals matching a disallowed label set are dropped; all others pass through.")
+	fmt.Println()
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -36,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Filtering finished successfully")
+	fmt.Println("=== Song Filter Demo Complete ===")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -62,7 +67,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("pipe filter→printer2: %w", err)
 	}
 
-	fm, err := fmesh.New("demo-filter")
+	fm, err := fmesh.New("demo-filter",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
 	}
@@ -79,7 +86,7 @@ func getPrinter(name string) (*component.Component, error) {
 		component.WithInputs(portIn),
 		component.WithActivationFunc(func(this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-				fmt.Printf("%s: %v \n", this.Name(), sig.PayloadOrDefault("no payload"))
+				fmt.Printf("  [%s] %v\n", this.Name(), sig.PayloadOrDefault("no payload"))
 				return nil
 			})
 		}),
@@ -93,8 +100,18 @@ func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component
 		component.WithOutputs("dropped", "passed"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-				if sig.Labels().HasAnyFrom(disallowedLabels) {
-					return this.OutputByName("dropped").PutSignals(sig)
+				var why string
+				disallowedLabels.ForEach(func(k, v string) error {
+					if sig.Labels().ValueIs(k, v) {
+						why = fmt.Sprintf("%s=%s matches the filter rule", k, v)
+					}
+					return nil
+				})
+				if why != "" {
+					dropped := sig.MapPayload(func(p any) any {
+						return fmt.Sprintf("DROPPED: '%v' excluded because %s", p, why)
+					})
+					return this.OutputByName("dropped").PutSignals(dropped)
 				}
 				return this.OutputByName("passed").PutSignals(sig)
 			})

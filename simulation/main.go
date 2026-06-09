@@ -13,6 +13,13 @@ import (
 // This example shows how to turn your fmesh into a simple step simulation program
 // @TODO: make it more interesting
 func main() {
+	fmt.Println("=== Step Simulation Template ===")
+	fmt.Println("This example wraps an fmesh in an interactive step simulation — a REPL-driven")
+	fmt.Println("environment where you advance time one tick at a time. Each tick (step) runs all")
+	fmt.Println("mesh cycles. Auto-pause stops after every tick so you can inspect state, inject")
+	fmt.Println("signals, or issue custom commands before stepping again.")
+	fmt.Println()
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -31,14 +38,19 @@ func main() {
 func initSim(sim *step_sim.Simulation) {
 	// Configure simulation
 	sim.AutoPause = true
+	fmt.Println("Auto-pause is ON — the simulator pauses after each tick.")
+	fmt.Println("Enter 'step' (or 's') to advance, 'help' for all commands.")
+	fmt.Println()
 
 	// Add custom commands
 	sim.MeshCommands["dummy"] = step_sim.NewMeshCommandDescriptor("send one signal to bypass component", func(fm *fmesh.FMesh) {
 		fm.ComponentByName("bypass").Inputs().ByName("in").PutSignals(signal.New("dummy line"))
 	})
+	fmt.Println("Registered custom command: 'dummy' — sends a signal through the bypass component.")
 
 	// Init mesh
 	sim.FM.ComponentByName("bypass").
 		InputByName("in").
 		PutSignals(signal.New("start"))
+	fmt.Println("Initial signal 'start' injected into 'bypass'. Ready for stepping.")
 }

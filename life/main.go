@@ -46,6 +46,25 @@ import (
 //	The simulation is single-directional (habitat → human), as the primary
 //	goal is studying human physiology rather than environmental dynamics.
 func main() {
+	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
+	fmt.Println("║           Human Physiology Step Simulation (\"Life\")         ║")
+	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
+	fmt.Println()
+	fmt.Println("This simulation models a human organism (\"Leon\") inside a habitat.")
+	fmt.Println("It demonstrates how fmesh can compose complex, multi-layered systems")
+	fmt.Println("using discrete time steps (each tick = 10 ms of simulated time).")
+	fmt.Println()
+	fmt.Println("Key subsystems simulated:")
+	fmt.Println("  • Habitat  — time, gas composition, temperature, sunlight")
+	fmt.Println("  • Organs   — lungs (left/right), heart, kidneys, brain, etc.")
+	fmt.Println("  • Controllers  — autonomous regulation (heart rate, breathing)")
+	fmt.Println("  • Distributed anatomy — blood, nervous system, skin")
+	fmt.Println()
+	fmt.Println("The habitat is forward-predictive; the human is reactive.")
+	fmt.Println("All communication is signal-based — no shared mutable state.")
+	fmt.Println("A Unix socket streams live state for the ASCII TUI visualizer.")
+	fmt.Println()
+
 	simMesh, err := getSimulationMesh()
 	if err != nil {
 		fmt.Println("Failed to build simulation mesh:", err)
@@ -67,13 +86,19 @@ func main() {
 	}
 
 	// Create the unix socket sink so the TUI can connect and visualize state
+	fmt.Println("Creating Unix socket sink for TUI at /tmp/" + simMesh.Name() + ".sock ...")
 	uiSink, err := sink.NewUnixSocketSink("/tmp/" + simMesh.Name() + ".sock")
 	if err != nil {
 		fmt.Println("Failed to create sink:", err)
 		os.Exit(1)
 	}
+	fmt.Println("Socket ready. Start the TUI in another terminal: go run ./life/tui/")
+	fmt.Println()
 
 	// Run the mesh in a step simulation
+	fmt.Println("Launching step simulation REPL. Enter 'help' for available commands.")
+	fmt.Println("Type 'step' (or 's') to advance one tick (10 ms). Use 'run' to auto-run.")
+	fmt.Println()
 	step_sim.NewApp(simMesh, initSim, step_sim.WithSink(uiSink)).Run()
 }
 

@@ -18,6 +18,10 @@ const (
 )
 
 func main() {
+	fmt.Println("=== Load Balancer Simulation ===")
+	fmt.Println("Architecture: A round-robin load balancer distributes incoming requests across N workers using indexed upstream/downstream ports.")
+	fmt.Println("Indexed upstream/downstream ports connect the load balancer to each worker. Requests are assigned sequentially in rotation.")
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -59,7 +63,7 @@ func main() {
 		})
 	}
 
-	fmt.Println("Load balancing finished successfully")
+	fmt.Println("=== Load Balancing Complete ===")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -73,7 +77,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("load balancer: %w", err)
 	}
 
-	fm, err := fmesh.New("demo-load-balancing")
+	fm, err := fmesh.New("demo-load-balancing",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
 	}
@@ -132,6 +138,7 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 
 			ingressPort.Signals().ForEach(func(sig *signal.Signal) error {
 				lastWorkerIndex %= workersNum
+				this.Logger().Printf("Routing %q -> worker-%d (%s)\n", sig.PayloadOrDefault(""), lastWorkerIndex, indexedPortName("downstream", lastWorkerIndex))
 				this.OutputByName(indexedPortName("downstream", lastWorkerIndex)).PutSignals(sig)
 				lastWorkerIndex++
 				return nil

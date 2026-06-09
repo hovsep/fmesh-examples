@@ -67,6 +67,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println("============================================")
+	fmt.Println("  CAN Bus Advanced Simulation (Layered)")
+	fmt.Println("============================================")
+	fmt.Println("Architecture:")
+	fmt.Println("  Bus: PT-CAN (powertrain) with differential wires (wired-AND)")
+	fmt.Println("       + watchdog component (termination)")
+	fmt.Println("  Each CAN node has 3 layers:")
+	fmt.Println("    MCU (application logic)")
+	fmt.Println("      → Controller (frame encoding, bit stuffing, arbitration)")
+	fmt.Println("      → Transceiver (bit ↔ voltage on bus wires)")
+	fmt.Println("  Nodes: Engine ECU, Transmission ECU, OBD socket")
+	fmt.Println("  Laptop (Lenovo IdeaPad 340) → USB → OBD → CAN Bus")
+	fmt.Println()
+	fmt.Println("Sending diagnostic requests from laptop via OBD-II...")
+	fmt.Println()
+
 	// Initialize the mesh: set diagnostic frames to USB port, so the laptop will send them
 	laptopInstance.SendDataToUSB(
 		diagnostics.FrameGetEngineDTCs,
@@ -78,13 +94,26 @@ func main() {
 		diagnostics.FrameGetTransmissionFluidTemperature,
 	)
 
+	fmt.Println("Path: Laptop → USB → OBD Socket → CAN Bus → ECUs")
+	fmt.Println("ECUs with matching IDs will process and respond.")
+	fmt.Println()
+	fmt.Println("Running simulation...")
+	fmt.Println()
+
 	runResult, err := fm.Run()
 	if err != nil {
 		fmt.Println("The mesh finished with error:", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Mesh stopped after %d cycles and %s", runResult.Cycles.Len(), runResult.Duration())
+	fmt.Println()
+	fmt.Println("============================================")
+	fmt.Println("  Simulation Complete")
+	fmt.Println("============================================")
+	fmt.Printf("  Mesh ran %d cycles in %s\n", runResult.Cycles.Len(), runResult.Duration())
+	fmt.Println("  Diagnostic requests routed: Laptop → USB → OBD → CAN Bus → ECUs")
+	fmt.Println("  ECUs processed matching requests; responses flowed back through the bus.")
+	fmt.Println()
 }
 
 func getMesh() (*fmesh.FMesh, error) {

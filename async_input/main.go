@@ -13,6 +13,11 @@ import (
 )
 
 func main() {
+	fmt.Println("=== Async HTTP Crawler Demo ===")
+	fmt.Println("This example demonstrates async signal processing: URLs are injected")
+	fmt.Println("on a 3-second timer, crawled, and results flow through channels.")
+	fmt.Println()
+
 	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
@@ -39,6 +44,8 @@ func main() {
 	resultsChan := make(chan []any)
 	doneChan := make(chan struct{})
 
+	fmt.Println("Starting URL injection loop (1 URL every 3 seconds)...")
+
 	go func() {
 		for {
 			<-ticker.C
@@ -48,8 +55,6 @@ func main() {
 			}
 			url := urls[0]
 			urls = urls[1:]
-
-			fmt.Println("produce:", url)
 
 			fm.Components().ByName("web crawler").InputByName("url").PutSignals(signal.New(url))
 			_, err := fm.Run()
@@ -70,17 +75,18 @@ func main() {
 
 	go func() {
 		for {
-			r, ok := <-resultsChan
+			_, ok := <-resultsChan
 			if !ok {
-				fmt.Println("results chan is closed. shutting down the reader")
+				fmt.Println("[Consumer] Results channel closed. Shutting down.")
 				doneChan <- struct{}{}
 				return
 			}
-			fmt.Printf("consume: %v \n", r)
+
 		}
 	}()
 
 	<-doneChan
+	fmt.Println("=== Async HTTP Crawler Demo Complete ===")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -158,6 +164,8 @@ func getMesh() (*fmesh.FMesh, error) {
 
 	fm, err := fmesh.New("web scraper",
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+		fmesh.WithUnlimitedTime(),
+		fmesh.WithUnlimitedCycles(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
