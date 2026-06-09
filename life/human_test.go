@@ -172,25 +172,48 @@ func Test_HumanLiveness(t *testing.T) {
 				})
 			},
 		},
-		/*{
-			name:       "inhaled air is different",
+		{
+			name: "inhaled air is different",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
+				var envP, envTemp, envHum float64
+				var inspN, inspO, inspA, inspP, inspTemp, inspHum float64
 
 				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-
+						envSig := aggState.OutputByName("gas::environmental_gas").Signals().First()
+						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
+						if envSig == nil || inspSig == nil {
 							return nil
-						})
+						}
+
+						var err error
+						_, _, _, envP, envTemp, envHum, err = helper.UnpackAir(envSig)
+						if err != nil {
+							return nil
+						}
+						inspN, inspO, inspA, inspP, inspTemp, inspHum, err = helper.UnpackAir(inspSig)
+						if err != nil {
+							return nil
+						}
+						return nil
+					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Millisecond * 100, func() {
+				helper.RunSimulationAndThen(sim, 100*time.Millisecond, func() {
+					// Inspired air should be warmer, cleaner, and more humid than environmental air
+					assert.Greater(t, inspTemp, envTemp, "inspired air should be warmer")
+					assert.Greater(t, inspHum, envHum, "inspired air should be more humid")
+					assert.Less(t, inspP, envP, "inspired air should be cleaner (less pollution)")
 
-				}
+					// Composition should still sum to 100% after rebalancing
+					compSum := inspN + inspO + inspA + inspP
+					assert.InDelta(t, 100.0, compSum, 1e-9, "composition should sum to 100%%")
+				})
 			},
-		},*/
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

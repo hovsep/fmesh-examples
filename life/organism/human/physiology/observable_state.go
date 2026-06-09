@@ -21,6 +21,7 @@ func GetObservableState() (*component.Component, error) {
 		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
 		component.WithInputs(
 			"time",
+			"inspired_gas",
 			"brain_activity",
 			"heart_cardiac_activation",
 			"heart_rate",
@@ -39,6 +40,7 @@ func GetObservableState() (*component.Component, error) {
 		),
 		component.WithOutputs(
 			"is_alive",
+			"inspired_gas",
 			"brain_activity",
 			"brain_activity_trend",
 			"heart_cardiac_activation",
@@ -128,6 +130,10 @@ func handleDiaphragmSignals(this *component.Component) error {
 
 func handleLungSignals(this *component.Component) error {
 	return helper.MultiForward(
+		helper.PortPair{
+			this.InputByName("inspired_gas"),
+			this.OutputByName("inspired_gas"),
+		},
 		helper.PortPair{
 			this.InputByName("lung_left_volume"),
 			this.OutputByName("lung_left_volume"),

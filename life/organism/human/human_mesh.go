@@ -132,10 +132,11 @@ func wireDiaphragm(components *component.Collection) error {
 }
 
 func wireRespiratoryBoundary(components *component.Collection) error {
-	// Air flows from respiratory system to lungs
+	// Air flows from respiratory system to lungs and is observable
 	return components.ByName("boundary:respiratory").OutputByName("inspired_gas").PipeTo(
 		components.ByName("organ:lung_left").InputByName("inspired_gas"),
 		components.ByName("organ:lung_right").InputByName("inspired_gas"),
+		components.ByName("physiology:observable_state").InputByName("inspired_gas"),
 	)
 }
 
