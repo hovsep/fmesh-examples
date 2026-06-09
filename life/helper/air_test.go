@@ -13,7 +13,6 @@ func TestPackAir_ValidComposition(t *testing.T) {
 	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 	require.NotNil(t, s)
-	assert.True(t, IsAir(s))
 }
 
 func TestPackAir_InvalidComposition(t *testing.T) {
@@ -47,66 +46,68 @@ func TestUnpackAir_NonAir(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMapAirLevel_ModifiesScalar(t *testing.T) {
+func TestMapAirScalar_StandaloneScalar(t *testing.T) {
 	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s, err = MapAirLevel(s, "temperature", func(old float64) float64 { return old + 1.0 })
-	require.NoError(t, err)
+	s = MapAirScalar(s, "temperature", func(old float64) float64 { return old + 1.0 })
 
 	v := s.Scalars().GetOrDefault("temperature", 0)
 	assert.Equal(t, 26.0*unit.Celsius+1.0, v)
 }
 
-func TestMapAirLevel_RejectsNonAir(t *testing.T) {
-	_, err := MapAirLevel(signal.New("not_air"), "temperature", func(old float64) float64 { return old })
-	require.Error(t, err)
-}
-
-func TestMapAirComposition_Rebalances(t *testing.T) {
+func TestMapAirScalar_DistributionRebalances(t *testing.T) {
 	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s, err = MapAirComposition(s, "pollution", func(_ float64) float64 {
+	s = MapAirScalar(s, "composition:pollution", func(_ float64) float64 {
 		return float64(2 * unit.Percent)
 	})
-	require.NoError(t, err)
 
-	assert.Equal(t, float64(2*unit.Percent), s.Scalars().GetOrDefault("pollution", 0))
+	// Target gets exactly its mapped value
+	assert.Equal(t, float64(2*unit.Percent), s.Scalars().GetOrDefault("composition:pollution", 0))
 
-	compSum := s.Scalars().GetOrDefault("nitrogen", 0) +
-		s.Scalars().GetOrDefault("oxygen", 0) +
-		s.Scalars().GetOrDefault("argon", 0) +
-		s.Scalars().GetOrDefault("pollution", 0)
+	// Distribution rebalanced to sum 100
+	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
+		s.Scalars().GetOrDefault("composition:oxygen", 0) +
+		s.Scalars().GetOrDefault("composition:argon", 0) +
+		s.Scalars().GetOrDefault("composition:pollution", 0)
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 
+	// Standalone scalars unchanged
 	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().GetOrDefault("temperature", 0))
 	assert.Equal(t, 58.8*unit.Percent, s.Scalars().GetOrDefault("humidity", 0))
 }
 
-func TestMapAirComposition_NoRebalanceNeeded(t *testing.T) {
+func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
 	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s, err = MapAirComposition(s, "nitrogen", func(old float64) float64 { return old })
-	require.NoError(t, err)
+	s = MapAirScalar(s, "composition:nitrogen", func(old float64) float64 { return old })
 
-	compSum := s.Scalars().GetOrDefault("nitrogen", 0) +
-		s.Scalars().GetOrDefault("oxygen", 0) +
-		s.Scalars().GetOrDefault("argon", 0) +
-		s.Scalars().GetOrDefault("pollution", 0)
+	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
+		s.Scalars().GetOrDefault("composition:oxygen", 0) +
+		s.Scalars().GetOrDefault("composition:argon", 0) +
+		s.Scalars().GetOrDefault("composition:pollution", 0)
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 }
 
-func TestMapAirComposition_RejectsNonAir(t *testing.T) {
-	_, err := MapAirComposition(signal.New("not_air"), "nitrogen", func(old float64) float64 { return old })
-	require.Error(t, err)
-}
-
-func TestIsAir(t *testing.T) {
+func TestMapAirScalar_StandaloneNoRebalance(t *testing.T) {
 	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
-	assert.True(t, IsAir(s))
-	assert.False(t, IsAir(nil))
-	assert.False(t, IsAir(signal.New("not_air")))
+
+	s = MapAirScalar(s, "humidity", func(old float64) float64 { return old * 2 })
+
+	// Only humidity changed
+	assert.Equal(t, 58.8*unit.Percent*2, s.Scalars().GetOrDefault("humidity", 0))
+
+	// Nothing else touched
+	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().GetOrDefault("temperature", 0))
+
+	// Composition still sums to 100
+	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
+		s.Scalars().GetOrDefault("composition:oxygen", 0) +
+		s.Scalars().GetOrDefault("composition:argon", 0) +
+		s.Scalars().GetOrDefault("composition:pollution", 0)
+	assert.InDelta(t, 100.0, compSum, 1e-9)
 }

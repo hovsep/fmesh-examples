@@ -30,57 +30,36 @@ func GetRespiratory() (*component.Component, error) {
 
 // Applies pollution reduction.
 func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	var mapErr error
-	result := sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
-		modified, err := helper.MapAirComposition(airSignal, "pollution", func(p float64) float64 {
+	result := sigs.MapIf(func(s *signal.Signal) bool {
+		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+	}, func(airSignal *signal.Signal) *signal.Signal {
+		return helper.MapAirScalar(airSignal, "composition:pollution", func(p float64) float64 {
 			return p * 0.5
 		})
-		if err != nil {
-			mapErr = err
-			return airSignal
-		}
-		return modified
 	})
-	if mapErr != nil {
-		return nil, mapErr
-	}
 	return result, nil
 }
 
 // Applies humidity increase.
 func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	var mapErr error
-	result := sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
-		modified, err := helper.MapAirLevel(airSignal, "humidity", func(h float64) float64 {
+	result := sigs.MapIf(func(s *signal.Signal) bool {
+		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+	}, func(airSignal *signal.Signal) *signal.Signal {
+		return helper.MapAirScalar(airSignal, "humidity", func(h float64) float64 {
 			return h * 1.1
 		})
-		if err != nil {
-			mapErr = err
-			return airSignal
-		}
-		return modified
 	})
-	if mapErr != nil {
-		return nil, mapErr
-	}
 	return result, nil
 }
 
 // Applies temperature increase.
 func warmUpInspiredGas(sigs *signal.Group) (*signal.Group, error) {
-	var mapErr error
-	result := sigs.MapIf(helper.IsAir, func(airSignal *signal.Signal) *signal.Signal {
-		modified, err := helper.MapAirLevel(airSignal, "temperature", func(t float64) float64 {
+	result := sigs.MapIf(func(s *signal.Signal) bool {
+		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+	}, func(airSignal *signal.Signal) *signal.Signal {
+		return helper.MapAirScalar(airSignal, "temperature", func(t float64) float64 {
 			return t + 0.2
 		})
-		if err != nil {
-			mapErr = err
-			return airSignal
-		}
-		return modified
 	})
-	if mapErr != nil {
-		return nil, mapErr
-	}
 	return result, nil
 }
