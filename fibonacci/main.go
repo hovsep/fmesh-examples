@@ -46,10 +46,10 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	c1 := component.New("fibonacci number generator").
-		AddInputs("i_cur", "i_prev").
-		AddOutputs("o_cur", "o_prev").
-		WithActivationFunc(func(this *component.Component) error {
+	c1, err := component.New("fibonacci number generator",
+		component.WithInputs("i_cur", "i_prev"),
+		component.WithOutputs("o_cur", "o_prev"),
+		component.WithActivationFunc(func(this *component.Component) error {
 			cur := this.InputByName("i_cur").Signals().FirstPayloadOrDefault(0).(int)
 			prev := this.InputByName("i_prev").Signals().FirstPayloadOrDefault(0).(int)
 
@@ -63,12 +63,27 @@ func getMesh() *fmesh.FMesh {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create fibonacci component: %v", err))
+	}
 
 	// Define pipes
-	c1.Outputs().ByName("o_cur").PipeTo(c1.Inputs().ByName("i_cur"))
-	c1.Outputs().ByName("o_prev").PipeTo(c1.Inputs().ByName("i_prev"))
+	if err := c1.Outputs().ByName("o_cur").PipeTo(c1.Inputs().ByName("i_cur")); err != nil {
+		panic(fmt.Sprintf("failed to pipe o_cur to i_cur: %v", err))
+	}
+	if err := c1.Outputs().ByName("o_prev").PipeTo(c1.Inputs().ByName("i_prev")); err != nil {
+		panic(fmt.Sprintf("failed to pipe o_prev to i_prev: %v", err))
+	}
 
 	// Build mesh
-	return fmesh.New("fibonacci example").AddComponents(c1)
+	fm, err := fmesh.New("fibonacci example")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+	if err := fm.AddComponents(c1); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
+	return fm
 }

@@ -41,34 +41,52 @@ func main() {
 }
 
 func getMesh() *fmesh.FMesh {
-	fm := fmesh.NewWithConfig("hello world", &fmesh.Config{
-		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-		CyclesLimit:           10,
-	}).
-		AddComponents(
-			component.New("concat").
-				AddInputs("i1", "i2").
-				AddOutputs("res").
-				WithActivationFunc(func(this *component.Component) error {
-					word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
-					word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
+	concat, err := component.New("concat",
+		component.WithInputs("i1", "i2"),
+		component.WithOutputs("res"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
+			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
 
-					this.OutputByName("res").PutSignals(signal.New(word1 + word2))
-					return nil
-				}),
-			component.New("case").
-				AddInputs("i1").
-				AddOutputs("res").
-				WithActivationFunc(func(this *component.Component) error {
-					inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
-
-					this.OutputByName("res").PutSignals(signal.New(strings.ToTitle(inputString)))
-					return nil
-				}))
-
-	fm.Components().ByName("concat").Outputs().ByName("res").PipeTo(
-		fm.Components().ByName("case").Inputs().ByName("i1"),
+			this.OutputByName("res").PutSignals(signal.New(word1 + word2))
+			return nil
+		}),
 	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create concat component: %v", err))
+	}
+
+	caseComp, err := component.New("case",
+		component.WithInputs("i1"),
+		component.WithOutputs("res"),
+		component.WithActivationFunc(func(this *component.Component) error {
+			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
+
+			this.OutputByName("res").PutSignals(signal.New(strings.ToTitle(inputString)))
+			return nil
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create case component: %v", err))
+	}
+
+	fm, err := fmesh.New("hello world",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+		fmesh.WithCyclesLimit(10),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+
+	if err := fm.AddComponents(concat, caseComp); err != nil {
+		panic(fmt.Sprintf("failed to add components: %v", err))
+	}
+
+	if err := fm.Components().ByName("concat").Outputs().ByName("res").PipeTo(
+		fm.Components().ByName("case").Inputs().ByName("i1"),
+	); err != nil {
+		panic(fmt.Sprintf("failed to pipe concat to case: %v", err))
+	}
 
 	return fm
 }

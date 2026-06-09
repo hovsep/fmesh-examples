@@ -1,6 +1,8 @@
 package can
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/bus"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
@@ -28,14 +30,22 @@ func NewNode(unitName string, mcuInitState func(state component.State), mcuActiv
 	// Wiring : mcu <--> controller <--> transceiver
 
 	// mcu -> controller:
-	mcu.OutputByName(common.PortCANTx).PipeTo(ctl.InputByName(common.PortCANTx))
+	if err := mcu.OutputByName(common.PortCANTx).PipeTo(ctl.InputByName(common.PortCANTx)); err != nil {
+		panic(fmt.Sprintf("failed to pipe mcu to ctl: %v", err))
+	}
 	// mcu <- controller
-	ctl.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx))
+	if err := ctl.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx)); err != nil {
+		panic(fmt.Sprintf("failed to pipe ctl to mcu: %v", err))
+	}
 
 	// controller -> transceiver
-	ctl.OutputByName(common.PortCANTx).PipeTo(trsv.InputByName(common.PortCANTx))
+	if err := ctl.OutputByName(common.PortCANTx).PipeTo(trsv.InputByName(common.PortCANTx)); err != nil {
+		panic(fmt.Sprintf("failed to pipe ctl to trsv: %v", err))
+	}
 	// controller <- transceiver
-	trsv.OutputByName(common.PortCANRx).PipeTo(ctl.InputByName(common.PortCANRx))
+	if err := trsv.OutputByName(common.PortCANRx).PipeTo(ctl.InputByName(common.PortCANRx)); err != nil {
+		panic(fmt.Sprintf("failed to pipe trsv to ctl: %v", err))
+	}
 
 	return &Node{
 		MCU:         mcu,
@@ -57,15 +67,25 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 func (nodes Nodes) ConnectToBus(b *bus.Bus) {
 	for _, node := range nodes {
 		// transceiver -> bus:
-		node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.Wires.InputByName(common.PortCANL))
-		node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.Wires.InputByName(common.PortCANH))
+		if err := node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.Wires.InputByName(common.PortCANL)); err != nil {
+			panic(fmt.Sprintf("failed to pipe transceiver to bus: %v", err))
+		}
+		if err := node.Transceiver.OutputByName(common.PortCANH).PipeTo(b.Wires.InputByName(common.PortCANH)); err != nil {
+			panic(fmt.Sprintf("failed to pipe transceiver to bus: %v", err))
+		}
 
 		// transceiver <- bus:
-		b.Wires.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL))
-		b.Wires.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH))
+		if err := b.Wires.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL)); err != nil {
+			panic(fmt.Sprintf("failed to pipe bus to transceiver: %v", err))
+		}
+		if err := b.Wires.OutputByName(common.PortCANH).PipeTo(node.Transceiver.InputByName(common.PortCANH)); err != nil {
+			panic(fmt.Sprintf("failed to pipe bus to transceiver: %v", err))
+		}
 
 		// ctl -> bus watchdog
-		node.Controller.OutputByName(common.PortControllerState).PipeTo(b.Watchdog.InputByName(common.PortControllerState))
+		if err := node.Controller.OutputByName(common.PortControllerState).PipeTo(b.Watchdog.InputByName(common.PortControllerState)); err != nil {
+			panic(fmt.Sprintf("failed to pipe ctl to watchdog: %v", err))
+		}
 
 	}
 }

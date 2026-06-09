@@ -78,18 +78,26 @@ func getMesh() *fmesh.FMesh {
 	workers := getWorkers("api-backend", 3)
 	lb := getLoadBalancer("lb", workers)
 
-	return fmesh.New("demo-load-balancing").
-		AddComponents(lb).
-		AddComponents(workers...)
+	fm, err := fmesh.New("demo-load-balancing")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+	if err := fm.AddComponents(lb); err != nil {
+		panic(fmt.Sprintf("failed to add lb component: %v", err))
+	}
+	if err := fm.AddComponents(workers...); err != nil {
+		panic(fmt.Sprintf("failed to add workers: %v", err))
+	}
+	return fm
 }
 
 func getWorkers(namePrefix string, number int) []*component.Component {
 	workers := make([]*component.Component, number)
 	for i := range number {
-		worker := component.New(fmt.Sprintf("%s-%d", namePrefix, i)).
-			AddInputs(portIn).
-			AddOutputs(portOut).
-			WithActivationFunc(func(this *component.Component) error {
+		worker, err := component.New(fmt.Sprintf("%s-%d", namePrefix, i),
+			component.WithInputs(portIn),
+			component.WithOutputs(portOut),
+			component.WithActivationFunc(func(this *component.Component) error {
 				return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 					// Receive request
 					request := sig.PayloadOrDefault("").(string)
@@ -98,9 +106,13 @@ func getWorkers(namePrefix string, number int) []*component.Component {
 					response := fmt.Sprintf("Request: %s processed by %s", request, this.Name())
 
 					// Response
-					return this.OutputByName(portOut).PutSignals(signal.New(response)).ChainableErr()
-				}).ChainableErr()
-			})
+					return this.OutputByName(portOut).PutSignals(signal.New(response))
+				})
+			}),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create worker %d: %v", i, err))
+		}
 		workers[i] = worker
 	}
 	return workers
@@ -113,19 +125,16 @@ func getLoadBalancer(name string, workers []*component.Component) *component.Com
 		panic("at least 1 worker is required")
 	}
 
-	lb := component.New(name).
-		WithDescription(fmt.Sprintf("Load balancer with %d workers", numWorkers)).
-		AddInputs(portIn).                                // Ingress (requests to LB)
-		AddIndexedInputs("upstream", 0, numWorkers-1).    // Upstream connections (responses from workers)
-		AddIndexedOutputs("downstream", 0, numWorkers-1). // Downstream connections (requests to workers)
-		AddOutputs(portOut).                              // Egress (responses from LB)
-		WithInitialState(func(state component.State) {
-			// We can go without it, as output ports will reflect the number of workers,
-			// but it is more explicit and safe, as load balancer may have any other output ports
-			// not connected to workers
+	lb, err := component.New(name,
+		component.WithDescription(fmt.Sprintf("Load balancer with %d workers", numWorkers)),
+		component.WithInputs(portIn),
+		component.WithIndexedInputs("upstream", 0, numWorkers-1),
+		component.WithIndexedOutputs("downstream", 0, numWorkers-1),
+		component.WithOutputs(portOut),
+		component.WithInitialState(func(state component.State) {
 			state.Set("workers_number", numWorkers)
-		}).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithActivationFunc(func(this *component.Component) error {
 			ingressPort := this.InputByName(portIn)
 			egressPort := this.OutputByName(portOut)
 
@@ -155,12 +164,20 @@ func getLoadBalancer(name string, workers []*component.Component) *component.Com
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create load balancer: %v", err))
+	}
 
 	// Connect workers to LB
 	for i, w := range workers {
-		lb.OutputByName(indexedPortName("downstream", i)).PipeTo(w.InputByName(portIn))
-		w.OutputByName(portOut).PipeTo(lb.InputByName(indexedPortName("upstream", i)))
+		if err := lb.OutputByName(indexedPortName("downstream", i)).PipeTo(w.InputByName(portIn)); err != nil {
+			panic(fmt.Sprintf("failed to pipe downstream %d: %v", i, err))
+		}
+		if err := w.OutputByName(portOut).PipeTo(lb.InputByName(indexedPortName("upstream", i))); err != nil {
+			panic(fmt.Sprintf("failed to pipe upstream %d: %v", i, err))
+		}
 	}
 
 	return lb

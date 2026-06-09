@@ -14,11 +14,11 @@ import (
 // NewTransceiver creates a stateless CAN transceiver component
 // which converts bits to voltage and vice versa
 func NewTransceiver(unitName string) *component.Component {
-	return component.New("can_transceiver-"+unitName).
-		AddInputs(common.PortCANTx, common.PortCANH, common.PortCANL).  // Bits in (write to bus), voltage in (read from bus)
-		AddOutputs(common.PortCANRx, common.PortCANH, common.PortCANL). // Bits out (read from bus), voltage out (write to bus)
-		WithLogger(common.NewNoopLogger()).
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New("can_transceiver-"+unitName,
+		component.WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL),  // Bits in (write to bus), voltage in (read from bus)
+		component.WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL), // Bits out (read from bus), voltage out (write to bus)
+		component.WithLogger(common.NewNoopLogger()),
+		component.WithActivationFunc(func(this *component.Component) error {
 			err := handleTxPath(this)
 			if err != nil {
 				return fmt.Errorf("failed to handle tx path: %w", err)
@@ -29,7 +29,12 @@ func NewTransceiver(unitName string) *component.Component {
 				return fmt.Errorf("failed to handle rx path: %w", err)
 			}
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create transceiver: %v", err))
+	}
+	return c
 }
 
 // Write path: transceiver -> bus
@@ -53,7 +58,7 @@ func handleTxPath(this *component.Component) error {
 
 		this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
 		return nil
-	}).ChainableErr()
+	})
 }
 
 // Read path: transceiver <- bus (exactly one bit)

@@ -94,7 +94,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: 0x%03X, sid: 0x%02X, pid: 0x%02X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
 
 			return nil
-		}).ChainableErr()
+		})
 	}
 
 	return af

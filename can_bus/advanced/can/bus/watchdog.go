@@ -1,6 +1,8 @@
 package bus
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/controller"
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/physical"
@@ -16,26 +18,26 @@ const (
 )
 
 func newWatchdog(name string) *component.Component {
-	watchdog := component.New(name).
-		WithDescription("Simulates terminal resistors and halts the bus when all nodes are idle").
-		AddInputs(
+	watchdog, err := component.New(name,
+		component.WithDescription("Simulates terminal resistors and halts the bus when all nodes are idle"),
+		component.WithInputs(
 			common.PortControllerState, // Each CAN node sends it's current state here
 			common.PortCANL,            // Current voltage on bus low wire
 			common.PortCANH,            // Current voltage on bus high wire
 			common.PortSelfActivation,  // Non-parametrized (dummy) feedback-loop, so watchdog is activated in each cycle once fired
-		).
-		AddOutputs(
+		),
+		component.WithOutputs(
 			portRecessiveBitRequest, // Control signal to bus, in order to drive the bus recessive (simulate terminal resistors effect)
 			common.PortSelfActivation,
-		).
-		WithInitialState(func(state component.State) {
+		),
+		component.WithInitialState(func(state component.State) {
 			// We will track the state of each controller
 			state.Set(stateKeyControllerStates, make(controller.StateMap))
 
 			// Tracking consecutive cycles in which the bus is silent allows us to stop the bus and whole simulation
 			state.Set(stateKeyObservedIdleCycles, 0)
-		}).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithActivationFunc(func(this *component.Component) error {
 			ctlStates := this.State().Get(stateKeyControllerStates).(controller.StateMap)
 			idleCycleCount := this.State().Get(stateKeyObservedIdleCycles).(int)
 
@@ -81,9 +83,15 @@ func newWatchdog(name string) *component.Component {
 
 			this.OutputByName(common.PortSelfActivation).PutSignals(signal.New(true))
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create watchdog: %v", err))
+	}
 
-	watchdog.OutputByName(common.PortSelfActivation).PipeTo(watchdog.InputByName(common.PortSelfActivation))
+	if err := watchdog.OutputByName(common.PortSelfActivation).PipeTo(watchdog.InputByName(common.PortSelfActivation)); err != nil {
+		panic(fmt.Sprintf("failed to pipe watchdog self activation: %v", err))
+	}
 
 	return watchdog
 }

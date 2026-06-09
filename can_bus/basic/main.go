@@ -86,19 +86,31 @@ func getMesh() *fmesh.FMesh {
 		"obd", // On-Board Diagnostic Module
 	}
 
-	// Initialize the mesh with the central CAN bus component
-	fm := fmesh.New("can_bus_sim_v0").AddComponents(getBus())
+	fm, err := fmesh.New("can_bus_sim_v0")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+
+	if err := fm.AddComponents(getBus()); err != nil {
+		panic(fmt.Sprintf("failed to add bus: %v", err))
+	}
 
 	// Create and connect all CAN nodes to the bus
 	for id, name := range canNodes {
 		canNode := getNode(name, id)
 
 		// Wire node output to bus input and vice versa (bidirectional communication)
-		canNode.OutputByName(portOut).PipeTo(fm.ComponentByName(componentBus).InputByName(portIn))
-		fm.ComponentByName(componentBus).OutputByName(portOut).PipeTo(canNode.InputByName(portIn))
+		if err := canNode.OutputByName(portOut).PipeTo(fm.ComponentByName(componentBus).InputByName(portIn)); err != nil {
+			panic(fmt.Sprintf("failed to pipe node %s to bus: %v", name, err))
+		}
+		if err := fm.ComponentByName(componentBus).OutputByName(portOut).PipeTo(canNode.InputByName(portIn)); err != nil {
+			panic(fmt.Sprintf("failed to pipe bus to node %s: %v", name, err))
+		}
 
 		// Register node in the mesh
-		fm.AddComponents(canNode)
+		if err := fm.AddComponents(canNode); err != nil {
+			panic(fmt.Sprintf("failed to add node %s: %v", name, err))
+		}
 	}
 
 	return fm
@@ -107,24 +119,29 @@ func getMesh() *fmesh.FMesh {
 // getBus returns a simple broadcasting CAN bus component
 // All incoming signals are forwarded to all connected nodes
 func getBus() *component.Component {
-	return component.New(componentBus).
-		AddInputs(portIn).
-		AddOutputs(portOut).
-		WithActivationFunc(func(this *component.Component) error {
+	c, err := component.New(componentBus,
+		component.WithInputs(portIn),
+		component.WithOutputs(portOut),
+		component.WithActivationFunc(func(this *component.Component) error {
 			return port.ForwardSignals(this.InputByName(portIn), this.OutputByName(portOut))
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create bus component: %v", err))
+	}
+	return c
 }
 
 // getNode returns a CAN node component
 // Each node processes only frames with matching ID and logs the data
 func getNode(name string, id int) *component.Component {
-	return component.New(name).
-		WithInitialState(func(state component.State) {
+	c, err := component.New(name,
+		component.WithInitialState(func(state component.State) {
 			state.Set(stateNodeId, id)
-		}).
-		AddInputs(portIn).
-		AddOutputs(portOut).
-		WithActivationFunc(func(this *component.Component) error {
+		}),
+		component.WithInputs(portIn),
+		component.WithOutputs(portOut),
+		component.WithActivationFunc(func(this *component.Component) error {
 			myId := this.State().Get(stateNodeId).(int)
 			validFrames := make([]CanFrame, 0)
 
@@ -142,7 +159,7 @@ func getNode(name string, id int) *component.Component {
 								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.PayloadOrNil()),
 							}).WithLabels(
 							// Additionally, we can add some meta-data
-							labels.Map{
+							map[string]string{
 								"from":       this.Name(),
 								"detectedAt": time.Now().Format(time.RFC3339Nano),
 							}),
@@ -171,5 +188,10 @@ func getNode(name string, id int) *component.Component {
 			}
 
 			return nil
-		})
+		}),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create node %s: %v", name, err))
+	}
+	return c
 }

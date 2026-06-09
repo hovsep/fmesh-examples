@@ -35,7 +35,7 @@ import (
 //   - Includes a "programmatic" port for injecting data directly into the simulation
 //
 // Simulation flow:
-//   1. We inject diagnostic frames into the laptop’s programmatic port.
+//   1. We inject diagnostic frames into the laptop's programmatic port.
 //   2. The laptop forwards any "USB-labeled" frames to its USB port.
 //   3. The USB connection routes data to the OBD socket.
 //   4. The OBD node simply relays received data to the CAN bus, and forwards bus data to its output.
@@ -105,11 +105,22 @@ func getMesh() *fmesh.FMesh {
 	}
 
 	// Build the mesh
-	return fmesh.NewWithConfig("can_bus_sim_v1", &fmesh.Config{
-		ErrorHandlingStrategy: fmesh.StopOnFirstErrorOrPanic,
-		Debug:                 false,
-	}).
-		AddComponents(laptopInstance.GetAllComponents()...).
-		AddComponents(ptBus.GetAllComponents()...).
-		AddComponents(allCanNodes.GetAllComponents()...)
+	fm, err := fmesh.New("can_bus_sim_v1",
+		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create mesh: %v", err))
+	}
+
+	if err := fm.AddComponents(laptopInstance.GetAllComponents()...); err != nil {
+		panic(fmt.Sprintf("failed to add laptop components: %v", err))
+	}
+	if err := fm.AddComponents(ptBus.GetAllComponents()...); err != nil {
+		panic(fmt.Sprintf("failed to add bus components: %v", err))
+	}
+	if err := fm.AddComponents(allCanNodes.GetAllComponents()...); err != nil {
+		panic(fmt.Sprintf("failed to add node components: %v", err))
+	}
+
+	return fm
 }
