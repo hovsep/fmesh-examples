@@ -173,7 +173,7 @@ func Test_HumanLiveness(t *testing.T) {
 			},
 		},
 		{
-			name: "inhaled air is different",
+			name: "inhaled air is changing while passing respiratory boundary",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
@@ -211,6 +211,67 @@ func Test_HumanLiveness(t *testing.T) {
 					// Composition should still sum to 100% after rebalancing
 					compSum := inspN + inspO + inspA + inspP
 					assert.InDelta(t, 100.0, compSum, 1e-9, "composition should sum to 100%%")
+				})
+			},
+		},
+		{
+			name: "exhaled gas is different from inspired",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				var left, right int
+				var inspO, inspTemp, inspHum float64
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						leftSig := aggState.OutputByName("human-Leon::lung_left_exhaled_gas").Signals().First()
+						rightSig := aggState.OutputByName("human-Leon::lung_right_exhaled_gas").Signals().First()
+						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
+						if leftSig == nil || rightSig == nil || inspSig == nil {
+							return nil
+						}
+						left++
+						right++
+
+						var err error
+						_, inspO, _, _, inspTemp, inspHum, err = helper.UnpackAir(inspSig)
+						if err != nil {
+							return nil
+						}
+						return nil
+					})
+				})
+
+				helper.RunSimulationAndThen(sim, 10*time.Second, func() {
+					assert.Greater(t, left, 0, "should collect left exhaled gas samples")
+					assert.Greater(t, right, 0, "should collect right exhaled gas samples")
+
+					lSig := aggState.OutputByName("human-Leon::lung_left_exhaled_gas").Signals().First()
+					lN, lO, lA, lP, lTemp, lHum, err := helper.UnpackAir(lSig)
+					require.NoError(t, err)
+					rSig := aggState.OutputByName("human-Leon::lung_right_exhaled_gas").Signals().First()
+					rN, rO, rA, rP, rTemp, rHum, err := helper.UnpackAir(rSig)
+					require.NoError(t, err)
+
+					lCO2 := lSig.Scalars().GetOrDefault("composition:carbon_dioxide", 0)
+					rCO2 := rSig.Scalars().GetOrDefault("composition:carbon_dioxide", 0)
+
+					// Exhaled gas should be warmer, more humid, composition changed
+					assert.Greater(t, lTemp, inspTemp, "left exhaled should be warmer than inspired")
+					assert.Greater(t, rTemp, inspTemp, "right exhaled should be warmer than inspired")
+					assert.Greater(t, lHum, inspHum, "left exhaled should be more humid")
+					assert.Greater(t, rHum, inspHum, "right exhaled should be more humid")
+
+					// Composition should be different (O2 consumed, CO2 produced)
+					assert.Less(t, lO, inspO, "left exhaled should have less O2")
+					assert.Less(t, rO, inspO, "right exhaled should have less O2")
+					assert.Greater(t, lCO2, 0.0, "left exhaled should contain CO2")
+					assert.Greater(t, rCO2, 0.0, "right exhaled should contain CO2")
+
+					// Composition still sums to 100%
+					assert.InDelta(t, 100.0, lN+lO+lA+lP+lCO2, 1e-9, "left exhaled composition should sum to 100%%")
+					assert.InDelta(t, 100.0, rN+rO+rA+rP+rCO2, 1e-9, "right exhaled composition should sum to 100%%")
 				})
 			},
 		},

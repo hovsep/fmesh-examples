@@ -27,6 +27,8 @@ func New(name string) (*component.Component, error) {
 		component.WithOutputs(
 			"is_alive",
 			"inspired_gas",
+			"alveolar_gas",
+			"venous_co2",
 			"brain_activity",
 			"brain_activity_trend",
 			"body_temperature",
@@ -99,6 +101,12 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 				mesh.ComponentByName("organ:lung_right").InputByName("time"),
 			},
 
+			// Time for blood system
+			helper.PortPair{
+				this.InputByName("habitat_time_tick"),
+				mesh.ComponentByName("da:blood_system").InputByName("time"),
+			},
+
 			// Gas effect
 			helper.PortPair{
 				this.InputByName("habitat_gas_environmental_gas"),
@@ -136,6 +144,14 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 			helper.PortPair{
 				humanObservableState.OutputByName("inspired_gas"),
 				this.OutputByName("inspired_gas"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("alveolar_gas"),
+				this.OutputByName("alveolar_gas"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("venous_co2"),
+				this.OutputByName("venous_co2"),
 			},
 			helper.PortPair{
 				humanObservableState.OutputByName("is_alive"),

@@ -81,6 +81,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
 		"gas::environmental_gas",
 		"human-Leon::inspired_gas",
+		"human-Leon::alveolar_gas",
 		"sun::uvi",
 		"human-Leon::is_alive",
 		"human-Leon::brain_activity",
