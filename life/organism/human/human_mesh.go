@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
+	"github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh/component"
@@ -58,6 +59,9 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	}
 	if err := wireLungs(components); err != nil {
 		return nil, fmt.Errorf("wireLungs: %w", err)
+	}
+	if err := wireBloodSystem(components); err != nil {
+		return nil, fmt.Errorf("wireBloodSystem: %w", err)
 	}
 
 	err = internal.HandleGraphFlag(mesh, false)
@@ -201,10 +205,15 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("organ.GetLung(right): %w", err)
 	}
+	blood, err := da.GetBloodSystem()
+	if err != nil {
+		return nil, fmt.Errorf("da.GetBloodSystem: %w", err)
+	}
 
 	coll := component.NewCollection()
 	if err := coll.Add(
 		resp,
+		blood,
 		autonomic,
 		obsState,
 		brain,
@@ -216,4 +225,30 @@ func getComponents() (*component.Collection, error) {
 		return nil, fmt.Errorf("failed to build human components: %w", err)
 	}
 	return coll, nil
+}
+
+func wireBloodSystem(components *component.Collection) error {
+	lungLeft := components.ByName("organ:lung_" + string(common.Left))
+	lungRight := components.ByName("organ:lung_" + string(common.Right))
+	blood := components.ByName("da:blood_system")
+	obsState := components.ByName("physiology:observable_state")
+
+	// Alveolar gas from lungs to blood (left only — both are symmetric)
+	if err := lungLeft.OutputByName("alveolar_gas").PipeTo(
+		blood.InputByName("alveolar_gas"),
+		obsState.InputByName("alveolar_gas"),
+	); err != nil {
+		return err
+	}
+
+	// Venous CO2 from blood to lungs
+	if err := blood.OutputByName("venous_co2").PipeTo(
+		lungLeft.InputByName("blood_co2"),
+		lungRight.InputByName("blood_co2"),
+		obsState.InputByName("venous_co2"),
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
