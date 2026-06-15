@@ -22,7 +22,6 @@ func GetObservableState() (*component.Component, error) {
 		component.WithInputs(
 			"time",
 			"inspired_gas",
-			"alveolar_gas",
 			"venous_blood",
 			"brain_activity",
 			"heart_cardiac_activation",
@@ -34,16 +33,17 @@ func GetObservableState() (*component.Component, error) {
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
 			"lung_left_exhaled_gas",
+			"lung_left_alveolar_gas",
 
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
+			"lung_right_alveolar_gas",
 		),
 		component.WithOutputs(
 			"is_alive",
 			"inspired_gas",
-			"alveolar_gas",
 			"venous_blood",
 			"brain_activity",
 			"brain_activity_trend",
@@ -55,10 +55,12 @@ func GetObservableState() (*component.Component, error) {
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
 			"lung_left_exhaled_gas",
+			"lung_left_alveolar_gas",
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
+			"lung_right_alveolar_gas",
 		),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			handleBrainSignals,
@@ -132,10 +134,6 @@ func handleLungSignals(this *component.Component) error {
 			this.OutputByName("inspired_gas"),
 		},
 		helper.PortPair{
-			this.InputByName("alveolar_gas"),
-			this.OutputByName("alveolar_gas"),
-		},
-		helper.PortPair{
 			this.InputByName("venous_blood"),
 			this.OutputByName("venous_blood"),
 		},
@@ -156,6 +154,10 @@ func handleLungSignals(this *component.Component) error {
 			this.OutputByName("lung_left_exhaled_gas"),
 		},
 		helper.PortPair{
+			this.InputByName("lung_left_alveolar_gas"),
+			this.OutputByName("lung_left_alveolar_gas"),
+		},
+		helper.PortPair{
 			this.InputByName("lung_right_volume"),
 			this.OutputByName("lung_right_volume"),
 		},
@@ -170,6 +172,10 @@ func handleLungSignals(this *component.Component) error {
 		helper.PortPair{
 			this.InputByName("lung_right_exhaled_gas"),
 			this.OutputByName("lung_right_exhaled_gas"),
+		},
+		helper.PortPair{
+			this.InputByName("lung_right_alveolar_gas"),
+			this.OutputByName("lung_right_alveolar_gas"),
 		},
 	)
 }

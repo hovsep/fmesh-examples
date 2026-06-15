@@ -147,23 +147,29 @@ func wireRespiratoryBoundary(components *component.Collection) error {
 func wireLungs(components *component.Collection) error {
 	for _, side := range []string{"left", "right"} {
 		c := components.ByName("organ:lung_" + side)
+		obs := components.ByName("physiology:observable_state")
 		if err := c.OutputByName("volume").PipeTo(
-			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_volume"),
+			obs.InputByName("lung_" + side + "_volume"),
 		); err != nil {
 			return err
 		}
 		if err := c.OutputByName("flow").PipeTo(
-			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_flow"),
+			obs.InputByName("lung_" + side + "_flow"),
 		); err != nil {
 			return err
 		}
 		if err := c.OutputByName("alveolar_pressure").PipeTo(
-			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_alveolar_pressure"),
+			obs.InputByName("lung_" + side + "_alveolar_pressure"),
 		); err != nil {
 			return err
 		}
 		if err := c.OutputByName("exhaled_gas").PipeTo(
-			components.ByName("physiology:observable_state").InputByName("lung_" + side + "_exhaled_gas"),
+			obs.InputByName("lung_" + side + "_exhaled_gas"),
+		); err != nil {
+			return err
+		}
+		if err := c.OutputByName("alveolar_gas").PipeTo(
+			obs.InputByName("lung_" + side + "_alveolar_gas"),
 		); err != nil {
 			return err
 		}
@@ -228,27 +234,29 @@ func getComponents() (*component.Collection, error) {
 }
 
 func wireBloodSystem(components *component.Collection) error {
-	lungLeft := components.ByName("organ:lung_" + string(common.Left))
-	lungRight := components.ByName("organ:lung_" + string(common.Right))
 	blood := components.ByName("da:blood_system")
 	obsState := components.ByName("physiology:observable_state")
 
-	// Alveolar gas from lungs to blood (left only — both are symmetric)
-	if err := lungLeft.OutputByName("alveolar_gas").PipeTo(
-		blood.InputByName("alveolar_gas"),
-		obsState.InputByName("alveolar_gas"),
-	); err != nil {
-		return err
+	for _, side := range []string{string(common.Left), string(common.Right)} {
+		lung := components.ByName("organ:lung_" + side)
+
+		// Alveolar gas from each lung to blood (both contribute to oxygenation)
+		if err := lung.OutputByName("alveolar_gas").PipeTo(
+			blood.InputByName("alveolar_gas"),
+		); err != nil {
+			return err
+		}
+
+		// Venous blood feeds back to each lung
+		if err := blood.OutputByName("venous_blood").PipeTo(
+			lung.InputByName("venous_blood"),
+		); err != nil {
+			return err
+		}
 	}
 
-	// Venous blood from blood system to lungs
-	if err := blood.OutputByName("venous_blood").PipeTo(
-		lungLeft.InputByName("blood_co2"),
-		lungRight.InputByName("blood_co2"),
+	// Venous blood is also observable
+	return blood.OutputByName("venous_blood").PipeTo(
 		obsState.InputByName("venous_blood"),
-	); err != nil {
-		return err
-	}
-
-	return nil
+	)
 }

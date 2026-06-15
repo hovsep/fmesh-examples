@@ -27,7 +27,6 @@ func New(name string) (*component.Component, error) {
 		component.WithOutputs(
 			"is_alive",
 			"inspired_gas",
-			"alveolar_gas",
 			"venous_blood",
 			"brain_activity",
 			"brain_activity_trend",
@@ -40,10 +39,12 @@ func New(name string) (*component.Component, error) {
 			"lung_left_flow",
 			"lung_left_alveolar_pressure",
 			"lung_left_exhaled_gas",
+			"lung_left_alveolar_gas",
 			"lung_right_volume",
 			"lung_right_flow",
 			"lung_right_alveolar_pressure",
 			"lung_right_exhaled_gas",
+			"lung_right_alveolar_gas",
 		),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			validate(),
@@ -146,10 +147,6 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 				this.OutputByName("inspired_gas"),
 			},
 			helper.PortPair{
-				humanObservableState.OutputByName("alveolar_gas"),
-				this.OutputByName("alveolar_gas"),
-			},
-			helper.PortPair{
 				humanObservableState.OutputByName("venous_blood"),
 				this.OutputByName("venous_blood"),
 			},
@@ -198,6 +195,10 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 				this.OutputByName("lung_left_exhaled_gas"),
 			},
 			helper.PortPair{
+				humanObservableState.OutputByName("lung_left_alveolar_gas"),
+				this.OutputByName("lung_left_alveolar_gas"),
+			},
+			helper.PortPair{
 				humanObservableState.OutputByName("lung_right_volume"),
 				this.OutputByName("lung_right_volume"),
 			},
@@ -212,6 +213,10 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 			helper.PortPair{
 				humanObservableState.OutputByName("lung_right_exhaled_gas"),
 				this.OutputByName("lung_right_exhaled_gas"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("lung_right_alveolar_gas"),
+				this.OutputByName("lung_right_alveolar_gas"),
 			},
 		)
 		if err != nil {

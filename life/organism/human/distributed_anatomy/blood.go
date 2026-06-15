@@ -73,12 +73,15 @@ func exchangeBloodGases(this *component.Component) error {
 	co2 := this.State().Get(stateCO2Level).(float64)
 	glucose := this.State().Get(stateGlucose).(float64)
 
-	// Gas exchange with alveoli
-	if alveolarSig := this.InputByName("alveolar_gas").Signals().First(); alveolarSig != nil {
-		alveolarO2 := alveolarSig.Scalars().GetOrDefault("O2_vol", 0)
-
-		o2Absorbed := alveolarO2 * O2AbsorptionEfficiency
-		o2 += o2Absorbed
+	// Gas exchange with alveoli — accumulate O2 from both lungs, excrete CO2 once
+	alveolarPort := this.InputByName("alveolar_gas")
+	if alveolarPort.HasSignals() {
+		var totalAlveolarO2 float64
+		alveolarPort.Signals().ForEach(func(sig *signal.Signal) error {
+			totalAlveolarO2 += sig.Scalars().GetOrDefault("O2_vol", 0)
+			return nil
+		})
+		o2 += totalAlveolarO2 * O2AbsorptionEfficiency
 
 		co2Excreted := co2 * CO2ExcretionFraction
 		co2 -= co2Excreted

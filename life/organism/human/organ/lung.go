@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -30,10 +31,6 @@ const (
 	baseO2Consumption     = 7 * Percent // fraction of inspired O2 consumed at rest
 	o2ConsumptionMaxDelta = 5 * Percent // additional O2 consumption when blood is O2-depleted
 
-	// Blood O2 level ranges (shared with da.BloodSystem)
-	bloodMaxO2 = 250.0 * Milliliter
-	bloodMinO2 = 50.0 * Milliliter
-
 	// Below are per-instance lung params that makes left and
 	// right lungs slightly different (anatomically, the left one has less space due to the heart).
 	statePleuralAsymmetry common.State = "pleural_asymmetry"
@@ -51,7 +48,7 @@ var (
 func GetLung(side common.Side) (*component.Component, error) {
 	c, err := component.New("organ:lung_"+string(side),
 		component.WithDescription(string(side)+" lung"),
-		component.WithInputs("time", "pleural_pressure", "inspired_gas", "blood_co2"),
+		component.WithInputs("time", "pleural_pressure", "inspired_gas", "venous_blood"),
 		component.WithOutputs("volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas"),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			handleMechanics,
@@ -60,7 +57,7 @@ func GetLung(side common.Side) (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateVolume, helper.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
 			state.Set(stateCompliance, helper.Jitter(defaultLungCompliance, lungComplianceAsymmetry))
-			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungComplianceAsymmetry))
+			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
 			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
 		}),
 	)
@@ -133,21 +130,24 @@ func handleGasExchange(this *component.Component) error {
 		return nil
 	}
 
-	var co2FromBlood, bloodO2 float64
-	if bloodSig := this.InputByName("blood_co2").Signals().First(); bloodSig != nil {
-		co2FromBlood = bloodSig.Scalars().GetOrDefault("CO2_level", 0)
+	var bloodCO2, bloodO2 float64
+	if bloodSig := this.InputByName("venous_blood").Signals().First(); bloodSig != nil {
+		bloodCO2 = bloodSig.Scalars().GetOrDefault("CO2_level", 0)
 		bloodO2 = bloodSig.Scalars().GetOrDefault("O2_level", 0)
 	}
 
 	// Scale O2 consumption based on blood O2 demand
-	o2Deficit := helper.Clamp((bloodMaxO2-bloodO2)/bloodMaxO2, 0, 1)
+	o2Deficit := helper.Clamp((da.MaxO2Level-bloodO2)/da.MaxO2Level, 0, 1)
 	o2Consumed := baseO2Consumption + o2ConsumptionMaxDelta*o2Deficit
 
 	o2New := o - o2Consumed
 	if o2New < 0 {
 		o2New = 0
 	}
-	co2Frac := (co2FromBlood / tickVolume) * 100 * Percent
+	// CO2 fraction = (mL blood would excrete this tick) / (mL of air this tick).
+	// Using CO2_level × ExcretionFraction mirrors blood.go's excretion model and
+	// avoids a per-tick transient scalar that is sensitive to inner-mesh cycle order.
+	co2Frac := (bloodCO2 * da.CO2ExcretionFraction / tickVolume) * 100 * Percent
 	if co2Frac < 0 {
 		co2Frac = 0
 	}
