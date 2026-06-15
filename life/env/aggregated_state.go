@@ -95,6 +95,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 		"human-Leon::lung_left_flow",
 		"human-Leon::lung_left_alveolar_pressure",
 		"human-Leon::lung_left_exhaled_gas",
+		"human-Leon::venous_blood",
 
 		"human-Leon::lung_right_volume",
 		"human-Leon::lung_right_flow",

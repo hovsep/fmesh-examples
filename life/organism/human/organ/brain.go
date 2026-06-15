@@ -7,7 +7,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -23,56 +22,50 @@ const (
 	defaultNeuralDrive = 0.3 * DNCS
 )
 
-// GetBrain returns brain organ component
 func GetBrain() (*component.Component, error) {
-	neuralDrivePort, err := port.NewOutput("neural_drive", port.WithDescription("Oscillator signal that drives the autonomic phisiology"))
-	if err != nil {
-		return nil, fmt.Errorf("port.NewOutput(neural_drive): %w", err)
-	}
-	failurePort, err := port.NewOutput("failure", port.WithDescription("Failure event"))
-	if err != nil {
-		return nil, fmt.Errorf("port.NewOutput(failure): %w", err)
-	}
-
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
-		component.WithInputs("time"), // Probably: mental stress, sensory inputs, memories, hormones
-		component.WithActivationFunc(func(this *component.Component) error {
-			var currentDamage float64
-
-			// Aging
-			this.State().Update(common.DamageLevel, func(oldDamage any) any {
-				currentDamage = oldDamage.(float64)
-				return currentDamage + damageRampRate
-			})
-
-			// Brain failure
-			if currentDamage >= criticalDamageLevel {
-				return this.OutputByName("failure").PutSignals(signal.New("brain_failure").WithLabel("type", "acute"))
-			}
-
-			var nextND float64
-
-			// Normal operation
-			this.State().Update(NeuralDrive, func(currentND any) any {
-				// Flat ND (we will add more logic later)
-				nextND = helper.Clamp(helper.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
-				return nextND
-			})
-
-			return this.OutputByName("neural_drive").PutPayloads(nextND)
-		}),
+		component.WithInputs("time"),
+		component.WithOutputs("neural_drive", "failure"),
+		component.WithActivationFunc(
+			helper.SequentialActivationFunc(
+				handleAging,
+				oscillateNeuralDrive,
+			),
+		),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.DamageLevel, defaultDamageLevel) // @TODO: add time correlated ramp-up
+			state.Set(common.DamageLevel, defaultDamageLevel)
 			state.Set(NeuralDrive, defaultNeuralDrive)
 		}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("component.New: %w", err)
-	}
-
-	if err := c.AttachOutputPorts(neuralDrivePort, failurePort); err != nil {
-		return nil, fmt.Errorf("AttachOutputPorts: %w", err)
+		return nil, fmt.Errorf("organ:brain: %w", err)
 	}
 	return c, nil
+}
+
+func handleAging(this *component.Component) error {
+	var currentDamage float64
+
+	this.State().Update(common.DamageLevel, func(oldDamage any) any {
+		currentDamage = oldDamage.(float64)
+		return currentDamage + damageRampRate
+	})
+
+	if currentDamage >= criticalDamageLevel {
+		return this.OutputByName("failure").PutSignals(signal.New("brain_failure").WithLabel("type", "acute"))
+	}
+
+	return nil
+}
+
+func oscillateNeuralDrive(this *component.Component) error {
+	var nextND float64
+
+	this.State().Update(NeuralDrive, func(currentND any) any {
+		nextND = helper.Clamp(helper.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
+		return nextND
+	})
+
+	return this.OutputByName("neural_drive").PutPayloads(nextND)
 }
