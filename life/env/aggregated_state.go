@@ -81,7 +81,6 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 	agg, err := newAggregator("aggregated_state", h.FM, []string{
 		"gas::environmental_gas",
 		"human-Leon::inspired_gas",
-		"human-Leon::alveolar_gas",
 		"sun::uvi",
 		"human-Leon::is_alive",
 		"human-Leon::brain_activity",
@@ -95,12 +94,14 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 		"human-Leon::lung_left_flow",
 		"human-Leon::lung_left_alveolar_pressure",
 		"human-Leon::lung_left_exhaled_gas",
+		"human-Leon::lung_left_alveolar_gas",
 		"human-Leon::venous_blood",
 
 		"human-Leon::lung_right_volume",
 		"human-Leon::lung_right_flow",
 		"human-Leon::lung_right_alveolar_pressure",
 		"human-Leon::lung_right_exhaled_gas",
+		"human-Leon::lung_right_alveolar_gas",
 	})
 
 	if err != nil {

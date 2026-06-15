@@ -7,6 +7,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
@@ -282,8 +283,12 @@ func Test_HumanLiveness(t *testing.T) {
 					o2Range := o2Max - o2Min
 					co2Range := co2Max - co2Min
 
-					assert.Greater(t, o2Range, 0.01, "O2 should fluctuate (gas exchange active)")
-					assert.Greater(t, co2Range, 0.01, "CO2 should fluctuate (gas exchange active)")
+					// 0.5 mL is a meaningful exchange signal; floating-point drift alone cannot reach this
+					assert.Greater(t, o2Range, 0.5, "O2 should fluctuate (gas exchange active)")
+					assert.Greater(t, co2Range, 0.5, "CO2 should fluctuate (gas exchange active)")
+
+					// Mean O2 should stay near the physiological resting value, not drift to a clamp boundary
+					assert.InDelta(t, da.DefaultO2Level, meanO2, 50.0, "mean O2 should be near resting level")
 				})
 			},
 		},
