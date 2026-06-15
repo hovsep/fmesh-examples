@@ -215,6 +215,79 @@ func Test_HumanLiveness(t *testing.T) {
 			},
 		},
 		{
+			name: "blood gas levels are physiological",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				var observedO2, observedCO2, observedGlucose []float64
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
+						if sig == nil {
+							return nil
+						}
+						observedO2 = append(observedO2, sig.Scalars().GetOrDefault("O2_level", 0))
+						observedCO2 = append(observedCO2, sig.Scalars().GetOrDefault("CO2_level", 0))
+						observedGlucose = append(observedGlucose, sig.Scalars().GetOrDefault("glucose_level", 0))
+						return nil
+					})
+				})
+
+				helper.RunSimulationAndThen(sim, 10*time.Second, func() {
+					require.NotEmpty(t, observedO2, "should collect blood O2 samples")
+					require.NotEmpty(t, observedCO2, "should collect blood CO2 samples")
+					require.NotEmpty(t, observedGlucose, "should collect blood glucose samples")
+
+					for _, v := range observedO2 {
+						assert.GreaterOrEqual(t, v, 50.0, "O2 should stay above min level")
+						assert.LessOrEqual(t, v, 250.0, "O2 should stay below max level")
+					}
+					for _, v := range observedCO2 {
+						assert.GreaterOrEqual(t, v, 20.0, "CO2 should stay above min level")
+						assert.LessOrEqual(t, v, 80.0, "CO2 should stay below max level")
+					}
+					for _, v := range observedGlucose {
+						assert.GreaterOrEqual(t, v, 2.0, "glucose should stay above min level")
+						assert.LessOrEqual(t, v, 7.0, "glucose should stay below max level")
+					}
+
+					meanO2 := helper.Mean(observedO2)
+					meanCO2 := helper.Mean(observedCO2)
+					meanGlu := helper.Mean(observedGlucose)
+
+					assert.Greater(t, meanO2, 100.0, "mean O2 should be above 100 mL")
+					assert.Greater(t, meanCO2, 30.0, "mean CO2 should be above 30 mL")
+					assert.Greater(t, meanGlu, 2.5, "mean glucose should be above 2.5")
+
+					o2Min, o2Max := observedO2[0], observedO2[0]
+					for _, v := range observedO2 {
+						if v < o2Min {
+							o2Min = v
+						}
+						if v > o2Max {
+							o2Max = v
+						}
+					}
+					co2Min, co2Max := observedCO2[0], observedCO2[0]
+					for _, v := range observedCO2 {
+						if v < co2Min {
+							co2Min = v
+						}
+						if v > co2Max {
+							co2Max = v
+						}
+					}
+					o2Range := o2Max - o2Min
+					co2Range := co2Max - co2Min
+
+					assert.Greater(t, o2Range, 0.01, "O2 should fluctuate (gas exchange active)")
+					assert.Greater(t, co2Range, 0.01, "CO2 should fluctuate (gas exchange active)")
+				})
+			},
+		},
+		{
 			name: "exhaled gas is different from inspired",
 			assertions: func(t *testing.T, sim *step_sim.Simulation) {
 				aggState := sim.FM.ComponentByName("aggregated_state")

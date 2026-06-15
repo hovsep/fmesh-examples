@@ -23,7 +23,7 @@ func GetObservableState() (*component.Component, error) {
 			"time",
 			"inspired_gas",
 			"alveolar_gas",
-			"venous_co2",
+			"venous_blood",
 			"brain_activity",
 			"heart_cardiac_activation",
 			"heart_rate",
@@ -44,7 +44,7 @@ func GetObservableState() (*component.Component, error) {
 			"is_alive",
 			"inspired_gas",
 			"alveolar_gas",
-			"venous_co2",
+			"venous_blood",
 			"brain_activity",
 			"brain_activity_trend",
 			"heart_cardiac_activation",
@@ -77,18 +77,11 @@ func GetObservableState() (*component.Component, error) {
 }
 
 func handleBrainSignals(this *component.Component) error {
-	var isAlive bool
-
-	defer func() {
-		this.OutputByName("is_alive").PutPayloads(isAlive)
-	}()
-
 	if !this.InputByName("brain_activity").HasSignals() {
-		// If we don't have brain activity signals, we are dead
 		return nil
 	}
 
-	isAlive = true
+	this.OutputByName("is_alive").PutPayloads(true)
 
 	// Calculate brain activity trend
 	currentBrainActivity, err := helper.AsF64(this.InputByName("brain_activity").Signals().First())
@@ -143,8 +136,8 @@ func handleLungSignals(this *component.Component) error {
 			this.OutputByName("alveolar_gas"),
 		},
 		helper.PortPair{
-			this.InputByName("venous_co2"),
-			this.OutputByName("venous_co2"),
+			this.InputByName("venous_blood"),
+			this.OutputByName("venous_blood"),
 		},
 		helper.PortPair{
 			this.InputByName("lung_left_volume"),

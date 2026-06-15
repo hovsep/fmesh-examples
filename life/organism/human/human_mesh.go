@@ -23,7 +23,7 @@ const (
 func getHumanMesh() (*fmesh.FMesh, error) {
 	// Create the mesh
 	mesh, err := fmesh.New(meshName,
-		fmesh.WithCyclesLimit(1000),
+		fmesh.WithUnlimitedCycles(),
 		fmesh.WithTimeLimit(5*time.Second),
 	)
 	if err != nil {
@@ -241,11 +241,11 @@ func wireBloodSystem(components *component.Collection) error {
 		return err
 	}
 
-	// Venous CO2 from blood to lungs
-	if err := blood.OutputByName("venous_co2").PipeTo(
+	// Venous blood from blood system to lungs
+	if err := blood.OutputByName("venous_blood").PipeTo(
 		lungLeft.InputByName("blood_co2"),
 		lungRight.InputByName("blood_co2"),
-		obsState.InputByName("venous_co2"),
+		obsState.InputByName("venous_blood"),
 	); err != nil {
 		return err
 	}
