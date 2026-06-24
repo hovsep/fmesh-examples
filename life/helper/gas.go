@@ -35,12 +35,12 @@ func UnpackAir(airSignal *signal.Signal) (nitrogen, oxygen, argon, pollution, te
 	}
 
 	s := airSignal.Scalars()
-	return s.GetOrDefault("composition:nitrogen", 0),
-		s.GetOrDefault("composition:oxygen", 0),
-		s.GetOrDefault("composition:argon", 0),
-		s.GetOrDefault("composition:pollution", 0),
-		s.GetOrDefault("temperature", 0),
-		s.GetOrDefault("humidity", 0),
+	return s.ValueOrDefault("composition:nitrogen", 0),
+		s.ValueOrDefault("composition:oxygen", 0),
+		s.ValueOrDefault("composition:argon", 0),
+		s.ValueOrDefault("composition:pollution", 0),
+		s.ValueOrDefault("temperature", 0),
+		s.ValueOrDefault("humidity", 0),
 		nil
 }
 
@@ -49,7 +49,7 @@ func UnpackAir(airSignal *signal.Signal) (nitrogen, oxygen, argon, pollution, te
 // "distribution:composition"), all scalars with the matching "<group>:"
 // prefix are rebalanced to sum to 100.
 func MapAirScalar(s *signal.Signal, key string, fn func(old float64) float64) *signal.Signal {
-	old := s.Scalars().GetOrDefault(key, 0)
+	old := s.Scalars().ValueOrDefault(key, 0)
 	newVal := fn(old)
 	result := s.WithScalar(key, newVal)
 

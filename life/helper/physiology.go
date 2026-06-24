@@ -27,14 +27,14 @@ func UnpackAutonomicTone(tone *signal.Signal) (sym, paraSym, noise, gain, cardia
 	}
 
 	s := tone.Scalars()
-	sym = s.GetOrDefault(common.Sympathetic, 0)
-	paraSym = s.GetOrDefault(common.Parasympathetic, 0)
-	noise = s.GetOrDefault(common.Noise, 0)
-	gain = s.GetOrDefault(common.Gain, 0)
-	cardiacBias = s.GetOrDefault(common.Cardiac, 0)
-	vascularBias = s.GetOrDefault(common.Vascular, 0)
-	respiratoryBias = s.GetOrDefault(common.Respiratory, 0)
-	giBias = s.GetOrDefault(common.GI, 0)
+	sym = s.ValueOrDefault(common.Sympathetic, 0)
+	paraSym = s.ValueOrDefault(common.Parasympathetic, 0)
+	noise = s.ValueOrDefault(common.Noise, 0)
+	gain = s.ValueOrDefault(common.Gain, 0)
+	cardiacBias = s.ValueOrDefault(common.Cardiac, 0)
+	vascularBias = s.ValueOrDefault(common.Vascular, 0)
+	respiratoryBias = s.ValueOrDefault(common.Respiratory, 0)
+	giBias = s.ValueOrDefault(common.GI, 0)
 	return
 }
 
@@ -43,5 +43,5 @@ func GetBias(tone *signal.Signal, region string) (float64, error) {
 	if tone == nil {
 		return 0, fmt.Errorf("tone is nil")
 	}
-	return tone.Scalars().GetOrDefault(region, 0), nil
+	return tone.Scalars().ValueOrDefault(region, 0), nil
 }

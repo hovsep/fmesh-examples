@@ -132,8 +132,8 @@ func handleGasExchange(this *component.Component) error {
 
 	var bloodCO2, bloodO2 float64
 	if bloodSig := this.InputByName("venous_blood").Signals().First(); bloodSig != nil {
-		bloodCO2 = bloodSig.Scalars().GetOrDefault("CO2_level", 0)
-		bloodO2 = bloodSig.Scalars().GetOrDefault("O2_level", 0)
+		bloodCO2 = bloodSig.Scalars().ValueOrDefault("CO2_level", 0)
+		bloodO2 = bloodSig.Scalars().ValueOrDefault("O2_level", 0)
 	}
 
 	// Scale O2 consumption based on blood O2 demand
