@@ -78,7 +78,7 @@ func exchangeBloodGases(this *component.Component) error {
 	if alveolarPort.HasSignals() {
 		var totalAlveolarO2 float64
 		alveolarPort.Signals().ForEach(func(sig *signal.Signal) error {
-			totalAlveolarO2 += sig.Scalars().GetOrDefault("O2_vol", 0)
+			totalAlveolarO2 += sig.Scalars().ValueOrDefault("O2_vol", 0)
 			return nil
 		})
 		o2 += totalAlveolarO2 * O2AbsorptionEfficiency

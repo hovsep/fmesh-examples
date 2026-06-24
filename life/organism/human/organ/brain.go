@@ -5,9 +5,9 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -25,16 +25,11 @@ const (
 func GetBrain() (*component.Component, error) {
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
+		component.WithPlugins(damage.New()),
 		component.WithInputs("time"),
-		component.WithOutputs("neural_drive", "failure"),
-		component.WithActivationFunc(
-			helper.SequentialActivationFunc(
-				handleAging,
-				oscillateNeuralDrive,
-			),
-		),
+		component.WithOutputs("neural_drive"),
+		component.WithActivationFunc(oscillateNeuralDrive),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.DamageLevel, defaultDamageLevel)
 			state.Set(NeuralDrive, defaultNeuralDrive)
 		}),
 	)
@@ -42,21 +37,6 @@ func GetBrain() (*component.Component, error) {
 		return nil, fmt.Errorf("organ:brain: %w", err)
 	}
 	return c, nil
-}
-
-func handleAging(this *component.Component) error {
-	var currentDamage float64
-
-	this.State().Update(common.DamageLevel, func(oldDamage any) any {
-		currentDamage = oldDamage.(float64)
-		return currentDamage + damageRampRate
-	})
-
-	if currentDamage >= criticalDamageLevel {
-		return this.OutputByName("failure").PutSignals(signal.New("brain_failure").WithLabel("type", "acute"))
-	}
-
-	return nil
 }
 
 func oscillateNeuralDrive(this *component.Component) error {

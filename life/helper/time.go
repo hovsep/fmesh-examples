@@ -26,10 +26,10 @@ func UnpackTick(tick *signal.Signal) (seq uint64, simDuration time.Duration, sim
 	}
 
 	s := tick.Scalars()
-	seq = uint64(s.GetOrDefault("tick_count", 0))
-	simDuration = time.Duration(s.GetOrDefault("sim_duration_ms", 0)) * time.Millisecond
-	simWallTime = time.Unix(int64(s.GetOrDefault("sim_wall_time_sec", 0)), int64(s.GetOrDefault("sim_wall_time_nsec", 0)))
-	duration = time.Duration(s.GetOrDefault("delta_t_ms", 0)) * time.Millisecond
+	seq = uint64(s.ValueOrDefault("tick_count", 0))
+	simDuration = time.Duration(s.ValueOrDefault("sim_duration_ms", 0)) * time.Millisecond
+	simWallTime = time.Unix(int64(s.ValueOrDefault("sim_wall_time_sec", 0)), int64(s.ValueOrDefault("sim_wall_time_nsec", 0)))
+	duration = time.Duration(s.ValueOrDefault("delta_t_ms", 0)) * time.Millisecond
 	return
 }
 
