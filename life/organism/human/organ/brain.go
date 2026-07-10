@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
@@ -30,8 +31,8 @@ func GetBrain() (*component.Component, error) {
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
 		component.WithPlugins(damage.New()),
-		component.WithInputs("time"),
-		component.WithOutputs("neural_drive", "o2_consumption", "co2_production"),
+		component.WithInputs("time", "blood"),
+		component.WithOutputs("neural_drive", "blood"),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			oscillateNeuralDrive,
 			emitBrainMetabolism,
@@ -47,6 +48,11 @@ func GetBrain() (*component.Component, error) {
 }
 
 func oscillateNeuralDrive(this *component.Component) error {
+	// Only advance on a time tick; blood-only activations (from the shared bus) are ignored.
+	if !this.InputByName("time").HasSignals() {
+		return nil
+	}
+
 	var nextND float64
 
 	this.State().Update(NeuralDrive, func(currentND any) any {
@@ -57,14 +63,14 @@ func oscillateNeuralDrive(this *component.Component) error {
 	return this.OutputByName("neural_drive").PutPayloads(nextND)
 }
 
-// emitBrainMetabolism reports the brain's O2 demand and CO2 output to the blood.
+// emitBrainMetabolism secretes the brain's O2 demand and CO2 output into the blood bus.
 // Gated on time so it fires exactly once per tick (not on other input activations).
 func emitBrainMetabolism(this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
-	if err := this.OutputByName("o2_consumption").PutPayloads(BrainO2Consumption); err != nil {
-		return err
-	}
-	return this.OutputByName("co2_production").PutPayloads(BrainCO2Production)
+	return this.OutputByName("blood").PutSignals(
+		da.Secretion(da.SubstanceO2Consumption, BrainO2Consumption),
+		da.Secretion(da.SubstanceCO2Production, BrainCO2Production),
+	)
 }

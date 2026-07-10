@@ -43,17 +43,35 @@ var (
 // before the first time signal is seen.
 const defaultDt = 0.01
 
+// The blood is the organism's shared bus: any organ can secrete a substance into it by
+// emitting a signal on its "blood" output. Each signal is tagged with a substance label
+// so the blood component knows how to handle it. Organs may send one, several, or none
+// per tick (e.g. only a hormone), and unknown substances are simply ignored for now.
+const SubstanceLabel = "substance"
+
+const (
+	// SubstanceO2Consumption: payload is an O2 demand rate in %/s (decreases blood O2).
+	SubstanceO2Consumption = "o2_consumption"
+	// SubstanceCO2Production: payload is a CO2 return rate in %/s (increases blood CO2).
+	SubstanceCO2Production = "co2_production"
+	// Future: toxins, hormones, nutrients, ... just add a case in updateBloodLevels.
+)
+
+// Secretion builds a substance signal for an organ to emit on its "blood" output.
+func Secretion(substance string, rate float64) *signal.Signal {
+	return signal.New(rate).WithLabel(SubstanceLabel, substance)
+}
+
 func GetBloodSystem() (*component.Component, error) {
 	c, err := component.New("da:blood_system",
 		component.WithDescription("Blood system tracking O2 and CO2 levels"),
 		component.WithInputs(
 			"time",
-			"airflow",        // lung airflow: >0 inhaling (fresh air), <0 exhaling
-			"o2_consumption", // O2 demand from other organs (each signal = a rate in %/s)
-			"co2_production", // CO2 returned by other organs (each signal = a rate in %/s)
+			"airflow",    // lung airflow: >0 inhaling (fresh air), <0 exhaling
+			"secretions", // shared bus: any organ emits labeled substance signals here
 		),
 		component.WithOutputs(
-			"venous_blood", // composite signal (O2_level, CO2_level) consumed by the lungs
+			"venous_blood", // composite signal (O2_level, CO2_level) broadcast to organs
 			"o2_level",     // plain float, for observation/rendering
 			"co2_level",    // plain float, for observation/rendering
 		),
@@ -138,14 +156,17 @@ func updateBloodLevels(this *component.Component) {
 		co2 -= (co2 - MinCO2Level) * co2ClearGain * dt
 	}
 
-	// Organ metabolism: sum the per-second rates from all consumers/producers and apply over dt.
+	// Organ metabolism: read every substance secreted into the blood this tick and apply
+	// it by kind. Rates are in %/s, integrated over dt. Unknown substances are ignored.
 	var o2DemandRate, co2ReturnRate float64
-	this.InputByName("o2_consumption").Signals().ForEach(func(sig *signal.Signal) error {
-		o2DemandRate += helper.AsF64OrDefault(sig, 0)
-		return nil
-	})
-	this.InputByName("co2_production").Signals().ForEach(func(sig *signal.Signal) error {
-		co2ReturnRate += helper.AsF64OrDefault(sig, 0)
+	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
+		rate := helper.AsF64OrDefault(sig, 0)
+		switch sig.Labels().ValueOrDefault(SubstanceLabel, "") {
+		case SubstanceO2Consumption:
+			o2DemandRate += rate
+		case SubstanceCO2Production:
+			co2ReturnRate += rate
+		}
 		return nil
 	})
 	o2 -= o2DemandRate * dt

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -34,8 +35,8 @@ func cardiacActivationWave(phase float64) float64 {
 func GetHeart() (*component.Component, error) {
 	c, err := component.New("organ:heart",
 		component.WithDescription("Heart"),
-		component.WithInputs("time", "autonomic_tone"),
-		component.WithOutputs("cardiac_activation", "rate", "o2_consumption", "co2_production"),
+		component.WithInputs("time", "autonomic_tone", "blood"),
+		component.WithOutputs("cardiac_activation", "rate", "blood"),
 		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				oscillateHeart,
@@ -98,14 +99,14 @@ func handleCardiacBias(this *component.Component) error {
 	return nil
 }
 
-// emitHeartMetabolism reports the heart's O2 demand and CO2 output to the blood.
+// emitHeartMetabolism secretes the heart's O2 demand and CO2 output into the blood bus.
 // Gated on time so it fires exactly once per tick (not on the autonomic_tone activation).
 func emitHeartMetabolism(this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
-	if err := this.OutputByName("o2_consumption").PutPayloads(HeartO2Consumption); err != nil {
-		return err
-	}
-	return this.OutputByName("co2_production").PutPayloads(HeartCO2Production)
+	return this.OutputByName("blood").PutSignals(
+		da.Secretion(da.SubstanceO2Consumption, HeartO2Consumption),
+		da.Secretion(da.SubstanceCO2Production, HeartCO2Production),
+	)
 }
