@@ -221,7 +221,7 @@ func Test_HumanLiveness(t *testing.T) {
 				aggState := sim.FM.ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
-				var observedO2, observedCO2, observedGlucose []float64
+				var observedO2, observedCO2 []float64
 
 				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
@@ -231,7 +231,6 @@ func Test_HumanLiveness(t *testing.T) {
 						}
 						observedO2 = append(observedO2, sig.Scalars().ValueOrDefault("O2_level", 0))
 						observedCO2 = append(observedCO2, sig.Scalars().ValueOrDefault("CO2_level", 0))
-						observedGlucose = append(observedGlucose, sig.Scalars().ValueOrDefault("glucose_level", 0))
 						return nil
 					})
 				})
@@ -239,28 +238,17 @@ func Test_HumanLiveness(t *testing.T) {
 				helper.RunSimulationAndThen(sim, 10*time.Second, func() {
 					require.NotEmpty(t, observedO2, "should collect blood O2 samples")
 					require.NotEmpty(t, observedCO2, "should collect blood CO2 samples")
-					require.NotEmpty(t, observedGlucose, "should collect blood glucose samples")
 
 					for _, v := range observedO2 {
-						assert.GreaterOrEqual(t, v, 50.0, "O2 should stay above min level")
-						assert.LessOrEqual(t, v, 250.0, "O2 should stay below max level")
+						assert.GreaterOrEqual(t, v, da.MinO2Level, "O2 should stay above min level")
+						assert.LessOrEqual(t, v, da.MaxO2Level, "O2 should stay below max level")
 					}
 					for _, v := range observedCO2 {
-						assert.GreaterOrEqual(t, v, 20.0, "CO2 should stay above min level")
-						assert.LessOrEqual(t, v, 80.0, "CO2 should stay below max level")
-					}
-					for _, v := range observedGlucose {
-						assert.GreaterOrEqual(t, v, 2.0, "glucose should stay above min level")
-						assert.LessOrEqual(t, v, 7.0, "glucose should stay below max level")
+						assert.GreaterOrEqual(t, v, da.MinCO2Level, "CO2 should stay above min level")
+						assert.LessOrEqual(t, v, da.MaxCO2Level, "CO2 should stay below max level")
 					}
 
 					meanO2 := helper.Mean(observedO2)
-					meanCO2 := helper.Mean(observedCO2)
-					meanGlu := helper.Mean(observedGlucose)
-
-					assert.Greater(t, meanO2, 100.0, "mean O2 should be above 100 mL")
-					assert.Greater(t, meanCO2, 30.0, "mean CO2 should be above 30 mL")
-					assert.Greater(t, meanGlu, 2.5, "mean glucose should be above 2.5")
 
 					o2Min, o2Max := observedO2[0], observedO2[0]
 					for _, v := range observedO2 {
@@ -283,11 +271,11 @@ func Test_HumanLiveness(t *testing.T) {
 					o2Range := o2Max - o2Min
 					co2Range := co2Max - co2Min
 
-					// 0.5 mL is a meaningful exchange signal; floating-point drift alone cannot reach this
+					// 0.5 is a meaningful exchange signal; floating-point drift alone cannot reach this
 					assert.Greater(t, o2Range, 0.5, "O2 should fluctuate (gas exchange active)")
 					assert.Greater(t, co2Range, 0.5, "CO2 should fluctuate (gas exchange active)")
 
-					// Mean O2 should stay near the physiological resting value, not drift to a clamp boundary
+					// Mean O2 should stay near the resting level, not drift to a clamp boundary
 					assert.InDelta(t, da.DefaultO2Level, meanO2, 50.0, "mean O2 should be near resting level")
 				})
 			},
@@ -353,6 +341,54 @@ func Test_HumanLiveness(t *testing.T) {
 				})
 			},
 		},
+		{
+			name: "blood gas levels are dynamic over time",
+			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+				aggState := sim.FM.ComponentByName("aggregated_state")
+				require.NotNil(t, aggState)
+
+				var o2, co2 []float64
+
+				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
+						if sig == nil {
+							return nil
+						}
+						o2 = append(o2, sig.Scalars().ValueOrDefault("O2_level", 0))
+						co2 = append(co2, sig.Scalars().ValueOrDefault("CO2_level", 0))
+						return nil
+					})
+				})
+
+				// Run several breath cycles (one quiet breath ~= 5s) so the steady-state
+				// window below spans multiple breaths.
+				helper.RunSimulationAndThen(sim, 25*time.Second, func() {
+					require.Greater(t, len(o2), 1000, "should collect enough samples")
+
+					// Skip the initial settling transient and analyze the steady state,
+					// so we prove the levels keep oscillating (not just drift once and flatten).
+					steadyO2 := o2[len(o2)/2:]
+					steadyCO2 := co2[len(co2)/2:]
+
+					o2Min, o2Max := minMax(steadyO2)
+					co2Min, co2Max := minMax(steadyCO2)
+
+					// Levels must keep moving (breathing in, organs consuming out).
+					assert.Greater(t, o2Max-o2Min, 3.0, "steady-state O2 should keep oscillating")
+					assert.Greater(t, co2Max-co2Min, 3.0, "steady-state CO2 should keep oscillating")
+
+					// ... and repeatedly reverse direction (up and down), not drift monotonically.
+					assert.Greater(t, countDirectionChanges(steadyO2), 3, "O2 should rise and fall repeatedly")
+					assert.Greater(t, countDirectionChanges(steadyCO2), 3, "CO2 should rise and fall repeatedly")
+
+					// ... and must not be pinned flat at a clamp boundary.
+					assert.Greater(t, o2Min, da.MinO2Level, "O2 should not be stuck at the floor")
+					assert.Less(t, o2Max, da.MaxO2Level, "O2 should not be stuck at the ceiling")
+					assert.Less(t, co2Max, da.MaxCO2Level, "CO2 should not be stuck at the ceiling")
+				})
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -383,6 +419,42 @@ func assertRPeaks(t *testing.T, cardiacActivation []float64) {
 		}
 	}
 	assert.Greater(t, n, 0)
+}
+
+// minMax returns the minimum and maximum of a non-empty series.
+func minMax(xs []float64) (float64, float64) {
+	lo, hi := xs[0], xs[0]
+	for _, v := range xs {
+		if v < lo {
+			lo = v
+		}
+		if v > hi {
+			hi = v
+		}
+	}
+	return lo, hi
+}
+
+// countDirectionChanges counts how many times the series reverses direction
+// (a rising run followed by a falling run or vice versa), i.e. its oscillation count.
+func countDirectionChanges(xs []float64) int {
+	changes := 0
+	prevDir := 0 // -1 down, +1 up, 0 flat
+	for i := 1; i < len(xs); i++ {
+		dir := 0
+		if xs[i] > xs[i-1] {
+			dir = 1
+		} else if xs[i] < xs[i-1] {
+			dir = -1
+		}
+		if dir != 0 && prevDir != 0 && dir != prevDir {
+			changes++
+		}
+		if dir != 0 {
+			prevDir = dir
+		}
+	}
+	return changes
 }
 
 // assertBidirectionalFlow checks that lung flow crosses zero over the sample window (quiet breathing).

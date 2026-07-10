@@ -28,6 +28,8 @@ func New(name string) (*component.Component, error) {
 			"is_alive",
 			"inspired_gas",
 			"venous_blood",
+			"blood_o2_level",
+			"blood_co2_level",
 			"brain_activity",
 			"brain_activity_trend",
 			"body_temperature",
@@ -149,6 +151,14 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 			helper.PortPair{
 				humanObservableState.OutputByName("venous_blood"),
 				this.OutputByName("venous_blood"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("blood_o2_level"),
+				this.OutputByName("blood_o2_level"),
+			},
+			helper.PortPair{
+				humanObservableState.OutputByName("blood_co2_level"),
+				this.OutputByName("blood_co2_level"),
 			},
 			helper.PortPair{
 				humanObservableState.OutputByName("is_alive"),

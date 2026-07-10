@@ -74,7 +74,10 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 }
 
 func wireBrain(components *component.Collection) error {
-	return components.ByName("organ:brain").
+	brain := components.ByName("organ:brain")
+	blood := components.ByName("da:blood_system")
+
+	if err := brain.
 		OutputByName("neural_drive").
 		PipeTo(
 			// Brain drives the autonomic coordination system
@@ -82,7 +85,19 @@ func wireBrain(components *component.Collection) error {
 
 			// Brain activity is observable
 			components.ByName("physiology:observable_state").InputByName("brain_activity"),
-		)
+		); err != nil {
+		return err
+	}
+
+	// Brain metabolism: consumes O2 and returns CO2 to the blood
+	if err := brain.OutputByName("o2_consumption").PipeTo(
+		blood.InputByName("o2_consumption"),
+	); err != nil {
+		return err
+	}
+	return brain.OutputByName("co2_production").PipeTo(
+		blood.InputByName("co2_production"),
+	)
 }
 
 func wireAutotomicCoordination(components *component.Collection) error {
@@ -105,12 +120,25 @@ func wireHeart(components *component.Collection) error {
 		return err
 	}
 
-	return components.ByName("organ:heart").
+	if err := components.ByName("organ:heart").
 		OutputByName("rate").
 		PipeTo(
 			// Heart rate is observable
 			components.ByName("physiology:observable_state").InputByName("heart_rate"),
-		)
+		); err != nil {
+		return err
+	}
+
+	// Heart metabolism: consumes O2 and returns CO2 to the blood
+	blood := components.ByName("da:blood_system")
+	if err := components.ByName("organ:heart").OutputByName("o2_consumption").PipeTo(
+		blood.InputByName("o2_consumption"),
+	); err != nil {
+		return err
+	}
+	return components.ByName("organ:heart").OutputByName("co2_production").PipeTo(
+		blood.InputByName("co2_production"),
+	)
 }
 
 func wireDiaphragm(components *component.Collection) error {
@@ -240,9 +268,9 @@ func wireBloodSystem(components *component.Collection) error {
 	for _, side := range []string{string(common.Left), string(common.Right)} {
 		lung := components.ByName("organ:lung_" + side)
 
-		// Alveolar gas from each lung to blood (both contribute to oxygenation)
-		if err := lung.OutputByName("alveolar_gas").PipeTo(
-			blood.InputByName("alveolar_gas"),
+		// Lung airflow drives blood gas exchange (>0 inhaling, <0 exhaling)
+		if err := lung.OutputByName("flow").PipeTo(
+			blood.InputByName("airflow"),
 		); err != nil {
 			return err
 		}
@@ -255,8 +283,18 @@ func wireBloodSystem(components *component.Collection) error {
 		}
 	}
 
-	// Venous blood is also observable
-	return blood.OutputByName("venous_blood").PipeTo(
+	// Venous blood and O2/CO2 levels are observable
+	if err := blood.OutputByName("venous_blood").PipeTo(
 		obsState.InputByName("venous_blood"),
+	); err != nil {
+		return err
+	}
+	if err := blood.OutputByName("o2_level").PipeTo(
+		obsState.InputByName("blood_o2_level"),
+	); err != nil {
+		return err
+	}
+	return blood.OutputByName("co2_level").PipeTo(
+		obsState.InputByName("blood_co2_level"),
 	)
 }

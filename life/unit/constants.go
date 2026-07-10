@@ -6,6 +6,12 @@ const (
 	// PerMinute is a value in per minute
 	PerMinute = 1
 
+	// PerSecond is a rate expressed per second (1/s)
+	PerSecond = 1.0
+
+	// PercentPerSecond is a rate of change of a percentage level, per second (%/s)
+	PercentPerSecond = 1.0
+
 	// Milliliter is a unit of volume in milliliters
 	Milliliter = 1.0
 

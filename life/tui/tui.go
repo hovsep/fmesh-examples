@@ -88,6 +88,16 @@ func main() {
 			Label: "Right Lung AP",
 			Color: asciigraph.Red,
 		},
+		{
+			Key:   "human-Leon::blood_o2_level",
+			Label: "Blood O₂ Level (0-100)",
+			Color: asciigraph.Green,
+		},
+		{
+			Key:   "human-Leon::blood_co2_level",
+			Label: "Blood CO₂ Level (0-100)",
+			Color: asciigraph.Red,
+		},
 	}
 
 	configMap := make(map[string]SignalConfig)

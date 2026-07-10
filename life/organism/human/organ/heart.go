@@ -13,6 +13,10 @@ import (
 const (
 	minBPM float64 = 40 * PerMinute
 	maxBPM float64 = 200 * PerMinute
+
+	// Metabolism: the heart consumes O2 and returns CO2 to the blood (rates in %/s).
+	HeartO2Consumption = 2.0 * PercentPerSecond
+	HeartCO2Production = 2.0 * PercentPerSecond
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase
@@ -31,11 +35,12 @@ func GetHeart() (*component.Component, error) {
 	c, err := component.New("organ:heart",
 		component.WithDescription("Heart"),
 		component.WithInputs("time", "autonomic_tone"),
-		component.WithOutputs("cardiac_activation", "rate"),
+		component.WithOutputs("cardiac_activation", "rate", "o2_consumption", "co2_production"),
 		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				oscillateHeart,
 				handleCardiacBias,
+				emitHeartMetabolism,
 			),
 		),
 		component.WithInitialState(func(state component.State) {
@@ -91,4 +96,16 @@ func handleCardiacBias(this *component.Component) error {
 	})
 	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
 	return nil
+}
+
+// emitHeartMetabolism reports the heart's O2 demand and CO2 output to the blood.
+// Gated on time so it fires exactly once per tick (not on the autonomic_tone activation).
+func emitHeartMetabolism(this *component.Component) error {
+	if !this.InputByName("time").HasSignals() {
+		return nil
+	}
+	if err := this.OutputByName("o2_consumption").PutPayloads(HeartO2Consumption); err != nil {
+		return err
+	}
+	return this.OutputByName("co2_production").PutPayloads(HeartCO2Production)
 }
