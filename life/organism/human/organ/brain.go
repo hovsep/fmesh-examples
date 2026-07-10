@@ -20,6 +20,10 @@ const (
 	// 0.3 - 0.6 Baseline activity
 	// 0.7 - 1.0 Stress, exercise, threat
 	defaultNeuralDrive = 0.3 * DNCS
+
+	// Metabolism: the brain is O2-hungry and returns CO2 to the blood (rates in %/s).
+	BrainO2Consumption = 3.0 * PercentPerSecond
+	BrainCO2Production = 3.0 * PercentPerSecond
 )
 
 func GetBrain() (*component.Component, error) {
@@ -27,8 +31,11 @@ func GetBrain() (*component.Component, error) {
 		component.WithDescription("The Brain"),
 		component.WithPlugins(damage.New()),
 		component.WithInputs("time"),
-		component.WithOutputs("neural_drive"),
-		component.WithActivationFunc(oscillateNeuralDrive),
+		component.WithOutputs("neural_drive", "o2_consumption", "co2_production"),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
+			oscillateNeuralDrive,
+			emitBrainMetabolism,
+		)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(NeuralDrive, defaultNeuralDrive)
 		}),
@@ -48,4 +55,16 @@ func oscillateNeuralDrive(this *component.Component) error {
 	})
 
 	return this.OutputByName("neural_drive").PutPayloads(nextND)
+}
+
+// emitBrainMetabolism reports the brain's O2 demand and CO2 output to the blood.
+// Gated on time so it fires exactly once per tick (not on other input activations).
+func emitBrainMetabolism(this *component.Component) error {
+	if !this.InputByName("time").HasSignals() {
+		return nil
+	}
+	if err := this.OutputByName("o2_consumption").PutPayloads(BrainO2Consumption); err != nil {
+		return err
+	}
+	return this.OutputByName("co2_production").PutPayloads(BrainCO2Production)
 }

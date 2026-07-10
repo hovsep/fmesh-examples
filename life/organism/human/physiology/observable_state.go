@@ -23,6 +23,8 @@ func GetObservableState() (*component.Component, error) {
 			"time",
 			"inspired_gas",
 			"venous_blood",
+			"blood_o2_level",
+			"blood_co2_level",
 			"brain_activity",
 			"heart_cardiac_activation",
 			"heart_rate",
@@ -45,6 +47,8 @@ func GetObservableState() (*component.Component, error) {
 			"is_alive",
 			"inspired_gas",
 			"venous_blood",
+			"blood_o2_level",
+			"blood_co2_level",
 			"brain_activity",
 			"brain_activity_trend",
 			"heart_cardiac_activation",
@@ -136,6 +140,14 @@ func handleLungSignals(this *component.Component) error {
 		helper.PortPair{
 			this.InputByName("venous_blood"),
 			this.OutputByName("venous_blood"),
+		},
+		helper.PortPair{
+			this.InputByName("blood_o2_level"),
+			this.OutputByName("blood_o2_level"),
+		},
+		helper.PortPair{
+			this.InputByName("blood_co2_level"),
+			this.OutputByName("blood_co2_level"),
 		},
 		helper.PortPair{
 			this.InputByName("lung_left_volume"),
