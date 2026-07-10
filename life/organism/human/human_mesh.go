@@ -89,14 +89,15 @@ func wireBrain(components *component.Collection) error {
 		return err
 	}
 
-	// Brain metabolism: consumes O2 and returns CO2 to the blood
-	if err := brain.OutputByName("o2_consumption").PipeTo(
-		blood.InputByName("o2_consumption"),
+	// Brain secretes substances (O2 demand, CO2) into the shared blood bus...
+	if err := brain.OutputByName("blood").PipeTo(
+		blood.InputByName("secretions"),
 	); err != nil {
 		return err
 	}
-	return brain.OutputByName("co2_production").PipeTo(
-		blood.InputByName("co2_production"),
+	// ...and reads the current bloodstream contents.
+	return blood.OutputByName("venous_blood").PipeTo(
+		brain.InputByName("blood"),
 	)
 }
 
@@ -129,15 +130,17 @@ func wireHeart(components *component.Collection) error {
 		return err
 	}
 
-	// Heart metabolism: consumes O2 and returns CO2 to the blood
+	// Heart secretes substances (O2 demand, CO2) into the shared blood bus...
 	blood := components.ByName("da:blood_system")
-	if err := components.ByName("organ:heart").OutputByName("o2_consumption").PipeTo(
-		blood.InputByName("o2_consumption"),
+	heart := components.ByName("organ:heart")
+	if err := heart.OutputByName("blood").PipeTo(
+		blood.InputByName("secretions"),
 	); err != nil {
 		return err
 	}
-	return components.ByName("organ:heart").OutputByName("co2_production").PipeTo(
-		blood.InputByName("co2_production"),
+	// ...and reads the current bloodstream contents.
+	return blood.OutputByName("venous_blood").PipeTo(
+		heart.InputByName("blood"),
 	)
 }
 
