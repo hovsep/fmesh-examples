@@ -29,7 +29,9 @@ func WithSink(s step_sim_sink.Sink) Option {
 }
 
 func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, opts ...Option) *Application {
-	cmdChan := make(chan Command)
+	// Small buffer so the REPL can enqueue commands without blocking during a
+	// slow (but bounded) mesh run.
+	cmdChan := make(chan Command, 16)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	app := &Application{
@@ -52,8 +54,6 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, opts ...Option) *Applicati
 }
 
 func (app *Application) Run() {
-	fmt.Println("Starting the application...")
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

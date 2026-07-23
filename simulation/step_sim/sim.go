@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
@@ -18,22 +19,24 @@ type SimInitFunc func(sim *Simulation)
 // Simulation is a wrapper around a mesh
 // it runs the mesh in a loop and feeds it with commands from outside (e.g., REPL or another system)
 type Simulation struct {
-	ctx          context.Context // Context is used to cancel the simulation
-	cmdChan      chan Command    // Channel for commands from outside
-	isPaused     bool            // Flag to pause the simulation
-	FM           *fmesh.FMesh    // The mesh
-	MeshCommands MeshCommandMap  // Commands that can be executed on the mesh
-	AutoPause    bool            // Automatically pause the simulation if nothing happens
-	Sink         sink.Sink       // Sink is useful for sending messages to the outside (ui, metrics, etc.)
+	ctx             context.Context  // Context is used to cancel the simulation
+	cmdChan         chan Command     // Channel for commands from outside
+	isPaused        bool             // Flag to pause the simulation
+	FM              *fmesh.FMesh     // The mesh
+	MeshCommands    MeshCommandMap   // Commands that can be executed on the mesh
+	AutoPause       bool             // Automatically pause the simulation if nothing happens
+	Sink            sink.Sink        // Sink is useful for sending messages to the outside (ui, metrics, etc.)
+	PublishThrottle *PublishThrottle // Rate-limits how often state is published to the Sink (0 = every cycle)
 }
 
 func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, sink sink.Sink) *Simulation {
 	return &Simulation{
-		ctx:          ctx,
-		FM:           fm,
-		cmdChan:      cmdChan,
-		MeshCommands: getDefaultMeshCommands(),
-		Sink:         sink,
+		ctx:             ctx,
+		FM:              fm,
+		cmdChan:         cmdChan,
+		MeshCommands:    getDefaultMeshCommands(),
+		Sink:            sink,
+		PublishThrottle: NewPublishThrottle(0), // no throttling by default; publish every cycle
 	}
 }
 
@@ -64,8 +67,6 @@ func (s *Simulation) Init(initFunc func(sim *Simulation)) *Simulation {
 // simulations must mutate the mesh exclusively via commands sent on cmdChan,
 // never directly from the sink, UI, or other goroutines.
 func (s *Simulation) Run() {
-	fmt.Println("Starting simulation...")
-
 	for {
 		// Drain all pending commands without blocking
 		drainCommands := true
@@ -110,8 +111,14 @@ func (s *Simulation) Run() {
 		// Run a single simulation cycle
 		runResult, err := s.FM.Run()
 		if err != nil {
+			// A failed cycle must not kill the simulation goroutine: if it did,
+			// nothing would drain cmdChan and the REPL would block forever on its
+			// next command. Pause instead and keep looping, so the user can
+			// inspect, adjust, resume, or exit.
 			fmt.Println("Simulation cycle finished with error:", err)
-			return
+			s.Pause()
+			fmt.Println("Type 'resume' to continue or 'exit' to quit.")
+			continue
 		}
 
 		s.MaybeAutoPause(runResult)
@@ -159,14 +166,22 @@ func (s *Simulation) Resume() {
 	s.isPaused = false
 }
 
-// handleCommand executes a valid command
+// handleCommand executes a valid command. The command line is split into a
+// name and its arguments, so commands like "rate 100ms" are dispatched by their
+// first token and receive the rest as args.
 func (s *Simulation) handleCommand(cmd Command) {
-	cmdDescriptor, ok := s.MeshCommands[cmd]
+	fields := strings.Fields(string(cmd))
+	if len(fields) == 0 {
+		return
+	}
+
+	name, args := Command(fields[0]), fields[1:]
+	cmdDescriptor, ok := s.MeshCommands[name]
 	if !ok {
 		fmt.Printf("Unknown command: %v \n", cmd)
 		return
 	}
-	cmdDescriptor.RunWithMesh(s.FM)
+	cmdDescriptor.RunWithMesh(s.FM, args)
 }
 
 func (s *Simulation) SendCommand(cmd Command) {

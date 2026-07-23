@@ -25,8 +25,6 @@ func (d Damage) GetName() string {
 // @TODO:: check if we need to check if time is ticking in order to apply damage
 // @TODO:: add this plugin to all organs and other components where makes sense (boundaries, distributed anatomy etc)
 func (d Damage) Init(c *component.Component) error {
-	c.Logger().Println("Damage plugin initializing")
-
 	// State
 	c.State().Set(damageLevel, defaultDamageLevel)
 

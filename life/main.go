@@ -46,24 +46,7 @@ import (
 //	The simulation is single-directional (habitat → human), as the primary
 //	goal is studying human physiology rather than environmental dynamics.
 func main() {
-	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
-	fmt.Println("║           Human Physiology Step Simulation (\"Life\")         ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
-	fmt.Println()
-	fmt.Println("This simulation models a human organism (\"Leon\") inside a habitat.")
-	fmt.Println("It demonstrates how fmesh can compose complex, multi-layered systems")
-	fmt.Println("using discrete time steps (each tick = 10 ms of simulated time).")
-	fmt.Println()
-	fmt.Println("Key subsystems simulated:")
-	fmt.Println("  • Habitat  — time, gas composition, temperature, sunlight")
-	fmt.Println("  • Organs   — lungs (left/right), heart, kidneys, brain, etc.")
-	fmt.Println("  • Controllers  — autonomous regulation (heart rate, breathing)")
-	fmt.Println("  • Distributed anatomy — blood, nervous system, skin")
-	fmt.Println()
-	fmt.Println("The habitat is forward-predictive; the human is reactive.")
-	fmt.Println("All communication is signal-based — no shared mutable state.")
-	fmt.Println("A Unix socket streams live state for the ASCII TUI visualizer.")
-	fmt.Println()
+	fmt.Println(`Human Physiology Step Simulation ("Life") — each tick = 10ms of simulated time.`)
 
 	simMesh, err := getSimulationMesh()
 	if err != nil {
@@ -78,53 +61,48 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Now run the simulation; the producer is non-blocking
-	err = internal.HandleGraphFlag(simMesh, false)
-	if err != nil {
-		fmt.Println("Failed to generate graph:", err)
-		os.Exit(1)
-	}
-
 	// Create the unix socket sink so the TUI can connect and visualize state
-	fmt.Println("Creating Unix socket sink for TUI at /tmp/" + simMesh.Name() + ".sock ...")
 	uiSink, err := sink.NewUnixSocketSink("/tmp/" + simMesh.Name() + ".sock")
 	if err != nil {
 		fmt.Println("Failed to create sink:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Socket ready. Start the TUI in another terminal: go run ./life/tui/")
-	fmt.Println()
+	fmt.Println("TUI: go run ./life/tuiv2/ /tmp/" + simMesh.Name() + ".sock")
 
-	// Run the mesh in a step simulation
-	fmt.Println("Launching step simulation REPL. Enter 'help' for available commands.")
-	fmt.Println("Type 'step' (or 's') to advance one tick (10 ms). Use 'run' to auto-run.")
-	fmt.Println()
 	step_sim.NewApp(simMesh, initSim, step_sim.WithSink(uiSink)).Run()
 }
 
 // initSim configures simulation and adds custom commands
 func initSim(sim *step_sim.Simulation) {
-	// Configure simulation
+	// Configure simulation. The loop starts unpaused, so it runs on its own
+	// without needing an explicit "resume".
 	sim.AutoPause = false
+	fmt.Println("🚀 Simulation auto-started! Type 'help' for commands ('pause'/'resume', 'exit' to quit).")
 
-	// Add custom commands
-	setMeshCommands(sim.FM, sim.MeshCommands)
+	// Publish state to the UI at a bounded rate so the simulation can run at full
+	// pace while the stream stays bounded (0 = every cycle). The "rate" command
+	// adjusts this at runtime; both it and the hook below run on the sim
+	// goroutine (see Simulation.Run), so no synchronization is needed.
+	sim.PublishThrottle.SetInterval(50 * time.Millisecond)
+
+	// Add custom commands (including "rate", which drives sim.PublishThrottle)
+	setMeshCommands(sim)
 
 	// Setup hooks to stream data to UI
 	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-			mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
+			// Drop this snapshot if we published too recently; the sim keeps
+			// running at full pace regardless.
+			if !sim.PublishThrottle.Allow() {
+				return nil
+			}
+			return mesh.ComponentByName("aggregated_state_publisher").OutputByName("stream").Signals().ForEach(func(line *signal.Signal) error {
 				s, err := helper.AsString(line)
 				if err != nil {
 					return err
 				}
 				return sim.Sink.Publish(s)
 			})
-
-			// @TODO: take this delay from flag or cmd to not affect tests
-			// Slow down to near real time (useful with TUI)
-			time.Sleep(10 * time.Millisecond)
-			return nil
 		})
 	})
 }
