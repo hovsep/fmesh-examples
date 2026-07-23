@@ -25,8 +25,6 @@ func NewREPL(cmdChan chan Command) *REPL {
 }
 
 func (repl *REPL) Run() {
-	fmt.Println("Starting REPL...")
-
 	defer close(repl.cmdChan)
 
 	scanner := bufio.NewScanner(os.Stdin)

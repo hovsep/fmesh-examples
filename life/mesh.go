@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
@@ -16,59 +17,39 @@ import (
 
 // getSimulationMesh returns the main mesh of the simulation
 func getSimulationMesh() (*fmesh.FMesh, error) {
-	fmt.Println("Building simulation mesh...")
-	fmt.Println()
-
 	// Set up the world
-	fmt.Println("Phase 1: Setting up habitat...")
 	habitat, err := getHabitat()
 	if err != nil {
 		return nil, fmt.Errorf("getHabitat: %w", err)
 	}
-	fmt.Println("Habitat ready (time + gas + sun factors).")
-	fmt.Println()
 
-	fmt.Println("Phase 2: Creating human organism 'Leon'...")
 	leon, err := human.New("Leon")
 	if err != nil {
 		return nil, fmt.Errorf("human.New: %w", err)
 	}
-	fmt.Println("Human organism created with organs, boundaries, controllers,")
-	fmt.Println("distributed anatomy (blood, nerves, skin), and physiology.")
-	fmt.Println()
 
-	fmt.Println("Phase 3: Placing organism into habitat...")
 	habitat, err = habitat.AddOrganisms(leon)
 	if err != nil {
 		return nil, fmt.Errorf("AddOrganisms: %w", err)
 	}
-	fmt.Println("Leon placed in habitat.")
-	fmt.Println()
 
-	fmt.Println("Phase 4: Adding aggregated state tracking...")
 	habitat, err = habitat.AddAggregatedState()
 	if err != nil {
 		return nil, fmt.Errorf("AddAggregatedState: %w", err)
 	}
 
-	fmt.Println("Phase 5: Adding state publisher (Unix socket stream)...")
 	habitat, err = habitat.AddAggregatedStatePublisher()
 	if err != nil {
 		return nil, fmt.Errorf("AddAggregatedStatePublisher: %w", err)
 	}
 
-	// Set up the mesh
-	fmt.Println()
-	fmt.Println("Phase 6: Wiring environment factors (time tick generator)...")
+	// Generate a tick signal before each run (time step simulation)
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
-		// Generate a tick signal before each run (time step simulation)
 		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 			return nil
 		})
-
 	})
-	fmt.Println("Tick generator wired: the 'time' component receives a 'tick' signal before each run.")
 
 	err = internal.HandleGraphFlag(habitat.FM, false)
 	if err != nil {
@@ -76,27 +57,21 @@ func getSimulationMesh() (*fmesh.FMesh, error) {
 		os.Exit(1)
 	}
 
-	fmt.Println()
-	fmt.Println("Simulation mesh fully built and ready.")
 	return habitat.FM, nil
 }
 
 // getHabitat builds the habitat mesh
 func getHabitat() (*env.Habitat, error) {
-	fmt.Println("  Creating habitat factors...")
 	factors := component.NewCollection()
 
-	fmt.Println("    - Time factor (drives step simulation)")
 	timeComponent, err := factor.GetTimeComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
-	fmt.Println("    - Gas factor (temperature, humidity, gas composition)")
 	gasComponent, err := factor.GetGasComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
-	fmt.Println("    - Sun factor (sunlight / radiation)")
 	sunComponent, err := factor.GetSunComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
@@ -113,11 +88,30 @@ func getHabitat() (*env.Habitat, error) {
 }
 
 // setMeshCommands sets the commands that can be executed on the mesh
-func setMeshCommands(mesh *fmesh.FMesh, commands step_sim.MeshCommandMap) {
+func setMeshCommands(sim *step_sim.Simulation) {
+	mesh := sim.FM
+	commands := sim.MeshCommands
 	timeComponent := mesh.ComponentByName("time")
 
-	//@TODO: ability to pass params to commands
 	//@TODO: a cmd that allows to schedule another cmd at\after exact wall\sim time
+
+	// Set how often state is published to the UI (decoupled from sim speed)
+	commands["rate"] = step_sim.NewMeshCommandDescriptorWithArgs(
+		"set UI publish interval, e.g. 'rate 100ms' ('rate 0' = publish every cycle)",
+		func(_ *fmesh.FMesh, args []string) {
+			if len(args) != 1 {
+				fmt.Println("usage: rate <duration>   e.g. 'rate 100ms', 'rate 0'")
+				fmt.Println("current publish interval:", sim.PublishThrottle.Interval())
+				return
+			}
+			d, err := time.ParseDuration(args[0])
+			if err != nil || d < 0 {
+				fmt.Println("invalid duration:", args[0], "(use e.g. '100ms', '1s', or '0')")
+				return
+			}
+			sim.PublishThrottle.SetInterval(d)
+			fmt.Println("publish interval set to", d)
+		})
 
 	// Print current time
 	commands["time:now"] = step_sim.NewMeshCommandDescriptor("Print current time", func(_ *fmesh.FMesh) {

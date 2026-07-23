@@ -21,7 +21,10 @@ type Habitat struct {
 // NewHabitat builds the new habitat
 func NewHabitat(factors *component.Collection) (*Habitat, error) {
 	fm, err := fmesh.New(meshName,
-		fmesh.WithUnlimitedCycles(),
+		// A single tick converges in a handful of cycles; this generous cap turns
+		// an accidental non-converging run into a fast error instead of spinning
+		// until the wall-clock time limit.
+		fmesh.WithCyclesLimit(1000),
 		fmesh.WithTimeLimit(60*time.Second), // One mesh run (or 1 simulation tick) must not exceed this limit
 	)
 	if err != nil {
