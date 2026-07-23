@@ -24,12 +24,13 @@ const (
 
 // Model represents the Bubble Tea application model
 type Model struct {
-	state          *models.AppState
-	reader         *protocol.Reader
-	overviewView   *views.OverviewView
-	width          int
-	height         int
-	renderInterval time.Duration
+	state           *models.AppState
+	reader          *protocol.Reader
+	overviewView    *views.OverviewView
+	respiratoryView *views.RespiratoryView
+	width           int
+	height          int
+	renderInterval  time.Duration
 }
 
 // NewModel creates a new application model
@@ -55,14 +56,16 @@ func NewModel(socketPath string) (*Model, error) {
 
 	// Create views
 	overviewView := views.NewOverviewView(state)
+	respiratoryView := views.NewRespiratoryView(state)
 
 	return &Model{
-		state:          state,
-		reader:         reader,
-		overviewView:   overviewView,
-		width:          120,
-		height:         40,
-		renderInterval: defaultRenderInterval,
+		state:           state,
+		reader:          reader,
+		overviewView:    overviewView,
+		respiratoryView: respiratoryView,
+		width:           120,
+		height:          40,
+		renderInterval:  defaultRenderInterval,
 	}, nil
 }
 
@@ -174,7 +177,7 @@ func (m Model) View() string {
 	case models.ViewCardiovascular:
 		content = "Cardiovascular Detail View (Coming Soon)"
 	case models.ViewRespiratory:
-		content = "Respiratory Detail View (Coming Soon)"
+		content = m.respiratoryView.Render(m.width, contentHeight)
 	case models.ViewNervous:
 		content = "Nervous Detail View (Coming Soon)"
 	default:
