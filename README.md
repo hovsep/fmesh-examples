@@ -38,6 +38,7 @@ F-Mesh is an FBP-inspired framework that lets you express your program as a mesh
 | [Load Balancer](./load_balancer/main.go) | Distributing work across components |
 | [Nesting](./nesting/main.go) | Composing meshes within meshes |
 | [Pipeline](./pipeline/main.go) | Sequential data processing |
+| [Ray Tracer](./ray_tracer/main.go) | Wavefront 3D ray tracer |
 | [String Processing](./string_processing/main.go) | Text transformation pipeline |
 | [Basic CAN Bus](./can_bus/basic/main.go) | Simple automotive network simulation |
 | [Advanced CAN Bus](./can_bus/advanced/main.go) | Full CAN protocol with ISO-TP |
@@ -62,6 +63,9 @@ go mod tidy
 # Run any example
 go run ./fibonacci
 go run ./electric_circuit
+
+# The ray tracer is a standalone module (uses the latest fmesh release)
+cd ray_tracer && go run .
 
 # Build all examples
 make build
