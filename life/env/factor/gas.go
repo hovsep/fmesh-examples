@@ -72,6 +72,15 @@ func handleControlSignals(this *component.Component) error {
 }
 
 func emitEnvironmentalGas(this *component.Component) error {
+	// Only emit on a time tick. A control signal (e.g. a temperature change) can
+	// activate this component out of band; without this guard it would emit an
+	// extra, unpaired environmental_gas signal that the human component holds
+	// forever (waiting for a matching time tick), preventing the mesh from ever
+	// converging.
+	if !this.InputByName("time").HasSignals() {
+		return nil
+	}
+
 	currentTemperature := this.State().Get("temperature").(float64)
 	currentHumidity := this.State().Get("humidity").(float64)
 
