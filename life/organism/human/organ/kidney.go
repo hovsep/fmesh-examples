@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -42,6 +43,7 @@ const (
 func GetKidney() (*component.Component, error) {
 	c, err := component.New("organ:kidney",
 		component.WithDescription("Kidney: sheds or conserves water according to hydration, and fills the bladder"),
+		component.WithPlugins(damage.New(damage.Config{Organ: "kidney"})),
 		component.WithInputs(
 			common.TimePort,
 			"body_state", // from physiology:physiological_state
@@ -52,7 +54,7 @@ func GetKidney() (*component.Component, error) {
 			"bladder_fill",
 			"urine_rate",
 		),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			readHydration,
 			voidBladder,
 			produceUrine,

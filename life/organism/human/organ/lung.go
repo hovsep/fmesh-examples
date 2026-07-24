@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -48,9 +49,10 @@ var (
 func GetLung(side common.Side) (*component.Component, error) {
 	c, err := component.New("organ:lung_"+string(side),
 		component.WithDescription(string(side)+" lung"),
+		component.WithPlugins(damage.New(damage.Config{Organ: "lung_" + string(side)})),
 		component.WithInputs("time", "pleural_pressure", "inspired_gas", "venous_blood"),
 		component.WithOutputs("volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			handleMechanics,
 			handleGasExchange,
 		)),
@@ -68,6 +70,13 @@ func GetLung(side common.Side) (*component.Component, error) {
 }
 
 func handleMechanics(this *component.Component) error {
+	// A breathing cycle is driven by the tick. If there is no tick, this activation
+	// came from some other input arriving out of phase (e.g. an inhaled toxin on
+	// the damage port); do nothing rather than keep waiting for a tick that has
+	// already passed, which would stall the mesh.
+	if !this.InputByName("time").HasSignals() {
+		return nil
+	}
 	if !this.Inputs().ByNames("time", "pleural_pressure", "inspired_gas").AllHaveSignals() {
 		return component.ErrWaitingForInputsKeep
 	}

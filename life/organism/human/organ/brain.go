@@ -41,10 +41,12 @@ const (
 func GetBrain() (*component.Component, error) {
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
-		component.WithPlugins(damage.New()),
+		component.WithPlugins(damage.New(damage.Config{Organ: "brain"})),
 		component.WithInputs("time", "blood"),
 		component.WithOutputs("neural_drive", "blood"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		// When the brain fails it emits nothing; the body then reads no brain
+		// activity and is declared dead.
+		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			senseBlood,
 			oscillateNeuralDrive,
 			emitBrainMetabolism,

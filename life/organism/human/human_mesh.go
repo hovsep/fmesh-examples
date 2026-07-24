@@ -14,6 +14,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -70,6 +71,9 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	}
 	if err := wireAffect(components); err != nil {
 		return nil, fmt.Errorf("wireAffect: %w", err)
+	}
+	if err := wireDamage(components); err != nil {
+		return nil, fmt.Errorf("wireDamage: %w", err)
 	}
 
 	err = internal.HandleGraphFlag(mesh, false)
@@ -349,6 +353,55 @@ func wireAffect(components *component.Collection) error {
 	return affect.OutputByName("feelings").PipeTo(obs.InputByName("feelings"))
 }
 
+// damagedOrgans maps each organ's short name (as the damage plugin and
+// physiology:physiological_load know it) to the component that carries the plugin.
+func damagedOrgans(components *component.Collection) map[string]*component.Component {
+	return map[string]*component.Component{
+		"brain":      components.ByName("organ:brain"),
+		"heart":      components.ByName("organ:heart"),
+		"diaphragm":  components.ByName("organ:diaphragm"),
+		"lung_left":  components.ByName("organ:lung_left"),
+		"lung_right": components.ByName("organ:lung_right"),
+		"kidney":     components.ByName("organ:kidney"),
+	}
+}
+
+// wireDamage connects the death cascade: what the body's condition does to its
+// organs, what smoking does to the lungs, and how each organ's damage is observed.
+func wireDamage(components *component.Collection) error {
+	load := components.ByName("physiology:physiological_load")
+	bodyState := components.ByName("physiology:physiological_state")
+	blood := components.ByName("da:blood_system")
+	obs := components.ByName("physiology:observable_state")
+	organs := damagedOrgans(components)
+
+	// The damage engine reads the reservoirs and the blood.
+	if err := bodyState.OutputByName("body_state").PipeTo(load.InputByName("body_state")); err != nil {
+		return err
+	}
+	if err := blood.OutputByName("venous_blood").PipeTo(load.InputByName("venous_blood")); err != nil {
+		return err
+	}
+
+	for name, organ := range organs {
+		// Reservoir stress injures the organ.
+		if err := load.OutputByName(name + "_damage").PipeTo(organ.InputByName(damage.InputPort)); err != nil {
+			return err
+		}
+		// Each organ's damage level is observable.
+		if err := organ.OutputByName(damage.LevelOutput).PipeTo(obs.InputByName(name + "_damage")); err != nil {
+			return err
+		}
+	}
+
+	// Inhaled cigarette toxin damages both lungs directly.
+	toxin := components.ByName("boundary:ingestion").OutputByName("substance_load")
+	return toxin.PipeTo(
+		organs["lung_left"].InputByName(damage.InputPort),
+		organs["lung_right"].InputByName(damage.InputPort),
+	)
+}
+
 // getComponents returns the collection of human components (organs, systems, etc.)
 func getComponents() (*component.Collection, error) {
 	resp, err := boundary.GetRespiratory()
@@ -437,6 +490,10 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("da.GetMuscularSystem: %w", err)
 	}
+	load, err := physiology.GetPhysiologicalLoad()
+	if err != nil {
+		return nil, fmt.Errorf("physiology.GetPhysiologicalLoad: %w", err)
+	}
 
 	coll := component.NewCollection()
 	if err := coll.Add(
@@ -460,6 +517,7 @@ func getComponents() (*component.Collection, error) {
 		bodyState,
 		affect,
 		muscular,
+		load,
 	); err != nil {
 		return nil, fmt.Errorf("failed to build human components: %w", err)
 	}

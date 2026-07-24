@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -35,10 +36,11 @@ func cardiacActivationWave(phase float64) float64 {
 func GetHeart() (*component.Component, error) {
 	c, err := component.New("organ:heart",
 		component.WithDescription("Heart"),
+		component.WithPlugins(damage.New(damage.Config{Organ: "heart"})),
 		component.WithInputs("time", "autonomic_tone", "blood"),
 		component.WithOutputs("cardiac_activation", "rate", "blood"),
 		component.WithActivationFunc(
-			helper.SequentialActivationFunc(
+			damage.FlatlineWhenFailed(
 				oscillateHeart,
 				handleCardiacBias,
 				emitHeartMetabolism,
