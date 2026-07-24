@@ -126,14 +126,16 @@ func exchangeBloodGases(this *component.Component) error {
 		return nil
 	}
 
-	// Phase B: breathing airflow -> update levels for the next tick.
-	if this.InputByName("airflow").HasSignals() {
+	// Phase B: fold in breathing (airflow) and organ metabolism (secretions) as
+	// they arrive. This must not wait indefinitely for airflow: if both lungs have
+	// failed it never comes, yet metabolism has to keep running -- O2 falls and CO2
+	// rises, which is exactly what stopping the breathing should do.
+	// updateBloodLevels treats absent airflow as zero net flow, so no fresh air is
+	// pulled in.
+	if this.InputByName("airflow").HasSignals() || this.InputByName("secretions").HasSignals() {
 		updateBloodLevels(this)
-		return nil
 	}
-
-	// Partial inputs (e.g. organ metabolism) arrived before airflow; keep and wait.
-	return component.ErrWaitingForInputsKeep
+	return nil
 }
 
 func publishBloodLevels(this *component.Component) {
