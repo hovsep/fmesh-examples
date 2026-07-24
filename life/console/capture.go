@@ -7,21 +7,21 @@ import (
 	"syscall"
 )
 
-// stdoutCapture redirects the process's standard output into a channel of lines.
+// Capture redirects the process's standard output into a channel of lines.
 //
 // The simulation and its command handlers report what they are doing with plain
-// fmt.Println, from the simulation goroutine, at moments the console cannot
-// predict. Written straight to the terminal those would land in the middle of
-// whatever the console had drawn.
+// fmt.Println, from the simulation goroutine, at moments the UI cannot predict.
+// Written straight to the terminal those would land in the middle of whatever
+// the UI had drawn.
 //
 // The redirection happens at the file-descriptor level rather than by swapping
 // the os.Stdout variable, because swapping the variable only catches writers
 // that look it up at the moment they write. fmesh gives every component a
 // log.New(os.Stdout, ...) when the component is constructed -- long before the
-// console exists -- so such a logger holds the original file and would bypass a
+// UI exists -- so such a logger holds the original file and would bypass a
 // variable swap entirely. Redirecting the descriptor catches those too, along
 // with anything a dependency decides to print.
-type stdoutCapture struct {
+type Capture struct {
 	original *os.File // the os.Stdout value that was replaced
 	terminal *os.File // a duplicate of the real stdout, kept for the renderer
 	savedFd  int      // duplicate of the original descriptor; -1 if unavailable
@@ -32,15 +32,15 @@ type stdoutCapture struct {
 	Lines chan string
 }
 
-// captureStdout redirects standard output into a pipe. Restore must be called to
+// CaptureStdout redirects standard output into a pipe. Restore must be called to
 // put it back, or the terminal is left writing into a pipe nothing reads.
-func captureStdout(buffer int) (*stdoutCapture, error) {
+func CaptureStdout(buffer int) (*Capture, error) {
 	reader, writer, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
 
-	c := &stdoutCapture{
+	c := &Capture{
 		original: os.Stdout,
 		terminal: os.Stdout,
 		savedFd:  -1,
@@ -68,7 +68,7 @@ func captureStdout(buffer int) (*stdoutCapture, error) {
 	return c, nil
 }
 
-func (c *stdoutCapture) read() {
+func (c *Capture) read() {
 	defer close(c.Lines)
 
 	scanner := bufio.NewScanner(c.reader)
@@ -92,11 +92,11 @@ func (c *stdoutCapture) read() {
 // Anything that must actually reach the screen -- above all the renderer drawing
 // the console itself -- has to be pointed at this. Left on os.Stdout it would
 // draw into the capture pipe and feed its own frames back as captured output.
-func (c *stdoutCapture) Terminal() *os.File { return c.terminal }
+func (c *Capture) Terminal() *os.File { return c.terminal }
 
 // Restore puts the real stdout back and stops the reader. It is safe to call
 // more than once, since Run both defers it and calls it before reporting errors.
-func (c *stdoutCapture) Restore() {
+func (c *Capture) Restore() {
 	if c.restored {
 		return
 	}

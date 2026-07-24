@@ -9,7 +9,7 @@ import (
 )
 
 // waitForLine reads one captured line, or fails if none arrives.
-func waitForLine(t *testing.T, c *stdoutCapture) string {
+func waitForLine(t *testing.T, c *Capture) string {
 	t.Helper()
 	select {
 	case line := <-c.Lines:
@@ -21,7 +21,7 @@ func waitForLine(t *testing.T, c *stdoutCapture) string {
 }
 
 func TestCaptureStdout_CatchesPlainPrints(t *testing.T) {
-	c, err := captureStdout(16)
+	c, err := CaptureStdout(16)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestCaptureStdout_CatchesLoggersBoundBeforeCapture(t *testing.T) {
 	// had drawn. This is the case that matters.
 	logger := log.New(os.Stdout, "organ:heart: ", 0)
 
-	c, err := captureStdout(16)
+	c, err := CaptureStdout(16)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestCaptureStdout_CatchesLoggersBoundBeforeCapture(t *testing.T) {
 func TestCaptureStdout_RestoresStdout(t *testing.T) {
 	original := os.Stdout
 
-	c, err := captureStdout(16)
+	c, err := CaptureStdout(16)
 	if err != nil {
 		t.Fatal(err)
 	}

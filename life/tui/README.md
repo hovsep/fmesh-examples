@@ -1,49 +1,39 @@
-# TUI v2 - Modern Terminal Dashboard
+# Dashboard — integrated terminal UI
 
-Modern, modular terminal dashboard for the Life simulation, built with Bubble Tea.
+The Life simulation's front end, built with Bubble Tea. The dashboard and the
+command line live in **one** program with the simulation: the tabbed views are on
+top, a command prompt is pinned to the bottom, and telemetry flows over an
+in-process channel — there is no socket and no second process to start.
 
-## Features
-
-- 4-quadrant dashboard (Cardiovascular, Respiratory, Nervous, Gas Exchange)
-- Real-time sparklines for each vital sign
-- Health indicators (✓/⚠/✗)
-- Tab navigation between views
-- 14 vital signs updating in real-time
-
-## Quick Start
-
-### 1. Start Simulation
+## Run
 
 ```bash
-go run main.go
+go run .        # from the life/ directory
 ```
 
-Wait for:
-```
-🚀 Simulation auto-started!
-```
+The simulation auto-starts and the dashboard opens. Type commands at the `›`
+prompt (try `help`).
 
-### 2. Start TUI v2 (in new terminal)
+Piping a script in (non-interactive stdin) runs headless with a plain prompt and
+no dashboard:
 
 ```bash
-./tui_bin
-```
-
-Or build from source:
-```bash
-go build -o tui_bin ./tui
-./tui_bin
+printf 'activity:start 3\ntime:now\nexit\n' | go run . --plain
 ```
 
 ## Controls
 
-- **Tab** / **Shift+Tab**: Switch views
-- **1-4**: Jump to view
-- **q**: Quit
+Typing always goes to the command line, so navigation uses modifiers and the mouse:
 
-## Displayed Signals (14)
+- **type + Enter**: run a command · **Tab**: complete a command name
+- **↑ / ↓**: command history · **PgUp / PgDn**: scroll the transcript
+- **Ctrl+← / Ctrl+→** or **Alt+1‑7** or **mouse click**: switch tabs
+- **Alt+s**: split vs overlaid lungs (Respiratory view)
+- **Ctrl+↑ / Ctrl+↓**: faster / slower repaint
+- **exit** or **Ctrl+C**: quit
 
-**Cardiovascular**: Heart Rate, Blood O₂, Blood CO₂
-**Respiratory**: Resp Rate, Pleural Pressure, Lung Volumes (L/R)
-**Nervous**: Brain Activity, Brain Trend, Body Temp
-**Gas Exchange**: Lung Flows (L/R), Gas Composition
+## Views
+
+Cardiovascular (ECG + gases), Respiratory (breathing waveforms), Nervous,
+Metabolic, Affect, Body, and an Overview. Most screens are generated from the
+telemetry catalog, so a new metric appears without any UI code changing.
