@@ -3,21 +3,120 @@ package controller
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/helper"
+	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/meta"
+	"github.com/hovsep/fmesh/signal"
 )
 
-// GetPhysical returns the physical stress controller component
-// possible input commands or events: physical activity (time, level, type), breath-hold(time), yawning, etc.
+// Physical activity command verbs.
+const (
+	VerbStart = "start"
+	VerbStop  = "stop"
+)
+
+// Physical controller state.
+const (
+	// ActivityIntensity is the metabolic demand of what the body is currently
+	// doing, as a multiple of rest: 1 is sitting still, ~8 is running.
+	ActivityIntensity common.State = "activity_intensity"
+	// ActivityRemaining counts down the requested duration in seconds; a
+	// negative value means "until told to stop".
+	ActivityRemaining common.State = "activity_remaining_s"
+)
+
+// Scalar names on the activity command and the emitted load signal.
+const (
+	ScalarIntensity = "intensity"
+	ScalarDurationS = "duration_s"
+)
+
+// Resting metabolic demand, the floor the body returns to when nothing is happening.
+const RestingIntensity = 1.0 * Proportion
+
+// Indefinite marks an activity with no requested end.
+const Indefinite = -1.0
+
+// GetPhysical returns the physical stress controller.
+//
+// It holds "what the body is currently doing" as a single intensity, started and
+// stopped by command and counted down as simulated time passes. Organs read the
+// resulting load rather than knowing about running or lifting.
 func GetPhysical() (*component.Component, error) {
 	c, err := component.New("controller:physical_stress",
-		component.WithDescription("Physical stress perception of the human being"),
-		component.WithInputs("time", "physical_activity"),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return nil
+		component.WithDescription("Turns physical activity commands into a sustained metabolic load"),
+		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithOutputs("physical_load"),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
+			acceptActivityCommands,
+			emitPhysicalLoad,
+		)),
+		component.WithInitialState(func(state component.State) {
+			state.Set(ActivityIntensity, RestingIntensity)
+			state.Set(ActivityRemaining, 0.0)
 		}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("controller:physical_stress: %w", err)
 	}
 	return c, nil
+}
+
+func acceptActivityCommands(this *component.Component) error {
+	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		switch helper.CommandVerb(name) {
+		case VerbStart:
+			intensity := args.ValueOrDefault(ScalarIntensity, RestingIntensity)
+			if intensity < RestingIntensity {
+				this.Logger().Printf("activity intensity %v is below resting, clamping\n", intensity)
+				intensity = RestingIntensity
+			}
+			this.State().Set(ActivityIntensity, intensity)
+			// Absent a duration the activity runs until stopped.
+			this.State().Set(ActivityRemaining, args.ValueOrDefault(ScalarDurationS, Indefinite))
+		case VerbStop:
+			stopActivity(this)
+		default:
+			this.Logger().Printf("unknown activity command %q\n", name)
+		}
+		return nil
+	})
+}
+
+// emitPhysicalLoad publishes the current demand and ages the activity out.
+func emitPhysicalLoad(this *component.Component) error {
+	tick := this.InputByName(common.TimePort).Signals().First()
+	if tick == nil {
+		return nil
+	}
+
+	dt, err := helper.TickDurationInSec(tick)
+	if err != nil {
+		return fmt.Errorf("physical controller tick: %w", err)
+	}
+
+	remaining := this.State().Get(ActivityRemaining).(float64)
+	if remaining > 0 {
+		remaining -= dt
+		if remaining <= 0 {
+			// The requested duration has elapsed, so the body settles back down
+			// on its own without needing an explicit stop.
+			stopActivity(this)
+		} else {
+			this.State().Set(ActivityRemaining, remaining)
+		}
+	}
+
+	return this.OutputByName("physical_load").PutSignals(
+		signal.New(this.State().Get(ActivityIntensity).(float64)).
+			WithLabel("category", "load").
+			WithScalar(ScalarIntensity, this.State().Get(ActivityIntensity).(float64)),
+	)
+}
+
+func stopActivity(this *component.Component) {
+	this.State().Set(ActivityIntensity, RestingIntensity)
+	this.State().Set(ActivityRemaining, 0.0)
 }

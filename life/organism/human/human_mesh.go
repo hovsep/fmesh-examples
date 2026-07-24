@@ -8,7 +8,9 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
+	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
@@ -62,6 +64,12 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	}
 	if err := wireBloodSystem(components); err != nil {
 		return nil, fmt.Errorf("wireBloodSystem: %w", err)
+	}
+	if err := wireMetabolism(components); err != nil {
+		return nil, fmt.Errorf("wireMetabolism: %w", err)
+	}
+	if err := wireAffect(components); err != nil {
+		return nil, fmt.Errorf("wireAffect: %w", err)
 	}
 
 	err = internal.HandleGraphFlag(mesh, false)
@@ -208,6 +216,123 @@ func wireLungs(components *component.Collection) error {
 	return nil
 }
 
+// wireMetabolism connects what the body takes in to what becomes of it.
+//
+// The chain is deliberately one-directional -- mouth to gut to reservoirs -- with
+// the single exception of body_state, which physiology:physiological_state
+// broadcasts before it integrates. That is what lets the kidney and the skin read
+// the current hydration without forming a cycle the mesh could not converge.
+func wireMetabolism(components *component.Collection) error {
+	intake := components.ByName("controller:intake")
+	ingestion := components.ByName("boundary:ingestion")
+	gi := components.ByName("da:gi_tract")
+	kidney := components.ByName("organ:kidney")
+	skin := components.ByName("da:skin")
+	bodyState := components.ByName("physiology:physiological_state")
+	excretion := components.ByName("controller:excretion")
+	physical := components.ByName("controller:physical_stress")
+	obs := components.ByName("physiology:observable_state")
+
+	// Mouth to stomach.
+	if err := intake.OutputByName("intake_intent").PipeTo(
+		ingestion.InputByName("intake_intent"),
+	); err != nil {
+		return err
+	}
+	if err := ingestion.OutputByName("nutrient_load").PipeTo(gi.InputByName("nutrient_load")); err != nil {
+		return err
+	}
+	if err := ingestion.OutputByName("hydration_load").PipeTo(gi.InputByName("hydration_load")); err != nil {
+		return err
+	}
+
+	// Stomach to body.
+	if err := gi.OutputByName("absorption").PipeTo(bodyState.InputByName("absorption")); err != nil {
+		return err
+	}
+
+	// Exertion sets the burn rate.
+	if err := physical.OutputByName("physical_load").PipeTo(bodyState.InputByName("physical_load")); err != nil {
+		return err
+	}
+
+	// The reservoirs, broadcast to everything that needs to know them.
+	if err := bodyState.OutputByName("body_state").PipeTo(
+		kidney.InputByName("body_state"),
+		skin.InputByName("body_state"),
+		components.ByName("physiology:affect").InputByName("body_state"),
+	); err != nil {
+		return err
+	}
+
+	// Water leaving the body, from both routes.
+	if err := kidney.OutputByName("losses").PipeTo(bodyState.InputByName("losses")); err != nil {
+		return err
+	}
+	if err := skin.OutputByName("losses").PipeTo(bodyState.InputByName("losses")); err != nil {
+		return err
+	}
+
+	// Voiding.
+	if err := excretion.OutputByName("urine_out").PipeTo(kidney.InputByName("void")); err != nil {
+		return err
+	}
+	if err := excretion.OutputByName("feces_out").PipeTo(gi.InputByName("void")); err != nil {
+		return err
+	}
+
+	// Observation.
+	return helper.MultiPipe(
+		helper.PipeSpec{From: bodyState.OutputByName("hydration"), To: obs.InputByName("hydration")},
+		helper.PipeSpec{From: bodyState.OutputByName("glycemia"), To: obs.InputByName("glycemia")},
+		helper.PipeSpec{From: bodyState.OutputByName("energy"), To: obs.InputByName("energy")},
+		helper.PipeSpec{From: bodyState.OutputByName("body_temperature"), To: obs.InputByName("body_temperature")},
+		helper.PipeSpec{From: gi.OutputByName("stomach_fill"), To: obs.InputByName("stomach_fill")},
+		helper.PipeSpec{From: skin.OutputByName("sweat_rate"), To: obs.InputByName("sweat_rate")},
+	)
+}
+
+// wireAffect feeds the body's condition to the part of it that has opinions.
+func wireAffect(components *component.Collection) error {
+	affect := components.ByName("physiology:affect")
+	gi := components.ByName("da:gi_tract")
+	kidney := components.ByName("organ:kidney")
+	obs := components.ByName("physiology:observable_state")
+
+	// Bladder and bowel are both an observable number and something the body
+	// feels, so each goes to two places.
+	if err := kidney.OutputByName("bladder_fill").PipeTo(
+		affect.InputByName("bladder_fill"),
+		obs.InputByName("bladder_fill"),
+	); err != nil {
+		return err
+	}
+	if err := gi.OutputByName("bowel_fill").PipeTo(
+		affect.InputByName("bowel_fill"),
+		obs.InputByName("bowel_fill"),
+	); err != nil {
+		return err
+	}
+
+	if err := components.ByName("da:blood_system").OutputByName("venous_blood").PipeTo(
+		affect.InputByName("venous_blood"),
+	); err != nil {
+		return err
+	}
+	if err := components.ByName("controller:physical_stress").OutputByName("physical_load").PipeTo(
+		affect.InputByName("physical_load"),
+	); err != nil {
+		return err
+	}
+	if err := components.ByName("controller:mental_stress").OutputByName("mental_load").PipeTo(
+		affect.InputByName("mental_load"),
+	); err != nil {
+		return err
+	}
+
+	return affect.OutputByName("feelings").PipeTo(obs.InputByName("feelings"))
+}
+
 // getComponents returns the collection of human components (organs, systems, etc.)
 func getComponents() (*component.Collection, error) {
 	resp, err := boundary.GetRespiratory()
@@ -247,6 +372,52 @@ func getComponents() (*component.Collection, error) {
 		return nil, fmt.Errorf("da.GetBloodSystem: %w", err)
 	}
 
+	// Controllers are the body's command surface: every instruction from outside
+	// the simulation ("eat", "run", "urinate") is addressed to one of these.
+	intake, err := controller.GetIntake()
+	if err != nil {
+		return nil, fmt.Errorf("controller.GetIntake: %w", err)
+	}
+	excretion, err := controller.GetExcretion()
+	if err != nil {
+		return nil, fmt.Errorf("controller.GetExcretion: %w", err)
+	}
+	physical, err := controller.GetPhysical()
+	if err != nil {
+		return nil, fmt.Errorf("controller.GetPhysical: %w", err)
+	}
+	mental, err := controller.GetMental()
+	if err != nil {
+		return nil, fmt.Errorf("controller.GetMental: %w", err)
+	}
+
+	// The metabolic loop: what is swallowed, what becomes of it, what is lost,
+	// and how the body feels about the result.
+	ingestion, err := boundary.GetIngestion()
+	if err != nil {
+		return nil, fmt.Errorf("boundary.GetIngestion: %w", err)
+	}
+	gi, err := da.GetGITract()
+	if err != nil {
+		return nil, fmt.Errorf("da.GetGITract: %w", err)
+	}
+	kidney, err := organ.GetKidney()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetKidney: %w", err)
+	}
+	skin, err := da.GetSkin()
+	if err != nil {
+		return nil, fmt.Errorf("da.GetSkin: %w", err)
+	}
+	bodyState, err := physiology.GetPhysiologicalState()
+	if err != nil {
+		return nil, fmt.Errorf("physiology.GetPhysiologicalState: %w", err)
+	}
+	affect, err := physiology.GetAffect()
+	if err != nil {
+		return nil, fmt.Errorf("physiology.GetAffect: %w", err)
+	}
+
 	coll := component.NewCollection()
 	if err := coll.Add(
 		resp,
@@ -258,6 +429,16 @@ func getComponents() (*component.Collection, error) {
 		diaphragm,
 		lungLeft,
 		lungRight,
+		intake,
+		excretion,
+		physical,
+		mental,
+		ingestion,
+		gi,
+		kidney,
+		skin,
+		bodyState,
+		affect,
 	); err != nil {
 		return nil, fmt.Errorf("failed to build human components: %w", err)
 	}
