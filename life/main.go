@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh-examples/life/console"
+	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
@@ -69,7 +72,43 @@ func main() {
 	}
 	fmt.Println("TUI: go run ./life/tuiv2/ /tmp/" + simMesh.Name() + ".sock")
 
-	step_sim.NewApp(simMesh, initSim, step_sim.WithSink(uiSink)).Run()
+	options := []step_sim.Option{step_sim.WithSink(uiSink)}
+
+	// Drive the simulation from the full-screen console unless asked not to. The
+	// plain prompt stays available for piping a script in, and for terminals the
+	// console cannot drive.
+	if !usePlainREPL() {
+		// The console needs the command list for completion, but the simulation
+		// that owns it does not exist until NewApp returns. Resolve it lazily,
+		// which also means commands registered later are picked up.
+		var sim *step_sim.Simulation
+		commandNames := func() []string {
+			if sim == nil {
+				return nil
+			}
+			return sim.CommandNames()
+		}
+
+		options = append(options, step_sim.WithCommandSource(
+			console.New(commandNames, console.DefaultHistoryPath())))
+
+		app := step_sim.NewApp(simMesh, initSim, options...)
+		sim = app.Sim
+		app.Run()
+		return
+	}
+
+	step_sim.NewApp(simMesh, initSim, options...).Run()
+}
+
+// usePlainREPL reports whether to skip the console. A console needs an
+// interactive terminal; with input piped in there is nothing to drive it.
+func usePlainREPL() bool {
+	if slices.Contains(os.Args[1:], "--plain") {
+		return true
+	}
+	stat, err := os.Stdin.Stat()
+	return err != nil || stat.Mode()&os.ModeCharDevice == 0
 }
 
 // initSim configures simulation and adds custom commands
@@ -85,7 +124,20 @@ func initSim(sim *step_sim.Simulation) {
 	// goroutine (see Simulation.Run), so no synchronization is needed.
 	sim.PublishThrottle.SetInterval(50 * time.Millisecond)
 
-	// Add custom commands (including "rate", which drives sim.PublishThrottle)
+	// Teach the pacer how much simulated time a tick is worth, so "rate:sim"
+	// can translate a requested speed into a wall-clock budget. Pacing stays
+	// uncapped until asked for, preserving the run-flat-out default.
+	sim.Pacer.SetSimTimePerTick(factor.DurationPerTick)
+
+	// Schedule against the simulation's own clock rather than wall time, so
+	// "every 1d" means a day in Leon's life however fast the loop is running.
+	timeComponent := sim.FM.ComponentByName("time")
+	sim.SimClock = func() time.Duration {
+		elapsed, _ := timeComponent.State().Get("sim_duration").(time.Duration)
+		return elapsed
+	}
+
+	// Add custom commands (including "rate:ui" and "rate:sim")
 	setMeshCommands(sim)
 
 	// Setup hooks to stream data to UI
