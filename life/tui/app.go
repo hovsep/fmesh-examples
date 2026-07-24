@@ -35,11 +35,14 @@ type Model struct {
 	reader          *protocol.Reader
 	overviewView    *views.OverviewView
 	respiratoryView *views.RespiratoryView
+	cardiacView     *views.CardiacView
 	feelingsView    *views.FeelingsView
+	bodyView        *views.BodyView
 	metricViews     map[models.ViewType]*views.MetricsView
 	width           int
 	height          int
 	renderInterval  time.Duration
+	lungsSplit      bool // Respiratory view: split left/right lungs vs overlaid
 }
 
 // NewModel creates a new application model
@@ -76,11 +79,14 @@ func NewModel(socketPath string) (*Model, error) {
 		reader:          reader,
 		overviewView:    views.NewOverviewView(state),
 		respiratoryView: views.NewRespiratoryView(state),
+		cardiacView:     views.NewCardiacView(state),
 		feelingsView:    views.NewFeelingsView(state, subject),
+		bodyView:        views.NewBodyView(state, subject),
 		metricViews:     metricViews,
 		width:           120,
 		height:          40,
 		renderInterval:  defaultRenderInterval,
+		lungsSplit:      true,
 	}, nil
 }
 
@@ -124,10 +130,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.PrevView()
 			return m, nil
 
-		case "1", "2", "3", "4", "5", "6":
+		case "1", "2", "3", "4", "5", "6", "7":
 			if index := int(msg.String()[0] - '1'); index < len(models.Views) {
 				m.state.SetView(models.Views[index])
 			}
+			return m, nil
+
+		case "s":
+			// Toggle the respiratory view between split and overlaid lungs.
+			m.lungsSplit = !m.lungsSplit
 			return m, nil
 
 		case "+", "=":
@@ -179,12 +190,17 @@ func (m Model) View() string {
 	switch view := m.state.GetView(); view {
 	case models.ViewOverview:
 		content = m.overviewView.Render(m.width, contentHeight)
+	case models.ViewCardiovascular:
+		// Bespoke: a heartbeat reads as a waveform, not a row of numbers.
+		content = m.cardiacView.Render(m.width, contentHeight)
 	case models.ViewRespiratory:
 		// Kept bespoke: breathing is best understood as waveforms over time,
 		// which a list of current values cannot show.
-		content = m.respiratoryView.Render(m.width, contentHeight)
+		content = m.respiratoryView.Render(m.width, contentHeight, m.lungsSplit)
 	case models.ViewAffect:
 		content = m.feelingsView.Render(m.width, contentHeight)
+	case models.ViewBody:
+		content = m.bodyView.Render(m.width, contentHeight)
 	default:
 		// Every other screen is a straight list of whatever the catalog says
 		// belongs to it, so a new metric needs no code here at all.
@@ -281,7 +297,7 @@ func (m Model) renderTabs() string {
 // renderHelp renders the help bar
 func (m Model) renderHelp() string {
 	fps := int(time.Second / m.renderInterval)
-	helpText := fmt.Sprintf("Tab: Next View | Shift+Tab: Prev View | 1-6: Jump to View | +/-: FPS (%d) | q: Quit", fps)
+	helpText := fmt.Sprintf("Tab/1-7: View | s: split lungs | +/-: FPS (%d) | q: Quit", fps)
 	return styles.HelpStyle.Render(helpText)
 }
 

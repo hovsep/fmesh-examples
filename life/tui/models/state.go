@@ -33,6 +33,7 @@ var Views = []ViewType{
 	telemetry.ViewNervous,
 	telemetry.ViewMetabolic,
 	telemetry.ViewAffect,
+	telemetry.ViewBody,
 }
 
 const (
@@ -42,6 +43,7 @@ const (
 	ViewNervous        = telemetry.ViewNervous
 	ViewMetabolic      = telemetry.ViewMetabolic
 	ViewAffect         = telemetry.ViewAffect
+	ViewBody           = telemetry.ViewBody
 )
 
 // ViewName is the tab label for a screen.
@@ -59,6 +61,8 @@ func ViewName(v ViewType) string {
 		return "Metabolic"
 	case telemetry.ViewAffect:
 		return "Feelings"
+	case telemetry.ViewBody:
+		return "Body"
 	default:
 		return "Unknown"
 	}
