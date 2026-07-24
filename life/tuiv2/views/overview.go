@@ -4,18 +4,21 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/widgets"
 )
 
 type OverviewView struct {
-	State *models.AppState
+	State    *models.AppState
+	feelings *widgets.Feelings
 }
 
 func NewOverviewView(state *models.AppState) *OverviewView {
 	return &OverviewView{
-		State: state,
+		State:    state,
+		feelings: widgets.NewFeelings(state, telemetry.DefaultSubject),
 	}
 }
 
@@ -45,6 +48,30 @@ func (v *OverviewView) Render(width, height int) string {
 	topRow := lipgloss.JoinHorizontal(lipgloss.Top, cardiovascular, respiratory)
 	bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, nervous, gasExchange)
 	return lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
+}
+
+// renderInspiredGas builds the composition panel from live telemetry.
+//
+// It used to be a hardcoded sea-level mixture, because composite gas signals
+// carried their values as scalars that the wire protocol dropped. Now that
+// scalars are published, the panel shows what Leon is actually breathing.
+func (v *OverviewView) renderInspiredGas() *widgets.GasComposition {
+	gas := widgets.NewGasComposition("", 20)
+	for _, part := range []struct {
+		scalar string
+		label  string
+		color  lipgloss.Color
+	}{
+		{"composition:nitrogen", "N₂", lipgloss.Color("#5f87d7")},
+		{"composition:oxygen", "O₂", lipgloss.Color("#5fd75f")},
+		{"composition:argon", "Ar", lipgloss.Color("#af87d7")},
+		{"composition:pollution", "Poll", lipgloss.Color("#d75f5f")},
+	} {
+		key := telemetry.DefaultSubject + telemetry.PathSeparator + "inspired_gas" +
+			telemetry.ScalarSeparator + part.scalar
+		gas.AddComponent(part.label, v.State.GetLatestValue(key), part.color)
+	}
+	return gas
 }
 
 func (v *OverviewView) renderCardiovascular(width, height int) string {
@@ -128,7 +155,7 @@ func (v *OverviewView) renderRespiratory(width, height int) string {
 func (v *OverviewView) renderNervous(width, height int) string {
 	var content strings.Builder
 
-	title := styles.PanelTitleStyle.Render("NERVOUS")
+	title := styles.PanelTitleStyle.Render("NERVOUS & MOOD")
 	content.WriteString(title + "\n")
 	content.WriteString(strings.Repeat("━", width-2) + "\n")
 
@@ -153,6 +180,11 @@ func (v *OverviewView) renderNervous(width, height int) string {
 		vs := widgets.NewVitalSign(metadata, signal)
 		content.WriteString(vs.Render(width-4) + "\n")
 	}
+
+	// What the body makes of all this. Numbers say what is happening; this says
+	// whether it is a problem.
+	content.WriteString("\n" + styles.LabelStyle.Render("Feeling:") + "\n")
+	content.WriteString(v.feelings.Render(width-4) + "\n")
 
 	return styles.PanelStyle.
 		Width(width).
@@ -183,9 +215,8 @@ func (v *OverviewView) renderGasExchange(width, height int) string {
 
 	content.WriteString("\n")
 
-	content.WriteString(styles.LabelStyle.Render("Alveolar Gas (Est.):") + "\n")
-	gc := widgets.PredefinedAtmosphericGas(77.6, 21.0, 1.0, 0.4)
-	content.WriteString(gc.Render() + "\n")
+	content.WriteString(styles.LabelStyle.Render("Inspired Gas:") + "\n")
+	content.WriteString(v.renderInspiredGas().Render() + "\n")
 
 	return styles.PanelStyle.
 		Width(width).

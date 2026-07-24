@@ -2,6 +2,8 @@ package models
 
 import (
 	"sync"
+
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 )
 
 // SignalData represents a single signal's time-series data
@@ -99,7 +101,11 @@ func (s *SignalData) GetLast(n int) []float64 {
 	return result
 }
 
-// SignalMetadata contains display information for a signal
+// SignalMetadata contains display information for a signal.
+//
+// It mirrors telemetry.Display, which is the source of truth: the mesh and this
+// UI derive their view of a metric from the same catalog entry, so a value can
+// never arrive on the wire with no idea how to draw it.
 type SignalMetadata struct {
 	Key           string
 	Label         string
@@ -109,157 +115,43 @@ type SignalMetadata struct {
 	HealthMin     float64 // Below this is concerning
 	HealthMax     float64 // Above this is concerning
 	DecimalPlaces int
+	View          telemetry.View
 }
 
-// SignalRegistry holds metadata for all known signals
-var SignalRegistry = map[string]SignalMetadata{
-	// Cardiovascular
-	"human-Leon::heart_rate": {
-		Key:           "human-Leon::heart_rate",
-		Label:         "Heart Rate",
-		Unit:          "BPM",
-		MinRange:      40,
-		MaxRange:      200,
-		HealthMin:     50,
-		HealthMax:     100,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::blood_o2_level": {
-		Key:           "human-Leon::blood_o2_level",
-		Label:         "Blood O₂",
-		Unit:          "%",
-		MinRange:      0,
-		MaxRange:      100,
-		HealthMin:     90,
-		HealthMax:     100,
-		DecimalPlaces: 1,
-	},
-	"human-Leon::blood_co2_level": {
-		Key:           "human-Leon::blood_co2_level",
-		Label:         "Blood CO₂",
-		Unit:          "%",
-		MinRange:      0,
-		MaxRange:      100,
-		HealthMin:     30,
-		HealthMax:     45,
-		DecimalPlaces: 1,
-	},
-	"human-Leon::heart_cardiac_activation": {
-		Key:           "human-Leon::heart_cardiac_activation",
-		Label:         "Cardiac Activation",
-		Unit:          "",
-		MinRange:      0,
-		MaxRange:      1,
-		HealthMin:     0,
-		HealthMax:     1,
-		DecimalPlaces: 3,
-	},
+// SignalRegistry holds metadata for every signal the body publishes, built from
+// telemetry.Catalog.
+var SignalRegistry = buildSignalRegistry(telemetry.DefaultSubject)
 
-	// Respiratory
-	"human-Leon::respiratory_rate": {
-		Key:           "human-Leon::respiratory_rate",
-		Label:         "Resp Rate",
-		Unit:          "/min",
-		MinRange:      8,
-		MaxRange:      30,
-		HealthMin:     10,
-		HealthMax:     20,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::pleural_pressure": {
-		Key:           "human-Leon::pleural_pressure",
-		Label:         "Pleural P",
-		Unit:          "cmH₂O",
-		MinRange:      -10,
-		MaxRange:      0,
-		HealthMin:     -8,
-		HealthMax:     -3,
-		DecimalPlaces: 1,
-	},
-	"human-Leon::lung_left_volume": {
-		Key:           "human-Leon::lung_left_volume",
-		Label:         "L Lung Vol",
-		Unit:          "mL",
-		MinRange:      600,
-		MaxRange:      3000,
-		HealthMin:     1000,
-		HealthMax:     2500,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::lung_left_flow": {
-		Key:           "human-Leon::lung_left_flow",
-		Label:         "L Lung Flow",
-		Unit:          "mL/s",
-		MinRange:      -500,
-		MaxRange:      500,
-		HealthMin:     -400,
-		HealthMax:     400,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::lung_right_volume": {
-		Key:           "human-Leon::lung_right_volume",
-		Label:         "R Lung Vol",
-		Unit:          "mL",
-		MinRange:      600,
-		MaxRange:      3000,
-		HealthMin:     1000,
-		HealthMax:     2500,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::lung_right_flow": {
-		Key:           "human-Leon::lung_right_flow",
-		Label:         "R Lung Flow",
-		Unit:          "mL/s",
-		MinRange:      -500,
-		MaxRange:      500,
-		HealthMin:     -400,
-		HealthMax:     400,
-		DecimalPlaces: 0,
-	},
+func buildSignalRegistry(subject string) map[string]SignalMetadata {
+	signals := telemetry.Signals(subject)
 
-	// Nervous
-	"human-Leon::brain_activity": {
-		Key:           "human-Leon::brain_activity",
-		Label:         "Brain Activity",
-		Unit:          "",
-		MinRange:      0,
-		MaxRange:      1,
-		HealthMin:     0.1,
-		HealthMax:     0.8,
-		DecimalPlaces: 2,
-	},
-	"human-Leon::brain_activity_trend": {
-		Key:           "human-Leon::brain_activity_trend",
-		Label:         "Brain Trend",
-		Unit:          "",
-		MinRange:      0,
-		MaxRange:      1,
-		HealthMin:     0.1,
-		HealthMax:     0.8,
-		DecimalPlaces: 2,
-	},
+	registry := make(map[string]SignalMetadata, len(signals))
+	for _, s := range signals {
+		registry[s.Key] = SignalMetadata{
+			Key:           s.Key,
+			Label:         s.Label,
+			Unit:          s.Unit,
+			MinRange:      s.Min,
+			MaxRange:      s.Max,
+			HealthMin:     s.HealthMin,
+			HealthMax:     s.HealthMax,
+			DecimalPlaces: s.Decimals,
+			View:          s.View,
+		}
+	}
+	return registry
+}
 
-	// Status
-	"human-Leon::is_alive": {
-		Key:           "human-Leon::is_alive",
-		Label:         "Status",
-		Unit:          "",
-		MinRange:      0,
-		MaxRange:      1,
-		HealthMin:     1,
-		HealthMax:     1,
-		DecimalPlaces: 0,
-	},
-	"human-Leon::body_temperature": {
-		Key:           "human-Leon::body_temperature",
-		Label:         "Body Temp",
-		Unit:          "°C",
-		MinRange:      35,
-		MaxRange:      42,
-		HealthMin:     36.5,
-		HealthMax:     37.5,
-		DecimalPlaces: 1,
-	},
+// KeysForView returns the registry keys belonging to one view, in catalog order
+// so a screen's layout stays stable between runs.
+func KeysForView(subject string, view telemetry.View) []string {
+	var keys []string
+	for _, s := range telemetry.Signals(subject) {
+		if s.View == view {
+			keys = append(keys, s.Key)
+		}
+	}
+	return keys
 }
 
 // HealthStatus returns the health status of a value
@@ -268,9 +160,17 @@ func (m SignalMetadata) HealthStatus(value float64) HealthLevel {
 		return HealthCritical
 	}
 
-	// Warning zone: within 10% of health boundaries
+	// Warning zone: within 10% of a health boundary, but only where that boundary
+	// is a real limit rather than the end of the scale.
+	//
+	// An empty bladder or bowel sits exactly at the bottom of its range, and that
+	// is the healthiest it gets; warning about it would put a caution marker on
+	// the best possible reading.
 	margin := (m.HealthMax - m.HealthMin) * 0.1
-	if value < m.HealthMin+margin || value > m.HealthMax-margin {
+	if m.HealthMin > m.MinRange && value < m.HealthMin+margin {
+		return HealthWarning
+	}
+	if m.HealthMax < m.MaxRange && value > m.HealthMax-margin {
 		return HealthWarning
 	}
 

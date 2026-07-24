@@ -31,6 +31,19 @@ func (e *EMA) Value() float64 {
 	return e.value
 }
 
+// TrendCode encodes a trend as a number so it can travel over the numeric
+// telemetry wire: rising +1, falling -1, balanced 0.
+func TrendCode(t common.Trend) float64 {
+	switch t {
+	case common.Rising:
+		return 1
+	case common.Falling:
+		return -1
+	default:
+		return 0
+	}
+}
+
 // ClassifyTrend returns the trend of the EMA
 func (e *EMA) ClassifyTrend(current float64) common.Trend {
 	diff := current - e.value

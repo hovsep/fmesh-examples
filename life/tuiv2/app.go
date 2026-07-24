@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/protocol"
 	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
@@ -22,12 +23,20 @@ const (
 	maxRenderInterval     = time.Second            // 1 FPS
 )
 
+// The simulation clock, published as scalars of the habitat's tick signal.
+const (
+	simDurationKey  = "time::tick:sim_duration_ms"
+	simTickCountKey = "time::tick:tick_count"
+)
+
 // Model represents the Bubble Tea application model
 type Model struct {
 	state           *models.AppState
 	reader          *protocol.Reader
 	overviewView    *views.OverviewView
 	respiratoryView *views.RespiratoryView
+	feelingsView    *views.FeelingsView
+	metricViews     map[models.ViewType]*views.MetricsView
 	width           int
 	height          int
 	renderInterval  time.Duration
@@ -54,15 +63,21 @@ func NewModel(socketPath string) (*Model, error) {
 	// stalls the UI.
 	go ingest(reader, state)
 
-	// Create views
-	overviewView := views.NewOverviewView(state)
-	respiratoryView := views.NewRespiratoryView(state)
+	// Screens that need bespoke rendering; everything else is generated from the
+	// catalog, so a new metric appears without any code here changing.
+	subject := telemetry.DefaultSubject
+	metricViews := make(map[models.ViewType]*views.MetricsView)
+	for _, view := range models.Views {
+		metricViews[view] = views.NewMetricsView(state, strings.ToUpper(models.ViewName(view)), view, subject)
+	}
 
 	return &Model{
 		state:           state,
 		reader:          reader,
-		overviewView:    overviewView,
-		respiratoryView: respiratoryView,
+		overviewView:    views.NewOverviewView(state),
+		respiratoryView: views.NewRespiratoryView(state),
+		feelingsView:    views.NewFeelingsView(state, subject),
+		metricViews:     metricViews,
 		width:           120,
 		height:          40,
 		renderInterval:  defaultRenderInterval,
@@ -109,20 +124,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.PrevView()
 			return m, nil
 
-		case "1":
-			m.state.SetView(models.ViewOverview)
-			return m, nil
-
-		case "2":
-			m.state.SetView(models.ViewCardiovascular)
-			return m, nil
-
-		case "3":
-			m.state.SetView(models.ViewRespiratory)
-			return m, nil
-
-		case "4":
-			m.state.SetView(models.ViewNervous)
+		case "1", "2", "3", "4", "5", "6":
+			if index := int(msg.String()[0] - '1'); index < len(models.Views) {
+				m.state.SetView(models.Views[index])
+			}
 			return m, nil
 
 		case "+", "=":
@@ -171,17 +176,19 @@ func (m Model) View() string {
 	contentHeight := m.height - 6 // Account for header, tabs, help
 	var content string
 
-	switch m.state.GetView() {
+	switch view := m.state.GetView(); view {
 	case models.ViewOverview:
 		content = m.overviewView.Render(m.width, contentHeight)
-	case models.ViewCardiovascular:
-		content = "Cardiovascular Detail View (Coming Soon)"
 	case models.ViewRespiratory:
+		// Kept bespoke: breathing is best understood as waveforms over time,
+		// which a list of current values cannot show.
 		content = m.respiratoryView.Render(m.width, contentHeight)
-	case models.ViewNervous:
-		content = "Nervous Detail View (Coming Soon)"
+	case models.ViewAffect:
+		content = m.feelingsView.Render(m.width, contentHeight)
 	default:
-		content = m.overviewView.Render(m.width, contentHeight)
+		// Every other screen is a straight list of whatever the catalog says
+		// belongs to it, so a new metric needs no code here at all.
+		content = m.metricViews[view].Render(m.width, contentHeight)
 	}
 
 	// Render help
@@ -207,15 +214,15 @@ func (m Model) renderHeader() string {
 		statusStyle = styles.StatusDeadStyle
 	}
 
-	// Time
-	elapsed := m.state.GetElapsedTime()
+	// Simulated time and tick count come from the sim's own clock rather than
+	// the TUI's wall clock, so they stay meaningful whatever speed it runs at.
+	elapsed := time.Duration(m.state.GetLatestValue(simDurationKey)) * time.Millisecond
 	hours := int(elapsed.Hours())
 	minutes := int(elapsed.Minutes()) % 60
 	seconds := int(elapsed.Seconds()) % 60
-	timeStr := fmt.Sprintf("Time: %02d:%02d:%02d", hours, minutes, seconds)
+	timeStr := fmt.Sprintf("Sim: %02d:%02d:%02d", hours, minutes, seconds)
 
-	// Tick count
-	tickStr := fmt.Sprintf("Tick: %d", m.state.GetTickCount())
+	tickStr := fmt.Sprintf("Tick: %d", int64(m.state.GetLatestValue(simTickCountKey)))
 
 	// Build header
 	left := styles.HeaderStyle.Render("Human Leon")
@@ -256,19 +263,14 @@ func (m Model) renderHeader() string {
 func (m Model) renderTabs() string {
 	currentView := m.state.GetView()
 
-	views := []models.ViewType{
-		models.ViewOverview,
-		models.ViewCardiovascular,
-		models.ViewRespiratory,
-		models.ViewNervous,
-	}
+	views := models.Views
 
 	var tabs []string
 	for _, view := range views {
 		if view == currentView {
-			tabs = append(tabs, styles.TabActiveStyle.Render(view.String()))
+			tabs = append(tabs, styles.TabActiveStyle.Render(models.ViewName(view)))
 		} else {
-			tabs = append(tabs, styles.TabInactiveStyle.Render(view.String()))
+			tabs = append(tabs, styles.TabInactiveStyle.Render(models.ViewName(view)))
 		}
 	}
 
@@ -279,7 +281,7 @@ func (m Model) renderTabs() string {
 // renderHelp renders the help bar
 func (m Model) renderHelp() string {
 	fps := int(time.Second / m.renderInterval)
-	helpText := fmt.Sprintf("Tab: Next View | Shift+Tab: Prev View | 1-4: Jump to View | +/-: FPS (%d) | q: Quit", fps)
+	helpText := fmt.Sprintf("Tab: Next View | Shift+Tab: Prev View | 1-6: Jump to View | +/-: FPS (%d) | q: Quit", fps)
 	return styles.HelpStyle.Render(helpText)
 }
 
