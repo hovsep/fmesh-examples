@@ -147,7 +147,7 @@ func setBodyCommands(commands step_sim.MeshCommandMap) {
 			if err != nil {
 				return nil, err
 			}
-			return map[string]float64{controller.ScalarWaterMl: ml}, nil
+			return map[string]float64{controller.KindWaterMl: ml}, nil
 		})
 
 	bodyCommand(commands, "intake:food", "eat food, e.g. 'intake:food 200kcal'",
@@ -163,7 +163,23 @@ func setBodyCommands(commands step_sim.MeshCommandMap) {
 			if err != nil {
 				return nil, err
 			}
-			return map[string]float64{controller.ScalarFoodKcal: kcal}, nil
+			return map[string]float64{controller.KindFoodKcal: kcal}, nil
+		})
+
+	bodyCommand(commands, "smoke:cigarette",
+		"smoke a cigarette (takes 5-10 min), e.g. 'smoke:cigarette' or 'smoke:cigarette 2'",
+		func(args []string) (map[string]float64, error) {
+			count := 1.0
+			if len(args) == 1 {
+				n, err := strconv.ParseFloat(args[0], 64)
+				if err != nil || n <= 0 {
+					return nil, fmt.Errorf("invalid cigarette count %q", args[0])
+				}
+				count = n
+			} else if len(args) > 1 {
+				return nil, fmt.Errorf("expects an optional count, e.g. '2'")
+			}
+			return map[string]float64{"count": count}, nil
 		})
 
 	bodyCommand(commands, "activity:start",

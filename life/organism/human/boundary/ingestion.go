@@ -12,6 +12,7 @@ import (
 const (
 	ScalarWaterMl  = "water_ml"
 	ScalarFoodKcal = "food_kcal"
+	ScalarToxin    = "toxin"
 )
 
 // GetIngestion returns the boundary between the outside world and the gut.
@@ -73,7 +74,20 @@ func handleIngestion(this *component.Component) error {
 			}
 		}
 
-		if water == 0 && food == 0 {
+		// Inhaled toxins (cigarette smoke) are not swallowed; they leave here as a
+		// substance load that the lungs pick up as damage.
+		toxin := sig.Scalars().ValueOrDefault(ScalarToxin, 0)
+		if toxin > 0 {
+			if err := this.OutputByName("substance_load").PutSignals(
+				signal.New(toxin).
+					WithLabel("category", "ingestion").
+					WithScalar(ScalarToxin, toxin),
+			); err != nil {
+				return err
+			}
+		}
+
+		if water == 0 && food == 0 && toxin == 0 {
 			this.Logger().Println("ingestion intent carried nothing to swallow")
 		}
 		return nil
