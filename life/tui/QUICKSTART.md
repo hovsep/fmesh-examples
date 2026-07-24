@@ -10,7 +10,7 @@ go run main.go
 
 ### 2. Start TUI (new terminal)
 ```bash
-./tuiv2_bin
+./tui_bin
 ```
 
 ## Troubleshooting

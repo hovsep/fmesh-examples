@@ -2,8 +2,8 @@ package widgets
 
 import (
 	"github.com/guptarohit/asciigraph"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
 )
 
 // defaultWindow is how many recent samples a chart considers. asciigraph

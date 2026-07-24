@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
 )
 
 type GasComponent struct {

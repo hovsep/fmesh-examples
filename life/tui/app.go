@@ -8,10 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/protocol"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/views"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
+	"github.com/hovsep/fmesh-examples/life/tui/protocol"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/views"
 )
 
 // Render cadence bounds. The render interval controls how often the TUI

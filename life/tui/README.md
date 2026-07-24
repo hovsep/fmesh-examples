@@ -26,13 +26,13 @@ Wait for:
 ### 2. Start TUI v2 (in new terminal)
 
 ```bash
-./tuiv2_bin
+./tui_bin
 ```
 
 Or build from source:
 ```bash
-go build -o tuiv2_bin ./tuiv2
-./tuiv2_bin
+go build -o tui_bin ./tui
+./tui_bin
 ```
 
 ## Controls
