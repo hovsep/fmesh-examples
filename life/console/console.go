@@ -1,17 +1,16 @@
-// Package console is an interactive front end for driving the simulation.
+// Package console provides the command line that sits at the bottom of the
+// dashboard: a prompt with history and tab completion, above a scrollback of
+// what the simulation has printed.
 //
-// It replaces the plain line-at-a-time prompt with something worth living in:
-// command history on the arrow keys, tab completion over the registered
-// commands, and a scrolling transcript that survives the simulation printing
-// from its own goroutine.
-//
-// It lives here rather than in step_sim so the shared simulation package stays
-// free of UI dependencies; step_sim only knows about the CommandSource interface.
+// It also carries the pieces the integrated UI needs to survive the simulation
+// printing from its own goroutine: Capture (see capture.go) redirects stdout
+// into a channel, and History (see history.go) persists the command line across
+// sessions. It stays in its own package so the shared step_sim package need not
+// know about any of it.
 package console
 
 import (
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 
@@ -24,214 +23,183 @@ import (
 // maxTranscript bounds the scrollback so a long run cannot grow without limit.
 const maxTranscript = 2000
 
-// capturedLine carries one line of simulation output into the Bubble Tea loop.
-type capturedLine string
-
-// capturedLinesClosed says the simulation's output has ended.
-type capturedLinesClosed struct{}
-
-// Console is a step_sim.CommandSource backed by a full-screen terminal UI.
-type Console struct {
-	// Commands is consulted for tab completion and the command listing. It is
-	// the simulation's live map, so commands registered at init are included.
+// Pane is a self-contained piece of a larger Bubble Tea model. The parent
+// forwards the messages it wants the pane to handle (key input, and each
+// captured output line via Append) and paints Pane.View somewhere on screen.
+//
+// Submitting a line sends it to the simulation over cmdChan; typing "exit" (or
+// ctrl+c/ctrl+d) asks the whole program to quit by returning tea.Quit.
+type Pane struct {
+	// commands is consulted for tab completion. It is the simulation's live
+	// command list, so commands registered at init are included.
 	commands func() []string
-
-	historyPath string
-}
-
-// New returns a console. commandNames is called when completing, so it sees
-// whatever the simulation has registered by then.
-func New(commandNames func() []string, historyPath string) *Console {
-	return &Console{commands: commandNames, historyPath: historyPath}
-}
-
-// Run implements step_sim.CommandSource. It owns cmdChan and closes it on exit,
-// which is what tells the simulation to stop.
-func (c *Console) Run(cmdChan chan step_sim.Command) {
-	defer close(cmdChan)
-
-	// Capture before starting Bubble Tea, so nothing the simulation prints can
-	// reach the terminal directly and corrupt the rendered frame.
-	capture, err := captureStdout(1024)
-	if err != nil {
-		fmt.Println("could not capture simulation output:", err)
-		return
-	}
-	defer capture.Restore()
-
-	model := newModel(c, cmdChan)
-	// Render to the real terminal, not to os.Stdout: that now points at the
-	// capture pipe, and drawing there would make the console invisible and echo
-	// its own frames back at itself.
-	program := tea.NewProgram(model,
-		tea.WithAltScreen(),
-		tea.WithOutput(capture.Terminal()),
-		tea.WithInput(os.Stdin),
-	)
-
-	// Feed captured output in as messages rather than touching the model
-	// directly, which keeps every state change on Bubble Tea's own goroutine.
-	go func() {
-		for line := range capture.Lines {
-			program.Send(capturedLine(line))
-		}
-		program.Send(capturedLinesClosed{})
-	}()
-
-	finalModel, err := program.Run()
-
-	// Put stdout back before printing anything else, or the message goes into
-	// the pipe nobody is reading any more.
-	capture.Restore()
-
-	if err != nil {
-		fmt.Println("console error:", err)
-	}
-	if m, ok := finalModel.(model_); ok {
-		if saveErr := m.history.Save(); saveErr != nil {
-			fmt.Println("could not save command history:", saveErr)
-		}
-	}
-}
-
-// model_ is the Bubble Tea model. The trailing underscore keeps it from
-// colliding with the constructor's readability.
-type model_ struct {
-	console *Console
-	cmdChan chan step_sim.Command
+	cmdChan  chan step_sim.Command
 
 	input   textinput.Model
 	history *History
 
 	transcript []string
 	scroll     int // lines scrolled up from the bottom; 0 means following
+	rows       int // visible transcript rows, set on each View
 
-	width, height int
-	quitting      bool
+	width int
 }
 
-func newModel(c *Console, cmdChan chan step_sim.Command) model_ {
+// NewPane returns a command pane. commandNames is called when completing, so it
+// sees whatever the simulation has registered by then.
+func NewPane(commandNames func() []string, historyPath string, cmdChan chan step_sim.Command) *Pane {
 	input := textinput.New()
 	input.Prompt = "› "
 	input.Placeholder = "type a command, or 'help'"
 	input.Focus()
 	input.CharLimit = 0 // scenarios on one line get long
 
-	return model_{
-		console: c,
-		cmdChan: cmdChan,
-		input:   input,
-		history: LoadHistory(c.historyPath),
-		width:   100,
-		height:  30,
+	return &Pane{
+		commands: commandNames,
+		cmdChan:  cmdChan,
+		input:    input,
+		history:  LoadHistory(historyPath),
+		rows:     6,
+		width:    100,
 	}
 }
 
-func (m model_) Init() tea.Cmd { return textinput.Blink }
+// Blink returns the cursor-blink command; the parent includes it in its Init.
+func (p *Pane) Blink() tea.Cmd { return textinput.Blink }
 
-func (m model_) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		// A terminal that reports no size (some pseudo-terminals do) would
-		// otherwise collapse the layout to nothing; keep the last known size.
-		if msg.Width > 0 && msg.Height > 0 {
-			m.width, m.height = msg.Width, msg.Height
-			m.input.Width = max(msg.Width-4, 20)
-		}
-		return m, nil
-
-	case capturedLine:
-		m.append(string(msg))
-		return m, nil
-
-	case capturedLinesClosed:
-		// The simulation has stopped printing, which means it has stopped.
-		return m, tea.Quit
-
-	case tea.KeyMsg:
-		return m.handleKey(msg)
+// SetWidth tells the pane how wide it is drawn, so the input and transcript wrap
+// to the right column.
+func (p *Pane) SetWidth(w int) {
+	if w > 0 {
+		p.width = w
+		p.input.Width = max(w-4, 20)
 	}
-
-	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	return m, cmd
 }
 
-func (m model_) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
+// Update feeds a message to the pane and returns any resulting command. It
+// returns tea.Quit when the user asks to exit.
+func (p *Pane) Update(msg tea.Msg) tea.Cmd {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok {
+		var cmd tea.Cmd
+		p.input, cmd = p.input.Update(msg)
+		return cmd
+	}
+
+	switch key.Type {
 	case tea.KeyCtrlC, tea.KeyCtrlD:
-		return m.quit()
-
+		return tea.Quit
 	case tea.KeyEnter:
-		return m.submit()
-
+		return p.submit()
 	case tea.KeyUp:
-		if line, ok := m.history.Prev(m.input.Value()); ok {
-			m.input.SetValue(line)
-			m.input.CursorEnd()
+		if line, ok := p.history.Prev(p.input.Value()); ok {
+			p.input.SetValue(line)
+			p.input.CursorEnd()
 		}
-		return m, nil
-
+		return nil
 	case tea.KeyDown:
-		if line, ok := m.history.Next(); ok {
-			m.input.SetValue(line)
-			m.input.CursorEnd()
+		if line, ok := p.history.Next(); ok {
+			p.input.SetValue(line)
+			p.input.CursorEnd()
 		}
-		return m, nil
-
+		return nil
 	case tea.KeyTab:
-		m.complete()
-		return m, nil
-
+		p.complete()
+		return nil
 	case tea.KeyPgUp:
-		m.scrollBy(m.pageSize())
-		return m, nil
-
+		p.scrollBy(p.rows)
+		return nil
 	case tea.KeyPgDown:
-		m.scrollBy(-m.pageSize())
-		return m, nil
+		p.scrollBy(-p.rows)
+		return nil
 	}
 
 	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	return m, cmd
+	p.input, cmd = p.input.Update(msg)
+	return cmd
 }
 
-func (m model_) submit() (tea.Model, tea.Cmd) {
-	line := strings.TrimSpace(m.input.Value())
-	m.input.SetValue("")
-	m.scroll = 0 // jump back to the live end on any input
+func (p *Pane) submit() tea.Cmd {
+	line := strings.TrimSpace(p.input.Value())
+	p.input.SetValue("")
+	p.scroll = 0 // jump back to the live end on any input
 
 	if line == "" {
-		return m, nil
+		return nil
 	}
 
-	m.history.Add(line)
-	m.append("› " + line)
+	p.history.Add(line)
+	p.Append("› " + line)
 
 	if line == string(step_sim.Exit) {
-		return m.quit()
+		return tea.Quit
 	}
 
 	// Non-blocking: the channel is buffered, and a full one means the simulation
 	// is wedged. Reporting that beats freezing the UI behind it.
 	select {
-	case m.cmdChan <- step_sim.Command(line):
+	case p.cmdChan <- step_sim.Command(line):
 	default:
-		m.append("! simulation is not accepting commands right now")
+		p.Append("! simulation is not accepting commands right now")
 	}
-	return m, nil
+	return nil
 }
 
-func (m model_) quit() (tea.Model, tea.Cmd) {
-	m.quitting = true
-	return m, tea.Quit
+// SaveHistory persists the command history; call it as the program exits.
+func (p *Pane) SaveHistory() error { return p.history.Save() }
+
+// Append adds a line to the scrollback.
+func (p *Pane) Append(line string) {
+	p.transcript = append(p.transcript, line)
+	if len(p.transcript) > maxTranscript {
+		p.transcript = p.transcript[len(p.transcript)-maxTranscript:]
+	}
+
+	// Scrolled-back readers stay where they are, rather than being yanked to the
+	// bottom every time the simulation says something.
+	if p.scroll > 0 {
+		p.scroll++
+	}
+}
+
+func (p *Pane) scrollBy(lines int) {
+	p.scroll = min(max(p.scroll+lines, 0), max(len(p.transcript)-p.rows, 0))
+}
+
+// View renders the pane into height rows: the scrollback, the input line, and a
+// one-line hint.
+func (p *Pane) View(height int) string {
+	p.rows = max(height-2, 1)
+
+	end := len(p.transcript) - p.scroll
+	start := max(end-p.rows, 0)
+
+	body := make([]string, 0, p.rows)
+	for _, line := range p.transcript[max(start, 0):max(end, 0)] {
+		body = append(body, renderLine(line, p.width))
+	}
+	// Pad so the input line stays pinned to the bottom rather than drifting up
+	// as the transcript fills.
+	for len(body) < p.rows {
+		body = append(body, "")
+	}
+
+	footer := hintStyle.Render("↑/↓ history · tab complete · pgup/pgdn scroll · 'help' · 'exit'")
+	if p.scroll > 0 {
+		footer = hintStyle.Render(fmt.Sprintf("scrolled back %d lines — pgdn to follow again", p.scroll))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left,
+		strings.Join(body, "\n"),
+		p.input.View(),
+		footer,
+	)
 }
 
 // complete fills in the longest unambiguous completion of the current word, and
 // lists the candidates when there is more than one.
-func (m *model_) complete() {
-	value := m.input.Value()
+func (p *Pane) complete() {
+	value := p.input.Value()
 	fields := strings.Fields(value)
 
 	// Only the command name completes; arguments are too varied to guess.
@@ -245,7 +213,7 @@ func (m *model_) complete() {
 	}
 
 	var matches []string
-	for _, name := range m.console.commands() {
+	for _, name := range p.commands() {
 		if strings.HasPrefix(name, prefix) {
 			matches = append(matches, name)
 		}
@@ -256,12 +224,12 @@ func (m *model_) complete() {
 	case 0:
 		return
 	case 1:
-		m.input.SetValue(matches[0] + " ")
-		m.input.CursorEnd()
+		p.input.SetValue(matches[0] + " ")
+		p.input.CursorEnd()
 	default:
-		m.input.SetValue(commonPrefix(matches))
-		m.input.CursorEnd()
-		m.append("  " + strings.Join(matches, "  "))
+		p.input.SetValue(commonPrefix(matches))
+		p.input.CursorEnd()
+		p.Append("  " + strings.Join(matches, "  "))
 	}
 }
 
@@ -283,66 +251,7 @@ func commonPrefix(values []string) string {
 	return prefix
 }
 
-func (m *model_) append(line string) {
-	m.transcript = append(m.transcript, line)
-	if len(m.transcript) > maxTranscript {
-		m.transcript = m.transcript[len(m.transcript)-maxTranscript:]
-	}
-
-	// Scrolled-back readers stay where they are, rather than being yanked to the
-	// bottom every time the simulation says something.
-	if m.scroll > 0 {
-		m.scroll++
-	}
-}
-
-func (m *model_) scrollBy(lines int) {
-	m.scroll = min(max(m.scroll+lines, 0), max(len(m.transcript)-m.pageSize(), 0))
-}
-
-// pageSize is how many transcript lines are visible, leaving room for the header
-// and the input line.
-func (m model_) pageSize() int {
-	return max(m.height-4, 1)
-}
-
-func (m model_) View() string {
-	if m.quitting {
-		return "Shutting down...\n"
-	}
-
-	header := headerStyle.Width(m.width).Render(" Life — simulation console ")
-
-	visible := m.pageSize()
-	end := len(m.transcript) - m.scroll
-	start := max(end-visible, 0)
-
-	body := make([]string, 0, visible)
-	for _, line := range m.transcript[max(start, 0):max(end, 0)] {
-		body = append(body, renderLine(line, m.width))
-	}
-	// Pad so the input line stays pinned to the bottom rather than drifting up
-	// as the transcript fills.
-	for len(body) < visible {
-		body = append(body, "")
-	}
-
-	footer := hintStyle.Render("↑/↓ history · tab complete · pgup/pgdn scroll · 'help' · 'exit'")
-	if m.scroll > 0 {
-		footer = hintStyle.Render(fmt.Sprintf("scrolled back %d lines — pgdn to follow again", m.scroll))
-	}
-
-	return lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		strings.Join(body, "\n"),
-		m.input.View(),
-		footer,
-	)
-}
-
 var (
-	headerStyle = lipgloss.NewStyle().Bold(true).
-			Foreground(lipgloss.Color("#ffffff")).Background(lipgloss.Color("#5f5fd7"))
 	hintStyle  = lipgloss.NewStyle().Faint(true)
 	echoStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#5fd7af")).Bold(true)
 	alertStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff5f5f"))

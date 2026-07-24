@@ -11,8 +11,8 @@ import (
 	"github.com/hovsep/fmesh-examples/life/console"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/tui"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -64,23 +64,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create the unix socket sink so the TUI can connect and visualize state
-	uiSink, err := sink.NewUnixSocketSink("/tmp/" + simMesh.Name() + ".sock")
-	if err != nil {
-		fmt.Println("Failed to create sink:", err)
-		os.Exit(1)
-	}
-	fmt.Println("TUI: go run ./life/tui/ /tmp/" + simMesh.Name() + ".sock")
-
-	options := []step_sim.Option{step_sim.WithSink(uiSink)}
-
-	// Drive the simulation from the full-screen console unless asked not to. The
-	// plain prompt stays available for piping a script in, and for terminals the
-	// console cannot drive.
+	// Drive the simulation from the integrated dashboard unless asked not to.
+	// The plain prompt stays available for piping a script in, and for terminals
+	// the full-screen UI cannot drive; that path needs no telemetry sink.
 	if !usePlainREPL() {
-		// The console needs the command list for completion, but the simulation
-		// that owns it does not exist until NewApp returns. Resolve it lazily,
-		// which also means commands registered later are picked up.
+		// The UI needs the command list for completion, but the simulation that
+		// owns it does not exist until NewApp returns. Resolve it lazily, which
+		// also means commands registered later are picked up.
 		var sim *step_sim.Simulation
 		commandNames := func() []string {
 			if sim == nil {
@@ -89,16 +79,19 @@ func main() {
 			return sim.CommandNames()
 		}
 
-		options = append(options, step_sim.WithCommandSource(
-			console.New(commandNames, console.DefaultHistoryPath())))
-
-		app := step_sim.NewApp(simMesh, initSim, options...)
+		// The dashboard is both the command source and the telemetry sink: the
+		// simulation publishes straight into it over an in-process channel, so
+		// there is no socket and no second process.
+		ui := tui.New(commandNames, console.DefaultHistoryPath())
+		app := step_sim.NewApp(simMesh, initSim,
+			step_sim.WithSink(ui.Sink()),
+			step_sim.WithCommandSource(ui))
 		sim = app.Sim
 		app.Run()
 		return
 	}
 
-	step_sim.NewApp(simMesh, initSim, options...).Run()
+	step_sim.NewApp(simMesh, initSim).Run()
 }
 
 // usePlainREPL reports whether to skip the console. A console needs an

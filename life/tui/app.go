@@ -1,71 +1,181 @@
-package main
+// Package tui is the integrated front end: the tabbed dashboard on top and a
+// command line at the bottom, driving one simulation that runs in the same
+// process. It is a step_sim.CommandSource (App.Run owns the input loop) and
+// supplies the telemetry sink that feeds the dashboard, so no socket or second
+// process is involved.
+package tui
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hovsep/fmesh-examples/life/console"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 	"github.com/hovsep/fmesh-examples/life/tui/protocol"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
 	"github.com/hovsep/fmesh-examples/life/tui/views"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 )
 
 // Render cadence bounds. The render interval controls how often the TUI
 // repaints from the latest state; it is fully independent of how fast the
-// simulation runs or how fast updates arrive over the socket.
+// simulation runs or how fast telemetry arrives.
 const (
 	defaultRenderInterval = 100 * time.Millisecond // 10 FPS
 	minRenderInterval     = 16 * time.Millisecond  // ~60 FPS
 	maxRenderInterval     = time.Second            // 1 FPS
 )
 
-// The simulation clock, published as scalars of the habitat's tick signal.
+// Layout constants. The command pane gets a fixed slice of the height; the
+// dashboard takes the rest.
 const (
-	simDurationKey  = "time::tick:sim_duration_ms"
-	simTickCountKey = "time::tick:tick_count"
+	paneHeight = 8 // transcript rows + input line + hint line
+	tabRowY    = 2 // the tab bar sits just under the two-line header
 )
 
-// Model represents the Bubble Tea application model
+// App is the integrated front end as a step_sim.CommandSource. It owns the
+// telemetry sink the simulation publishes to and the Bubble Tea program that
+// draws it.
+type App struct {
+	commands    func() []string
+	historyPath string
+	sink        *channelSink
+}
+
+// New returns an App. commandNames is called for tab completion, so it sees
+// whatever the simulation has registered by the time the user completes.
+func New(commandNames func() []string, historyPath string) *App {
+	return &App{
+		commands:    commandNames,
+		historyPath: historyPath,
+		// Generous buffer: a snapshot is many lines and Publish must never block
+		// the simulation goroutine.
+		sink: newChannelSink(4096),
+	}
+}
+
+// Sink returns the telemetry sink to hand step_sim via WithSink.
+func (a *App) Sink() sink.Sink { return a.sink }
+
+// Run implements step_sim.CommandSource. It owns cmdChan and closes it on exit,
+// which is what tells the simulation to stop.
+func (a *App) Run(cmdChan chan step_sim.Command) {
+	defer close(cmdChan)
+
+	// Capture before starting Bubble Tea, so nothing the simulation prints can
+	// reach the terminal directly and corrupt the rendered frame.
+	capture, err := console.CaptureStdout(1024)
+	if err != nil {
+		fmt.Println("could not capture simulation output:", err)
+		return
+	}
+	defer capture.Restore()
+
+	state := models.NewAppState(2000)
+
+	// Ingestion is decoupled from rendering: a background goroutine drains
+	// telemetry into the mutex-guarded state, and the Bubble Tea loop only
+	// renders (at renderInterval), so a fast simulation never floods or stalls
+	// the UI.
+	go ingest(a.sink.lines, state)
+
+	model := newModel(state, console.NewPane(a.commands, a.historyPath, cmdChan))
+
+	// Render to the real terminal, not to os.Stdout: that now points at the
+	// capture pipe, and drawing there would make the UI invisible and echo its
+	// own frames back at itself.
+	program := tea.NewProgram(model,
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+		tea.WithOutput(capture.Terminal()),
+		tea.WithInput(os.Stdin),
+	)
+
+	// Feed captured output in as messages rather than touching the model
+	// directly, which keeps every state change on Bubble Tea's own goroutine.
+	go func() {
+		for line := range capture.Lines {
+			program.Send(capturedLine(line))
+		}
+		program.Send(capturedLinesClosed{})
+	}()
+
+	finalModel, err := program.Run()
+
+	// Put stdout back before printing anything else, or the message goes into the
+	// pipe nobody is reading any more.
+	capture.Restore()
+	if err != nil {
+		fmt.Println("tui error:", err)
+	}
+	if m, ok := finalModel.(Model); ok {
+		if saveErr := m.pane.SaveHistory(); saveErr != nil {
+			fmt.Println("could not save command history:", saveErr)
+		}
+	}
+}
+
+// ingest drains telemetry lines into the application state until the channel is
+// closed (which the sink does once the simulation has stopped).
+func ingest(lines <-chan string, state *models.AppState) {
+	for line := range lines {
+		if line == "" {
+			continue
+		}
+		update, err := protocol.Parse(line)
+		if err != nil {
+			// Non-numeric values are expected (labels, text) and not worth
+			// surfacing; anything else is a real parse problem.
+			if !strings.Contains(err.Error(), "skipping non-numeric") {
+				state.SetLastError(err)
+			}
+			continue
+		}
+		state.UpdateSignal(update.Key, update.Value)
+		state.IncrementTick()
+	}
+}
+
+// Messages fed in from the captured-output goroutine.
+type (
+	capturedLine       string
+	capturedLinesClosed struct{}
+)
+
+type tickMsg time.Time
+
+// tickEvery returns a command that sends a render tick at regular intervals.
+func tickEvery(d time.Duration) tea.Cmd {
+	return tea.Tick(d, func(t time.Time) tea.Msg { return tickMsg(t) })
+}
+
+// Model is the merged Bubble Tea model: the dashboard views plus the command
+// pane. Its pointer fields (state, pane, views) are shared across the value
+// copies Bubble Tea makes, so pane input and telemetry survive each Update.
 type Model struct {
-	state           *models.AppState
-	reader          *protocol.Reader
+	state *models.AppState
+	pane  *console.Pane
+
 	overviewView    *views.OverviewView
 	respiratoryView *views.RespiratoryView
 	cardiacView     *views.CardiacView
 	feelingsView    *views.FeelingsView
 	bodyView        *views.BodyView
 	metricViews     map[models.ViewType]*views.MetricsView
-	width           int
-	height          int
-	renderInterval  time.Duration
-	lungsSplit      bool // Respiratory view: split left/right lungs vs overlaid
+
+	width          int
+	height         int
+	renderInterval time.Duration
+	lungsSplit     bool
 }
 
-// NewModel creates a new application model
-func NewModel(socketPath string) (*Model, error) {
-	// Create app state
-	state := models.NewAppState(2000)
-
-	// Create protocol reader
-	reader := protocol.NewReader(socketPath)
-	err := reader.Connect()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to socket: %w", err)
-	}
-
-	// Start reading
-	reader.Start()
-
-	// Ingestion is decoupled from rendering: continuously drain updates into
-	// the mutex-guarded state from a background goroutine. The Bubble Tea loop
-	// only renders (at renderInterval), so a fast simulation never floods or
-	// stalls the UI.
-	go ingest(reader, state)
-
+func newModel(state *models.AppState, pane *console.Pane) Model {
 	// Screens that need bespoke rendering; everything else is generated from the
 	// catalog, so a new metric appears without any code here changing.
 	subject := telemetry.DefaultSubject
@@ -74,9 +184,9 @@ func NewModel(socketPath string) (*Model, error) {
 		metricViews[view] = views.NewMetricsView(state, strings.ToUpper(models.ViewName(view)), view, subject)
 	}
 
-	return &Model{
+	return Model{
 		state:           state,
-		reader:          reader,
+		pane:            pane,
 		overviewView:    views.NewOverviewView(state),
 		respiratoryView: views.NewRespiratoryView(state),
 		cardiacView:     views.NewCardiacView(state),
@@ -87,106 +197,126 @@ func NewModel(socketPath string) (*Model, error) {
 		height:          40,
 		renderInterval:  defaultRenderInterval,
 		lungsSplit:      true,
-	}, nil
-}
-
-// ingest continuously drains reader updates into the application state.
-func ingest(reader *protocol.Reader, state *models.AppState) {
-	for {
-		select {
-		case update, ok := <-reader.Updates:
-			if !ok {
-				return
-			}
-			state.UpdateSignal(update.Key, update.Value)
-			state.IncrementTick()
-		case err, ok := <-reader.Errors:
-			if !ok {
-				return
-			}
-			state.SetLastError(err)
-		}
 	}
 }
 
-// Init initializes the application
 func (m Model) Init() tea.Cmd {
-	return tickEvery(m.renderInterval)
+	return tea.Batch(tickEvery(m.renderInterval), m.pane.Blink())
 }
 
-// Update handles messages and updates the model
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-
-		case "tab":
-			m.state.NextView()
-			return m, nil
-
-		case "shift+tab":
-			m.state.PrevView()
-			return m, nil
-
-		case "1", "2", "3", "4", "5", "6", "7":
-			if index := int(msg.String()[0] - '1'); index < len(models.Views) {
-				m.state.SetView(models.Views[index])
-			}
-			return m, nil
-
-		case "s":
-			// Toggle the respiratory view between split and overlaid lungs.
-			m.lungsSplit = !m.lungsSplit
-			return m, nil
-
-		case "+", "=":
-			// Faster refresh (shorter interval)
-			m.renderInterval = max(m.renderInterval/2, minRenderInterval)
-			return m, nil
-
-		case "-", "_":
-			// Slower refresh (longer interval)
-			m.renderInterval = min(m.renderInterval*2, maxRenderInterval)
-			return m, nil
-		}
-
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		if msg.Width > 0 && msg.Height > 0 {
+			m.width = msg.Width
+			m.height = msg.Height
+			m.pane.SetWidth(msg.Width)
+		}
 		return m, nil
+
+	case capturedLine:
+		m.pane.Append(string(msg))
+		return m, nil
+
+	case capturedLinesClosed:
+		// The simulation has stopped printing, which means it has stopped.
+		return m, tea.Quit
 
 	case tickMsg:
 		// Render tick: Bubble Tea repaints via View() after this returns. The
 		// interval is re-read each tick so FPS changes take effect immediately.
 		return m, tickEvery(m.renderInterval)
+
+	case tea.MouseMsg:
+		if view, ok := m.tabAtMouse(msg); ok {
+			m.state.SetView(view)
+		}
+		return m, nil
+
+	case tea.KeyMsg:
+		// Navigation uses modifiers and the mouse so that ordinary keystrokes
+		// (letters, digits) always reach the command line.
+		if handled := m.handleNav(msg); handled {
+			return m, nil
+		}
+		return m, m.pane.Update(msg)
 	}
 
-	return m, nil
+	// Anything else (e.g. the cursor blink) belongs to the input.
+	return m, m.pane.Update(msg)
 }
 
-// View renders the application
+// handleNav applies view/UI navigation bound to modifier keys, reporting whether
+// it consumed the key. It takes a pointer so its mutations land on the copy
+// Update returns.
+func (m *Model) handleNav(msg tea.KeyMsg) bool {
+	s := msg.String()
+
+	// alt+1..alt+7 jump straight to a view.
+	if strings.HasPrefix(s, "alt+") && len(s) == 5 && s[4] >= '1' && s[4] <= '9' {
+		if idx := int(s[4] - '1'); idx < len(models.Views) {
+			m.state.SetView(models.Views[idx])
+			return true
+		}
+	}
+
+	switch s {
+	case "ctrl+right":
+		m.state.NextView()
+	case "ctrl+left":
+		m.state.PrevView()
+	case "alt+s":
+		// Toggle the respiratory view between split and overlaid lungs.
+		m.lungsSplit = !m.lungsSplit
+	case "ctrl+up":
+		m.renderInterval = max(m.renderInterval/2, minRenderInterval)
+	case "ctrl+down":
+		m.renderInterval = min(m.renderInterval*2, maxRenderInterval)
+	default:
+		return false
+	}
+	return true
+}
+
+// tabAtMouse returns the view whose tab was left-clicked, if any.
+func (m Model) tabAtMouse(msg tea.MouseMsg) (models.ViewType, bool) {
+	if msg.Action != tea.MouseActionPress || msg.Button != tea.MouseButtonLeft || msg.Y != tabRowY {
+		return 0, false
+	}
+
+	x := 0
+	current := m.state.GetView()
+	for _, view := range models.Views {
+		style := styles.TabInactiveStyle
+		if view == current {
+			style = styles.TabActiveStyle
+		}
+		w := lipgloss.Width(style.Render(models.ViewName(view)))
+		if msg.X >= x && msg.X < x+w {
+			return view, true
+		}
+		x += w
+	}
+	return 0, false
+}
+
 func (m Model) View() string {
 	if err := m.state.GetLastError(); err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress q to quit.", err)
+		return fmt.Sprintf("Error: %v\n\nPress ctrl+c to quit.", err)
 	}
 
-	// Ensure valid dimensions
 	if m.width < 80 || m.height < 24 {
-		return fmt.Sprintf("Terminal too small!\n\nMinimum size: 80 columns x 24 rows\nCurrent size: %d columns x %d rows\n\nPlease resize your terminal and press any key.", m.width, m.height)
+		return fmt.Sprintf("Terminal too small!\n\nMinimum size: 80 columns x 24 rows\nCurrent size: %d columns x %d rows\n\nPlease resize your terminal.", m.width, m.height)
 	}
 
-	// Render header
 	header := m.renderHeader()
-
-	// Render tabs
 	tabs := m.renderTabs()
+	help := m.renderHelp()
 
-	// Render current view
-	contentHeight := m.height - 6 // Account for header, tabs, help
+	// header(2) + tabs(1) + help(1) + content + divider(1) + pane(paneHeight).
+	contentHeight := max(m.height-5-paneHeight, 3)
+
 	var content string
-
 	switch view := m.state.GetView(); view {
 	case models.ViewOverview:
 		content = m.overviewView.Render(m.width, contentHeight)
@@ -194,35 +324,29 @@ func (m Model) View() string {
 		// Bespoke: a heartbeat reads as a waveform, not a row of numbers.
 		content = m.cardiacView.Render(m.width, contentHeight)
 	case models.ViewRespiratory:
-		// Kept bespoke: breathing is best understood as waveforms over time,
-		// which a list of current values cannot show.
+		// Kept bespoke: breathing is best understood as waveforms over time.
 		content = m.respiratoryView.Render(m.width, contentHeight, m.lungsSplit)
 	case models.ViewAffect:
 		content = m.feelingsView.Render(m.width, contentHeight)
 	case models.ViewBody:
 		content = m.bodyView.Render(m.width, contentHeight)
 	default:
-		// Every other screen is a straight list of whatever the catalog says
-		// belongs to it, so a new metric needs no code here at all.
 		content = m.metricViews[view].Render(m.width, contentHeight)
 	}
 
-	// Render help
-	help := m.renderHelp()
+	divider := lipgloss.NewStyle().Foreground(styles.ColorBorder).Render(strings.Repeat("─", m.width))
 
-	// Combine all sections
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
+	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		tabs,
-		content,
 		help,
+		content,
+		divider,
+		m.pane.View(paneHeight),
 	)
 }
 
-// renderHeader renders the top header bar
 func (m Model) renderHeader() string {
-	// Status
 	status := "Alive ●"
 	statusStyle := styles.StatusAliveStyle
 	if !m.state.GetIsAlive() {
@@ -230,32 +354,19 @@ func (m Model) renderHeader() string {
 		statusStyle = styles.StatusDeadStyle
 	}
 
-	// Simulated time and tick count come from the sim's own clock rather than
-	// the TUI's wall clock, so they stay meaningful whatever speed it runs at.
-	elapsed := time.Duration(m.state.GetLatestValue(simDurationKey)) * time.Millisecond
-	hours := int(elapsed.Hours())
-	minutes := int(elapsed.Minutes()) % 60
-	seconds := int(elapsed.Seconds()) % 60
-	timeStr := fmt.Sprintf("Sim: %02d:%02d:%02d", hours, minutes, seconds)
+	// Simulated time and tick count come from the sim's own clock rather than the
+	// TUI's wall clock, so they stay meaningful whatever speed it runs at.
+	elapsed := time.Duration(m.state.GetLatestValue(models.SimDurationKey)) * time.Millisecond
+	timeStr := fmt.Sprintf("Sim: %02d:%02d:%02d", int(elapsed.Hours()), int(elapsed.Minutes())%60, int(elapsed.Seconds())%60)
+	tickStr := fmt.Sprintf("Tick: %d", int64(m.state.GetLatestValue(models.SimTickCountKey)))
 
-	tickStr := fmt.Sprintf("Tick: %d", int64(m.state.GetLatestValue(simTickCountKey)))
-
-	// Build header
 	left := styles.HeaderStyle.Render("Human Leon")
 	middle := statusStyle.Render(status)
 	right := styles.HeaderStyle.Render(fmt.Sprintf("%s | %s", timeStr, tickStr))
 
-	// Calculate spacing
 	usedWidth := lipgloss.Width(left) + lipgloss.Width(middle) + lipgloss.Width(right)
-	spacingLeft := (m.width - usedWidth) / 2
-	spacingRight := m.width - usedWidth - spacingLeft
-
-	if spacingLeft < 0 {
-		spacingLeft = 0
-	}
-	if spacingRight < 0 {
-		spacingRight = 0
-	}
+	spacingLeft := max((m.width-usedWidth)/2, 0)
+	spacingRight := max(m.width-usedWidth-spacingLeft, 0)
 
 	headerLine := left +
 		lipgloss.NewStyle().Width(spacingLeft).Render("") +
@@ -263,26 +374,18 @@ func (m Model) renderHeader() string {
 		lipgloss.NewStyle().Width(spacingRight).Render("") +
 		right
 
-	// Add bottom border
-	borderWidth := m.width
-	if borderWidth < 1 {
-		borderWidth = 1
-	}
 	border := lipgloss.NewStyle().
 		Foreground(styles.ColorBorder).
-		Render(strings.Repeat("═", borderWidth))
+		Render(strings.Repeat("═", max(m.width, 1)))
 
 	return headerLine + "\n" + border
 }
 
-// renderTabs renders the tab bar
 func (m Model) renderTabs() string {
 	currentView := m.state.GetView()
 
-	views := models.Views
-
 	var tabs []string
-	for _, view := range views {
+	for _, view := range models.Views {
 		if view == currentView {
 			tabs = append(tabs, styles.TabActiveStyle.Render(models.ViewName(view)))
 		} else {
@@ -290,26 +393,11 @@ func (m Model) renderTabs() string {
 		}
 	}
 
-	tabBar := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
-	return tabBar + "\n"
+	return lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 }
 
-// renderHelp renders the help bar
 func (m Model) renderHelp() string {
 	fps := int(time.Second / m.renderInterval)
-	helpText := fmt.Sprintf("Tab/1-7: View | s: split lungs | +/-: FPS (%d) | q: Quit", fps)
+	helpText := fmt.Sprintf("ctrl+←/→ or alt+1-7 or click: tabs | alt+s: split lungs | ctrl+↑/↓: FPS (%d) | exit/ctrl+c: quit", fps)
 	return styles.HelpStyle.Render(helpText)
-}
-
-// Messages
-
-type tickMsg time.Time
-
-// Commands
-
-// tickEvery returns a command that sends a tick message at regular intervals
-func tickEvery(d time.Duration) tea.Cmd {
-	return tea.Tick(d, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
 }
