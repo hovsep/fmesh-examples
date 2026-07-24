@@ -38,7 +38,10 @@ func (v *CardiacView) Render(width, height int) string {
 		styles.LabelStyle.Render("     Blood CO₂: ") +
 		styles.ValueNormalStyle.Render(fmt.Sprintf("%.1f", co2)) + styles.UnitStyle.Render(" %")
 
-	// The ECG takes most of the height; the gauges sit under it.
+	// The ECG takes most of the height; the gauges sit under it. A fixed Y axis
+	// (the activation waveform runs from about -0.2 at the S-wave to 1.0 at the
+	// R-peak) keeps the baseline and the peaks steady instead of the plot
+	// rescaling every frame.
 	ecgHeight := max(height-6, 8)
 	ecg := widgets.NewLineChart("ECG — cardiac activation (R-peaks)", "",
 		widgets.ChartSeries{
@@ -46,7 +49,7 @@ func (v *CardiacView) Render(width, height int) string {
 			Color:  asciigraph.Red,
 			Legend: "cardiac",
 		},
-	).Render(width, ecgHeight)
+	).WithYBounds(-0.3, 1.1).Render(width, ecgHeight)
 
 	var gauges strings.Builder
 	if s, ok := v.State.GetSignal("human-Leon::blood_o2_level"); ok {
