@@ -126,10 +126,18 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 	}
 }
 
+// StateDead marks a human whose brain has failed. Once dead, the inner mesh is
+// no longer run: a corpse has no physiology to simulate, and continuing to tick
+// organs as they fail one by one risks the mesh no longer converging.
+const StateDead common.State = "dead"
+
 // Act activation function
 // In this phase a human component runs inner mesh thus activating all organs and systems
 func act(mesh *fmesh.FMesh) component.ActivationFunc {
 	return func(this *component.Component) error {
+		if this.State().Get(StateDead) == true {
+			return nil // frozen: the body is dead
+		}
 		_, err := mesh.Run()
 		if err != nil {
 			return fmt.Errorf("failed to run human mesh: %w", err)
@@ -142,6 +150,11 @@ func act(mesh *fmesh.FMesh) component.ActivationFunc {
 // In this phase a human component propagates outputs from the inner mesh to the human component
 func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 	return func(this *component.Component) error {
+		// Once frozen, the inner mesh no longer ran, so just keep reporting death.
+		if this.State().Get(StateDead) == true {
+			return this.OutputByName("is_alive").PutPayloads(0.0)
+		}
+
 		observableState := mesh.ComponentByName("physiology:observable_state")
 
 		// Every published value is forwarded from the body's telemetry hub to
@@ -158,6 +171,14 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 
 		if err := helper.MultiForward(pairs...); err != nil {
 			return fmt.Errorf("failed to forward signals from human mesh: %w", err)
+		}
+
+		// If the body just died, latch it so the next tick freezes the inner mesh
+		// before its organs fail one by one and stall convergence.
+		if isAlive := this.OutputByName("is_alive").Signals().First(); isAlive != nil {
+			if v, _ := helper.NumericPayload(isAlive); v == 0 {
+				this.State().Set(StateDead, true)
+			}
 		}
 		return nil
 	}

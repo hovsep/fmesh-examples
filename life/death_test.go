@@ -1,0 +1,150 @@
+package main
+
+import (
+	"testing"
+	"time"
+
+	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh/component"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// observedAliveness installs a hook that latches whether is_alive was ever
+// observed as 0 over the run, reading the telemetry the TUI reads.
+func observedAliveness(t *testing.T, sim *step_sim.Simulation) func() (everDead bool, final float64) {
+	t.Helper()
+	agg := sim.FM.ComponentByName("aggregated_state")
+	require.NotNil(t, agg)
+
+	everDead := false
+	final := 1.0
+	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+		h.AfterRun(func(*fmesh.FMesh) error {
+			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
+				if v, ok := helper.NumericPayload(s); ok {
+					final = v
+					if v == 0 {
+						everDead = true
+					}
+				}
+			}
+			return nil
+		})
+	})
+	return func() (bool, float64) { return everDead, final }
+}
+
+func organComp(t *testing.T, sim *step_sim.Simulation, name string) *component.Component {
+	t.Helper()
+	inner := human.InnerMesh(helper.FindHumanComponent(sim.FM))
+	require.NotNil(t, inner)
+	c := inner.ComponentByName(name)
+	require.NotNil(t, c, "no %q in the human mesh", name)
+	return c
+}
+
+// Test_BrainFailureKillsTheBody drives the death path directly: a fatal brain
+// injury flatlines the brain, the body reads no brain activity and dies, and the
+// mesh keeps running (a corpse is frozen, not left to stall).
+func Test_BrainFailureKillsTheBody(t *testing.T) {
+	sim, _ := newCommandableSim(t)
+	brain := organComp(t, sim, "organ:brain")
+	aliveness := observedAliveness(t, sim)
+
+	// Injure the brain to failure after the body has been alive a moment.
+	injured := false
+	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+		h.AfterRun(func(*fmesh.FMesh) error {
+			if !injured {
+				damage.Inflict(brain, 2*damage.CriticalLevel)
+				injured = true
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 2*time.Second, func() {
+		assert.True(t, damage.Failed(brain), "the brain should have failed")
+		everDead, final := aliveness()
+		assert.True(t, everDead, "the body should be observed dead")
+		assert.Equal(t, 0.0, final, "is_alive should latch at 0")
+	})
+}
+
+// Test_DeathIsIrreversible checks the death latch does not flicker back to alive
+// once the body has died.
+func Test_DeathIsIrreversible(t *testing.T) {
+	sim, _ := newCommandableSim(t)
+	heart := organComp(t, sim, "organ:heart")
+	brain := organComp(t, sim, "organ:brain")
+
+	injured := false
+	var aliveAfterDeath int
+	seenDead := false
+	agg := sim.FM.ComponentByName("aggregated_state")
+	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+		h.AfterRun(func(*fmesh.FMesh) error {
+			if !injured {
+				damage.Inflict(brain, 2*damage.CriticalLevel)
+				injured = true
+			}
+			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
+				v, _ := helper.NumericPayload(s)
+				if v == 0 {
+					seenDead = true
+				} else if seenDead {
+					aliveAfterDeath++
+				}
+			}
+			_ = heart
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 3*time.Second, func() {
+		assert.True(t, seenDead, "the body should have died")
+		assert.Zero(t, aliveAfterDeath, "a dead body must not come back to life")
+	})
+}
+
+// Test_ColdInjuresTheBrainBeforeTheKidney checks the emergent collapse order:
+// under cold, the brain (temperature sensitivity 0.6) accrues damage faster than
+// the kidney (0.3), so it would fail first. Asserting on the damage levels after
+// a short exposure keeps the test fast; the full march to death is the same
+// mechanism, only slower.
+func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim, cmdChan := newCommandableSim(t)
+	cmdChan <- "temp:cold"
+
+	brain := organComp(t, sim, "organ:brain")
+	kidney := organComp(t, sim, "organ:kidney")
+
+	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+		brainDamage := damage.Level(brain)
+		kidneyDamage := damage.Level(kidney)
+		assert.Greater(t, brainDamage, 0.0, "cold should injure the brain")
+		assert.Greater(t, brainDamage, kidneyDamage,
+			"the brain should be injured faster than the kidney under cold (it fails first)")
+	})
+}
+
+// Test_HealthyBodyNeverDies is the guard that the death machinery does not fire
+// spuriously: a well-kept body stays alive throughout.
+func Test_HealthyBodyNeverDies(t *testing.T) {
+	sim, _ := newCommandableSim(t)
+	aliveness := observedAliveness(t, sim)
+
+	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+		everDead, final := aliveness()
+		assert.False(t, everDead, "a healthy body must not be reported dead")
+		assert.Equal(t, 1.0, final)
+	})
+}

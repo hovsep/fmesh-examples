@@ -43,6 +43,7 @@ const (
 	ViewNervous
 	ViewMetabolic
 	ViewAffect
+	ViewBody
 )
 
 // Display is how a numeric value should be drawn: its name, its units, the range
@@ -381,11 +382,34 @@ func lungMetrics(side string) []Metric {
 	}
 }
 
+// DamagedOrgans are the organs that carry the damage plugin and publish a damage
+// level, in the order the Body view lists them.
+var DamagedOrgans = []struct{ Port, Label string }{
+	{"brain", "Brain"},
+	{"heart", "Heart"},
+	{"lung_left", "Left Lung"},
+	{"lung_right", "Right Lung"},
+	{"diaphragm", "Diaphragm"},
+	{"kidney", "Kidney"},
+}
+
 func init() {
 	// Both lungs publish the same metrics, so append them rather than writing
 	// two near-identical blocks into the literal above.
 	for _, side := range []string{"left", "right"} {
 		Catalog = append(Catalog, lungMetrics(side)...)
+	}
+
+	// Every damageable organ publishes a 0..1 damage level on the Body view.
+	for _, organ := range DamagedOrgans {
+		port := organ.Port + "_damage"
+		Catalog = append(Catalog, Metric{
+			Port: port, Source: port,
+			Display: &Display{
+				Label: organ.Label, Unit: "", Min: 0, Max: 1,
+				HealthMin: 0, HealthMax: 0.5, Decimals: 2, View: ViewBody,
+			},
+		})
 	}
 }
 

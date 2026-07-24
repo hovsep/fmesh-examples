@@ -15,6 +15,13 @@ const (
 	LastBrainActivity                   common.State = "last_brain_activity"
 	defaultBrainActivitySmoothingFactor              = 0.1 * DNCS    // alpha in ema
 	defaultBrainActivityThreshold                    = 0.0001 * DNCS // epsilon in ema
+
+	// Death is derived from the brain: once the body has been alive, a whole tick
+	// with no brain activity (the brain has failed and stopped emitting) means it
+	// is dead. Death latches -- there is no coming back.
+	stateEverAlive common.State = "ever_alive"
+	stateDead      common.State = "dead"
+	stateSawBrain  common.State = "saw_brain_this_tick"
 )
 
 // GetObservableState returns the body's telemetry hub: everything the outside
@@ -34,6 +41,9 @@ func GetObservableState() (*component.Component, error) {
 		)),
 		component.WithInitialState(func(st component.State) {
 			st.Set(LastBrainActivity, 0.0)
+			st.Set(stateEverAlive, false)
+			st.Set(stateDead, false)
+			st.Set(stateSawBrain, false)
 		}),
 	)
 	if err != nil {
@@ -45,10 +55,24 @@ func GetObservableState() (*component.Component, error) {
 // handleBrainSignals derives the values that are more than a passed-through
 // reading: whether the body is alive at all, and where its brain activity is
 // heading.
+//
+// It runs on two kinds of cycle. When brain activity arrives, the body is alive
+// and the trend is computed. On the bare tick (no brain activity this cycle), it
+// checks whether the brain produced anything during the previous tick: once the
+// body has been alive, a whole tick of silence means the brain has failed and the
+// body is dead.
 func handleBrainSignals(this *component.Component) error {
-	if !this.InputByName("brain_activity").HasSignals() {
+	if this.State().Get(stateDead).(bool) {
+		this.OutputByName("is_alive").PutPayloads(0.0)
 		return nil
 	}
+
+	if !this.InputByName("brain_activity").HasSignals() {
+		return checkDeath(this)
+	}
+
+	this.State().Set(stateEverAlive, true)
+	this.State().Set(stateSawBrain, true)
 
 	// Telemetry is numeric end to end, so liveness travels as 1/0 rather than a bool.
 	this.OutputByName("is_alive").PutPayloads(1.0)
@@ -72,6 +96,30 @@ func handleBrainSignals(this *component.Component) error {
 	return this.OutputByName("brain_activity_trend").PutSignals(
 		signal.New(helper.TrendCode(brainActivityTrend)).WithLabel("trend", brainActivityTrend),
 	)
+}
+
+// checkDeath runs on a bare tick (no brain activity this cycle). If the body has
+// been alive and the brain produced nothing during the whole previous tick, the
+// brain has failed and death latches. Otherwise it keeps the alive flag steady.
+func checkDeath(this *component.Component) error {
+	if !this.InputByName(common.TimePort).HasSignals() {
+		return nil // not a tick cycle, nothing to decide
+	}
+
+	everAlive := this.State().Get(stateEverAlive).(bool)
+	sawBrain := this.State().Get(stateSawBrain).(bool)
+	// Reset for the coming tick; brain activity, if any, will set it again.
+	this.State().Set(stateSawBrain, false)
+
+	switch {
+	case everAlive && !sawBrain:
+		// A full tick with no brain activity: the brain has stopped.
+		this.State().Set(stateDead, true)
+		this.OutputByName("is_alive").PutPayloads(0.0)
+	case everAlive:
+		this.OutputByName("is_alive").PutPayloads(1.0)
+	}
+	return nil
 }
 
 // forwardCatalogSignals passes every non-derived reading straight through.

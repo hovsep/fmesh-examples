@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -40,8 +41,12 @@ func diaphragmPressureWave(phase float64) float64 {
 func GetDiaphragm() (*component.Component, error) {
 	c, err := component.New("organ:diaphragm",
 		component.WithDescription("Diaphragm (primary respiratory actuator)"),
+		component.WithPlugins(damage.New(damage.Config{Organ: "diaphragm"})),
 		component.WithInputs("time", "autonomic_tone"),
 		component.WithOutputs("pleural_pressure", "respiratory_rate"),
+		// Not FlatlineWhenFailed: a dead diaphragm must still publish a (constant)
+		// pleural pressure, or the lungs wait forever for it and the mesh never
+		// converges. Breathing stops because the pressure no longer oscillates.
 		component.WithActivationFunc(
 			helper.SequentialActivationFunc(
 				handleRespiratoryBias,
@@ -62,6 +67,16 @@ func GetDiaphragm() (*component.Component, error) {
 func oscillateBreathing(this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
+	}
+
+	// A failed diaphragm stops breathing: it holds a constant resting pleural
+	// pressure (no inspiratory effort) so the lungs settle and stop ventilating,
+	// rather than emitting nothing and leaving the lungs waiting for it.
+	if damage.Failed(this) {
+		if err := this.OutputByName("pleural_pressure").PutPayloads(BasePleuralPressure); err != nil {
+			return err
+		}
+		return this.OutputByName("respiratory_rate").PutPayloads(0)
 	}
 
 	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())

@@ -37,8 +37,9 @@ const (
 	// ambientCouplingPerSec sets how fast the uncompensated part of the ambient
 	// pulls the core. The body's own thermoregulation
 	// (physiology:physiological_state) pulls back toward 37, so this only wins in
-	// real extremes.
-	ambientCouplingPerSec = 1.0 / (2 * 3600) // per degree beyond the comfort band
+	// real extremes -- but when it wins it does so at game pace, driving a freezing
+	// body to hypothermia in minutes rather than the realistic hour.
+	ambientCouplingPerSec = 1.0 / 900 // per degree beyond the comfort band
 
 	// solarHeatingPerUVIPerSec is how much direct sun warms the body per unit of
 	// UV index.

@@ -43,10 +43,13 @@ const (
 	DrinkRateMlPerSec = 15.0 // a 500 mL glass takes ~33 s
 	EatRateKcalPerSec = 3.0  // a 600 kcal meal takes ~3.5 min
 
-	// A cigarette delivers one unit of toxin over a randomised 5-10 minutes.
+	// A cigarette delivers its toxin over a randomised 5-10 minutes. The toxin is
+	// measured in lung-damage units (0..1 to fail an organ): one cigarette does a
+	// small fraction, so it takes many hundreds to wreck a lung -- harmful over a
+	// long habit, not instantly fatal.
 	cigaretteMeanDurationSec = 7.5 * 60.0
-	cigaretteDurationJitter  = 33.0 // percent, giving roughly 5-10 minutes
-	toxinPerCigarette        = 1.0
+	cigaretteDurationJitter  = 33.0   // percent, giving roughly 5-10 minutes
+	toxinPerCigarette        = 0.0015 // ~650 cigarettes to fail a lung
 )
 
 // GetIntake returns the intake controller.
