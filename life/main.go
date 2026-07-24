@@ -124,10 +124,14 @@ func initSim(sim *step_sim.Simulation) {
 	// goroutine (see Simulation.Run), so no synchronization is needed.
 	sim.PublishThrottle.SetInterval(50 * time.Millisecond)
 
-	// Teach the pacer how much simulated time a tick is worth, so "rate:sim"
-	// can translate a requested speed into a wall-clock budget. Pacing stays
-	// uncapped until asked for, preserving the run-flat-out default.
+	// Teach the pacer how much simulated time a tick is worth, then run at real
+	// time by default: one simulated second per wall-clock second, so the body
+	// is watchable and interactive out of the box. "rate:sim 60" fast-forwards,
+	// "rate:sim max" removes the cap. Tests reset this to uncapped (see
+	// newCommandableSim / RunSimulationAndThen) so a simulated hour still costs
+	// milliseconds of wall clock.
 	sim.Pacer.SetSimTimePerTick(factor.DurationPerTick)
+	sim.Pacer.SetFactor(1)
 
 	// Schedule against the simulation's own clock rather than wall time, so
 	// "every 1d" means a day in Leon's life however fast the loop is running.
