@@ -28,44 +28,44 @@ const (
 // registerSchedulingCommands adds the commands that let a session express
 // routines and scenarios rather than one instruction at a time.
 func (s *Simulation) registerSchedulingCommands() {
-	s.MeshCommands[Every] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Every] = NewMeshCommand(
 		"run a command repeatedly in simulated time, e.g. 'every 1d excretion:defecate' (add 'x5' to limit the runs)",
 		func(_ *fmesh.FMesh, args []string) { s.cmdEvery(args) })
 
-	s.MeshCommands[After] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[After] = NewMeshCommand(
 		"run a command once, after a stretch of simulated time, e.g. 'after 30m intake:water 250ml'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdAfter(args) })
 
-	s.MeshCommands[At] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[At] = NewMeshCommand(
 		"run a command once, at a simulated time since the run began, e.g. 'at 8h intake:food 500kcal'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdAt(args) })
 
-	s.MeshCommands[Jobs] = NewMeshCommandDescriptor(
-		"list scheduled commands", func(_ *fmesh.FMesh) { s.cmdJobs() })
+	s.MeshCommands[Jobs] = NewMeshCommand(
+		"list scheduled commands", func(_ *fmesh.FMesh, _ []string) { s.cmdJobs() })
 
-	s.MeshCommands[Cancel] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Cancel] = NewMeshCommand(
 		"cancel a scheduled command by id, or 'cancel all'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdCancel(args) })
 
-	s.MeshCommands[Script] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Script] = NewMeshCommand(
 		"name a scenario, e.g. 'script breakfast intake:food 400kcal; wait 30m; activity:start 3 15m'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdScript(args) })
 
-	s.MeshCommands[Run] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Run] = NewMeshCommand(
 		"run a named scenario, e.g. 'run breakfast'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdRun(args) })
 
-	s.MeshCommands[Scripts] = NewMeshCommandDescriptor(
-		"list named scenarios", func(_ *fmesh.FMesh) { s.cmdScripts() })
+	s.MeshCommands[Scripts] = NewMeshCommand(
+		"list named scenarios", func(_ *fmesh.FMesh, _ []string) { s.cmdScripts() })
 
-	s.MeshCommands[ListPrograms] = NewMeshCommandDescriptor(
-		"list scenarios currently running", func(_ *fmesh.FMesh) { s.cmdPrograms() })
+	s.MeshCommands[ListPrograms] = NewMeshCommand(
+		"list scenarios currently running", func(_ *fmesh.FMesh, _ []string) { s.cmdPrograms() })
 
-	s.MeshCommands[Stop] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Stop] = NewMeshCommand(
 		"stop a running scenario by id, or 'stop all'",
 		func(_ *fmesh.FMesh, args []string) { s.cmdStop(args) })
 
-	s.MeshCommands[Load] = NewMeshCommandDescriptorWithArgs(
+	s.MeshCommands[Load] = NewMeshCommand(
 		"read commands from a file, one per line",
 		func(_ *fmesh.FMesh, args []string) { s.cmdLoad(args) })
 }
@@ -104,7 +104,7 @@ func (s *Simulation) cmdEvery(args []string) {
 		return
 	}
 
-	job, err := s.Scheduler.Every(s.Now(), d, cmd, times)
+	job, err := s.Timeline.Every(s.Now(), d, cmd, times)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -125,7 +125,7 @@ func (s *Simulation) cmdAfter(args []string) {
 		return
 	}
 
-	job := s.Scheduler.At(s.Now()+d, cmd)
+	job := s.Timeline.After(s.Now()+d, cmd)
 	fmt.Println("scheduled", job.Describe(s.Now()))
 }
 
@@ -148,12 +148,12 @@ func (s *Simulation) cmdAt(args []string) {
 		return
 	}
 
-	job := s.Scheduler.At(d, cmd)
+	job := s.Timeline.After(d, cmd)
 	fmt.Println("scheduled", job.Describe(s.Now()))
 }
 
 func (s *Simulation) cmdJobs() {
-	jobs := s.Scheduler.Jobs()
+	jobs := s.Timeline.Jobs()
 	if len(jobs) == 0 {
 		fmt.Println("nothing scheduled")
 		return
@@ -173,7 +173,7 @@ func (s *Simulation) cmdCancel(args []string) {
 	}
 
 	if args[0] == "all" {
-		fmt.Printf("cancelled %d scheduled command(s)\n", s.Scheduler.CancelAll())
+		fmt.Printf("cancelled %d scheduled command(s)\n", s.Timeline.CancelAllJobs())
 		return
 	}
 
@@ -182,7 +182,7 @@ func (s *Simulation) cmdCancel(args []string) {
 		fmt.Printf("invalid job id %q\n", args[0])
 		return
 	}
-	if !s.Scheduler.Cancel(id) {
+	if !s.Timeline.Cancel(id) {
 		fmt.Printf("no scheduled command with id %d\n", id)
 		return
 	}
@@ -202,7 +202,7 @@ func (s *Simulation) cmdScript(args []string) {
 		return
 	}
 
-	s.Programs.Define(name, steps)
+	s.Timeline.Define(name, steps)
 	fmt.Printf("defined %q: %s\n", name, FormatSteps(steps))
 }
 
@@ -212,7 +212,7 @@ func (s *Simulation) cmdRun(args []string) {
 		return
 	}
 
-	program, err := s.Programs.StartNamed(args[0])
+	program, err := s.Timeline.StartNamed(args[0])
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -221,7 +221,7 @@ func (s *Simulation) cmdRun(args []string) {
 }
 
 func (s *Simulation) cmdScripts() {
-	names := s.Programs.Defined()
+	names := s.Timeline.Defined()
 	if len(names) == 0 {
 		fmt.Println("no scenarios defined")
 		return
@@ -229,13 +229,13 @@ func (s *Simulation) cmdScripts() {
 
 	fmt.Println("defined scenarios:")
 	for _, name := range names {
-		steps, _ := s.Programs.Steps(name)
+		steps, _ := s.Timeline.Steps(name)
 		fmt.Printf("  %s: %s\n", name, FormatSteps(steps))
 	}
 }
 
 func (s *Simulation) cmdPrograms() {
-	running := s.Programs.Running()
+	running := s.Timeline.Scenarios()
 	if len(running) == 0 {
 		fmt.Println("no scenarios running")
 		return
@@ -255,7 +255,7 @@ func (s *Simulation) cmdStop(args []string) {
 	}
 
 	if args[0] == "all" {
-		fmt.Printf("stopped %d scenario(s)\n", s.Programs.StopAll())
+		fmt.Printf("stopped %d scenario(s)\n", s.Timeline.StopAllScenarios())
 		return
 	}
 
@@ -264,7 +264,7 @@ func (s *Simulation) cmdStop(args []string) {
 		fmt.Printf("invalid scenario id %q\n", args[0])
 		return
 	}
-	if !s.Programs.Stop(id) {
+	if !s.Timeline.Cancel(id) {
 		fmt.Printf("no scenario running with id %d\n", id)
 		return
 	}

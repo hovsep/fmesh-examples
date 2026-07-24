@@ -4,10 +4,14 @@ import "github.com/hovsep/fmesh"
 
 type Command string
 
-type MeshCommandDescriptor struct {
+// MeshCommand is a named action a session can invoke. Every command takes the
+// whitespace-separated arguments after its name; commands that want none simply
+// ignore the slice. (There used to be a separate no-arg shape with its own
+// constructor and a RunWithMesh dispatcher — one signature is simpler and costs
+// argument-free handlers only a "_ []string".)
+type MeshCommand struct {
 	Description string
-	Func        func(*fmesh.FMesh)
-	ArgsFunc    func(fm *fmesh.FMesh, args []string) // optional; takes precedence over Func when set
+	Run         func(fm *fmesh.FMesh, args []string)
 }
 
 const (
@@ -17,22 +21,6 @@ const (
 	Help   Command = "help"
 )
 
-var NoopMeshCommand = func(*fmesh.FMesh) {}
-
-func NewMeshCommandDescriptor(desc string, cmdFunc func(*fmesh.FMesh)) MeshCommandDescriptor {
-	return MeshCommandDescriptor{Description: desc, Func: cmdFunc}
-}
-
-// NewMeshCommandDescriptorWithArgs registers a command that receives the
-// whitespace-separated arguments following the command name (e.g. "rate 100ms").
-func NewMeshCommandDescriptorWithArgs(desc string, cmdFunc func(*fmesh.FMesh, []string)) MeshCommandDescriptor {
-	return MeshCommandDescriptor{Description: desc, ArgsFunc: cmdFunc}
-}
-
-func (md MeshCommandDescriptor) RunWithMesh(fm *fmesh.FMesh, args []string) {
-	if md.ArgsFunc != nil {
-		md.ArgsFunc(fm, args)
-		return
-	}
-	md.Func(fm)
+func NewMeshCommand(desc string, run func(fm *fmesh.FMesh, args []string)) MeshCommand {
+	return MeshCommand{Description: desc, Run: run}
 }
