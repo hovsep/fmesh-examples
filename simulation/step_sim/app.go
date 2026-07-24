@@ -9,10 +9,20 @@ import (
 	step_sim_sink "github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
 )
 
+// CommandSource feeds commands into a running simulation.
+//
+// Run blocks until the source is finished and the application should shut down.
+// The source owns cmdChan and is the only thing that may close it (see the
+// ownership note on REPL), so Simulation.SendCommand is unsafe once Run returns.
+type CommandSource interface {
+	Run(cmdChan chan Command)
+}
+
 type Application struct {
 	cancel  context.CancelFunc
 	cmdChan chan Command
 	sink    step_sim_sink.Sink
+	source  CommandSource
 
 	REPL *REPL
 	Sim  *Simulation
@@ -25,6 +35,18 @@ type Option func(*Application)
 func WithSink(s step_sim_sink.Sink) Option {
 	return func(app *Application) {
 		app.sink = s
+	}
+}
+
+// WithCommandSource replaces the plain stdin REPL with another way of entering
+// commands, such as a full-screen console.
+//
+// It exists so richer front ends can live in the module that wants them: this
+// package stays free of UI dependencies, and examples that are happy with a
+// line-at-a-time prompt are unaffected.
+func WithCommandSource(source CommandSource) Option {
+	return func(app *Application) {
+		app.source = source
 	}
 }
 
@@ -48,6 +70,9 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, opts ...Option) *Applicati
 	}
 
 	app.REPL = NewREPL(cmdChan)
+	if app.source == nil {
+		app.source = app.REPL
+	}
 	app.Sim = NewSimulation(ctx, fm, cmdChan, app.sink).Init(simInitFunc)
 
 	return app
@@ -61,8 +86,8 @@ func (app *Application) Run() {
 		app.Sim.Run()
 	}()
 
-	// Blocks until the user exits the REPL (which closes cmdChan)
-	app.REPL.Run()
+	// Blocks until the user exits the command source (which closes cmdChan)
+	app.source.Run(app.cmdChan)
 
 	// Stop the simulation if it has not already stopped via the closed cmdChan,
 	// then wait for it to fully finish so no further Publish calls race the sink shutdown.

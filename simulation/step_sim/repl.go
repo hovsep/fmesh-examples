@@ -24,7 +24,10 @@ func NewREPL(cmdChan chan Command) *REPL {
 	}
 }
 
-func (repl *REPL) Run() {
+// Run implements CommandSource. The channel argument is accepted for the
+// interface; the REPL uses the one it was constructed with, which is the same
+// channel the Application passes here.
+func (repl *REPL) Run(chan Command) {
 	defer close(repl.cmdChan)
 
 	scanner := bufio.NewScanner(os.Stdin)
