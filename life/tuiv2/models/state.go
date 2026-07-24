@@ -3,6 +3,8 @@ package models
 import (
 	"sync"
 	"time"
+
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 )
 
 // AppState holds all application state.
@@ -19,26 +21,44 @@ type AppState struct {
 	mu          sync.RWMutex
 }
 
-// ViewType represents different dashboard views
-type ViewType int
+// ViewType is which dashboard screen is showing. It is telemetry.View, so the
+// tabs and the catalog can never disagree about which metrics belong where.
+type ViewType = telemetry.View
+
+// Views are the screens, in tab order.
+var Views = []ViewType{
+	telemetry.ViewOverview,
+	telemetry.ViewCardiovascular,
+	telemetry.ViewRespiratory,
+	telemetry.ViewNervous,
+	telemetry.ViewMetabolic,
+	telemetry.ViewAffect,
+}
 
 const (
-	ViewOverview ViewType = iota
-	ViewCardiovascular
-	ViewRespiratory
-	ViewNervous
+	ViewOverview       = telemetry.ViewOverview
+	ViewCardiovascular = telemetry.ViewCardiovascular
+	ViewRespiratory    = telemetry.ViewRespiratory
+	ViewNervous        = telemetry.ViewNervous
+	ViewMetabolic      = telemetry.ViewMetabolic
+	ViewAffect         = telemetry.ViewAffect
 )
 
-func (v ViewType) String() string {
+// ViewName is the tab label for a screen.
+func ViewName(v ViewType) string {
 	switch v {
-	case ViewOverview:
+	case telemetry.ViewOverview:
 		return "Overview"
-	case ViewCardiovascular:
+	case telemetry.ViewCardiovascular:
 		return "Cardiovascular"
-	case ViewRespiratory:
+	case telemetry.ViewRespiratory:
 		return "Respiratory"
-	case ViewNervous:
+	case telemetry.ViewNervous:
 		return "Nervous"
+	case telemetry.ViewMetabolic:
+		return "Metabolic"
+	case telemetry.ViewAffect:
+		return "Feelings"
 	default:
 		return "Unknown"
 	}
@@ -160,12 +180,13 @@ func (s *AppState) GetView() ViewType {
 func (s *AppState) NextView() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.CurrentView = (s.CurrentView + 1) % 4
+	s.CurrentView = (s.CurrentView + 1) % ViewType(len(Views))
 }
 
 // PrevView cycles to the previous view
 func (s *AppState) PrevView() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.CurrentView = (s.CurrentView - 1 + 4) % 4
+	count := ViewType(len(Views))
+	s.CurrentView = (s.CurrentView - 1 + count) % count
 }

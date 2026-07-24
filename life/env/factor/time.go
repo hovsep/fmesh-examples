@@ -8,7 +8,10 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
-const durationPerTick = 10 * time.Millisecond
+// DurationPerTick is how much simulated time one mesh run represents. It is the
+// conversion factor between tick counts and simulated time, so the pacer needs
+// it to translate a requested speed into a wall-clock budget per tick.
+const DurationPerTick = 10 * time.Millisecond
 
 // GetTimeComponent returns the time component of the habitat
 func GetTimeComponent() (*component.Component, error) {
@@ -24,7 +27,7 @@ func GetTimeComponent() (*component.Component, error) {
 			})
 
 			this.State().Update("sim_duration", func(v any) any {
-				return v.(time.Duration) + durationPerTick
+				return v.(time.Duration) + DurationPerTick
 			})
 
 			simStartTime := this.State().Get("sim_start_time").(time.Time)
@@ -37,7 +40,7 @@ func GetTimeComponent() (*component.Component, error) {
 				this.State().Get("tick_count").(uint64),
 				this.State().Get("sim_duration").(time.Duration),
 				this.State().Get("sim_wall_time").(time.Time),
-				durationPerTick,
+				DurationPerTick,
 			)
 			return this.OutputByName("tick").PutSignals(nextTick)
 		}),

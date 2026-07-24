@@ -5,8 +5,10 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 const (
@@ -15,62 +17,20 @@ const (
 	defaultBrainActivityThreshold                    = 0.0001 * DNCS // epsilon in ema
 )
 
-// GetObservableState ...
+// GetObservableState returns the body's telemetry hub: everything the outside
+// world can observe about the human leaves through here.
+//
+// Its ports and most of its behaviour come from telemetry.Catalog, so publishing
+// a new value is a catalog entry rather than an edit here. Only values that need
+// deriving (liveness, the smoothed brain activity and its trend) have handlers.
 func GetObservableState() (*component.Component, error) {
 	c, err := component.New("physiology:observable_state",
 		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
-		component.WithInputs(
-			"time",
-			"inspired_gas",
-			"venous_blood",
-			"blood_o2_level",
-			"blood_co2_level",
-			"brain_activity",
-			"heart_cardiac_activation",
-			"heart_rate",
-			"pleural_pressure",
-			"respiratory_rate",
-
-			"lung_left_volume",
-			"lung_left_flow",
-			"lung_left_alveolar_pressure",
-			"lung_left_exhaled_gas",
-			"lung_left_alveolar_gas",
-
-			"lung_right_volume",
-			"lung_right_flow",
-			"lung_right_alveolar_pressure",
-			"lung_right_exhaled_gas",
-			"lung_right_alveolar_gas",
-		),
-		component.WithOutputs(
-			"is_alive",
-			"inspired_gas",
-			"venous_blood",
-			"blood_o2_level",
-			"blood_co2_level",
-			"brain_activity",
-			"brain_activity_trend",
-			"heart_cardiac_activation",
-			"heart_rate",
-			"pleural_pressure",
-			"respiratory_rate",
-			"lung_left_volume",
-			"lung_left_flow",
-			"lung_left_alveolar_pressure",
-			"lung_left_exhaled_gas",
-			"lung_left_alveolar_gas",
-			"lung_right_volume",
-			"lung_right_flow",
-			"lung_right_alveolar_pressure",
-			"lung_right_exhaled_gas",
-			"lung_right_alveolar_gas",
-		),
+		component.WithInputs(append([]string{common.TimePort}, telemetry.SourcePorts()...)...),
+		component.WithOutputs(telemetry.Ports()...),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			handleBrainSignals,
-			handleHeartSignals,
-			handleDiaphragmSignals,
-			handleLungSignals,
+			forwardCatalogSignals,
 		)),
 		component.WithInitialState(func(st component.State) {
 			st.Set(LastBrainActivity, 0.0)
@@ -82,12 +42,16 @@ func GetObservableState() (*component.Component, error) {
 	return c, nil
 }
 
+// handleBrainSignals derives the values that are more than a passed-through
+// reading: whether the body is alive at all, and where its brain activity is
+// heading.
 func handleBrainSignals(this *component.Component) error {
 	if !this.InputByName("brain_activity").HasSignals() {
 		return nil
 	}
 
-	this.OutputByName("is_alive").PutPayloads(true)
+	// Telemetry is numeric end to end, so liveness travels as 1/0 rather than a bool.
+	this.OutputByName("is_alive").PutPayloads(1.0)
 
 	// Calculate brain activity trend
 	currentBrainActivity, err := helper.AsF64(this.InputByName("brain_activity").Signals().First())
@@ -103,91 +67,23 @@ func handleBrainSignals(this *component.Component) error {
 
 	this.State().Set(LastBrainActivity, smoothedBrainActivity)
 	this.OutputByName("brain_activity").PutPayloads(smoothedBrainActivity)
-	this.OutputByName("brain_activity_trend").PutPayloads(brainActivityTrend)
-	return nil
-}
-
-func handleHeartSignals(this *component.Component) error {
-	return helper.MultiForward(
-		helper.PortPair{
-			this.InputByName("heart_cardiac_activation"),
-			this.OutputByName("heart_cardiac_activation"),
-		},
-		helper.PortPair{
-			this.InputByName("heart_rate"),
-			this.OutputByName("heart_rate"),
-		})
-}
-
-func handleDiaphragmSignals(this *component.Component) error {
-	return helper.MultiForward(
-		helper.PortPair{
-			this.InputByName("pleural_pressure"),
-			this.OutputByName("pleural_pressure"),
-		},
-		helper.PortPair{
-			this.InputByName("respiratory_rate"),
-			this.OutputByName("respiratory_rate"),
-		})
-}
-
-func handleLungSignals(this *component.Component) error {
-	return helper.MultiForward(
-		helper.PortPair{
-			this.InputByName("inspired_gas"),
-			this.OutputByName("inspired_gas"),
-		},
-		helper.PortPair{
-			this.InputByName("venous_blood"),
-			this.OutputByName("venous_blood"),
-		},
-		helper.PortPair{
-			this.InputByName("blood_o2_level"),
-			this.OutputByName("blood_o2_level"),
-		},
-		helper.PortPair{
-			this.InputByName("blood_co2_level"),
-			this.OutputByName("blood_co2_level"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_left_volume"),
-			this.OutputByName("lung_left_volume"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_left_flow"),
-			this.OutputByName("lung_left_flow"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_left_alveolar_pressure"),
-			this.OutputByName("lung_left_alveolar_pressure"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_left_exhaled_gas"),
-			this.OutputByName("lung_left_exhaled_gas"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_left_alveolar_gas"),
-			this.OutputByName("lung_left_alveolar_gas"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_right_volume"),
-			this.OutputByName("lung_right_volume"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_right_flow"),
-			this.OutputByName("lung_right_flow"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_right_alveolar_pressure"),
-			this.OutputByName("lung_right_alveolar_pressure"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_right_exhaled_gas"),
-			this.OutputByName("lung_right_exhaled_gas"),
-		},
-		helper.PortPair{
-			this.InputByName("lung_right_alveolar_gas"),
-			this.OutputByName("lung_right_alveolar_gas"),
-		},
+	// The trend rides as a number so it survives telemetry; the human-readable
+	// name stays available in-mesh as a label.
+	return this.OutputByName("brain_activity_trend").PutSignals(
+		signal.New(helper.TrendCode(brainActivityTrend)).WithLabel("trend", brainActivityTrend),
 	)
+}
+
+// forwardCatalogSignals passes every non-derived reading straight through.
+func forwardCatalogSignals(this *component.Component) error {
+	passThrough := telemetry.PassThrough()
+
+	pairs := make([]helper.PortPair, 0, len(passThrough))
+	for _, m := range passThrough {
+		pairs = append(pairs, helper.PortPair{
+			this.InputByName(m.Source),
+			this.OutputByName(m.Port),
+		})
+	}
+	return helper.MultiForward(pairs...)
 }

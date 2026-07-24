@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -77,35 +79,49 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 	return agg, nil
 }
 
+// publishSignal renders one signal onto the telemetry stream as whitespace-separated
+// "key value" lines, which is all the consumers (tuiv2/protocol.Reader) can parse.
+//
+// A signal contributes at most one line for its payload, plus one line per scalar
+// keyed "<key>:<scalarName>". Composite signals such as air or venous blood carry a
+// string type tag as their payload and keep every real measurement in scalars, so
+// without the scalar lines they would reach the UI carrying nothing at all.
+func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
+	if value, ok := helper.NumericPayload(sig); ok {
+		if err := stream.PutPayloads(fmt.Sprintf("%s %v \n", key, value)); err != nil {
+			return err
+		}
+	}
+
+	// Keys() is sorted, so the line order of a snapshot is stable.
+	for _, name := range sig.Scalars().Keys() {
+		line := fmt.Sprintf("%s:%s %v \n", key, name, sig.Scalars().ValueOrDefault(name, 0))
+		if err := stream.PutPayloads(line); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (h *Habitat) AddAggregatedState() (*Habitat, error) {
-	agg, err := newAggregator("aggregated_state", h.FM, []string{
+	// Habitat-level sources. The tick signal carries tick_count and
+	// sim_duration_ms as scalars, so the UI can show real simulated time rather
+	// than its own wall clock.
+	paths := []string{
+		"time::tick",
 		"gas::environmental_gas",
-		"human-Leon::inspired_gas",
 		"sun::uvi",
-		"human-Leon::is_alive",
-		"human-Leon::brain_activity",
-		"human-Leon::brain_activity_trend",
-		"human-Leon::body_temperature", //@TODO: get human component name dynamically
-		"human-Leon::heart_rate",
-		"human-Leon::heart_cardiac_activation",
-		"human-Leon::pleural_pressure",
-		"human-Leon::respiratory_rate",
-		"human-Leon::lung_left_volume",
-		"human-Leon::lung_left_flow",
-		"human-Leon::lung_left_alveolar_pressure",
-		"human-Leon::lung_left_exhaled_gas",
-		"human-Leon::lung_left_alveolar_gas",
-		"human-Leon::venous_blood",
-		"human-Leon::blood_o2_level",
-		"human-Leon::blood_co2_level",
+	}
 
-		"human-Leon::lung_right_volume",
-		"human-Leon::lung_right_flow",
-		"human-Leon::lung_right_alveolar_pressure",
-		"human-Leon::lung_right_exhaled_gas",
-		"human-Leon::lung_right_alveolar_gas",
-	})
+	// Everything the body publishes, addressed by the human's actual name rather
+	// than a hardcoded one, so renaming the subject does not silently empty the UI.
+	body := helper.FindHumanComponent(h.FM)
+	if body == nil {
+		return nil, fmt.Errorf("no human in the habitat to aggregate state from")
+	}
+	paths = append(paths, telemetry.Paths(body.Name())...)
 
+	agg, err := newAggregator("aggregated_state", h.FM, paths)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aggregator: %w", err)
 	}
@@ -135,8 +151,7 @@ func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
 				if !sig.Labels().Has("from") {
 					return fmt.Errorf("missing 'from' label")
 				}
-
-				return this.OutputByName("stream").PutPayloads(fmt.Sprintf("%s %v \n", sig.Labels().ValueOrDefault("from", "unknown"), sig.PayloadOrNil()))
+				return publishSignal(this.OutputByName("stream"), sig.Labels().ValueOrDefault("from", "unknown"), sig)
 			})
 			return err
 		}),

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -34,7 +35,12 @@ func Test_HumanLiveness(t *testing.T) {
 						if sig == nil {
 							return nil
 						}
-						observedIsAlive = append(observedIsAlive, helper.AsBoolOrFalse(sig))
+						// Liveness travels as 1/0 so it survives the numeric telemetry wire.
+						alive, ok := helper.NumericPayload(sig)
+						if !ok {
+							return fmt.Errorf("is_alive is not numeric: %v", sig.PayloadOrNil())
+						}
+						observedIsAlive = append(observedIsAlive, alive > 0)
 						return nil
 					})
 				})

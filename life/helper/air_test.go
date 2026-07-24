@@ -52,7 +52,7 @@ func TestMapAirScalar_StandaloneScalar(t *testing.T) {
 
 	s = MapAirScalar(s, "temperature", func(old float64) float64 { return old + 1.0 })
 
-	v := s.Scalars().GetOrDefault("temperature", 0)
+	v := s.Scalars().ValueOrDefault("temperature", 0)
 	assert.Equal(t, 26.0*unit.Celsius+1.0, v)
 }
 
@@ -65,18 +65,18 @@ func TestMapAirScalar_DistributionRebalances(t *testing.T) {
 	})
 
 	// Target gets exactly its mapped value
-	assert.Equal(t, float64(2*unit.Percent), s.Scalars().GetOrDefault("composition:pollution", 0))
+	assert.Equal(t, float64(2*unit.Percent), s.Scalars().ValueOrDefault("composition:pollution", 0))
 
 	// Distribution rebalanced to sum 100
-	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
-		s.Scalars().GetOrDefault("composition:oxygen", 0) +
-		s.Scalars().GetOrDefault("composition:argon", 0) +
-		s.Scalars().GetOrDefault("composition:pollution", 0)
+	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +
+		s.Scalars().ValueOrDefault("composition:oxygen", 0) +
+		s.Scalars().ValueOrDefault("composition:argon", 0) +
+		s.Scalars().ValueOrDefault("composition:pollution", 0)
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 
 	// Standalone scalars unchanged
-	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().GetOrDefault("temperature", 0))
-	assert.Equal(t, 58.8*unit.Percent, s.Scalars().GetOrDefault("humidity", 0))
+	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().ValueOrDefault("temperature", 0))
+	assert.Equal(t, 58.8*unit.Percent, s.Scalars().ValueOrDefault("humidity", 0))
 }
 
 func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
@@ -85,10 +85,10 @@ func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
 
 	s = MapAirScalar(s, "composition:nitrogen", func(old float64) float64 { return old })
 
-	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
-		s.Scalars().GetOrDefault("composition:oxygen", 0) +
-		s.Scalars().GetOrDefault("composition:argon", 0) +
-		s.Scalars().GetOrDefault("composition:pollution", 0)
+	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +
+		s.Scalars().ValueOrDefault("composition:oxygen", 0) +
+		s.Scalars().ValueOrDefault("composition:argon", 0) +
+		s.Scalars().ValueOrDefault("composition:pollution", 0)
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 }
 
@@ -99,15 +99,15 @@ func TestMapAirScalar_StandaloneNoRebalance(t *testing.T) {
 	s = MapAirScalar(s, "humidity", func(old float64) float64 { return old * 2 })
 
 	// Only humidity changed
-	assert.Equal(t, 58.8*unit.Percent*2, s.Scalars().GetOrDefault("humidity", 0))
+	assert.Equal(t, 58.8*unit.Percent*2, s.Scalars().ValueOrDefault("humidity", 0))
 
 	// Nothing else touched
-	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().GetOrDefault("temperature", 0))
+	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().ValueOrDefault("temperature", 0))
 
 	// Composition still sums to 100
-	compSum := s.Scalars().GetOrDefault("composition:nitrogen", 0) +
-		s.Scalars().GetOrDefault("composition:oxygen", 0) +
-		s.Scalars().GetOrDefault("composition:argon", 0) +
-		s.Scalars().GetOrDefault("composition:pollution", 0)
+	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +
+		s.Scalars().ValueOrDefault("composition:oxygen", 0) +
+		s.Scalars().ValueOrDefault("composition:argon", 0) +
+		s.Scalars().ValueOrDefault("composition:pollution", 0)
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 }
