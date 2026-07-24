@@ -13,7 +13,7 @@ import (
 	"github.com/hovsep/fmesh/cycle"
 )
 
-type MeshCommandMap map[Command]MeshCommandDescriptor
+type MeshCommandMap map[Command]MeshCommand
 
 type SimInitFunc func(sim *Simulation)
 
@@ -35,8 +35,8 @@ type Simulation struct {
 	// wall-clock time since the simulation was created.
 	SimClock SimClock
 
-	Scheduler *Scheduler // Commands queued to run at points in simulated time
-	Programs  *Programs  // Scenarios: ordered commands with waits between them
+	// Timeline holds everything time-based: scheduled jobs and running scenarios.
+	Timeline *Timeline
 }
 
 func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, sink sink.Sink) *Simulation {
@@ -49,10 +49,9 @@ func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, s
 		PublishThrottle: NewPublishThrottle(0), // no throttling by default; publish every cycle
 		// Uncapped by default, and inert until a caller declares how much
 		// simulated time a tick represents (only the concrete simulation knows).
-		Pacer:     NewSimPacer(0),
-		SimClock:  wallClockSince(time.Now()),
-		Scheduler: NewScheduler(),
-		Programs:  NewPrograms(),
+		Pacer:    NewSimPacer(0),
+		SimClock: wallClockSince(time.Now()),
+		Timeline: NewTimeline(),
 	}
 	sim.registerSchedulingCommands()
 	return sim
@@ -60,11 +59,13 @@ func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, s
 
 func getDefaultMeshCommands() MeshCommandMap {
 	meshCommands := make(MeshCommandMap)
-	// Default commands are handled by the REPL, we add them here just to handle descriptions in one place
-	meshCommands[Exit] = NewMeshCommandDescriptor("exit REPL", NoopMeshCommand)
-	meshCommands[Pause] = NewMeshCommandDescriptor("pause simulation", NoopMeshCommand)
-	meshCommands[Resume] = NewMeshCommandDescriptor("resume simulation", NoopMeshCommand)
-	meshCommands[Help] = NewMeshCommandDescriptor("show this help message", func(_ *fmesh.FMesh) {
+	// exit/pause/resume are intercepted in dispatchCommand; they live in the map
+	// only so their descriptions show up in help. help itself runs here.
+	noop := func(*fmesh.FMesh, []string) {}
+	meshCommands[Exit] = NewMeshCommand("exit the simulation", noop)
+	meshCommands[Pause] = NewMeshCommand("pause simulation", noop)
+	meshCommands[Resume] = NewMeshCommand("resume simulation", noop)
+	meshCommands[Help] = NewMeshCommand("show this help message", func(*fmesh.FMesh, []string) {
 		showHelp(meshCommands)
 	})
 	return meshCommands
@@ -158,11 +159,10 @@ func (s *Simulation) Run() {
 	}
 }
 
-// runDueCommands executes everything the scheduler and any running programs have
-// brought due at the current simulated time.
+// runDueCommands executes everything the timeline has brought due at the current
+// simulated time.
 func (s *Simulation) runDueCommands() (stop bool) {
-	now := s.Now()
-	for _, cmd := range append(s.Scheduler.Due(now), s.Programs.Advance(now)...) {
+	for _, cmd := range s.Timeline.Advance(s.Now()) {
 		if s.dispatchCommand(cmd) {
 			return true
 		}
@@ -212,8 +212,8 @@ func (s *Simulation) startAnonymousProgram(cmd Command) {
 		return
 	}
 
-	program := s.Programs.Start("", steps)
-	fmt.Printf("running scenario [%d]: %s\n", program.ID, FormatSteps(steps))
+	scenario := s.Timeline.Start("", steps)
+	fmt.Printf("running scenario [%d]: %s\n", scenario.ID, FormatSteps(steps))
 }
 
 func (s *Simulation) MaybeAutoPause(runResult *fmesh.RuntimeInfo) {
@@ -254,12 +254,12 @@ func (s *Simulation) handleCommand(cmd Command) {
 	}
 
 	name, args := Command(fields[0]), fields[1:]
-	cmdDescriptor, ok := s.MeshCommands[name]
+	command, ok := s.MeshCommands[name]
 	if !ok {
 		fmt.Printf("Unknown command: %v \n", cmd)
 		return
 	}
-	cmdDescriptor.RunWithMesh(s.FM, args)
+	command.Run(s.FM, args)
 }
 
 func (s *Simulation) SendCommand(cmd Command) {

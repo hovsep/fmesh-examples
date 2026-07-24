@@ -43,7 +43,7 @@ func initSim(sim *step_sim.Simulation) {
 	fmt.Println()
 
 	// Add custom commands
-	sim.MeshCommands["dummy"] = step_sim.NewMeshCommandDescriptor("send one signal to bypass component", func(fm *fmesh.FMesh) {
+	sim.MeshCommands["dummy"] = step_sim.NewMeshCommand("send one signal to bypass component", func(fm *fmesh.FMesh, _ []string) {
 		fm.ComponentByName("bypass").Inputs().ByName("in").PutSignals(signal.New("dummy line"))
 	})
 	fmt.Println("Registered custom command: 'dummy' — sends a signal through the bypass component.")

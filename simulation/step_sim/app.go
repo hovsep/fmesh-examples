@@ -69,7 +69,7 @@ func NewApp(fm *fmesh.FMesh, simInitFunc SimInitFunc, opts ...Option) *Applicati
 		opt(app)
 	}
 
-	app.REPL = NewREPL(cmdChan)
+	app.REPL = NewREPL()
 	if app.source == nil {
 		app.source = app.REPL
 	}

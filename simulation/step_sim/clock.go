@@ -21,11 +21,9 @@ func wallClockSince(start time.Time) SimClock {
 	return func() time.Duration { return time.Since(start) }
 }
 
-// Now returns the current simulated time.
+// Now returns the current simulated time. NewSimulation always installs a clock
+// (wall-clock by default), so this need not guard against a nil SimClock.
 func (s *Simulation) Now() time.Duration {
-	if s.SimClock == nil {
-		return 0
-	}
 	return s.SimClock()
 }
 

@@ -103,7 +103,7 @@ func bodyCommand(commands step_sim.MeshCommandMap, name, description string, par
 		os.Exit(1)
 	}
 
-	commands[step_sim.Command(name)] = step_sim.NewMeshCommandDescriptorWithArgs(description,
+	commands[step_sim.Command(name)] = step_sim.NewMeshCommand(description,
 		func(fm *fmesh.FMesh, args []string) {
 			body := helper.FindHumanComponent(fm)
 			if body == nil {
@@ -236,9 +236,8 @@ func setMeshCommands(sim *step_sim.Simulation) {
 
 	// How often state is published to the UI. This is purely a telemetry
 	// concern: it never changes how fast the simulation itself runs (that is
-	// "rate:sim"). The two used to share the name "rate", which made the
-	// distinction easy to miss.
-	setPublishRate := step_sim.NewMeshCommandDescriptorWithArgs(
+	// "rate:sim").
+	commands["rate:ui"] = step_sim.NewMeshCommand(
 		"set UI publish interval, e.g. 'rate:ui 100ms' ('rate:ui 0' = publish every cycle)",
 		func(_ *fmesh.FMesh, args []string) {
 			if len(args) != 1 {
@@ -254,11 +253,9 @@ func setMeshCommands(sim *step_sim.Simulation) {
 			sim.PublishThrottle.SetInterval(d)
 			fmt.Println("publish interval set to", d)
 		})
-	commands["rate:ui"] = setPublishRate
-	commands["rate"] = setPublishRate // kept as an alias for the original name
 
 	// How fast simulated time advances relative to wall-clock time.
-	commands["rate:sim"] = step_sim.NewMeshCommandDescriptorWithArgs(
+	commands["rate:sim"] = step_sim.NewMeshCommand(
 		"set simulation speed in sim-seconds per real second, e.g. 'rate:sim 1' (real time), 'rate:sim 60', 'rate:sim max'",
 		func(_ *fmesh.FMesh, args []string) {
 			if len(args) != 1 {
@@ -284,7 +281,7 @@ func setMeshCommands(sim *step_sim.Simulation) {
 		})
 
 	// Print current time
-	commands["time:now"] = step_sim.NewMeshCommandDescriptor("Print current time", func(_ *fmesh.FMesh) {
+	commands["time:now"] = step_sim.NewMeshCommand("Print current time", func(_ *fmesh.FMesh, _ []string) {
 		tickCount := timeComponent.State().Get("tick_count")
 		simTime := timeComponent.State().Get("sim_duration")
 		simWallTime := timeComponent.State().Get("sim_wall_time")
@@ -294,33 +291,33 @@ func setMeshCommands(sim *step_sim.Simulation) {
 	})
 
 	// Print habitat state
-	commands["habitat:show"] = step_sim.NewMeshCommandDescriptor("Print habitat state", func(fm *fmesh.FMesh) {
+	commands["habitat:show"] = step_sim.NewMeshCommand("Print habitat state", func(fm *fmesh.FMesh, _ []string) {
 		temperature := fm.ComponentByName("gas").State().Get("temperature")
 		fmt.Println("Current gas temperature: ", temperature)
 	})
 
 	// Increase temperature
-	commands["temp:inc"] = step_sim.NewMeshCommandDescriptor("Increase gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
+	commands["temp:inc"] = step_sim.NewMeshCommand("Increase gas temperature by 1.0 degree", func(fm *fmesh.FMesh, _ []string) {
 		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+1.0).WithLabel("cmd", "change_temperature"))
 	})
 
 	// Decrease temperature
-	commands["temp:dec"] = step_sim.NewMeshCommandDescriptor("Decrease gas temperature by 1.0 degree", func(fm *fmesh.FMesh) {
+	commands["temp:dec"] = step_sim.NewMeshCommand("Decrease gas temperature by 1.0 degree", func(fm *fmesh.FMesh, _ []string) {
 		fm.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-1.0).WithLabel("cmd", "change_temperature"))
 	})
 
 	// Set the temperature to zero
-	commands["temp:zero"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to zeo degrees", func(fm *fmesh.FMesh) {
+	commands["temp:zero"] = step_sim.NewMeshCommand("Set gas temperature to zeo degrees", func(fm *fmesh.FMesh, _ []string) {
 		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(0.0).WithLabel("cmd", "set_temperature"))
 	})
 
 	// Make the gas hot
-	commands["temp:hot"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to +38.0", func(fm *fmesh.FMesh) {
+	commands["temp:hot"] = step_sim.NewMeshCommand("Set gas temperature to +38.0", func(fm *fmesh.FMesh, _ []string) {
 		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(+38.0).WithLabel("cmd", "set_temperature"))
 	})
 
 	// Make the gas cold
-	commands["temp:cold"] = step_sim.NewMeshCommandDescriptor("Set gas temperature to -35.0", func(fm *fmesh.FMesh) {
+	commands["temp:cold"] = step_sim.NewMeshCommand("Set gas temperature to -35.0", func(fm *fmesh.FMesh, _ []string) {
 		mesh.ComponentByName("gas").Inputs().ByName("ctl").PutSignals(signal.New(-35.0).WithLabel("cmd", "set_temperature"))
 	})
 

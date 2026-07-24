@@ -192,7 +192,7 @@ func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
 	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl),
 			"a job scheduled beyond the run fired early")
-		assert.Len(t, sim.Scheduler.Jobs(), 1, "the pending job should still be queued")
+		assert.Len(t, sim.Timeline.Jobs(), 1, "the pending job should still be queued")
 	})
 }
 
@@ -205,7 +205,7 @@ func Test_CancelledJobNeverFires(t *testing.T) {
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl))
-		assert.Empty(t, sim.Scheduler.Jobs())
+		assert.Empty(t, sim.Timeline.Jobs())
 	})
 }
 
@@ -223,7 +223,7 @@ func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
 			"the pre-wait step did not run")
 		assert.Equal(t, 8.0, physical.State().Get(controller.ActivityIntensity),
 			"the post-wait step did not run")
-		assert.Empty(t, sim.Programs.Running(), "the scenario should have finished")
+		assert.Empty(t, sim.Timeline.Scenarios(), "the scenario should have finished")
 	})
 }
 
@@ -241,7 +241,7 @@ func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
 			"the pre-wait step did not run")
 		assert.Equal(t, controller.RestingIntensity, physical.State().Get(controller.ActivityIntensity),
 			"the post-wait step ran before its wait elapsed")
-		assert.Len(t, sim.Programs.Running(), 1, "the scenario should still be waiting")
+		assert.Len(t, sim.Timeline.Scenarios(), 1, "the scenario should still be waiting")
 	})
 }
 
@@ -257,7 +257,7 @@ func Test_NamedScenarioIsReusable(t *testing.T) {
 			"both steps of the named scenario should have run")
 
 		// Defining a scenario must not consume it.
-		_, defined := sim.Programs.Steps("hydrate")
+		_, defined := sim.Timeline.Steps("hydrate")
 		assert.True(t, defined, "the definition should survive being run")
 	})
 }
@@ -272,7 +272,7 @@ func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl))
-		assert.Empty(t, sim.Programs.Running())
+		assert.Empty(t, sim.Timeline.Scenarios())
 	})
 }
 

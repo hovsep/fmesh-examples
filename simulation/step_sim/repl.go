@@ -7,28 +7,21 @@ import (
 	"strings"
 )
 
-// REPL reads commands from stdin and forwards them to the simulation.
+// REPL reads commands from stdin and forwards them to the simulation. It is the
+// default CommandSource.
 //
-// Channel ownership: the REPL is the owner of cmdChan and is the only place
-// that closes it (see Run). Once Run returns, the channel is closed, so
-// Simulation.SendCommand must not be called afterwards (sending on a closed
-// channel panics). Callers that send commands from elsewhere are responsible
-// for ensuring they do so only while the REPL is still running.
-type REPL struct {
-	cmdChan chan Command
-}
+// Channel ownership: Run owns the channel it is given and is the only place that
+// closes it, so Simulation.SendCommand must not be called once Run returns
+// (sending on a closed channel panics). Callers sending from elsewhere must do
+// so only while the REPL is still running.
+type REPL struct{}
 
-func NewREPL(cmdChan chan Command) *REPL {
-	return &REPL{
-		cmdChan: cmdChan,
-	}
-}
+func NewREPL() *REPL { return &REPL{} }
 
-// Run implements CommandSource. The channel argument is accepted for the
-// interface; the REPL uses the one it was constructed with, which is the same
-// channel the Application passes here.
-func (repl *REPL) Run(chan Command) {
-	defer close(repl.cmdChan)
+// Run implements CommandSource: it reads stdin lines and forwards them on
+// cmdChan, closing it on exit.
+func (repl *REPL) Run(cmdChan chan Command) {
+	defer close(cmdChan)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -41,29 +34,16 @@ func (repl *REPL) Run(chan Command) {
 		}
 
 		cmd := Command(strings.TrimSpace(scanner.Text()))
-
 		if cmd == "" {
 			continue
 		}
 
-		if repl.handleCommand(cmd) {
+		// "exit" ends the session; everything else (help included, so custom
+		// commands show up) goes to the simulation.
+		if cmd == Exit {
 			fmt.Println("Shutting down REPL...")
 			return
 		}
-	}
-}
-
-// handleCommand processes a single REPL command and returns true if the REPL should be closed
-func (repl *REPL) handleCommand(cmd Command) bool {
-	// Handle REPL-specific commands immediately and pass others to the channel
-	switch cmd {
-	case Exit:
-		return true
-	case Help:
-		// Pass to simulation, so custom commands can be also displayed
-		fallthrough
-	default:
-		repl.cmdChan <- cmd
-		return false
+		cmdChan <- cmd
 	}
 }
