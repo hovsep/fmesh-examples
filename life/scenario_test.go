@@ -25,6 +25,9 @@ func newCommandableSim(t *testing.T) (*step_sim.Simulation, chan step_sim.Comman
 
 	cmdChan := make(chan step_sim.Command, 16)
 	sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink()).Init(initSim)
+	// initSim paces the interactive sim to real time; tests run flat out so a
+	// simulated hour costs milliseconds rather than an hour.
+	sim.Pacer.SetFactor(step_sim.Uncapped)
 	return sim, cmdChan
 }
 

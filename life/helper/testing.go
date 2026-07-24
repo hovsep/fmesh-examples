@@ -10,6 +10,10 @@ import (
 )
 
 func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f func()) {
+	// Tests run the sim flat out regardless of how the interactive default is
+	// paced, so simulated hours cost milliseconds of wall clock.
+	sim.Pacer.SetFactor(step_sim.Uncapped)
+
 	// Ensure Exit is sent exactly once: the hook fires on every tick past the
 	// threshold, and after the first Exit the Sim stops reading cmdChan, so
 	// further sends would block forever and leak goroutines.
