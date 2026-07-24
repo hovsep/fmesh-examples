@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
@@ -27,17 +28,34 @@ type Simulation struct {
 	AutoPause       bool             // Automatically pause the simulation if nothing happens
 	Sink            sink.Sink        // Sink is useful for sending messages to the outside (ui, metrics, etc.)
 	PublishThrottle *PublishThrottle // Rate-limits how often state is published to the Sink (0 = every cycle)
+	Pacer           *SimPacer        // Paces simulated time against wall-clock time (uncapped by default)
+
+	// SimClock reports elapsed simulated time. Scheduling is expressed in it, so
+	// concrete simulations should point this at their own clock; it defaults to
+	// wall-clock time since the simulation was created.
+	SimClock SimClock
+
+	Scheduler *Scheduler // Commands queued to run at points in simulated time
+	Programs  *Programs  // Scenarios: ordered commands with waits between them
 }
 
 func NewSimulation(ctx context.Context, fm *fmesh.FMesh, cmdChan chan Command, sink sink.Sink) *Simulation {
-	return &Simulation{
+	sim := &Simulation{
 		ctx:             ctx,
 		FM:              fm,
 		cmdChan:         cmdChan,
 		MeshCommands:    getDefaultMeshCommands(),
 		Sink:            sink,
 		PublishThrottle: NewPublishThrottle(0), // no throttling by default; publish every cycle
+		// Uncapped by default, and inert until a caller declares how much
+		// simulated time a tick represents (only the concrete simulation knows).
+		Pacer:     NewSimPacer(0),
+		SimClock:  wallClockSince(time.Now()),
+		Scheduler: NewScheduler(),
+		Programs:  NewPrograms(),
 	}
+	sim.registerSchedulingCommands()
+	return sim
 }
 
 func getDefaultMeshCommands() MeshCommandMap {
@@ -108,8 +126,23 @@ func (s *Simulation) Run() {
 			continue
 		}
 
+		// Hold off until the next tick is due, re-entering the loop rather than
+		// sleeping the whole interval, so commands keep being drained while we wait.
+		if !s.Pacer.Ready() {
+			s.Pacer.Nap()
+			continue
+		}
+
+		// Fire anything simulated time has brought due. This runs here, on the
+		// simulation goroutine and between mesh runs, so scheduled commands
+		// reach the mesh exactly the way typed ones do.
+		if stop := s.runDueCommands(); stop {
+			return
+		}
+
 		// Run a single simulation cycle
 		runResult, err := s.FM.Run()
+		s.Pacer.Advance()
 		if err != nil {
 			// A failed cycle must not kill the simulation goroutine: if it did,
 			// nothing would drain cmdChan and the REPL would block forever on its
@@ -125,6 +158,18 @@ func (s *Simulation) Run() {
 	}
 }
 
+// runDueCommands executes everything the scheduler and any running programs have
+// brought due at the current simulated time.
+func (s *Simulation) runDueCommands() (stop bool) {
+	now := s.Now()
+	for _, cmd := range append(s.Scheduler.Due(now), s.Programs.Advance(now)...) {
+		if s.dispatchCommand(cmd) {
+			return true
+		}
+	}
+	return false
+}
+
 // dispatchCommand executes a single command and returns true if the
 // simulation loop should stop.
 func (s *Simulation) dispatchCommand(cmd Command) (stop bool) {
@@ -137,9 +182,38 @@ func (s *Simulation) dispatchCommand(cmd Command) (stop bool) {
 		fmt.Println("Exiting simulation...")
 		return true
 	default:
+		// A line with step separators is a scenario, not a command: run it as an
+		// anonymous program so its waits suspend only itself.
+		if isProgramLine(cmd) {
+			s.startAnonymousProgram(cmd)
+			return false
+		}
 		s.handleCommand(cmd)
 	}
 	return false
+}
+
+// isProgramLine reports whether a line should be run as a program.
+//
+// Commands that take a raw line containing separators (defining a program) are
+// excluded, or defining one would run it instead.
+func isProgramLine(cmd Command) bool {
+	if !strings.Contains(string(cmd), StepSeparator) {
+		return false
+	}
+	fields := strings.Fields(string(cmd))
+	return len(fields) > 0 && fields[0] != string(Script)
+}
+
+func (s *Simulation) startAnonymousProgram(cmd Command) {
+	steps, err := ParseSteps(string(cmd))
+	if err != nil {
+		fmt.Println("could not read scenario:", err)
+		return
+	}
+
+	program := s.Programs.Start("", steps)
+	fmt.Printf("running scenario [%d]: %s\n", program.ID, FormatSteps(steps))
 }
 
 func (s *Simulation) MaybeAutoPause(runResult *fmesh.RuntimeInfo) {
@@ -164,6 +238,10 @@ func (s *Simulation) Pause() {
 func (s *Simulation) Resume() {
 	fmt.Println("Simulation resumed")
 	s.isPaused = false
+	// Wall-clock time passed while we were paused but simulated time did not,
+	// so drop the schedule instead of racing to make up ticks that were never
+	// meant to run.
+	s.Pacer.Reset()
 }
 
 // handleCommand executes a valid command. The command line is split into a
@@ -186,6 +264,18 @@ func (s *Simulation) handleCommand(cmd Command) {
 
 func (s *Simulation) SendCommand(cmd Command) {
 	s.cmdChan <- cmd
+}
+
+// CommandNames returns every registered command name, sorted. Front ends use it
+// for completion and listings, so they never go out of step with what the
+// simulation actually accepts.
+func (s *Simulation) CommandNames() []string {
+	names := make([]string, 0, len(s.MeshCommands))
+	for cmd := range s.MeshCommands {
+		names = append(names, string(cmd))
+	}
+	slices.Sort(names)
+	return names
 }
 
 func showHelp(meshCommands MeshCommandMap) {
