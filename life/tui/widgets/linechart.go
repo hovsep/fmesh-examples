@@ -24,10 +24,31 @@ type LineChart struct {
 	Unit   string
 	Series []ChartSeries
 	Window int
+
+	// When fixedY is set the plot uses [lowerBound, upperBound] for its Y axis
+	// instead of auto-scaling to the current window. A steady axis is what makes
+	// a waveform like the ECG readable: the baseline and peaks stay put instead
+	// of the whole plot rescaling every frame.
+	fixedY                 bool
+	lowerBound, upperBound float64
 }
 
 func NewLineChart(title, unit string, series ...ChartSeries) *LineChart {
 	return &LineChart{Title: title, Unit: unit, Series: series, Window: defaultWindow}
+}
+
+// WithYBounds fixes the Y axis to [lower, upper].
+func (c *LineChart) WithYBounds(lower, upper float64) *LineChart {
+	c.fixedY = true
+	c.lowerBound = lower
+	c.upperBound = upper
+	return c
+}
+
+// WithWindow overrides how many recent samples the chart considers.
+func (c *LineChart) WithWindow(window int) *LineChart {
+	c.Window = window
+	return c
 }
 
 // Render draws the chart within the given width and height (in cells). height
@@ -80,6 +101,9 @@ func (c *LineChart) Render(width, height int) string {
 	}
 	if multiSeries {
 		opts = append(opts, asciigraph.SeriesLegends(legends...))
+	}
+	if c.fixedY {
+		opts = append(opts, asciigraph.LowerBound(c.lowerBound), asciigraph.UpperBound(c.upperBound))
 	}
 
 	return title + "\n" + asciigraph.PlotMany(data, opts...)

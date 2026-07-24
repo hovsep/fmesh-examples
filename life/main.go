@@ -119,10 +119,12 @@ func initSim(sim *step_sim.Simulation) {
 	fmt.Println("🚀 Simulation auto-started! Type 'help' for commands ('pause'/'resume', 'exit' to quit).")
 
 	// Publish state to the UI at a bounded rate so the simulation can run at full
-	// pace while the stream stays bounded (0 = every cycle). The "rate" command
-	// adjusts this at runtime; both it and the hook below run on the sim
-	// goroutine (see Simulation.Run), so no synchronization is needed.
-	sim.PublishThrottle.SetInterval(50 * time.Millisecond)
+	// pace while the stream stays bounded (0 = every cycle). 20ms (50 Hz) is fine
+	// enough that fast waveforms like the ECG's R-peaks are sampled cleanly at
+	// real time rather than aliased; "rate:ui" adjusts it at runtime. Both it and
+	// the hook below run on the sim goroutine (see Simulation.Run), so no
+	// synchronization is needed.
+	sim.PublishThrottle.SetInterval(20 * time.Millisecond)
 
 	// Teach the pacer how much simulated time a tick is worth, then run at real
 	// time by default: one simulated second per wall-clock second, so the body
