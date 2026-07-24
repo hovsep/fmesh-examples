@@ -3,7 +3,6 @@ package step_sim
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -68,6 +67,7 @@ func getDefaultMeshCommands() MeshCommandMap {
 	meshCommands[Help] = NewMeshCommand("show this help message", func(*fmesh.FMesh, []string) {
 		showHelp(meshCommands)
 	})
+	meshCommands.SetGroup("Session", Exit, Pause, Resume, Help)
 	return meshCommands
 }
 
@@ -278,10 +278,39 @@ func (s *Simulation) CommandNames() []string {
 	return names
 }
 
-func showHelp(meshCommands MeshCommandMap) {
-	fmt.Println("Available commands:")
+// fallbackGroup labels commands that were registered without a group.
+const fallbackGroup = "Other"
 
-	for _, cmd := range slices.Sorted(maps.Keys(meshCommands)) {
-		fmt.Printf("  %s - %s\n", cmd, meshCommands[cmd].Description)
+func showHelp(meshCommands MeshCommandMap) {
+	// Bucket the commands by their group.
+	groups := map[string][]Command{}
+	nameWidth := 0
+	for name, cmd := range meshCommands {
+		group := cmd.Group
+		if group == "" {
+			group = fallbackGroup
+		}
+		groups[group] = append(groups[group], name)
+		nameWidth = max(nameWidth, len(name))
+	}
+
+	// Named groups alphabetically, with the ungrouped "Other" bucket last.
+	order := make([]string, 0, len(groups))
+	for group := range groups {
+		if group != fallbackGroup {
+			order = append(order, group)
+		}
+	}
+	slices.Sort(order)
+	if _, ok := groups[fallbackGroup]; ok {
+		order = append(order, fallbackGroup)
+	}
+
+	fmt.Println("Available commands:")
+	for _, group := range order {
+		fmt.Printf("\n%s\n", group)
+		for _, name := range slices.Sorted(slices.Values(groups[group])) {
+			fmt.Printf("  %-*s  %s\n", nameWidth, name, meshCommands[name].Description)
+		}
 	}
 }

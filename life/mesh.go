@@ -122,6 +122,7 @@ func bodyCommand(commands step_sim.MeshCommandMap, name, description string, par
 				fmt.Printf("%s: %v\n", name, err)
 			}
 		})
+	commands.SetGroup("Body", step_sim.Command(name))
 }
 
 // noArgs is the argument parser for commands that take none.
@@ -338,4 +339,8 @@ func setMeshCommands(sim *step_sim.Simulation) {
 	})
 
 	setBodyCommands(commands)
+
+	// Label the help sections (body commands are grouped in bodyCommand).
+	commands.SetGroup("Simulation", "rate:ui", "rate:sim")
+	commands.SetGroup("Environment", "time:now", "habitat:show", "temp:inc", "temp:dec", "temp:zero", "temp:hot", "temp:cold")
 }
