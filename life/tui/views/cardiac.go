@@ -3,8 +3,8 @@ package views
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/guptarohit/asciigraph"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
 	"github.com/hovsep/fmesh-examples/life/tui/widgets"
@@ -38,18 +38,17 @@ func (v *CardiacView) Render(width, height int) string {
 		styles.LabelStyle.Render("     Blood CO₂: ") +
 		styles.ValueNormalStyle.Render(fmt.Sprintf("%.1f", co2)) + styles.UnitStyle.Render(" %")
 
-	// The ECG takes most of the height; the gauges sit under it. A fixed Y axis
-	// (the activation waveform runs from about -0.2 at the S-wave to 1.0 at the
-	// R-peak) keeps the baseline and the peaks steady instead of the plot
-	// rescaling every frame.
+	// The ECG takes most of the height; the gauges sit under it. It is an
+	// idealised trace drawn at the real heart rate and scrolled by simulated
+	// time -- see widgets.ECG for why the raw activation samples are not plotted.
 	ecgHeight := max(height-6, 8)
-	ecg := widgets.NewLineChart("ECG — cardiac activation (R-peaks)", "",
-		widgets.ChartSeries{
-			Signal: v.signal("heart_cardiac_activation"),
-			Color:  asciigraph.Red,
-			Legend: "cardiac",
-		},
-	).WithYBounds(-0.3, 1.1).Render(width, ecgHeight)
+	elapsed := time.Duration(v.State.GetLatestValue(models.SimDurationKey)) * time.Millisecond
+	alive := v.State.GetLatestValue("human-Leon::is_alive") != 0
+	bpm := hr
+	if !alive {
+		bpm = 0 // a dead heart flatlines
+	}
+	ecg := widgets.NewECG("ECG — heartbeat", bpm, elapsed.Seconds()).Render(width, ecgHeight)
 
 	var gauges strings.Builder
 	if s, ok := v.State.GetSignal("human-Leon::blood_o2_level"); ok {

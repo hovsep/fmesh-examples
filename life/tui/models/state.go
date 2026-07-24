@@ -7,6 +7,13 @@ import (
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 )
 
+// Telemetry keys for the simulation clock, published as scalars of the habitat's
+// tick signal. Views use these to show and animate against simulated time.
+const (
+	SimDurationKey  = "time::tick:sim_duration_ms"
+	SimTickCountKey = "time::tick:tick_count"
+)
+
 // AppState holds all application state.
 //
 // It is written from the background ingestion goroutine and read from the
