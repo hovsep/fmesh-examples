@@ -22,6 +22,38 @@ func FindHumanComponent(fm *fmesh.FMesh) *component.Component {
 	})
 }
 
+// PipeSpec is a single wiring edge from an output port to an input port.
+type PipeSpec struct {
+	From *port.Port
+	To   *port.Port
+}
+
+// MultiPipe wires several 1:1 connections, reporting which one failed.
+//
+// Wiring code reads as a list of edges, and a bare error from PipeTo gives no
+// clue which of a dozen lines produced it.
+func MultiPipe(specs ...PipeSpec) error {
+	for _, spec := range specs {
+		if spec.From == nil || spec.To == nil {
+			return fmt.Errorf("cannot pipe: %s", describePipe(spec))
+		}
+		if err := spec.From.PipeTo(spec.To); err != nil {
+			return fmt.Errorf("piping %s: %w", describePipe(spec), err)
+		}
+	}
+	return nil
+}
+
+func describePipe(spec PipeSpec) string {
+	name := func(p *port.Port) string {
+		if p == nil {
+			return "<missing port>"
+		}
+		return p.Name()
+	}
+	return fmt.Sprintf("%s -> %s", name(spec.From), name(spec.To))
+}
+
 // MultiForward helps to make multiple 1:1 port forwarding easier
 func MultiForward(portPairs ...PortPair) error {
 	for _, pair := range portPairs {

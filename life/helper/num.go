@@ -2,6 +2,7 @@ package helper
 
 import (
 	"log"
+	"math"
 	"math/rand"
 )
 
@@ -40,6 +41,21 @@ func Jitter(value, percent float64) float64 {
 // t is typically in [0,1].
 func Lerp(a, b, t float64) float64 {
 	return a + (b-a)*t
+}
+
+// DecayToward moves current toward target by one dt of exponential decay with
+// the given half-life (in the same time unit as dt).
+//
+// Physiological quantities relax rather than snap: a fright fades over minutes,
+// a full stomach empties over hours. Expressing that as a half-life keeps the
+// rate independent of the tick size, so changing the simulation step does not
+// change how fast the body settles.
+func DecayToward(current, target, dt, halfLife float64) float64 {
+	if halfLife <= 0 {
+		return target
+	}
+	retained := math.Exp2(-dt / halfLife)
+	return target + (current-target)*retained
 }
 
 // Mean calculates the arithmetic mean of a slice of numbers.

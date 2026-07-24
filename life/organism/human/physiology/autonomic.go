@@ -20,7 +20,12 @@ const (
 func GetAutonomicCoordination() (*component.Component, error) {
 	c, err := component.New("physiology:autonomic_coordination",
 		component.WithDescription("Autonomic coordination system"),
-		component.WithInputs("time", "neural_drive"),
+		// No time input on purpose: this component is driven entirely by the
+		// brain, and the tick is fanned out to every component that declares one
+		// (see human_component.go sense). Declaring a port it never reads made it
+		// activate on the tick alone, a cycle before neural_drive could arrive,
+		// and report the brain missing on every single tick.
+		component.WithInputs("neural_drive"),
 		component.WithOutputs("autonomic_tone"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			if !this.InputByName("neural_drive").HasSignals() {
