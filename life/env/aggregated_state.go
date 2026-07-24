@@ -80,7 +80,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 }
 
 // publishSignal renders one signal onto the telemetry stream as whitespace-separated
-// "key value" lines, which is all the consumers (tuiv2/protocol.Reader) can parse.
+// "key value" lines, which is all the consumers (tui/protocol.Reader) can parse.
 //
 // A signal contributes at most one line for its payload, plus one line per scalar
 // keyed "<key>:<scalarName>". Composite signals such as air or venous blood carry a

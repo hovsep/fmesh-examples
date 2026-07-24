@@ -5,9 +5,9 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/widgets"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/widgets"
 )
 
 // FeelingsView shows what the body feels, alongside the numbers behind it.

@@ -70,7 +70,7 @@ func main() {
 		fmt.Println("Failed to create sink:", err)
 		os.Exit(1)
 	}
-	fmt.Println("TUI: go run ./life/tuiv2/ /tmp/" + simMesh.Name() + ".sock")
+	fmt.Println("TUI: go run ./life/tui/ /tmp/" + simMesh.Name() + ".sock")
 
 	options := []step_sim.Option{step_sim.WithSink(uiSink)}
 

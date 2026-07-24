@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/guptarohit/asciigraph"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/widgets"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/widgets"
 )
 
 // RespiratoryView is a full-screen detail view of the breathing waveforms.

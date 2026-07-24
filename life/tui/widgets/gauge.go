@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
+	"github.com/hovsep/fmesh-examples/life/tui/styles"
 )
 
 type Gauge struct {

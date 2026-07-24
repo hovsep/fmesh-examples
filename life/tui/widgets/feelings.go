@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
-	"github.com/hovsep/fmesh-examples/life/tuiv2/models"
+	"github.com/hovsep/fmesh-examples/life/tui/models"
 )
 
 // feltThreshold is the intensity below which a feeling is not worth mentioning.
