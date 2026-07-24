@@ -68,6 +68,9 @@ func (s *Simulation) registerSchedulingCommands() {
 	s.MeshCommands[Load] = NewMeshCommand(
 		"read commands from a file, one per line",
 		func(_ *fmesh.FMesh, args []string) { s.cmdLoad(args) })
+
+	s.MeshCommands.SetGroup("Scheduling & scripts",
+		Every, After, At, Jobs, Cancel, Script, Run, Scripts, ListPrograms, Stop, Load)
 }
 
 // splitDurationAndCommand peels a leading duration off a command line.
