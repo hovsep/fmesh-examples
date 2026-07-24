@@ -26,33 +26,58 @@ const (
 	// Two degrees over comes out near 1.5 L an hour, which is about the most a
 	// person can actually sustain.
 	sweatMlPerDegreePerSec = 750.0 / 3600.0 * Milliliter
+
+	// The body defends a thermoneutral zone: within roughly thermoneutralTemp ±
+	// comfortRange the ambient temperature is fully compensated and the core does
+	// not drift. Only the part of the ambient beyond that band becomes a thermal
+	// load, so an ordinary room is harmless while a freezing or blazing one is not.
+	thermoneutralTemp = 28.0 * Celsius
+	comfortRange      = 12.0 * Celsius
+
+	// ambientCouplingPerSec sets how fast the uncompensated part of the ambient
+	// pulls the core. The body's own thermoregulation
+	// (physiology:physiological_state) pulls back toward 37, so this only wins in
+	// real extremes.
+	ambientCouplingPerSec = 1.0 / (2 * 3600) // per degree beyond the comfort band
+
+	// solarHeatingPerUVIPerSec is how much direct sun warms the body per unit of
+	// UV index.
+	solarHeatingPerUVIPerSec = 0.00002 * Celsius
 )
 
 // GetSkin returns the skin.
 //
-// Its job here is water: the steady insensible loss every body has, plus sweat
-// once the core runs hot. That makes exertion cost hydration, which is what
-// connects running to thirst. Pain and mechanical load are declared but not yet
-// modelled.
+// Two jobs: water and heat. It loses water steadily and sweats when the core
+// runs hot, and it is the body's thermal interface with the world -- it turns
+// the ambient temperature and sunlight into a heating or cooling rate that the
+// core temperature reservoir integrates. That is what makes a cold room or a
+// midday sun actually reach the body. Pain and mechanical load are declared but
+// not yet modelled.
 func GetSkin() (*component.Component, error) {
 	c, err := component.New("da:skin",
-		component.WithDescription("Skin: loses water steadily, and sweats when the body runs hot"),
+		component.WithDescription("Skin: loses water, sweats when hot, and couples the body to ambient temperature and sun"),
 		component.WithInputs(
 			common.TimePort,
-			"body_state", // from physiology:physiological_state
+			"body_state",  // from physiology:physiological_state (current core temp)
+			"ambient_gas", // habitat air, carrying its temperature
+			"radiation",   // sun UV index
 			"thermal_load",
-			"radiation",
 			"mechanical_load",
 		),
 		component.WithOutputs(
-			"losses", // water leaving the body, to physiology:physiological_state
-			"temperature_change",
+			"losses",             // water leaving the body
+			"temperature_change", // heating/cooling rate for the core reservoir
 			"pain_signal",
 			"sweat_rate",
 		),
-		component.WithActivationFunc(loseWater),
+		component.WithActivationFunc(helper.SequentialActivationFunc(
+			rememberEnvironment,
+			regulateSkin,
+		)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(common.CoreTemperature, NormalSkinCoreTemperature)
+			state.Set(stateAmbientTemp, NormalSkinCoreTemperature)
+			state.Set(stateUVIndex, 0.0)
 		}),
 	)
 	if err != nil {
@@ -61,17 +86,38 @@ func GetSkin() (*component.Component, error) {
 	return c, nil
 }
 
-func loseWater(this *component.Component) error {
-	// Remember the core temperature whenever it arrives. It reaches this
-	// component on its own cycle, so holding the last value keeps sweating
-	// steady rather than switching off on ticks where the signal has not landed.
-	if in := this.InputByName("body_state"); in.HasSignals() {
-		if sig := in.Signals().First(); sig != nil {
-			this.State().Set(common.CoreTemperature,
-				sig.Scalars().ValueOrDefault(common.CoreTemperature, NormalSkinCoreTemperature))
+const (
+	stateAmbientTemp common.State = "ambient_temperature"
+	stateUVIndex     common.State = "uv_index"
+)
+
+// rememberEnvironment latches the latest core temperature, ambient temperature
+// and sun, since each arrives on its own mesh cycle.
+func rememberEnvironment(this *component.Component) error {
+	if sig := firstSignal(this, "body_state"); sig != nil {
+		this.State().Set(common.CoreTemperature,
+			sig.Scalars().ValueOrDefault(common.CoreTemperature, NormalSkinCoreTemperature))
+	}
+	if sig := firstSignal(this, "ambient_gas"); sig != nil {
+		if _, _, _, _, temp, _, err := helper.UnpackAir(sig); err == nil {
+			this.State().Set(stateAmbientTemp, temp)
 		}
 	}
+	if sig := firstSignal(this, "radiation"); sig != nil {
+		this.State().Set(stateUVIndex, helper.AsF64OrDefault(sig, 0))
+	}
+	return nil
+}
 
+func firstSignal(this *component.Component, portName string) *signal.Signal {
+	in := this.InputByName(portName)
+	if in == nil || !in.HasSignals() {
+		return nil
+	}
+	return in.Signals().First()
+}
+
+func regulateSkin(this *component.Component) error {
 	tick := this.InputByName(common.TimePort).Signals().First()
 	if tick == nil {
 		return nil
@@ -82,11 +128,25 @@ func loseWater(this *component.Component) error {
 		return fmt.Errorf("skin tick: %w", err)
 	}
 
-	coreTemperature := this.State().Get(common.CoreTemperature).(float64)
-	sweatRate := max(coreTemperature-sweatOnsetTemperature, 0) * sweatMlPerDegreePerSec
+	core := this.State().Get(common.CoreTemperature).(float64)
+	ambient := this.State().Get(stateAmbientTemp).(float64)
+	uvi := this.State().Get(stateUVIndex).(float64)
+
+	// Water: steady insensible loss plus sweat once hot.
+	sweatRate := max(core-sweatOnsetTemperature, 0) * sweatMlPerDegreePerSec
 	lostMl := (InsensibleLossMlPerSec + sweatRate) * dt
 
+	// Heat: only the part of the ambient beyond the thermoneutral band is a load;
+	// the sun adds warmth; sweat cools. The result is a rate the core reservoir
+	// integrates. Sweating hard in the heat is what keeps the core from running away.
+	thermalRate := ambientLoad(ambient)*ambientCouplingPerSec +
+		uvi*solarHeatingPerUVIPerSec -
+		sweatRate*sweatCoolingPerMlPerSec
+
 	if err := this.OutputByName("sweat_rate").PutPayloads(sweatRate); err != nil {
+		return err
+	}
+	if err := this.OutputByName("temperature_change").PutPayloads(thermalRate); err != nil {
 		return err
 	}
 	return this.OutputByName("losses").PutSignals(
@@ -94,4 +154,23 @@ func loseWater(this *component.Component) error {
 			WithLabel("category", "skin").
 			WithScalar(common.WaterMl, lostMl),
 	)
+}
+
+// sweatCoolingPerMlPerSec is how much each mL/s of sweat cools the core. Chosen
+// so that maximal sweating offsets a warm environment rather than freezing the
+// body.
+const sweatCoolingPerMlPerSec = 0.006 * Celsius
+
+// ambientLoad returns the part of the ambient temperature the body cannot fully
+// compensate: zero within the thermoneutral band, and the excess beyond it
+// (signed) outside it.
+func ambientLoad(ambient float64) float64 {
+	switch delta := ambient - thermoneutralTemp; {
+	case delta > comfortRange:
+		return delta - comfortRange
+	case delta < -comfortRange:
+		return delta + comfortRange
+	default:
+		return 0
+	}
 }

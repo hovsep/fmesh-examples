@@ -80,6 +80,7 @@ func GetPhysiologicalState() (*component.Component, error) {
 			"absorption",    // gains from the gut
 			"losses",        // water leaving through skin and kidneys
 			"physical_load", // current exertion, which sets the burn rate
+			"thermal",       // heating/cooling rate from the skin (ambient + sun)
 		),
 		component.WithOutputs(
 			"body_state", // composite, broadcast to everything that needs to know
@@ -121,7 +122,24 @@ func updatePhysiologicalState(this *component.Component) error {
 	applyAbsorption(this)
 	applyLosses(this)
 	applyExertion(this)
+	applyThermal(this)
 	return nil
+}
+
+// applyThermal folds the skin's environmental heating/cooling rate into the core
+// temperature. It is the disturbance the homeostatic pull in applyExertion works
+// against, so mild weather barely moves the core while extremes overwhelm it.
+func applyThermal(this *component.Component) {
+	in := this.InputByName("thermal")
+	if !in.HasSignals() {
+		return
+	}
+
+	rate := helper.AsF64OrDefault(in.Signals().First(), 0)
+	dt := this.State().Get(StateDt).(float64)
+	this.State().Update(StateCoreTemperature, func(v any) any {
+		return helper.Clamp(v.(float64)+rate*dt, MinCoreTemperature, MaxCoreTemperature)
+	})
 }
 
 func publishBodyState(this *component.Component) error {

@@ -25,6 +25,17 @@ const (
 	// Metabolism: the brain is O2-hungry and returns CO2 to the blood (rates in %/s).
 	BrainO2Consumption = 3.0 * PercentPerSecond
 	BrainCO2Production = 3.0 * PercentPerSecond
+
+	// The brain is the first organ to suffer when the blood cannot supply it.
+	// Below these levels its drive fades toward zero (unconsciousness); above the
+	// comfortable levels it is unaffected. Tuned to this sim's blood game-scale.
+	lastBloodO2      common.State = "last_blood_o2"
+	lastBloodGlucose common.State = "last_blood_glucose"
+
+	o2FailLevel      = 35.0 * Percent // blood O2 (game scale) at which drive is gone
+	o2ComfortLevel   = 60.0 * Percent
+	glucoseFailLevel = 30.0 // mg/dL
+	glucoseComfort   = 55.0
 )
 
 func GetBrain() (*component.Component, error) {
@@ -34,11 +45,14 @@ func GetBrain() (*component.Component, error) {
 		component.WithInputs("time", "blood"),
 		component.WithOutputs("neural_drive", "blood"),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
+			senseBlood,
 			oscillateNeuralDrive,
 			emitBrainMetabolism,
 		)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(NeuralDrive, defaultNeuralDrive)
+			state.Set(lastBloodO2, da.DefaultO2Level)
+			state.Set(lastBloodGlucose, da.DefaultGlucoseLevel)
 		}),
 	)
 	if err != nil {
@@ -47,20 +61,49 @@ func GetBrain() (*component.Component, error) {
 	return c, nil
 }
 
+// senseBlood latches the blood O2 and glucose the brain is being supplied,
+// since the blood signal arrives on its own mesh cycle.
+func senseBlood(this *component.Component) error {
+	in := this.InputByName("blood")
+	if !in.HasSignals() {
+		return nil
+	}
+	if sig := in.Signals().First(); sig != nil {
+		this.State().Set(lastBloodO2, sig.Scalars().ValueOrDefault("O2_level", da.DefaultO2Level))
+		this.State().Set(lastBloodGlucose, sig.Scalars().ValueOrDefault("glucose_level", da.DefaultGlucoseLevel))
+	}
+	return nil
+}
+
 func oscillateNeuralDrive(this *component.Component) error {
 	// Only advance on a time tick; blood-only activations (from the shared bus) are ignored.
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
 
-	var nextND float64
-
+	// The baseline drive is the usual jittered random walk; it is stored so it
+	// recovers once the blood is restored.
+	var baseline float64
 	this.State().Update(NeuralDrive, func(currentND any) any {
-		nextND = helper.Clamp(helper.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
-		return nextND
+		baseline = helper.Clamp(helper.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
+		return baseline
 	})
 
-	return this.OutputByName("neural_drive").PutPayloads(nextND)
+	// What the brain can actually do is capped by what the blood supplies: severe
+	// hypoxia or hypoglycemia fades its drive toward zero (unconsciousness).
+	drive := baseline * brainViability(this)
+	return this.OutputByName("neural_drive").PutPayloads(drive)
+}
+
+// brainViability is 1 when the blood comfortably supplies the brain and falls to
+// 0 as O2 or glucose crosses into failure, whichever is worse.
+func brainViability(this *component.Component) float64 {
+	o2 := this.State().Get(lastBloodO2).(float64)
+	glucose := this.State().Get(lastBloodGlucose).(float64)
+
+	o2Factor := helper.Clamp((o2-o2FailLevel)/(o2ComfortLevel-o2FailLevel), 0, 1)
+	glucoseFactor := helper.Clamp((glucose-glucoseFailLevel)/(glucoseComfort-glucoseFailLevel), 0, 1)
+	return min(o2Factor, glucoseFactor)
 }
 
 // emitBrainMetabolism secretes the brain's O2 demand and CO2 output into the blood bus.

@@ -34,10 +34,16 @@ const (
 )
 
 var (
-	stateO2Level  common.State = "O2_level"
-	stateCO2Level common.State = "CO2_level"
-	stateDt       common.State = "dt" // last known tick duration (seconds)
+	stateO2Level      common.State = "O2_level"
+	stateCO2Level     common.State = "CO2_level"
+	stateGlucoseLevel common.State = "glucose_level"
+	stateDt           common.State = "dt" // last known tick duration (seconds)
 )
+
+// DefaultGlucoseLevel is the fasting blood sugar the blood assumes before the
+// reservoir (physiology:physiological_state) reports otherwise. Blood is only the
+// transport here; the glucose reservoir lives in physiology.
+const DefaultGlucoseLevel = 90.0 // mg/dL
 
 // defaultDt matches the habitat's per-tick duration (10 ms); used as a fallback
 // before the first time signal is seen.
@@ -69,6 +75,7 @@ func GetBloodSystem() (*component.Component, error) {
 			"time",
 			"airflow",    // lung airflow: >0 inhaling (fresh air), <0 exhaling
 			"secretions", // shared bus: any organ emits labeled substance signals here
+			"glucose",    // current blood sugar from the reservoir, carried to organs
 		),
 		component.WithOutputs(
 			"venous_blood", // composite signal (O2_level, CO2_level) broadcast to organs
@@ -79,6 +86,7 @@ func GetBloodSystem() (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateO2Level, DefaultO2Level)
 			state.Set(stateCO2Level, DefaultCO2Level)
+			state.Set(stateGlucoseLevel, DefaultGlucoseLevel)
 			state.Set(stateDt, defaultDt)
 		}),
 	)
@@ -101,6 +109,12 @@ func GetBloodSystem() (*component.Component, error) {
 // While only partial inputs have arrived (e.g. organ metabolism but not yet airflow) the
 // component keeps them and waits, so nothing is dropped.
 func exchangeBloodGases(this *component.Component) error {
+	// Latch the blood sugar the reservoir reports, whenever it arrives (on its
+	// own mesh cycle), so the published venous blood always carries a value.
+	if in := this.InputByName("glucose"); in.HasSignals() {
+		this.State().Set(stateGlucoseLevel, helper.AsF64OrDefault(in.Signals().First(), DefaultGlucoseLevel))
+	}
+
 	// Phase A: time tick -> publish current levels and remember dt.
 	if this.InputByName("time").HasSignals() {
 		dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
@@ -131,7 +145,8 @@ func publishBloodLevels(this *component.Component) {
 			WithLabel("category", "gas").
 			WithLabel("type", "venous").
 			WithScalar("O2_level", o2).
-			WithScalar("CO2_level", co2),
+			WithScalar("CO2_level", co2).
+			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)),
 	)
 	this.OutputByName("o2_level").PutPayloads(o2)
 	this.OutputByName("co2_level").PutPayloads(co2)

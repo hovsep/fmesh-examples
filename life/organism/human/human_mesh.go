@@ -251,8 +251,18 @@ func wireMetabolism(components *component.Collection) error {
 		return err
 	}
 
-	// Exertion sets the burn rate.
-	if err := physical.OutputByName("physical_load").PipeTo(bodyState.InputByName("physical_load")); err != nil {
+	// Exertion sets the burn rate and tires the muscles.
+	muscular := components.ByName("da:muscular_system")
+	if err := physical.OutputByName("physical_load").PipeTo(
+		bodyState.InputByName("physical_load"),
+		muscular.InputByName("physical_load"),
+	); err != nil {
+		return err
+	}
+
+	// The blood carries the reservoir's glucose to the organs that draw on it
+	// (the brain), so the gut ultimately reaches the brain through the bloodstream.
+	if err := bodyState.OutputByName("glycemia").PipeTo(components.ByName("da:blood_system").InputByName("glucose")); err != nil {
 		return err
 	}
 
@@ -273,6 +283,11 @@ func wireMetabolism(components *component.Collection) error {
 		return err
 	}
 
+	// The skin's environmental heating/cooling reaches the core temperature.
+	if err := skin.OutputByName("temperature_change").PipeTo(bodyState.InputByName("thermal")); err != nil {
+		return err
+	}
+
 	// Voiding.
 	if err := excretion.OutputByName("urine_out").PipeTo(kidney.InputByName("void")); err != nil {
 		return err
@@ -289,6 +304,7 @@ func wireMetabolism(components *component.Collection) error {
 		helper.PipeSpec{From: bodyState.OutputByName("body_temperature"), To: obs.InputByName("body_temperature")},
 		helper.PipeSpec{From: gi.OutputByName("stomach_fill"), To: obs.InputByName("stomach_fill")},
 		helper.PipeSpec{From: skin.OutputByName("sweat_rate"), To: obs.InputByName("sweat_rate")},
+		helper.PipeSpec{From: muscular.OutputByName("fatigue"), To: obs.InputByName("fatigue")},
 	)
 }
 
@@ -417,6 +433,10 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("physiology.GetAffect: %w", err)
 	}
+	muscular, err := da.GetMuscularSystem()
+	if err != nil {
+		return nil, fmt.Errorf("da.GetMuscularSystem: %w", err)
+	}
 
 	coll := component.NewCollection()
 	if err := coll.Add(
@@ -439,6 +459,7 @@ func getComponents() (*component.Collection, error) {
 		skin,
 		bodyState,
 		affect,
+		muscular,
 	); err != nil {
 		return nil, fmt.Errorf("failed to build human components: %w", err)
 	}
