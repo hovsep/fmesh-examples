@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
@@ -59,16 +60,69 @@ func Test_EatingRaisesBloodGlucoseAndReserves(t *testing.T) {
 
 func Test_DigestionIsNotInstant(t *testing.T) {
 	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "intake:food 800kcal"
+	// A small meal, fully eaten in ~30 s at the eating rate, so this test is
+	// about slow digestion rather than slow eating.
+	cmdChan <- "intake:food 90kcal"
 
 	gi := bodyComponent(t, sim, "da:gi_tract")
 
-	// The delay is the point: a meal should be something the body feels arriving,
-	// not a number that appears the instant it is swallowed.
-	helper.RunSimulationAndThen(sim, time.Minute, func() {
-		assert.Greater(t, gi.State().Get(da.StateStomachKcal).(float64), 700.0,
-			"most of a meal should still be in the stomach after one minute")
+	// The delay is the point: food should linger in the stomach and be released
+	// into the body slowly, not appear the instant it is swallowed.
+	helper.RunSimulationAndThen(sim, 90*time.Second, func() {
+		stomach := gi.State().Get(da.StateStomachKcal).(float64)
+		assert.Greater(t, stomach, 60.0,
+			"most of a small meal should still be in the stomach a minute after eating it")
 	})
+}
+
+func Test_EatingSpansTime(t *testing.T) {
+	sim, cmdChan := newCommandableSim(t)
+	// A large meal cannot be eaten in a minute; most of it is still on the plate
+	// (not yet swallowed) rather than already in the stomach.
+	cmdChan <- "intake:food 600kcal"
+
+	gi := bodyComponent(t, sim, "da:gi_tract")
+	intake := bodyComponent(t, sim, "controller:intake")
+
+	helper.RunSimulationAndThen(sim, time.Minute, func() {
+		// At ~3 kcal/s only ~180 kcal is eaten in a minute; the stomach holds no
+		// more than what has been swallowed so far.
+		assert.Less(t, gi.State().Get(da.StateStomachKcal).(float64), 250.0,
+			"a 600 kcal meal should not be fully eaten within a minute")
+		// The full amount was commanded up front, even though delivery lingers.
+		assert.Equal(t, 600.0, intake.State().Get(controller.TotalFoodKcal))
+	})
+}
+
+func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
+	// A big glass takes proportionally longer than a small one. Sampled through
+	// the process runner's remaining volume, which is the mechanism under test.
+	remainingAfter := func(command string, d time.Duration) float64 {
+		sim, cmdChan := newCommandableSim(t)
+		cmdChan <- step_sim.Command(command)
+		intake := bodyComponent(t, sim, "controller:intake")
+
+		var remaining float64
+		sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+			hooks.AfterRun(func(*fmesh.FMesh) error {
+				processes, _ := intake.State().Get(controller.StateProcesses).(*helper.ProcessSet)
+				if processes != nil {
+					remaining = processes.RemainingOf(controller.KindWaterMl)
+				}
+				return nil
+			})
+		})
+		helper.RunSimulationAndThen(sim, d, func() {})
+		return remaining
+	}
+
+	// After five seconds (at ~15 mL/s): 50 mL is done, 500 mL is still going.
+	if left := remainingAfter("intake:water 50ml", 5*time.Second); left > 0.001 {
+		t.Fatalf("50 mL should be fully drunk within five seconds, %v left", left)
+	}
+	if left := remainingAfter("intake:water 500ml", 5*time.Second); left < 350 {
+		t.Fatalf("500 mL should be far from finished after five seconds, only %v left", left)
+	}
 }
 
 func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {

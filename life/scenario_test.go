@@ -58,9 +58,9 @@ func Test_BodyCommands(t *testing.T) {
 			commands:  []step_sim.Command{"intake:water 500ml"},
 			component: "controller:intake",
 			assertions: func(t *testing.T, state component.State) {
+				// The full amount is commanded immediately; delivery is metered
+				// out over time by the process runner.
 				assert.Equal(t, 500.0, state.Get(controller.TotalWaterMl))
-				// The swallow is released on the next tick, so nothing is left pending.
-				assert.Equal(t, 0.0, state.Get(controller.PendingWaterMl))
 			},
 		},
 		{

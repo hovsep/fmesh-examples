@@ -22,6 +22,7 @@ const ControlPort = common.ControlPort
 // controller decides what that means physiologically.
 var commandRoutes = map[string]string{
 	"intake":    "controller:intake",
+	"smoke":     "controller:intake", // smoking is oral intake of a toxin
 	"activity":  "controller:physical_stress",
 	"emotion":   "controller:mental_stress",
 	"excretion": "controller:excretion",

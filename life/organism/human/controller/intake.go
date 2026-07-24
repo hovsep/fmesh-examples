@@ -10,52 +10,65 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// Intake command verbs. The namespace is fixed ("intake"); the verb names the
-// category, and unknown categories are carried through as generic substances so
-// new ones need no code change here.
+// Intake command verbs. The namespace is fixed; the verb names the category.
 const (
-	VerbWater = "water"
-	VerbFood  = "food"
+	VerbWater     = "water"
+	VerbFood      = "food"
+	VerbCigarette = "cigarette" // reached via the "smoke" namespace
 )
 
 // Intake controller state.
 const (
-	// Pending amounts accumulate between ticks, because several commands can
-	// arrive in the same tick and they should reach the body as one swallow.
-	PendingWaterMl  common.State = "pending_water_ml"
-	PendingFoodKcal common.State = "pending_food_kcal"
+	// Processes are the swallows and puffs currently in progress. Drinking,
+	// eating and smoking each meter out over time, so several can overlap.
+	StateProcesses common.State = "processes"
 
-	// Lifetime totals, useful for observing and for tests.
-	TotalWaterMl  common.State = "total_water_ml"
-	TotalFoodKcal common.State = "total_food_kcal"
+	// Lifetime totals of what was commanded (not yet what was delivered), useful
+	// for observing and for tests.
+	TotalWaterMl    common.State = "total_water_ml"
+	TotalFoodKcal   common.State = "total_food_kcal"
+	TotalCigarettes common.State = "total_cigarettes"
 )
 
-// Scalar names carried on the intake_intent signal.
+// Kinds delivered by intake processes; also the scalar names on intake_intent.
 const (
-	ScalarWaterMl  = "water_ml"
-	ScalarFoodKcal = "food_kcal"
+	KindWaterMl  = "water_ml"
+	KindFoodKcal = "food_kcal"
+	KindToxin    = "toxin"
+)
+
+// Delivery rates. Because a process delivers at a fixed rate, a larger amount
+// simply takes proportionally longer -- 500 mL takes ten times as long as 50 mL.
+const (
+	DrinkRateMlPerSec = 15.0 // a 500 mL glass takes ~33 s
+	EatRateKcalPerSec = 3.0  // a 600 kcal meal takes ~3.5 min
+
+	// A cigarette delivers one unit of toxin over a randomised 5-10 minutes.
+	cigaretteMeanDurationSec = 7.5 * 60.0
+	cigaretteDurationJitter  = 33.0 // percent, giving roughly 5-10 minutes
+	toxinPerCigarette        = 1.0
 )
 
 // GetIntake returns the intake controller.
 //
-// It is the body's mouth: it turns commands like "intake:water 500ml" or
-// "intake:food 200kcal" into a single ingestion intent per tick. It deliberately
-// knows nothing about digestion -- boundary:ingestion and da:gi_tract decide what
-// swallowing something actually does.
+// It is the body's mouth: it turns commands like "intake:water 500ml",
+// "intake:food 200kcal" and "smoke:cigarette 1" into ingestion that plays out
+// over time. It knows nothing about digestion -- boundary:ingestion and
+// da:gi_tract decide what swallowing something actually does.
 func GetIntake() (*component.Component, error) {
 	c, err := component.New("controller:intake",
-		component.WithDescription("Turns eating and drinking commands into ingestion intent"),
+		component.WithDescription("Turns eating, drinking and smoking commands into ingestion metered over time"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("intake_intent"),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			acceptIntakeCommands,
-			emitIntakeIntent,
+			meterIntake,
 		)),
 		component.WithInitialState(func(state component.State) {
-			state.Set(PendingWaterMl, 0.0)
-			state.Set(PendingFoodKcal, 0.0)
+			state.Set(StateProcesses, &helper.ProcessSet{})
 			state.Set(TotalWaterMl, 0.0)
 			state.Set(TotalFoodKcal, 0.0)
+			state.Set(TotalCigarettes, 0.0)
 		}),
 	)
 	if err != nil {
@@ -64,55 +77,70 @@ func GetIntake() (*component.Component, error) {
 	return c, nil
 }
 
-// acceptIntakeCommands folds arriving commands into the pending swallow.
+// acceptIntakeCommands starts a metered process for each arriving command.
 func acceptIntakeCommands(this *component.Component) error {
+	processes := this.State().Get(StateProcesses).(*helper.ProcessSet)
+
 	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
 		switch helper.CommandVerb(name) {
 		case VerbWater:
-			addPending(this, PendingWaterMl, TotalWaterMl, args.ValueOrDefault(ScalarWaterMl, 0))
+			ml := args.ValueOrDefault(KindWaterMl, 0)
+			processes.Start(&helper.Process{Kind: KindWaterMl, Remaining: ml, RatePerSec: DrinkRateMlPerSec})
+			addTotal(this, TotalWaterMl, ml)
 		case VerbFood:
-			addPending(this, PendingFoodKcal, TotalFoodKcal, args.ValueOrDefault(ScalarFoodKcal, 0))
+			kcal := args.ValueOrDefault(KindFoodKcal, 0)
+			processes.Start(&helper.Process{Kind: KindFoodKcal, Remaining: kcal, RatePerSec: EatRateKcalPerSec})
+			addTotal(this, TotalFoodKcal, kcal)
+		case VerbCigarette:
+			count := args.ValueOrDefault("count", 1)
+			// One puff-stream: `count` cigarettes' worth of toxin metered at the
+			// pace of a single cigarette, so more cigarettes simply take longer.
+			// The duration is randomised so no two are identical.
+			durationSec := helper.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
+			processes.Start(&helper.Process{
+				Kind:       KindToxin,
+				Remaining:  count * toxinPerCigarette,
+				RatePerSec: toxinPerCigarette / durationSec,
+			})
+			addTotal(this, TotalCigarettes, count)
 		default:
-			// Arbitrary categories ("intake:vitamin_c") are accepted but have no
-			// physiology behind them yet, so say so rather than failing silently.
 			this.Logger().Printf("intake category %q is not modelled yet, ignoring\n", helper.CommandVerb(name))
 		}
 		return nil
 	})
 }
 
-func addPending(this *component.Component, pendingKey, totalKey common.State, amount float64) {
+func addTotal(this *component.Component, key common.State, amount float64) {
 	if amount <= 0 {
-		this.Logger().Printf("ignoring non-positive intake amount %v for %s\n", amount, pendingKey)
+		this.Logger().Printf("ignoring non-positive intake amount %v for %s\n", amount, key)
 		return
 	}
-	this.State().Update(pendingKey, func(v any) any { return v.(float64) + amount })
-	this.State().Update(totalKey, func(v any) any { return v.(float64) + amount })
+	this.State().Update(key, func(v any) any { return v.(float64) + amount })
 }
 
-// emitIntakeIntent releases the pending swallow, once per tick.
-//
-// Gating on the tick (rather than emitting straight from the command handler)
-// keeps the controller in step with the rest of the body and means a burst of
-// commands in one tick produces one intent rather than several.
-func emitIntakeIntent(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+// meterIntake delivers each in-progress process's portion for this tick and
+// emits it as a single ingestion intent.
+func meterIntake(this *component.Component) error {
+	tick := this.InputByName(common.TimePort).Signals().First()
+	if tick == nil {
 		return nil
 	}
 
-	water := this.State().Get(PendingWaterMl).(float64)
-	food := this.State().Get(PendingFoodKcal).(float64)
-	if water == 0 && food == 0 {
-		return nil
+	dt, err := helper.TickDurationInSec(tick)
+	if err != nil {
+		return fmt.Errorf("intake controller tick: %w", err)
 	}
 
-	this.State().Set(PendingWaterMl, 0.0)
-	this.State().Set(PendingFoodKcal, 0.0)
+	delivered := this.State().Get(StateProcesses).(*helper.ProcessSet).Advance(dt)
+	if len(delivered) == 0 {
+		return nil
+	}
 
 	return this.OutputByName("intake_intent").PutSignals(
 		signal.New("intake_intent").
 			WithLabel("category", "intake").
-			WithScalar(ScalarWaterMl, water).
-			WithScalar(ScalarFoodKcal, food),
+			WithScalar(KindWaterMl, delivered[KindWaterMl]).
+			WithScalar(KindFoodKcal, delivered[KindFoodKcal]).
+			WithScalar(KindToxin, delivered[KindToxin]),
 	)
 }
