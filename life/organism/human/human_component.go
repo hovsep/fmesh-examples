@@ -41,6 +41,9 @@ func New(name string) (*component.Component, error) {
 		component.WithInputs(
 			"habitat_time_tick",
 			"habitat_gas_environmental_gas",
+			// Sunlight reaches the skin. Named to match the habitat's auto-wiring
+			// convention habitat_<factor>_<output> (see env/habitat.go).
+			"habitat_sun_uvi",
 			// Commands from outside the simulation (eat, drink, exercise...).
 			// Deliberately absent from validate(): commands are occasional, and
 			// waiting for one would stop the body between them.
@@ -99,12 +102,25 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 			return fmt.Errorf("failed to distribute time in human mesh: %w", err)
 		}
 
-		// Environmental air enters through the airway.
-		if err := port.ForwardSignals(
-			this.InputByName("habitat_gas_environmental_gas"),
-			mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
+		// Environmental air enters through the airway, and also reaches the skin,
+		// which feels the ambient temperature carried on it.
+		skin := mesh.ComponentByName("da:skin")
+		if err := helper.MultiForward(
+			helper.PortPair{
+				this.InputByName("habitat_gas_environmental_gas"),
+				mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
+			},
+			helper.PortPair{
+				this.InputByName("habitat_gas_environmental_gas"),
+				skin.InputByName("ambient_gas"),
+			},
+			// Sunlight falls on the skin.
+			helper.PortPair{
+				this.InputByName("habitat_sun_uvi"),
+				skin.InputByName("radiation"),
+			},
 		); err != nil {
-			return fmt.Errorf("failed to forward environmental gas into human mesh: %w", err)
+			return fmt.Errorf("failed to forward environment into human mesh: %w", err)
 		}
 		return nil
 	}

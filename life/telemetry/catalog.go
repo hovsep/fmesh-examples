@@ -180,6 +180,13 @@ var Catalog = []Metric{
 			HealthMin: 0, HealthMax: 0.5, Decimals: 3, View: ViewMetabolic,
 		},
 	},
+	{
+		Port: "muscle_fatigue", Source: "fatigue",
+		Display: &Display{
+			Label: "Muscle Fatigue", Unit: "%", Min: 0, Max: 100,
+			HealthMin: 0, HealthMax: 80, Decimals: 0, View: ViewMetabolic,
+		},
+	},
 
 	// --- Affect ---------------------------------------------------------
 	{
