@@ -4,34 +4,26 @@ import (
 	"testing"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+// Test_AppChecks is the wiring check: the mesh builds, the session is set up
+// over it, and the body everything else is about is actually in there.
 func Test_AppChecks(t *testing.T) {
-	tests := []struct {
-		name       string
-		assertions func(t *testing.T, app *step_sim.Application)
-	}{
-		{
-			name: "mesh is created and human component is present",
-			assertions: func(t *testing.T, app *step_sim.Application) {
-				assert.NotNil(t, app)
-				humanComponent := helper.FindHumanComponent(app.Sim.FM)
-				assert.NotNil(t, humanComponent)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mesh, err := getSimulationMesh()
-			assert.NoError(t, err)
-			app := step_sim.NewApp(mesh, initSim)
-			assert.NotNil(t, app)
+	mesh, err := getSimulationMesh()
+	require.NoError(t, err)
 
-			if tt.assertions != nil {
-				tt.assertions(t, app)
-			}
-		})
+	sim, err := newSession(mesh)
+	require.NoError(t, err)
+	require.NotNil(t, sim)
+
+	assert.NotNil(t, helper.FindHumanComponent(simMesh(sim)), "no human in the simulation")
+
+	// The world's own commands are registered alongside the session's built-ins,
+	// so a front end completing names sees both.
+	names := sim.Commands.Names()
+	for _, want := range []string{"intake:water", "temp:cold", "step", "every", "help"} {
+		assert.Contains(t, names, want)
 	}
 }

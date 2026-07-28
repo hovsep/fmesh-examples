@@ -1,41 +1,47 @@
 package main
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
+	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/stepsim"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// newCommandableSim builds a simulation with the body commands registered, plus
-// a command channel deep enough to queue a scenario before the loop starts.
-func newCommandableSim(t *testing.T) (*step_sim.Simulation, chan step_sim.Command) {
+// newCommandableSim builds the simulation with every command registered, ready
+// to be given commands and run for a stretch of simulated time.
+//
+// Commands queued with Do before the run are applied on its first pass, so a
+// test can set up a scenario and then let time pass.
+func newCommandableSim(t *testing.T) *session.Session {
 	t.Helper()
 
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
-	cmdChan := make(chan step_sim.Command, 16)
-	sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink()).Init(initSim)
-	// initSim paces the interactive sim to real time; tests run flat out so a
-	// simulated hour costs milliseconds rather than an hour.
-	sim.Pacer.SetFactor(step_sim.Uncapped)
-	return sim, cmdChan
+	sim, err := newSession(fm)
+	require.NoError(t, err)
+	return sim
+}
+
+// simMesh returns the mesh the session is driving.
+func simMesh(sim *session.Session) *fmesh.FMesh {
+	return sim.Engine.(*stepsim.Engine).Mesh()
 }
 
 // bodyComponent returns a component from inside the human's mesh.
-func bodyComponent(t *testing.T, sim *step_sim.Simulation, name string) *component.Component {
+func bodyComponent(t *testing.T, sim *session.Session, name string) *component.Component {
 	t.Helper()
 
-	body := helper.FindHumanComponent(sim.FM)
+	body := helper.FindHumanComponent(simMesh(sim))
 	require.NotNil(t, body, "no human in the simulation")
 
 	inner := human.InnerMesh(body)
@@ -49,13 +55,13 @@ func bodyComponent(t *testing.T, sim *step_sim.Simulation, name string) *compone
 func Test_BodyCommands(t *testing.T) {
 	tests := []struct {
 		name       string
-		commands   []step_sim.Command
+		commands   []command.Line
 		component  string
 		assertions func(t *testing.T, state component.State)
 	}{
 		{
 			name:      "drinking water reaches the intake controller",
-			commands:  []step_sim.Command{"intake:water 500ml"},
+			commands:  []command.Line{"intake:water 500ml"},
 			component: "controller:intake",
 			assertions: func(t *testing.T, state component.State) {
 				// The full amount is commanded immediately; delivery is metered
@@ -65,7 +71,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "volume units are interchangeable",
-			commands:  []step_sim.Command{"intake:water 0.5l"},
+			commands:  []command.Line{"intake:water 0.5l"},
 			component: "controller:intake",
 			assertions: func(t *testing.T, state component.State) {
 				assert.Equal(t, 500.0, state.Get(controller.TotalWaterMl))
@@ -73,7 +79,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "eating reaches the intake controller",
-			commands:  []step_sim.Command{"intake:food 200kcal"},
+			commands:  []command.Line{"intake:food 200kcal"},
 			component: "controller:intake",
 			assertions: func(t *testing.T, state component.State) {
 				assert.Equal(t, 200.0, state.Get(controller.TotalFoodKcal))
@@ -81,7 +87,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name: "several commands accumulate",
-			commands: []step_sim.Command{
+			commands: []command.Line{
 				"intake:water 250ml",
 				"intake:water 250ml",
 				"intake:food 100kcal",
@@ -94,7 +100,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "an activity with a duration ends on its own",
-			commands:  []step_sim.Command{"activity:start 8 200ms"},
+			commands:  []command.Line{"activity:start 8 200ms"},
 			component: "controller:physical_stress",
 			assertions: func(t *testing.T, state component.State) {
 				// The run is longer than the activity, so the body is back at rest.
@@ -104,7 +110,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "an activity without a duration keeps going",
-			commands:  []step_sim.Command{"activity:start 8"},
+			commands:  []command.Line{"activity:start 8"},
 			component: "controller:physical_stress",
 			assertions: func(t *testing.T, state component.State) {
 				assert.Equal(t, 8.0, state.Get(controller.ActivityIntensity))
@@ -113,7 +119,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "stopping returns the body to rest",
-			commands:  []step_sim.Command{"activity:start 8", "activity:stop"},
+			commands:  []command.Line{"activity:start 8", "activity:stop"},
 			component: "controller:physical_stress",
 			assertions: func(t *testing.T, state component.State) {
 				assert.Equal(t, controller.RestingIntensity, state.Get(controller.ActivityIntensity))
@@ -121,7 +127,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "voiding reaches the excretion controller",
-			commands:  []step_sim.Command{"excretion:urinate", "excretion:defecate"},
+			commands:  []command.Line{"excretion:urinate", "excretion:defecate"},
 			component: "controller:excretion",
 			assertions: func(t *testing.T, state component.State) {
 				assert.Equal(t, 1.0, state.Get(controller.TotalUrinations))
@@ -130,7 +136,7 @@ func Test_BodyCommands(t *testing.T) {
 		},
 		{
 			name:      "an emotional stimulus raises arousal and then fades",
-			commands:  []step_sim.Command{"emotion:stimulus 0.8 -0.5"},
+			commands:  []command.Line{"emotion:stimulus 0.8 -0.5"},
 			component: "controller:mental_stress",
 			assertions: func(t *testing.T, state component.State) {
 				arousal := state.Get(controller.Arousal).(float64)
@@ -147,12 +153,12 @@ func Test_BodyCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sim, cmdChan := newCommandableSim(t)
+			sim := newCommandableSim(t)
 
 			// Queue the scenario before the loop starts; the sim drains all
 			// pending commands at the top of its first iteration.
 			for _, cmd := range tt.commands {
-				cmdChan <- cmd
+				sim.Do(cmd)
 			}
 
 			target := bodyComponent(t, sim, tt.component)
@@ -168,11 +174,11 @@ func Test_BodyCommands(t *testing.T) {
 // the scheduler's own unit tests against a fake clock.
 
 func Test_ScheduledCommandsReachTheBody(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// Six intervals fit in the run, and the first fires one interval in rather
 	// than immediately, so five to six swallows are expected.
-	cmdChan <- "every 50ms intake:water 250ml"
+	sim.Do("every 50ms intake:water 250ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
@@ -183,10 +189,10 @@ func Test_ScheduledCommandsReachTheBody(t *testing.T) {
 }
 
 func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// Due well after the run ends, so it must never fire.
-	cmdChan <- "after 10s intake:water 500ml"
+	sim.Do("after 10s intake:water 500ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
@@ -197,10 +203,10 @@ func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
 }
 
 func Test_CancelledJobNeverFires(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
-	cmdChan <- "every 50ms intake:water 250ml"
-	cmdChan <- "cancel all"
+	sim.Do("every 50ms intake:water 250ml")
+	sim.Do("cancel all")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
@@ -210,10 +216,10 @@ func Test_CancelledJobNeverFires(t *testing.T) {
 }
 
 func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// The shape the northstar asked for: eat, let time pass, then exert.
-	cmdChan <- "intake:food 200kcal; wait 100ms; activity:start 8"
+	sim.Do("intake:food 200kcal; wait 100ms; activity:start 8")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	physical := bodyComponent(t, sim, "controller:physical_stress")
@@ -228,10 +234,10 @@ func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
 }
 
 func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// The wait outlasts the run, so only the first step should ever happen.
-	cmdChan <- "intake:food 200kcal; wait 10s; activity:start 8"
+	sim.Do("intake:food 200kcal; wait 10s; activity:start 8")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	physical := bodyComponent(t, sim, "controller:physical_stress")
@@ -246,10 +252,10 @@ func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
 }
 
 func Test_NamedScenarioIsReusable(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
-	cmdChan <- "script hydrate intake:water 250ml; wait 50ms; intake:water 250ml"
-	cmdChan <- "run hydrate"
+	sim.Do("script hydrate intake:water 250ml; wait 50ms; intake:water 250ml")
+	sim.Do("run hydrate")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
@@ -263,11 +269,11 @@ func Test_NamedScenarioIsReusable(t *testing.T) {
 }
 
 func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// The definition contains step separators; treating it as a scenario to run
 	// would drink the water at definition time.
-	cmdChan <- "script hydrate intake:water 250ml; wait 50ms; intake:water 250ml"
+	sim.Do("script hydrate intake:water 250ml; wait 50ms; intake:water 250ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
@@ -277,12 +283,12 @@ func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
 }
 
 func Test_UnknownBodyCommandDoesNotStopTheSimulation(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	// A command addressed to a namespace no controller owns must be reported and
 	// dropped: an activation error would halt the entire mesh, which would mean a
 	// typo could kill the patient.
-	cmdChan <- "intake:plutonium 1kg"
+	sim.Do("intake:plutonium 1kg")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {

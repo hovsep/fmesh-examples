@@ -1,51 +1,20 @@
 package helper
 
 import (
-	"fmt"
-	"sync"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 )
 
-func RunSimulationAndThen(sim *step_sim.Simulation, duration time.Duration, f func()) {
-	// Tests run the sim flat out regardless of how the interactive default is
-	// paced, so simulated hours cost milliseconds of wall clock.
-	sim.Pacer.SetFactor(step_sim.Uncapped)
-
-	// Ensure Exit is sent exactly once: the hook fires on every tick past the
-	// threshold, and after the first Exit the Sim stops reading cmdChan, so
-	// further sends would block forever and leak goroutines.
-	var exitOnce sync.Once
-
-	timeComponent := sim.FM.ComponentByName("time")
-	timeComponent.SetupHooks(func(hooks *component.Hooks) {
-		hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
-			_, simDuration, _, _, err := UnpackTick(activationContext.Component.OutputByName("tick").Signals().First())
-			if err != nil {
-				return err
-			}
-
-			if simDuration >= duration {
-				exitOnce.Do(func() {
-					fmt.Println("Sim duration reached:", simDuration)
-					go sim.SendCommand(step_sim.Exit)
-				})
-				return nil
-			}
-			return nil
-		})
-	})
-
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-		sim.Run()
-	}()
-
-	<-done
-
-	f()
+// RunSimulationAndThen runs the simulation for a stretch of simulated time and
+// then checks what it left behind.
+//
+// The run is measured by the simulation's own clock, so a test asking for two
+// minutes gets two minutes of Leon's life and pays milliseconds of wall clock
+// for them.
+func RunSimulationAndThen(sim *session.Session, duration time.Duration, then func()) {
+	if err := sim.RunFor(duration); err != nil {
+		panic("simulation failed: " + err.Error())
+	}
+	then()
 }

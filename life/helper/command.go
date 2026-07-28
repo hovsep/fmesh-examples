@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -91,6 +90,9 @@ func ForEachCommand(c *component.Component, portName string, fn func(name string
 // Quantity is a number with the unit the user typed it in, e.g. 500ml or 200kcal.
 // Commands accept whatever unit reads naturally and convert at the point of use,
 // so "intake:water 500ml" and "intake:water 0.5l" mean the same thing.
+//
+// Durations are not among them: simulated time belongs to the simulation, so
+// "30m" and "1d" go through simtime.ParseDuration.
 type Quantity struct {
 	Value float64
 	Unit  string
@@ -163,28 +165,4 @@ func (q Quantity) Grams() (float64, error) {
 	default:
 		return 0, fmt.Errorf("%q is not a mass (use mg, g or kg)", q.Unit)
 	}
-}
-
-// Duration converts a time quantity. It extends time.ParseDuration's units with
-// "d" for days, since simulated time routinely spans days.
-func (q Quantity) Duration() (time.Duration, error) {
-	switch q.Unit {
-	case "d":
-		return time.Duration(q.Value * float64(24*time.Hour)), nil
-	case "s", "ms", "us", "ns", "m", "h":
-		return time.ParseDuration(strconv.FormatFloat(q.Value, 'f', -1, 64) + q.Unit)
-	case "":
-		return 0, fmt.Errorf("duration %v needs a unit (s, m, h or d)", q.Value)
-	default:
-		return 0, fmt.Errorf("%q is not a duration (use s, m, h or d)", q.Unit)
-	}
-}
-
-// ParseDuration reads a simulated-time duration such as "30m", "1h" or "1d".
-func ParseDuration(s string) (time.Duration, error) {
-	q, err := ParseQuantity(s)
-	if err != nil {
-		return 0, err
-	}
-	return q.Duration()
 }

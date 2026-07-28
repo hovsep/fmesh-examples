@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/hovsep/fmesh-examples/life/helper"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,14 +14,14 @@ import (
 func Test_Time(t *testing.T) {
 	tests := []struct {
 		name       string
-		assertions func(t *testing.T, sim *step_sim.Simulation)
+		assertions func(t *testing.T, sim *session.Session)
 	}{
 		{
 			name: "time advances in timer",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			assertions: func(t *testing.T, sim *session.Session) {
 				var observedSimWallTime []time.Time
 
-				timeComponent := sim.FM.ComponentByName("time")
+				timeComponent := simMesh(sim).ComponentByName("time")
 				require.NotNil(t, timeComponent)
 
 				timeComponent.SetupHooks(func(hooks *component.Hooks) {
@@ -50,10 +48,7 @@ func Test_Time(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmdChan := make(chan step_sim.Command)
-			fm, err := getSimulationMesh()
-			require.NoError(t, err)
-			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
+			sim := newCommandableSim(t)
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)

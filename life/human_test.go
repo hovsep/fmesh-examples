@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -10,8 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,17 +17,17 @@ import (
 func Test_HumanLiveness(t *testing.T) {
 	tests := []struct {
 		name       string
-		assertions func(t *testing.T, sim *step_sim.Simulation)
+		assertions func(t *testing.T, sim *session.Session)
 	}{
 		{
 			name: "human is alive",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			assertions: func(t *testing.T, sim *session.Session) {
 				var observedIsAlive []bool
 
-				aggState := sim.FM.ComponentByName("aggregated_state")
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::is_alive").Signals().First()
 						if sig == nil {
@@ -54,14 +52,14 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "heart is beating",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			assertions: func(t *testing.T, sim *session.Session) {
 				var observedCardiacActivity []float64
 				var observedHeartRate []int
 
-				aggState := sim.FM.ComponentByName("aggregated_state")
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sigAct := aggState.OutputByName("human-Leon::heart_cardiac_activation").Signals().First()
 						if sigAct == nil {
@@ -95,14 +93,14 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "pleural pressure is negative",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			assertions: func(t *testing.T, sim *session.Session) {
 				var observedPleuralPressure []float64
 				var observedRespiratoryRate []int
 
-				aggState := sim.FM.ComponentByName("aggregated_state")
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sigPressure := aggState.OutputByName("human-Leon::pleural_pressure").Signals().First()
 						if sigPressure == nil {
@@ -140,13 +138,13 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "lungs are ventilating",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
+			assertions: func(t *testing.T, sim *session.Session) {
 				var observedLeftFlow, observedRightFlow []float64
 
-				aggState := sim.FM.ComponentByName("aggregated_state")
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sigLeft := aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()
 						if sigLeft == nil {
@@ -181,14 +179,14 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "inhaled air is changing while passing respiratory boundary",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				aggState := sim.FM.ComponentByName("aggregated_state")
+			assertions: func(t *testing.T, sim *session.Session) {
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				var envP, envTemp, envHum float64
 				var inspN, inspO, inspA, inspP, inspTemp, inspHum float64
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						envSig := aggState.OutputByName("gas::environmental_gas").Signals().First()
 						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
@@ -223,13 +221,13 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "blood gas levels are physiological",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				aggState := sim.FM.ComponentByName("aggregated_state")
+			assertions: func(t *testing.T, sim *session.Session) {
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				var observedO2, observedCO2 []float64
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
 						if sig == nil {
@@ -288,14 +286,14 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "exhaled gas is different from inspired",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				aggState := sim.FM.ComponentByName("aggregated_state")
+			assertions: func(t *testing.T, sim *session.Session) {
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				var left, right int
 				var inspO, inspTemp, inspHum float64
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						leftSig := aggState.OutputByName("human-Leon::lung_left_exhaled_gas").Signals().First()
 						rightSig := aggState.OutputByName("human-Leon::lung_right_exhaled_gas").Signals().First()
@@ -349,13 +347,13 @@ func Test_HumanLiveness(t *testing.T) {
 		},
 		{
 			name: "blood gas levels are dynamic over time",
-			assertions: func(t *testing.T, sim *step_sim.Simulation) {
-				aggState := sim.FM.ComponentByName("aggregated_state")
+			assertions: func(t *testing.T, sim *session.Session) {
+				aggState := simMesh(sim).ComponentByName("aggregated_state")
 				require.NotNil(t, aggState)
 
 				var o2, co2 []float64
 
-				sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
 						if sig == nil {
@@ -398,10 +396,7 @@ func Test_HumanLiveness(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmdChan := make(chan step_sim.Command)
-			fm, err := getSimulationMesh()
-			require.NoError(t, err)
-			sim := step_sim.NewSimulation(context.Background(), fm, cmdChan, sink.NewNoopSink())
+			sim := newCommandableSim(t)
 
 			if tt.assertions != nil {
 				tt.assertions(t, sim)
