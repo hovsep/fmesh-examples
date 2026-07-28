@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
+	"github.com/hovsep/fmesh-examples/life/tui/widgets"
 )
 
 // BodyView shows each organ's damage as a bar and a status word, so a smoking or
@@ -22,22 +23,22 @@ func NewBodyView(state *models.AppState, subject string) *BodyView {
 }
 
 func (v *BodyView) Render(width, height int) string {
-	// The longest organ label sets the column so the bars line up.
-	labelWidth := 0
-	for _, organ := range telemetry.DamagedOrgans {
-		labelWidth = max(labelWidth, lipgloss.Width(organ.Label))
-	}
-	barWidth := max(width-labelWidth-28, 10)
+	// The same grid every other bar sits on (see widgets/layout.go), with the
+	// status word as the trailing marker.
+	rows := rowWidth(panelWidth(width))
+	barWidth := widgets.BarWidth(rows)
 
 	lines := make([]string, 0, len(telemetry.DamagedOrgans))
 	for _, organ := range telemetry.DamagedOrgans {
 		key := v.subject + telemetry.PathSeparator + organ.Port + "_damage"
 		damage := v.State.GetLatestValue(key)
-		lines = append(lines, fmt.Sprintf("%-*s %s %3.0f%%  %s",
-			labelWidth, organ.Label,
-			renderDamageBar(damage, barWidth),
-			damage*100,
-			organStatus(damage),
+
+		lines = append(lines, fmt.Sprintf("%s %s %s %s %s",
+			styles.LabelStyle.Render(widgets.Label(organ.Label)),
+			damageStyle(damage).Render(widgets.Value(fmt.Sprintf("%.0f", damage*100))),
+			styles.UnitStyle.Render(widgets.Unit("%")),
+			widgets.Bar(damage, barWidth, damageStyle(damage)),
+			widgets.Marker(organStatus(damage)),
 		))
 	}
 
@@ -45,14 +46,14 @@ func (v *BodyView) Render(width, height int) string {
 		styles.LabelStyle.Render("healthy → damaged → failing → failed") + "\n\n" +
 		strings.Join(lines, "\n")
 
-	return styles.PanelStyle.Width(width - 4).Render(body)
+	return styles.PanelStyle.Width(panelWidth(width)).Render(body)
 }
 
 // organStatus turns a damage level into the word the Body view shows.
 func organStatus(damage float64) string {
 	switch {
 	case damage >= 1.0:
-		return failedStyle.Render("FAILED")
+		return failedStyle.Render("FAILED ")
 	case damage >= 0.66:
 		return alarmStyle.Render("failing")
 	case damage >= 0.25:
@@ -62,20 +63,17 @@ func organStatus(damage float64) string {
 	}
 }
 
-// renderDamageBar fills green→yellow→red as damage rises: the opposite polarity
-// of a health gauge, because here more filled is worse.
-func renderDamageBar(damage float64, width int) string {
-	filled := min(max(int(damage*float64(width)), 0), width)
-
-	style := okStyle
+// damageStyle runs green→yellow→red as damage rises: the opposite polarity of a
+// health gauge, because here a fuller bar is worse.
+func damageStyle(damage float64) lipgloss.Style {
 	switch {
 	case damage >= 0.66:
-		style = alarmStyle
+		return alarmStyle
 	case damage >= 0.25:
-		style = warnStyle
+		return warnStyle
+	default:
+		return okStyle
 	}
-	return style.Render(strings.Repeat("█", filled)) +
-		styles.LabelStyle.Render(strings.Repeat("░", width-filled))
 }
 
 var (

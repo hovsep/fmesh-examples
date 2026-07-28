@@ -2,28 +2,30 @@ package widgets
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
 )
 
+// Gauge shows where a reading sits in its range, as a filled bar.
+//
+// It is a vital sign with the trend swapped for a level, and sits on the same
+// grid (see layout.go), so a gauge and a sparkline in one panel line up.
 type Gauge struct {
 	Metadata models.SignalMetadata
 	Signal   *models.SignalData
-	Width    int
 }
 
-func NewGauge(metadata models.SignalMetadata, signal *models.SignalData, width int) *Gauge {
+func NewGauge(metadata models.SignalMetadata, signal *models.SignalData) *Gauge {
 	return &Gauge{
 		Metadata: metadata,
 		Signal:   signal,
-		Width:    width,
 	}
 }
 
-func (g *Gauge) Render() string {
+// Render draws one row of width display cells.
+func (g *Gauge) Render(width int) string {
 	if g.Signal == nil {
 		return ""
 	}
@@ -31,20 +33,10 @@ func (g *Gauge) Render() string {
 	value := g.Signal.Latest()
 	health := g.Metadata.HealthStatus(value)
 
-	percentage := 0.0
+	fraction := 0.0
 	if g.Metadata.MaxRange != g.Metadata.MinRange {
-		percentage = (value - g.Metadata.MinRange) / (g.Metadata.MaxRange - g.Metadata.MinRange)
+		fraction = (value - g.Metadata.MinRange) / (g.Metadata.MaxRange - g.Metadata.MinRange)
 	}
-	if percentage < 0 {
-		percentage = 0
-	}
-	if percentage > 1 {
-		percentage = 1
-	}
-
-	filledWidth := int(percentage * float64(g.Width))
-	bar := strings.Repeat(styles.ProgressFullChar, filledWidth) +
-		strings.Repeat(styles.ProgressEmptyChar, g.Width-filledWidth)
 
 	var barStyle lipgloss.Style
 	switch health {
@@ -56,25 +48,11 @@ func (g *Gauge) Render() string {
 		barStyle = styles.ValueCriticalStyle
 	}
 
-	var valueStr string
-	if g.Metadata.DecimalPlaces == 0 {
-		valueStr = fmt.Sprintf("%.0f", value)
-	} else {
-		format := fmt.Sprintf("%%.%df", g.Metadata.DecimalPlaces)
-		valueStr = fmt.Sprintf(format, value)
-	}
-
-	label := styles.LabelStyle.Render(g.Metadata.Label)
-	valueRendered := barStyle.Render(valueStr)
-	unit := styles.UnitStyle.Render(g.Metadata.Unit)
-	barRendered := barStyle.Render(bar)
-	healthSymbol := health.String()
-
-	return fmt.Sprintf("%s  %s%s %s %s",
-		label,
-		valueRendered,
-		unit,
-		barRendered,
-		healthSymbol,
+	return fmt.Sprintf("%s %s %s %s %s",
+		styles.LabelStyle.Render(Label(g.Metadata.Label)),
+		barStyle.Render(Value(fmt.Sprintf("%.*f", g.Metadata.DecimalPlaces, value))),
+		styles.UnitStyle.Render(Unit(g.Metadata.Unit)),
+		Bar(fraction, BarWidth(width), barStyle),
+		Marker(health.String()),
 	)
 }

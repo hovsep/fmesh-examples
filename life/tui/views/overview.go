@@ -55,8 +55,8 @@ func (v *OverviewView) Render(width, height int) string {
 // It used to be a hardcoded sea-level mixture, because composite gas signals
 // carried their values as scalars that the wire protocol dropped. Now that
 // scalars are published, the panel shows what Leon is actually breathing.
-func (v *OverviewView) renderInspiredGas() *widgets.GasComposition {
-	gas := widgets.NewGasComposition("", 20)
+func (v *OverviewView) renderInspiredGas(width int) *widgets.GasComposition {
+	gas := widgets.NewGasComposition("", width)
 	for _, part := range []struct {
 		scalar string
 		label  string
@@ -91,16 +91,16 @@ func (v *OverviewView) renderCardiovascular(width, height int) string {
 
 	if signal, exists := v.State.GetSignal("human-Leon::blood_o2_level"); exists {
 		metadata := models.SignalRegistry["human-Leon::blood_o2_level"]
-		gauge := widgets.NewGauge(metadata, signal, 12)
-		content.WriteString(gauge.Render() + "\n")
+		gauge := widgets.NewGauge(metadata, signal)
+		content.WriteString(gauge.Render(width-4) + "\n")
 	}
 
 	content.WriteString("\n")
 
 	if signal, exists := v.State.GetSignal("human-Leon::blood_co2_level"); exists {
 		metadata := models.SignalRegistry["human-Leon::blood_co2_level"]
-		gauge := widgets.NewGauge(metadata, signal, 12)
-		content.WriteString(gauge.Render() + "\n")
+		gauge := widgets.NewGauge(metadata, signal)
+		content.WriteString(gauge.Render(width-4) + "\n")
 	}
 
 	return styles.PanelStyle.
@@ -216,7 +216,7 @@ func (v *OverviewView) renderGasExchange(width, height int) string {
 	content.WriteString("\n")
 
 	content.WriteString(styles.LabelStyle.Render("Inspired Gas:") + "\n")
-	content.WriteString(v.renderInspiredGas().Render() + "\n")
+	content.WriteString(v.renderInspiredGas(width-4).Render() + "\n")
 
 	return styles.PanelStyle.
 		Width(width).

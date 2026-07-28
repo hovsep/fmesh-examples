@@ -52,10 +52,10 @@ func (v *CardiacView) Render(width, height int) string {
 
 	var gauges strings.Builder
 	if s, ok := v.State.GetSignal("human-Leon::blood_o2_level"); ok {
-		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_o2_level"], s, 20).Render() + "\n")
+		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_o2_level"], s).Render(width) + "\n")
 	}
 	if s, ok := v.State.GetSignal("human-Leon::blood_co2_level"); ok {
-		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_co2_level"], s, 20).Render())
+		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_co2_level"], s).Render(width))
 	}
 
 	return strings.Join([]string{header, "", ecg, "", gauges.String()}, "\n")

@@ -22,16 +22,17 @@ const maxFeelingsShown = 6
 // feelingIcons give each feeling a face, so the panel reads at a glance rather
 // than needing to be parsed.
 //
-// Single code points only: emoji built from zero-width joiner sequences (the
-// exhaling face, for one) are measured as one cell and drawn as two by most
-// terminals, which shears the label off the line next to them.
+// Keep to single code points, optionally with the emoji-presentation selector:
+// sequences built from zero-width joiners (the exhaling face, for one) are
+// measured as one cell and drawn as two by most terminals. The selector on the
+// plate is what makes it measure the two cells it is drawn in.
 var feelingIcons = map[string]string{
 	common.FeelingExhausted:      "🥵",
 	common.FeelingBreathless:     "😧",
 	common.FeelingHeadache:       "🤕",
 	common.FeelingFeverish:       "🤒",
 	common.FeelingThirsty:        "🥤",
-	common.FeelingHungry:         "🍽",
+	common.FeelingHungry:         "🍽️",
 	common.FeelingNeedToUrinate:  "🚻",
 	common.FeelingNeedToDefecate: "🚽",
 	common.FeelingAnxious:        "😰",
@@ -55,28 +56,31 @@ type feeling struct {
 	intensity float64
 }
 
-// Render draws the felt sensations as labelled bars.
+// Render draws the felt sensations as labelled bars, on the same grid as every
+// other bar in the dashboard (see layout.go): the icon and name share the label
+// column, so a feeling's bar starts where a vital sign's sparkline does.
 func (f *Feelings) Render(width int) string {
 	felt := f.current()
 	if len(felt) == 0 {
 		return dimStyle.Render("nothing in particular")
 	}
 
-	// The longest label sets the column, so the bars line up.
-	labelWidth := 0
-	for _, item := range felt {
-		labelWidth = max(labelWidth, lipgloss.Width(common.FeelingLabels[item.name]))
-	}
+	barWidth := BarWidth(width)
 
-	barWidth := max(width-labelWidth-14, 6)
+	// The icon is carved out of the label column rather than sitting outside it,
+	// or every feeling would be shifted against every reading.
+	nameWidth := LabelWidth - IconWidth - columnGap
 
 	lines := make([]string, 0, len(felt))
 	for _, item := range felt {
-		lines = append(lines, fmt.Sprintf("%s %-*s %s %3.0f%%",
-			icon(item.name),
-			labelWidth, common.FeelingLabels[item.name],
-			renderIntensityBar(item.intensity, barWidth),
-			item.intensity*100,
+		name := padRight(truncate(common.FeelingLabels[item.name], nameWidth), nameWidth)
+
+		lines = append(lines, fmt.Sprintf("%s %s %s %s %s",
+			Icon(icon(item.name)),
+			name,
+			intensityStyle(item.intensity).Render(Value(fmt.Sprintf("%.0f", item.intensity*100))),
+			dimStyle.Render(Unit("%")),
+			Bar(item.intensity, barWidth, intensityStyle(item.intensity)),
 		))
 	}
 	return strings.Join(lines, "\n")
@@ -115,22 +119,17 @@ func icon(name string) string {
 	return " "
 }
 
-// renderIntensityBar colours by how insistent the feeling is: a passing note in
+// intensityStyle colours by how insistent the feeling is: a passing note in
 // green, something that needs attention in red.
-func renderIntensityBar(intensity float64, width int) string {
-	filled := int(intensity * float64(width))
-	filled = min(max(filled, 0), width)
-
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#5fd75f"))
+func intensityStyle(intensity float64) lipgloss.Style {
 	switch {
 	case intensity >= 0.66:
-		style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff5f5f"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#ff5f5f"))
 	case intensity >= 0.33:
-		style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd75f"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd75f"))
+	default:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#5fd75f"))
 	}
-
-	return style.Render(strings.Repeat("█", filled)) +
-		dimStyle.Render(strings.Repeat("░", width-filled))
 }
 
 var dimStyle = lipgloss.NewStyle().Faint(true)

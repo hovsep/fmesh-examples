@@ -41,6 +41,13 @@ func (v *MetricsView) Render(width, height int) string {
 	}
 	columnWidth := (width - 6) / columns
 
+	// One column is one full-width panel, sized exactly as every other
+	// full-width view sizes its rows -- otherwise switching tabs moves the bars.
+	panel := columnWidth
+	if columns == 1 {
+		panel = panelWidth(width)
+	}
+
 	rendered := make([]string, 0, len(signals))
 	for _, s := range signals {
 		data, ok := v.State.GetSignal(s.Key)
@@ -48,11 +55,11 @@ func (v *MetricsView) Render(width, height int) string {
 			continue
 		}
 		metadata := models.SignalRegistry[s.Key]
-		rendered = append(rendered, widgets.NewVitalSign(metadata, data).Render(columnWidth-4))
+		rendered = append(rendered, widgets.NewVitalSign(metadata, data).Render(rowWidth(panel)))
 	}
 
 	if columns == 1 {
-		return styles.PanelStyle.Width(width - 4).Render(
+		return styles.PanelStyle.Width(panel).Render(
 			styles.PanelTitleStyle.Render(v.Title) + "\n" + strings.Join(rendered, "\n"))
 	}
 
