@@ -9,6 +9,7 @@ require (
 	github.com/guptarohit/asciigraph v0.8.1
 	github.com/hovsep/fmesh v1.10.3-Yerevan
 	github.com/hovsep/fmesh-examples v0.0.7
+	github.com/hovsep/fmesh-examples/simulation v0.0.0
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -42,3 +43,5 @@ require (
 )
 
 replace github.com/hovsep/fmesh-examples => ./../
+
+replace github.com/hovsep/fmesh-examples/simulation => ./../simulation
