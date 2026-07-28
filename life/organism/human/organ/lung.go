@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
@@ -152,7 +152,7 @@ func handleGasExchange(this *component.Component) error {
 
 	// Blood that arrives short of oxygen takes more of it out of the air, so the
 	// exhaled fraction falls as the deficit grows.
-	o2Deficit := helper.Clamp((da.NormalPaO2-bloodO2)/da.NormalPaO2, 0, 1)
+	o2Deficit := helper.Clamp((bloodstream.NormalPaO2-bloodO2)/bloodstream.NormalPaO2, 0, 1)
 	o2Consumed := baseO2Consumption + o2ConsumptionMaxDelta*o2Deficit
 
 	o2New := o - o2Consumed
@@ -164,7 +164,7 @@ func handleGasExchange(this *component.Component) error {
 	// carrying more. (The previous formula divided by the tick's air volume,
 	// which produced fractions of several hundred percent that only looked
 	// sane after the normalisation below.)
-	co2Frac := ExhaledCO2AtNormalPaCO2 * (bloodCO2 / da.NormalPaCO2)
+	co2Frac := ExhaledCO2AtNormalPaCO2 * (bloodCO2 / bloodstream.NormalPaCO2)
 	if co2Frac < 0 {
 		co2Frac = 0
 	}

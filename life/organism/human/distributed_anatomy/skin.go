@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -54,9 +55,14 @@ const (
 // core temperature reservoir integrates. That is what makes a cold room or a
 // midday sun actually reach the body. Pain and mechanical load are declared but
 // not yet modelled.
+const SkinO2PerMinute = 12.0
+
 func GetSkin() (*component.Component, error) {
 	c, err := component.New("da:skin",
 		component.WithDescription("Skin: loses water, sweats when hot, and couples the body to ambient temperature and sun"),
+		component.WithPlugins(
+			perfusion.New(perfusion.Config{Organ: "skin", O2PerMinute: SkinO2PerMinute}),
+		),
 		component.WithInputs(
 			common.TimePort,
 			"body_state",  // from physiology:physiological_state (current core temp)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -26,6 +27,21 @@ const (
 	maxFatigue = 100.0
 )
 
+// MuscleO2PerMinute is resting skeletal muscle's oxygen demand, in mL/min.
+const MuscleO2PerMinute = 50.0
+
+// exertionDemand scales the muscles' oxygen draw by what they are being asked to
+// do. Exertion is already expressed as a multiple of resting metabolism, so it
+// is the multiplier -- a body running at intensity 8 asks its muscles for eight
+// times their resting share.
+func exertionDemand(c *component.Component) float64 {
+	intensity, ok := c.State().Get(stateIntensity).(float64)
+	if !ok {
+		return 1
+	}
+	return max(intensity, 1)
+}
+
 // GetMuscularSystem returns the muscular system.
 //
 // It turns sustained exertion into fatigue that lingers and recovers slowly, so
@@ -34,6 +50,17 @@ const (
 func GetMuscularSystem() (*component.Component, error) {
 	c, err := component.New("da:muscular_system",
 		component.WithDescription("Muscular system: accrues fatigue under exertion, recovers at rest"),
+		component.WithPlugins(
+			// Muscle is what makes oxygen demand a variable rather than a
+			// constant. At rest it takes about a fifth of the body's oxygen; at
+			// hard work it can take ten times its own resting share, which is why
+			// exercise is the thing that stresses every other system at once.
+			perfusion.New(perfusion.Config{
+				Organ:       "muscular_system",
+				O2PerMinute: MuscleO2PerMinute,
+				Demand:      exertionDemand,
+			}),
+		),
 		component.WithInputs(common.TimePort, "physical_load"),
 		component.WithOutputs("fatigue"),
 		component.WithActivationFunc(helper.SequentialActivationFunc(

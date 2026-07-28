@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -38,10 +39,18 @@ func diaphragmPressureWave(phase float64) float64 {
 	return BasePleuralPressure - InspiratoryPressureAmplitude*effort
 }
 
+const DiaphragmO2PerMinute = 3.0
+
 func GetDiaphragm() (*component.Component, error) {
 	c, err := component.New("organ:diaphragm",
 		component.WithDescription("Diaphragm (primary respiratory actuator)"),
-		component.WithPlugins(damage.New(damage.Config{Organ: "diaphragm"})),
+		component.WithPlugins(
+			damage.New(damage.Config{Organ: "diaphragm"}),
+			// Quiet breathing is cheap; laboured breathing is not, and in
+			// respiratory failure the muscle that breathes can end up consuming a
+			// large share of the oxygen it is working to obtain.
+			perfusion.New(perfusion.Config{Organ: "diaphragm", O2PerMinute: DiaphragmO2PerMinute}),
+		),
 		component.WithInputs("time", "autonomic_tone"),
 		component.WithOutputs("pleural_pressure", "respiratory_rate"),
 		// Not FlatlineWhenFailed: a dead diaphragm must still publish a (constant)

@@ -3,9 +3,9 @@ package physiology
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -94,7 +94,7 @@ func latchVitals(this *component.Component) error {
 		this.State().Set(common.CoreTemperature, s.ValueOrDefault(common.CoreTemperature, NormalCoreTemperature))
 	}
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
-		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", da.NormalPaO2))
+		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", bloodstream.NormalPaO2))
 	}
 	return nil
 }

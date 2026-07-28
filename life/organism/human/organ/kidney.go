@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -40,10 +41,17 @@ const (
 //
 // It decides how much water to shed based on how hydrated the body is, fills the
 // bladder with it, and empties on command.
+const KidneyO2PerMinute = 18.0
+
 func GetKidney() (*component.Component, error) {
 	c, err := component.New("organ:kidney",
 		component.WithDescription("Kidney: sheds or conserves water according to hydration, and fills the bladder"),
-		component.WithPlugins(damage.New(damage.Config{Organ: "kidney"})),
+		component.WithPlugins(
+			damage.New(damage.Config{Organ: "kidney"}),
+			// The kidneys take a fifth of the cardiac output to filter with, but
+			// burn only a little of the oxygen that passes through them.
+			perfusion.New(perfusion.Config{Organ: "kidney", O2PerMinute: KidneyO2PerMinute}),
+		),
 		component.WithInputs(
 			common.TimePort,
 			"body_state", // from physiology:physiological_state
