@@ -17,7 +17,10 @@ type GasComponent struct {
 type GasComposition struct {
 	Title      string
 	Components []GasComponent
-	Width      int
+
+	// Width is the width of a whole row, not of the bar: the bar takes what the
+	// shared columns leave, exactly as it does on every other row.
+	Width int
 }
 
 func NewGasComposition(title string, width int) *GasComposition {
@@ -36,6 +39,8 @@ func (g *GasComposition) AddComponent(name string, percentage float64, color lip
 	})
 }
 
+// Render draws each component on the shared grid (see layout.go), so the gas
+// mixture lines up with the readings in the panels around it.
 func (g *GasComposition) Render() string {
 	if len(g.Components) == 0 {
 		return ""
@@ -48,24 +53,16 @@ func (g *GasComposition) Render() string {
 		output.WriteString(":\n")
 	}
 
+	barWidth := BarWidth(g.Width)
 	for _, comp := range g.Components {
-		barWidth := int(comp.Percentage / 100.0 * float64(g.Width))
-		if barWidth < 0 {
-			barWidth = 0
-		}
-		if barWidth > g.Width {
-			barWidth = g.Width
-		}
-
-		bar := strings.Repeat(styles.ProgressFullChar, barWidth) +
-			strings.Repeat(styles.ProgressEmptyChar, g.Width-barWidth)
-
 		barStyle := lipgloss.NewStyle().Foreground(comp.Color)
-		name := styles.LabelStyle.Width(4).Render(comp.Name)
-		percentage := styles.UnitStyle.Width(6).Render(fmt.Sprintf("%5.1f%%", comp.Percentage))
-		barRendered := barStyle.Render(bar)
 
-		output.WriteString(fmt.Sprintf(" %s %s %s\n", name, percentage, barRendered))
+		output.WriteString(fmt.Sprintf("%s %s %s %s\n",
+			styles.LabelStyle.Render(Label(comp.Name)),
+			barStyle.Render(Value(fmt.Sprintf("%.1f", comp.Percentage))),
+			styles.UnitStyle.Render(Unit("%")),
+			Bar(comp.Percentage/100.0, barWidth, barStyle),
+		))
 	}
 
 	return strings.TrimSuffix(output.String(), "\n")
