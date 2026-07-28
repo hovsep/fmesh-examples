@@ -55,6 +55,9 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	if err := wireVasculature(components); err != nil {
 		return nil, fmt.Errorf("wireVasculature: %w", err)
 	}
+	if err := wireTrauma(components); err != nil {
+		return nil, fmt.Errorf("wireTrauma: %w", err)
+	}
 	if err := wireHeart(components); err != nil {
 		return nil, fmt.Errorf("wireHeart: %w", err)
 	}
@@ -159,9 +162,23 @@ func wireVasculature(components *component.Collection) error {
 	return helper.MultiPipe(
 		helper.PipeSpec{From: vasculature.OutputByName("map"), To: components.ByName("physiology:autonomic_coordination").InputByName("map")},
 		helper.PipeSpec{From: vasculature.OutputByName("map"), To: obs.InputByName("mean_arterial_pressure")},
+		// A pressure too low to perfuse with is itself an injury.
+		helper.PipeSpec{From: vasculature.OutputByName("map"), To: components.ByName("physiology:physiological_load").InputByName("map")},
 		helper.PipeSpec{From: vasculature.OutputByName("cardiac_output"), To: obs.InputByName("cardiac_output")},
 		helper.PipeSpec{From: vasculature.OutputByName("svr"), To: obs.InputByName("vascular_resistance")},
 		helper.PipeSpec{From: vasculature.OutputByName("stroke_volume"), To: obs.InputByName("stroke_volume")},
+	)
+}
+
+// wireTrauma connects an injury to the circulation it empties.
+//
+// It is one pipe, and that is the point: the command says how much blood is
+// leaving, and everything that follows -- falling preload, falling pressure, the
+// baroreflex, the adrenal glands, the organs that starve -- happens because the
+// physiology already works, not because anything here knows what a wound is.
+func wireTrauma(components *component.Collection) error {
+	return components.ByName("controller:trauma").OutputByName("blood_loss").PipeTo(
+		components.ByName("da:blood_system").InputByName("blood_loss"),
 	)
 }
 
@@ -508,6 +525,10 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("controller.GetMental: %w", err)
 	}
+	trauma, err := controller.GetTrauma()
+	if err != nil {
+		return nil, fmt.Errorf("controller.GetTrauma: %w", err)
+	}
 
 	// The metabolic loop: what is swallowed, what becomes of it, what is lost,
 	// and how the body feels about the result.
@@ -561,6 +582,7 @@ func getComponents() (*component.Collection, error) {
 		excretion,
 		physical,
 		mental,
+		trauma,
 		ingestion,
 		gi,
 		kidney,

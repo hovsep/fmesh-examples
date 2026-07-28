@@ -11,6 +11,7 @@ import (
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -484,4 +485,165 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 // act on it exactly once.
 func within(elapsed, moment float64) bool {
 	return elapsed >= moment && elapsed < moment+0.011
+}
+
+// bleedAndWatch runs a hemorrhage of the given size and reports the worst
+// pressure reached, plus the state of the body at the end.
+func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (worstMAP float64, final map[string]float64) {
+	t.Helper()
+
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	require.NotNil(t, agg)
+
+	sim.Do(command.Line("trauma:bleed " + volume))
+
+	read := func(p string) float64 {
+		if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
+			v, _ := helper.NumericPayload(sig)
+			return v
+		}
+		return 0
+	}
+	scalar := func(name string) float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault(name, 0)
+		}
+		return 0
+	}
+
+	worstMAP = 1000
+	settled := false
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			// Ignore the first moments, before the circulation has published
+			// anything, or the "worst" pressure would be a zero that never was.
+			if p := read("mean_arterial_pressure"); p > 0 {
+				settled = true
+				worstMAP = min(worstMAP, p)
+			}
+			if settled {
+				final = map[string]float64{
+					"map":           read("mean_arterial_pressure"),
+					"hr":            read("heart_rate"),
+					"co":            read("cardiac_output"),
+					"kidney_damage": read("kidney_damage"),
+					"brain_damage":  read("brain_damage"),
+					"volume":        scalar("volume_l"),
+					"hemoglobin":    scalar("hemoglobin"),
+					"spo2":          scalar("SpO2"),
+					"adrenaline":    scalar(bloodstream.HormoneAdrenaline),
+				}
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, forDuration, func() {})
+	return worstMAP, final
+}
+
+// TestReference_ClassIIIHemorrhageIsCompensated: losing 30-40% of blood volume
+// is survivable, and survivable specifically because of the reflexes.
+//
+// The patient is tachycardic and vasoconstricted, their cardiac output is well
+// down, and their blood pressure is very nearly normal. That combination is the
+// trap the ATLS classification exists to teach: a normal blood pressure does not
+// mean a stable patient.
+func TestReference_ClassIIIHemorrhageIsCompensated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	worstMAP, final := bleedAndWatch(t, "2000ml", 300*time.Second)
+
+	assert.Greater(t, worstMAP, 60.0, "a class III hemorrhage should stay above the perfusion floor")
+	assert.Greater(t, final["hr"], 100.0, "the patient should be tachycardic")
+	assert.Less(t, final["co"], 4.0, "with a cardiac output well below normal")
+	assert.Greater(t, final["adrenaline"], 0.3, "and a substantial adrenaline response")
+
+	// Nothing is injured: this is compensation, not damage.
+	//
+	// Not quite zero, though. Every organ ages the whole time, so five minutes of
+	// living leaves about 1e-7 of damage behind. Hypoperfusion injures four
+	// orders of magnitude faster than that, so the threshold separates an organ
+	// that merely got older from one that was hurt.
+	const agingOnly = 1e-4
+	assert.Less(t, final["kidney_damage"], agingOnly, "a compensated hemorrhage should not injure the kidney")
+	assert.Less(t, final["brain_damage"], agingOnly, "nor the brain")
+
+	// And the blood gas -- the thing a monitor shows -- is untouched throughout.
+	assert.Greater(t, final["spo2"], 94.0,
+		"saturation stays normal while the patient bleeds: the supply fails, not the gas exchange")
+}
+
+// TestReference_ClassIVHemorrhageDecompensates: past roughly 40% the reflexes
+// run out of room, and the pressure they were defending collapses.
+//
+// Below about 60 mmHg the organs that autoregulate can no longer hold their own
+// supply. The kidney goes first -- it is given a fifth of the cardiac output to
+// filter with and is the first bed sacrificed -- which is why acute kidney injury
+// is the classic complication of a shock the patient survived.
+func TestReference_ClassIVHemorrhageDecompensates(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	worstMAP, final := bleedAndWatch(t, "3000ml", 300*time.Second)
+
+	assert.Less(t, worstMAP, 60.0, "a class IV hemorrhage should break through the perfusion floor")
+	assert.Greater(t, final["hr"], 140.0, "the heart should be running as fast as it can")
+	assert.Greater(t, final["adrenaline"], 0.9, "and the glands should be saturated")
+
+	// The kidney is injured, and stays injured: damage does not heal.
+	assert.Greater(t, final["kidney_damage"], 0.05,
+		"hypoperfusion should injure the kidney")
+	assert.Greater(t, final["kidney_damage"], final["brain_damage"],
+		"the kidney should suffer before the brain, which defends its own supply harder")
+
+	// Saturation is still normal. Nothing is wrong with this patient's lungs.
+	assert.Greater(t, final["spo2"], 94.0, "a dying patient with a perfect blood gas")
+}
+
+// TestReference_HemoglobinFallsAfterTheBleedingStops is a detail worth having
+// because it catches people out.
+//
+// What leaves a wound is whole blood, so the concentration of what remains is
+// unchanged: a haemoglobin taken during an acute bleed reads normal. It falls
+// afterwards, as the body pulls fluid in from its tissues to replace the volume
+// and dilutes the red cells that are left.
+func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+
+	sim.Do("trauma:bleed 2000ml")
+
+	hemoglobin := func() float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault("hemoglobin", 0)
+		}
+		return 0
+	}
+
+	var duringBleed, afterRefill float64
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			// Halfway through the bleeding (2 L at 25 mL/s takes 80 s).
+			if within(elapsed, 40) {
+				duringBleed = hemoglobin()
+			}
+			afterRefill = hemoglobin()
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 300*time.Second, func() {
+		assert.InDelta(t, bloodstream.NormalHemoglobin, duringBleed, 0.3,
+			"haemoglobin should read normal while the patient is actively bleeding")
+		assert.Less(t, afterRefill, duringBleed-1.0,
+			"and should fall afterwards, as fluid replaces the volume without the cells")
+	})
 }

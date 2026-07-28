@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -26,6 +27,13 @@ const (
 	// dissociation curve turns steep and is severe once saturation collapses.
 	hypoxiaOnset = 55.0
 	hypoxiaFull  = 25.0
+
+	// Hypoperfusion (mean arterial pressure, mmHg). Below about 60 the organs
+	// that autoregulate can no longer hold their own blood supply, and below 40
+	// nothing is being perfused adequately at all. This is the stressor that
+	// makes shock lethal rather than merely alarming.
+	hypoperfusionOnset = 60.0
+	hypoperfusionFull  = 40.0
 
 	// Hypoglycemia (mg/dL).
 	hypoglycemiaOnset = 55.0
@@ -55,7 +63,7 @@ const (
 func GetPhysiologicalLoad() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_load",
 		component.WithDescription("Turns out-of-range reservoirs into organ damage (the death cascade)"),
-		component.WithInputs(common.TimePort, "body_state", "venous_blood"),
+		component.WithInputs(common.TimePort, "body_state", "venous_blood", "map"),
 		component.WithOutputs(damageOutputs()...),
 		component.WithActivationFunc(helper.SequentialActivationFunc(
 			latchVitals,
@@ -64,6 +72,7 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set(common.HydrationPct, 100.0)
 			state.Set(common.Glycemia, NormalGlycemia)
+			state.Set(loadMAP, da.NormalMAP)
 			state.Set(common.CoreTemperature, NormalCoreTemperature)
 			state.Set(loadO2, 100.0)
 		}),
@@ -74,7 +83,10 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 	return c, nil
 }
 
-const loadO2 common.State = "load_o2"
+const (
+	loadO2  common.State = "load_o2"
+	loadMAP common.State = "load_map"
+)
 
 func damageOutputs() []string {
 	outs := make([]string, len(DamageTargets))
@@ -96,6 +108,9 @@ func latchVitals(this *component.Component) error {
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
 		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", bloodstream.NormalPaO2))
 	}
+	if sig := firstSignal(this, "map"); sig != nil {
+		this.State().Set(loadMAP, helper.AsF64OrDefault(sig, da.NormalMAP))
+	}
 	return nil
 }
 
@@ -115,6 +130,7 @@ func inflictDamage(this *component.Component) error {
 	dehydration := rampUpAsFalls(get(common.HydrationPct), dehydrationOnset, dehydrationFull)
 	hypoxia := rampUpAsFalls(get(loadO2), hypoxiaOnset, hypoxiaFull)
 	hypoglycemia := rampUpAsFalls(get(common.Glycemia), hypoglycemiaOnset, hypoglycemiaFull)
+	hypoperfusion := rampUpAsFalls(get(loadMAP), hypoperfusionOnset, hypoperfusionFull)
 	hyperthermia := rampUpAsRises(get(common.CoreTemperature), hyperthermiaOnset, hyperthermiaFull)
 	hypothermia := rampUpAsFalls(get(common.CoreTemperature), hypothermiaOnset, hypothermiaFull)
 	temperature := max(hyperthermia, hypothermia)
@@ -122,11 +138,16 @@ func inflictDamage(this *component.Component) error {
 	// Per-organ sensitivity to each stressor. Different profiles give the collapse
 	// a visible order: the kidney goes first when dehydrated, the brain first when
 	// starved of oxygen or sugar.
+	// The kidney suffers a failing pressure first and worst: it is given a fifth
+	// of the cardiac output precisely so that it can filter, and it is the first
+	// bed sacrificed when there is not enough pressure to go round. Acute kidney
+	// injury is the classic survivor's complication of a shock that was itself
+	// survived.
 	damage := map[string]float64{
-		"kidney":     2.0*dehydration + 0.3*temperature,
-		"brain":      0.8*dehydration + 1.0*hypoxia + 1.0*hypoglycemia + 0.6*temperature,
-		"heart":      0.2*dehydration + 0.8*hypoxia + 0.6*temperature,
-		"diaphragm":  0.5*hypoxia + 0.4*temperature,
+		"kidney":     2.0*dehydration + 0.3*temperature + 2.0*hypoperfusion,
+		"brain":      0.8*dehydration + 1.0*hypoxia + 1.0*hypoglycemia + 0.6*temperature + 1.2*hypoperfusion,
+		"heart":      0.2*dehydration + 0.8*hypoxia + 0.6*temperature + 1.0*hypoperfusion,
+		"diaphragm":  0.5*hypoxia + 0.4*temperature + 0.4*hypoperfusion,
 		"lung_left":  0.4 * temperature,
 		"lung_right": 0.4 * temperature,
 	}
