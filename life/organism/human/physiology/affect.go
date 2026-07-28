@@ -3,9 +3,9 @@ package physiology
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -84,8 +84,8 @@ func GetAffect() (*component.Component, error) {
 			state.Set(common.HydrationPct, 100.0)
 			state.Set(common.Glycemia, NormalGlycemia)
 			state.Set(common.CoreTemperature, NormalCoreTemperature)
-			state.Set(stateO2, da.NormalPaO2)
-			state.Set(stateCO2, da.NormalPaCO2)
+			state.Set(stateO2, bloodstream.NormalPaO2)
+			state.Set(stateCO2, bloodstream.NormalPaCO2)
 			state.Set(stateBladder, 0.0)
 			state.Set(stateBowel, 0.0)
 			state.Set(stateExertion, 1.0)
@@ -183,8 +183,8 @@ func rememberInputs(this *component.Component) {
 					sig.Scalars().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
 			})
 		}
-		smooth(stateO2, "PaO2", da.NormalPaO2)
-		smooth(stateCO2, "PaCO2", da.NormalPaCO2)
+		smooth(stateO2, "PaO2", bloodstream.NormalPaO2)
+		smooth(stateCO2, "PaCO2", bloodstream.NormalPaCO2)
 	}
 	if sig := firstSignal(this, "bladder_fill"); sig != nil {
 		this.State().Set(stateBladder, helper.AsF64OrDefault(sig, 0))

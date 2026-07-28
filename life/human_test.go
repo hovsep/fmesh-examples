@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/stretchr/testify/assert"
@@ -244,12 +244,12 @@ func Test_HumanLiveness(t *testing.T) {
 					require.NotEmpty(t, observedCO2, "should collect blood CO2 samples")
 
 					for _, v := range observedO2 {
-						assert.GreaterOrEqual(t, v, da.MinPaO2, "PaO2 should stay above the survivable floor")
-						assert.LessOrEqual(t, v, da.MaxPaO2, "PaO2 should stay below the ceiling")
+						assert.GreaterOrEqual(t, v, bloodstream.MinPaO2, "PaO2 should stay above the survivable floor")
+						assert.LessOrEqual(t, v, bloodstream.MaxPaO2, "PaO2 should stay below the ceiling")
 					}
 					for _, v := range observedCO2 {
-						assert.GreaterOrEqual(t, v, da.MinPaCO2, "PaCO2 should stay above the floor")
-						assert.LessOrEqual(t, v, da.MaxPaCO2, "PaCO2 should stay below the ceiling")
+						assert.GreaterOrEqual(t, v, bloodstream.MinPaCO2, "PaCO2 should stay above the floor")
+						assert.LessOrEqual(t, v, bloodstream.MaxPaCO2, "PaCO2 should stay below the ceiling")
 					}
 
 					meanO2 := helper.Mean(observedO2)
@@ -280,7 +280,7 @@ func Test_HumanLiveness(t *testing.T) {
 					assert.Greater(t, co2Range, 0.5, "CO2 should fluctuate (gas exchange active)")
 
 					// Mean O2 should stay near the resting level, not drift to a clamp boundary
-					assert.InDelta(t, da.NormalPaO2, meanO2, 50.0, "mean O2 should be near resting level")
+					assert.InDelta(t, bloodstream.NormalPaO2, meanO2, 50.0, "mean O2 should be near resting level")
 				})
 			},
 		},
@@ -391,9 +391,9 @@ func Test_HumanLiveness(t *testing.T) {
 					assert.Greater(t, countDirectionChanges(steadyCO2), 3, "CO2 should rise and fall repeatedly")
 
 					// ... and must not be pinned flat at a clamp boundary.
-					assert.Greater(t, o2Min, da.MinPaO2, "O2 should not be stuck at the floor")
-					assert.Less(t, o2Max, da.MaxPaO2, "O2 should not be stuck at the ceiling")
-					assert.Less(t, co2Max, da.MaxPaCO2, "CO2 should not be stuck at the ceiling")
+					assert.Greater(t, o2Min, bloodstream.MinPaO2, "O2 should not be stuck at the floor")
+					assert.Less(t, o2Max, bloodstream.MaxPaO2, "O2 should not be stuck at the ceiling")
+					assert.Less(t, co2Max, bloodstream.MaxPaCO2, "CO2 should not be stuck at the ceiling")
 				})
 			},
 		},

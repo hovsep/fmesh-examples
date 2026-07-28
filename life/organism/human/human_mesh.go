@@ -15,6 +15,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -47,6 +48,9 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	// Do the wiring
 	if err := wireBrain(components); err != nil {
 		return nil, fmt.Errorf("wireBrain: %w", err)
+	}
+	if err := wireCirculation(components); err != nil {
+		return nil, fmt.Errorf("wireCirculation: %w", err)
 	}
 	if err := wireHeart(components); err != nil {
 		return nil, fmt.Errorf("wireHeart: %w", err)
@@ -86,10 +90,7 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 }
 
 func wireBrain(components *component.Collection) error {
-	brain := components.ByName("organ:brain")
-	blood := components.ByName("da:blood_system")
-
-	if err := brain.
+	return components.ByName("organ:brain").
 		OutputByName("neural_drive").
 		PipeTo(
 			// Brain drives the autonomic coordination system
@@ -97,20 +98,34 @@ func wireBrain(components *component.Collection) error {
 
 			// Brain activity is observable
 			components.ByName("physiology:observable_state").InputByName("brain_activity"),
-		); err != nil {
-		return err
-	}
+		)
+}
 
-	// Brain secretes substances (O2 demand, CO2) into the shared blood bus...
-	if err := brain.OutputByName("blood").PipeTo(
-		blood.InputByName("secretions"),
-	); err != nil {
-		return err
-	}
-	// ...and reads the current bloodstream contents.
-	return blood.OutputByName("venous_blood").PipeTo(
-		brain.InputByName("blood"),
-	)
+// wireCirculation connects every perfused tissue to the bloodstream.
+//
+// The list is derived from the components themselves rather than written out:
+// anything carrying the perfusion plugin gets the blood, and gives back what it
+// has taken. Adding an organ to the circulation is therefore a matter of saying
+// how much oxygen it needs, and nothing here changes -- the same principle the
+// tick fan-out and the habitat's factor wiring already follow.
+func wireCirculation(components *component.Collection) error {
+	blood := components.ByName("da:blood_system")
+
+	return components.ForEach(func(c *component.Component) error {
+		if c == blood || !perfusion.IsPerfused(c) {
+			return nil
+		}
+
+		// The organ reads what is being delivered...
+		if err := blood.OutputByName("venous_blood").PipeTo(c.InputByName(perfusion.SupplyPort)); err != nil {
+			return fmt.Errorf("supplying %s: %w", c.Name(), err)
+		}
+		// ...and returns what it has consumed and produced.
+		if err := c.OutputByName(perfusion.ReturnPort).PipeTo(blood.InputByName("secretions")); err != nil {
+			return fmt.Errorf("draining %s: %w", c.Name(), err)
+		}
+		return nil
+	})
 }
 
 func wireAutotomicCoordination(components *component.Collection) error {
@@ -133,27 +148,12 @@ func wireHeart(components *component.Collection) error {
 		return err
 	}
 
-	if err := components.ByName("organ:heart").
+	return components.ByName("organ:heart").
 		OutputByName("rate").
 		PipeTo(
 			// Heart rate is observable
 			components.ByName("physiology:observable_state").InputByName("heart_rate"),
-		); err != nil {
-		return err
-	}
-
-	// Heart secretes substances (O2 demand, CO2) into the shared blood bus...
-	blood := components.ByName("da:blood_system")
-	heart := components.ByName("organ:heart")
-	if err := heart.OutputByName("blood").PipeTo(
-		blood.InputByName("secretions"),
-	); err != nil {
-		return err
-	}
-	// ...and reads the current bloodstream contents.
-	return blood.OutputByName("venous_blood").PipeTo(
-		heart.InputByName("blood"),
-	)
+		)
 }
 
 func wireDiaphragm(components *component.Collection) error {

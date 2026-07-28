@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +45,7 @@ func TestReference_OxyhemoglobinDissociationCurve(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := da.SaturationAt(tt.paO2)
+		got := bloodstream.SaturationAt(tt.paO2)
 		assert.InDelta(t, tt.wantSpO2, got, tt.tolerance,
 			"SpO₂ at PaO₂ %g mmHg (%s)", tt.paO2, tt.note)
 	}
@@ -56,11 +58,11 @@ func TestReference_OxyhemoglobinDissociationCurve(t *testing.T) {
 // fact about the curve.
 func TestReference_CurveIsSigmoid(t *testing.T) {
 	// Upper plateau: 100 -> 80 mmHg costs only a couple of points.
-	plateauLoss := da.SaturationAt(100) - da.SaturationAt(80)
+	plateauLoss := bloodstream.SaturationAt(100) - bloodstream.SaturationAt(80)
 	assert.Less(t, plateauLoss, 3.0, "the plateau should be flat: 20 mmHg costs almost no saturation")
 
 	// Steep part: the same 20 mmHg below the shoulder costs far more.
-	steepLoss := da.SaturationAt(60) - da.SaturationAt(40)
+	steepLoss := bloodstream.SaturationAt(60) - bloodstream.SaturationAt(40)
 	assert.Greater(t, steepLoss, 10.0, "below the shoulder the same drop should cost much more")
 	assert.Greater(t, steepLoss, 3*plateauLoss, "the steep part should be far steeper than the plateau")
 }
@@ -72,17 +74,17 @@ func TestReference_CurveIsSigmoid(t *testing.T) {
 // The simulation models only the respiratory arm; metabolic disturbance and
 // renal compensation are out of scope, so these are acute values.
 func TestReference_VentilationSetsPH(t *testing.T) {
-	assert.InDelta(t, 7.40, da.PHAt(40), 0.005, "normal PaCO₂ gives a normal pH")
+	assert.InDelta(t, 7.40, bloodstream.PHAt(40), 0.005, "normal PaCO₂ gives a normal pH")
 
 	// Acute respiratory acidosis: hypoventilation at 50 mmHg.
-	assert.InDelta(t, 7.32, da.PHAt(50), 0.01, "10 mmHg of retained CO₂ should cost ~0.08 pH")
+	assert.InDelta(t, 7.32, bloodstream.PHAt(50), 0.01, "10 mmHg of retained CO₂ should cost ~0.08 pH")
 
 	// Acute respiratory alkalosis: hyperventilation at 30 mmHg.
-	assert.InDelta(t, 7.48, da.PHAt(30), 0.01, "blowing off 10 mmHg should raise pH ~0.08")
+	assert.InDelta(t, 7.48, bloodstream.PHAt(30), 0.01, "blowing off 10 mmHg should raise pH ~0.08")
 
 	// Direction, stated plainly, because it is the part students reverse.
-	assert.Less(t, da.PHAt(60), da.PHAt(40), "retaining CO₂ acidifies the blood")
-	assert.Greater(t, da.PHAt(20), da.PHAt(40), "blowing off CO₂ alkalinises it")
+	assert.Less(t, bloodstream.PHAt(60), bloodstream.PHAt(40), "retaining CO₂ acidifies the blood")
+	assert.Greater(t, bloodstream.PHAt(20), bloodstream.PHAt(40), "blowing off CO₂ alkalinises it")
 }
 
 // TestReference_RestingArterialBloodGas runs the whole body and checks that a
@@ -127,6 +129,82 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 		assert.InDelta(t, 97, steady(spO2), 3, "resting SpO₂ should be in the normal range (95-100%)")
 		assert.InDelta(t, 7.40, steady(pH), 0.05, "resting pH should be in the normal range (7.35-7.45)")
 	})
+}
+
+// TestReference_OxygenContentIsWhatTissuesGet is the distinction the blood model
+// exists to make: partial pressure is a reading, content is the supply.
+//
+// A healthy arterial sample carries about 20 mL of oxygen per dL, almost all of
+// it on hemoglobin (Hüfner 1.34 mL/g) and only ~0.3 dissolved. Halve the
+// hemoglobin -- by bleeding, by anemia, or by binding it up with carbon monoxide
+// -- and the supply halves while PaO₂ and SpO₂ stay exactly where they were.
+// That is why a patient can be dying with a normal blood gas.
+func TestReference_OxygenContentIsWhatTissuesGet(t *testing.T) {
+	healthy := bloodstream.OxygenContent(15, 97, 95)
+	assert.InDelta(t, 19.8, healthy, 0.5, "normal arterial oxygen content is ~20 mL/dL")
+
+	// Hemoglobin carries essentially all of it.
+	dissolved := bloodstream.DissolvedPerMmHg * 95
+	assert.Less(t, dissolved/healthy, 0.02, "dissolved oxygen should be under 2% of the total")
+
+	// The same blood gas, half the carrier.
+	anemic := bloodstream.OxygenContent(7.5, 97, 95)
+	assert.InDelta(t, healthy/2, anemic, 0.5,
+		"halving hemoglobin should halve the supply, at an unchanged PaO₂ and SpO₂")
+}
+
+// TestReference_OxygenDeliveryAndExtraction checks the arithmetic that decides
+// whether a body is in shock.
+//
+// Delivery is flow times content. A resting adult delivers about 1000 mL/min and
+// consumes about 250, extracting a quarter. Tissues can raise extraction to
+// roughly 60% before they must respire anaerobically, which is the line between
+// compensated and decompensated shock.
+func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
+	const consumption = 250.0 // mL/min at rest
+
+	healthy := bloodstream.OxygenDelivery(5.0, bloodstream.OxygenContent(15, 97, 95))
+	assert.InDelta(t, 990, healthy, 60, "a resting adult delivers about 1 L of oxygen a minute")
+	assert.InDelta(t, 0.25, consumption/healthy, 0.05, "and extracts about a quarter of it")
+
+	// Class III hemorrhage: a third of the volume gone, the marrow has not had
+	// time to replace anything, and the heart cannot fully make up the flow.
+	bled := bloodstream.OxygenDelivery(4.0, bloodstream.OxygenContent(9, 97, 95))
+	assert.Less(t, bled, healthy/2, "losing a third of the blood should more than halve delivery")
+
+	extraction := consumption / bled
+	assert.Greater(t, extraction, 0.5, "which forces the tissues to extract far more")
+	assert.Less(t, extraction, 0.75, "though not yet beyond what extraction can cover")
+}
+
+// TestReference_WholeBodyOxygenConsumption checks that the body's oxygen use is
+// not a number anybody typed in: it is the sum of what its organs ask for.
+//
+// The published resting figures -- brain 50, heart 30, kidneys 18, gut 50, muscle
+// 50, skin 12, diaphragm 3 mL/min -- come to about 213, against a whole-body
+// resting consumption of roughly 250. The rest belongs to organs this simulation
+// does not have yet (liver most of all), which is a gap worth being able to see.
+func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
+	sim := newCommandableSim(t)
+	body := helper.FindHumanComponent(simMesh(sim))
+	require.NotNil(t, body)
+
+	inner := human.InnerMesh(body)
+	require.NotNil(t, inner)
+
+	var total float64
+	perfused := map[string]float64{}
+	require.NoError(t, inner.Components().ForEach(func(c *component.Component) error {
+		if demand := perfusion.O2PerMinute(c); demand > 0 {
+			perfused[c.Name()] = demand
+			total += demand
+		}
+		return nil
+	}))
+
+	assert.Len(t, perfused, 7, "brain, heart, kidney, diaphragm, gut, skin and muscle should be perfused")
+	assert.InDelta(t, 213, total, 1, "the modelled organs should account for ~213 mL/min")
+	assert.Less(t, total, 250.0, "which is less than a whole body: the liver is still missing")
 }
 
 // TestReference_ApneaDesaturates checks that a body which stops breathing goes
@@ -176,7 +254,7 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 		assert.Less(t, lastPaO2, 60.0,
 			"after a minute and a half without breathing, PaO₂ should be well below the 60 mmHg shoulder")
 		assert.Less(t, lastSpO2, 90.0, "and saturation should have fallen off the plateau")
-		assert.Greater(t, lastPaCO2, da.NormalPaCO2,
+		assert.Greater(t, lastPaCO2, bloodstream.NormalPaCO2,
 			"carbon dioxide should accumulate once it cannot be blown off")
 	})
 }

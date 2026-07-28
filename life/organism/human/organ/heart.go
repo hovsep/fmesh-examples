@@ -6,8 +6,8 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
-	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -16,10 +16,11 @@ const (
 	minBPM float64 = 40 * PerMinute
 	maxBPM float64 = 200 * PerMinute
 
-	// Metabolism: the heart never rests, and pays for it. Rates are in mmHg/s of
-	// arterial tension.
-	HeartO2Consumption = 0.25 * MmHgPerSecond
-	HeartCO2Production = 0.03 * MmHgPerSecond
+	// HeartO2PerMinute is the myocardium's resting oxygen demand in mL/min. The
+	// heart never rests and pays for it: it extracts far more of the oxygen
+	// passing through it than any other organ, so when supply falls it has
+	// almost no reserve left to draw on.
+	HeartO2PerMinute = 30.0
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase
@@ -37,14 +38,16 @@ func cardiacActivationWave(phase float64) float64 {
 func GetHeart() (*component.Component, error) {
 	c, err := component.New("organ:heart",
 		component.WithDescription("Heart"),
-		component.WithPlugins(damage.New(damage.Config{Organ: "heart"})),
-		component.WithInputs("time", "autonomic_tone", "blood"),
-		component.WithOutputs("cardiac_activation", "rate", "blood"),
+		component.WithPlugins(
+			damage.New(damage.Config{Organ: "heart"}),
+			perfusion.New(perfusion.Config{Organ: "heart", O2PerMinute: HeartO2PerMinute}),
+		),
+		component.WithInputs("time", "autonomic_tone"),
+		component.WithOutputs("cardiac_activation", "rate"),
 		component.WithActivationFunc(
 			damage.FlatlineWhenFailed(
 				oscillateHeart,
 				handleCardiacBias,
-				emitHeartMetabolism,
 			),
 		),
 		component.WithInitialState(func(state component.State) {
@@ -100,16 +103,4 @@ func handleCardiacBias(this *component.Component) error {
 	})
 	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
 	return nil
-}
-
-// emitHeartMetabolism secretes the heart's O2 demand and CO2 output into the blood bus.
-// Gated on time so it fires exactly once per tick (not on the autonomic_tone activation).
-func emitHeartMetabolism(this *component.Component) error {
-	if !this.InputByName("time").HasSignals() {
-		return nil
-	}
-	return this.OutputByName("blood").PutSignals(
-		da.Secretion(da.SubstanceO2Consumption, HeartO2Consumption),
-		da.Secretion(da.SubstanceCO2Production, HeartCO2Production),
-	)
 }

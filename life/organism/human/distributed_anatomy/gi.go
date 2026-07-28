@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -39,9 +40,17 @@ const (
 //
 // It holds what has been swallowed, releases it into the body over time, and
 // accumulates the residue that eventually needs voiding.
+const GIO2PerMinute = 50.0
+
 func GetGITract() (*component.Component, error) {
 	c, err := component.New("da:gi_tract",
 		component.WithDescription("GI tract: holds swallowed food and water, absorbing them into the body over time"),
+		component.WithPlugins(
+			// The splanchnic circulation is generous at rest and is the first
+			// thing sympathetic tone shuts down when blood has to be found
+			// elsewhere.
+			perfusion.New(perfusion.Config{Organ: "gi_tract", O2PerMinute: GIO2PerMinute}),
+		),
 		component.WithInputs(
 			common.TimePort,
 			"nutrient_load",  // from boundary:ingestion
