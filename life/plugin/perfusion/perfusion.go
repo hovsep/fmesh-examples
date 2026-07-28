@@ -23,12 +23,11 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
-// Ports the plugin adds to its host. Both are called "blood" -- one is the
-// arterial supply arriving, the other is what the organ puts back -- and they
-// live in different collections, so the names do not collide.
+// The ports this plugin works through are the bloodstream's own, since more than
+// one plugin may need them.
 const (
-	SupplyPort = "blood"
-	ReturnPort = "blood"
+	SupplyPort = bloodstream.SupplyPort
+	ReturnPort = bloodstream.ReturnPort
 )
 
 // State the plugin keeps on its host.
@@ -127,10 +126,10 @@ func (p *Perfusion) Init(c *component.Component) error {
 	c.State().Set(stateOnset, p.onset)
 	c.State().Set(stateFail, p.fail)
 
-	if err := c.AddInputs(SupplyPort); err != nil {
+	if err := bloodstream.EnsureSupplyPort(c); err != nil {
 		return err
 	}
-	if err := c.AddOutputs(ReturnPort); err != nil {
+	if err := bloodstream.EnsureReturnPort(c); err != nil {
 		return err
 	}
 

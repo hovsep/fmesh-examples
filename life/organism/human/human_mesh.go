@@ -172,6 +172,10 @@ func wireAutotomicCoordination(components *component.Collection) error {
 
 		// Affect the diaphragm (respiratory bias)
 		components.ByName("organ:diaphragm").InputByName("autonomic_tone"),
+
+		// And provoke the glands, which answer the same stressor chemically --
+		// slower to arrive than the nerve traffic, and far slower to leave.
+		components.ByName("organ:adrenal").InputByName("autonomic_tone"),
 	)
 }
 
@@ -481,6 +485,10 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("da.GetVasculature: %w", err)
 	}
+	adrenal, err := organ.GetAdrenal()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetAdrenal: %w", err)
+	}
 
 	// Controllers are the body's command surface: every instruction from outside
 	// the simulation ("eat", "run", "urinate") is addressed to one of these.
@@ -541,6 +549,7 @@ func getComponents() (*component.Collection, error) {
 		resp,
 		blood,
 		vasculature,
+		adrenal,
 		autonomic,
 		obsState,
 		brain,

@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -57,6 +58,10 @@ const (
 	// a control loop ring. Arterioles take the longer of the two: a vessel
 	// cannot be squeezed as fast as a heart can be sped up.
 	vascularToneHalfLifeSec = 3.0
+
+	// adrenalineVasoconstriction is how much fully saturated adrenaline adds to
+	// vascular tone, on top of what the nerves are asking for.
+	adrenalineVasoconstriction = 0.15
 
 	// CentralVenousPressure is the pressure blood returns at, mmHg. It is small
 	// next to arterial pressure but is what the arithmetic sits on top of.
@@ -111,6 +116,12 @@ func GetVasculature() (*component.Component, error) {
 			"cardiac_output", // L/min
 			"svr",            // systemic vascular resistance
 			"stroke_volume",  // mL per beat
+		),
+		component.WithPlugins(
+			// Adrenaline constricts on its own account, which is why the
+			// pressure a frightened body holds outlasts the nerve traffic that
+			// started it.
+			receptor.For(bloodstream.HormoneAdrenaline),
 		),
 		component.WithActivationFunc(circulate),
 		component.WithInitialState(func(state component.State) {
@@ -176,7 +187,7 @@ func recomputeCirculation(this *component.Component) {
 
 	strokeVolume := StrokeVolumeAt(volume)
 	cardiacOutput := rate * strokeVolume / 1000.0 // mL/beat × beats/min → L/min
-	svr := ResistanceAt(tone)
+	svr := ResistanceAt(tone + receptor.Level(this, bloodstream.HormoneAdrenaline)*adrenalineVasoconstriction)
 
 	this.State().Set(stateStrokeVolume, strokeVolume)
 	this.State().Set(stateCardiacOutput, cardiacOutput)
