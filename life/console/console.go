@@ -5,7 +5,7 @@
 // It also carries the pieces the integrated UI needs to survive the simulation
 // printing from its own goroutine: Capture (see capture.go) redirects stdout
 // into a channel, and History (see history.go) persists the command line across
-// sessions. It stays in its own package so the shared step_sim package need not
+// sessions. It stays in its own package so the simulation libraries need not
 // know about any of it.
 package console
 
@@ -17,7 +17,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 )
 
 // maxTranscript bounds the scrollback so a long run cannot grow without limit.
@@ -27,13 +27,14 @@ const maxTranscript = 2000
 // forwards the messages it wants the pane to handle (key input, and each
 // captured output line via Append) and paints Pane.View somewhere on screen.
 //
-// Submitting a line sends it to the simulation over cmdChan; typing "exit" (or
-// ctrl+c/ctrl+d) asks the whole program to quit by returning tea.Quit.
+// Submitting a line sends it to the simulation, "exit" included: the simulation
+// is what ends the session, and the dashboard closes when it does. ctrl+c and
+// ctrl+d shortcut that by quitting the program directly.
 type Pane struct {
 	// commands is consulted for tab completion. It is the simulation's live
 	// command list, so commands registered at init are included.
 	commands func() []string
-	cmdChan  chan step_sim.Command
+	lines    chan<- command.Line
 
 	input   textinput.Model
 	history *History
@@ -47,7 +48,7 @@ type Pane struct {
 
 // NewPane returns a command pane. commandNames is called when completing, so it
 // sees whatever the simulation has registered by then.
-func NewPane(commandNames func() []string, historyPath string, cmdChan chan step_sim.Command) *Pane {
+func NewPane(commandNames func() []string, historyPath string, lines chan<- command.Line) *Pane {
 	input := textinput.New()
 	input.Prompt = "› "
 	input.Placeholder = "type a command, or 'help'"
@@ -56,7 +57,7 @@ func NewPane(commandNames func() []string, historyPath string, cmdChan chan step
 
 	return &Pane{
 		commands: commandNames,
-		cmdChan:  cmdChan,
+		lines:    lines,
 		input:    input,
 		history:  LoadHistory(historyPath),
 		rows:     6,
@@ -131,14 +132,10 @@ func (p *Pane) submit() tea.Cmd {
 	p.history.Add(line)
 	p.Append("› " + line)
 
-	if line == string(step_sim.Exit) {
-		return tea.Quit
-	}
-
 	// Non-blocking: the channel is buffered, and a full one means the simulation
 	// is wedged. Reporting that beats freezing the UI behind it.
 	select {
-	case p.cmdChan <- step_sim.Command(line):
+	case p.lines <- command.Line(line):
 	default:
 		p.Append("! simulation is not accepting commands right now")
 	}

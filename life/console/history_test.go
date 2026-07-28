@@ -122,7 +122,7 @@ func TestCommonPrefix(t *testing.T) {
 		{"nothing shared", []string{"jobs", "exit"}, ""},
 		{"single value", []string{"help"}, "help"},
 		{"empty", nil, ""},
-		{"one is a prefix of the other", []string{"rate", "rate:sim", "rate:ui"}, "rate"},
+		{"one is a prefix of the other", []string{"rate", "rate:sim", "rate:publish"}, "rate"},
 	}
 
 	for _, tt := range tests {

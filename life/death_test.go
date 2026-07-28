@@ -8,7 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,14 +16,14 @@ import (
 
 // observedAliveness installs a hook that latches whether is_alive was ever
 // observed as 0 over the run, reading the telemetry the TUI reads.
-func observedAliveness(t *testing.T, sim *step_sim.Simulation) func() (everDead bool, final float64) {
+func observedAliveness(t *testing.T, sim *session.Session) func() (everDead bool, final float64) {
 	t.Helper()
-	agg := sim.FM.ComponentByName("aggregated_state")
+	agg := simMesh(sim).ComponentByName("aggregated_state")
 	require.NotNil(t, agg)
 
 	everDead := false
 	final := 1.0
-	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterRun(func(*fmesh.FMesh) error {
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
 				if v, ok := helper.NumericPayload(s); ok {
@@ -39,9 +39,9 @@ func observedAliveness(t *testing.T, sim *step_sim.Simulation) func() (everDead 
 	return func() (bool, float64) { return everDead, final }
 }
 
-func organComp(t *testing.T, sim *step_sim.Simulation, name string) *component.Component {
+func organComp(t *testing.T, sim *session.Session, name string) *component.Component {
 	t.Helper()
-	inner := human.InnerMesh(helper.FindHumanComponent(sim.FM))
+	inner := human.InnerMesh(helper.FindHumanComponent(simMesh(sim)))
 	require.NotNil(t, inner)
 	c := inner.ComponentByName(name)
 	require.NotNil(t, c, "no %q in the human mesh", name)
@@ -52,13 +52,13 @@ func organComp(t *testing.T, sim *step_sim.Simulation, name string) *component.C
 // injury flatlines the brain, the body reads no brain activity and dies, and the
 // mesh keeps running (a corpse is frozen, not left to stall).
 func Test_BrainFailureKillsTheBody(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	brain := organComp(t, sim, "organ:brain")
 	aliveness := observedAliveness(t, sim)
 
 	// Injure the brain to failure after the body has been alive a moment.
 	injured := false
-	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterRun(func(*fmesh.FMesh) error {
 			if !injured {
 				damage.Inflict(brain, 2*damage.CriticalLevel)
@@ -79,15 +79,15 @@ func Test_BrainFailureKillsTheBody(t *testing.T) {
 // Test_DeathIsIrreversible checks the death latch does not flicker back to alive
 // once the body has died.
 func Test_DeathIsIrreversible(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	heart := organComp(t, sim, "organ:heart")
 	brain := organComp(t, sim, "organ:brain")
 
 	injured := false
 	var aliveAfterDeath int
 	seenDead := false
-	agg := sim.FM.ComponentByName("aggregated_state")
-	sim.FM.SetupHooks(func(h *fmesh.Hooks) {
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterRun(func(*fmesh.FMesh) error {
 			if !injured {
 				damage.Inflict(brain, 2*damage.CriticalLevel)
@@ -121,8 +121,8 @@ func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "temp:cold"
+	sim := newCommandableSim(t)
+	sim.Do("temp:cold")
 
 	brain := organComp(t, sim, "organ:brain")
 	kidney := organComp(t, sim, "organ:kidney")
@@ -139,7 +139,7 @@ func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
 // Test_HealthyBodyNeverDies is the guard that the death machinery does not fire
 // spuriously: a well-kept body stays alive throughout.
 func Test_HealthyBodyNeverDies(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	aliveness := observedAliveness(t, sim)
 
 	helper.RunSimulationAndThen(sim, 30*time.Second, func() {

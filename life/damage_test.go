@@ -16,9 +16,9 @@ func Test_SmokingDamagesTheLungs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	// A heavy session at once, so the damage is visible in a short run.
-	cmdChan <- "smoke:cigarette 200"
+	sim.Do("smoke:cigarette 200")
 
 	lungLeft := organComp(t, sim, "organ:lung_left")
 	lungRight := organComp(t, sim, "organ:lung_right")
@@ -42,8 +42,8 @@ func Test_SmokingDamagesTheLungs(t *testing.T) {
 // one cigarette is still being smoked a minute in, and is done well before it
 // could take an implausibly long time.
 func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "smoke:cigarette"
+	sim := newCommandableSim(t)
+	sim.Do("smoke:cigarette")
 
 	intake := bodyComponent(t, sim, "controller:intake")
 
@@ -60,7 +60,7 @@ func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
 // carry the damage plugin exposes a damage level, so the Body view and the death
 // cascade have something to read for each.
 func Test_DamagePluginAgesEveryOrgan(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 
 	for _, name := range []string{
 		"organ:brain", "organ:heart", "organ:diaphragm",

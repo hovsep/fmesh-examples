@@ -1,11 +1,12 @@
 // Package tui is the integrated front end: the tabbed dashboard on top and a
 // command line at the bottom, driving one simulation that runs in the same
-// process. It is a step_sim.CommandSource (App.Run owns the input loop) and
-// supplies the telemetry sink that feeds the dashboard, so no socket or second
+// process. It is a command.Source (App.Run owns the input loop) and
+// hands the simulation a channel sink to publish into, so no socket or second
 // process is involved.
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -19,8 +20,8 @@ import (
 	"github.com/hovsep/fmesh-examples/life/tui/protocol"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
 	"github.com/hovsep/fmesh-examples/life/tui/views"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim/sink"
+	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/sink"
 )
 
 // Render cadence bounds. The render interval controls how often the TUI
@@ -39,13 +40,13 @@ const (
 	tabRowY    = 2 // the tab bar sits just under the two-line header
 )
 
-// App is the integrated front end as a step_sim.CommandSource. It owns the
+// App is the integrated front end as a command.Source. It owns the
 // telemetry sink the simulation publishes to and the Bubble Tea program that
 // draws it.
 type App struct {
 	commands    func() []string
 	historyPath string
-	sink        *channelSink
+	sink        *sink.Channel
 }
 
 // New returns an App. commandNames is called for tab completion, so it sees
@@ -56,18 +57,20 @@ func New(commandNames func() []string, historyPath string) *App {
 		historyPath: historyPath,
 		// Generous buffer: a snapshot is many lines and Publish must never block
 		// the simulation goroutine.
-		sink: newChannelSink(4096),
+		sink: sink.NewChannel(4096),
 	}
 }
 
-// Sink returns the telemetry sink to hand step_sim via WithSink.
+// Sink returns the telemetry sink to hand the session via session.WithSink.
 func (a *App) Sink() sink.Sink { return a.sink }
 
-// Run implements step_sim.CommandSource. It owns cmdChan and closes it on exit,
-// which is what tells the simulation to stop.
-func (a *App) Run(cmdChan chan step_sim.Command) {
-	defer close(cmdChan)
-
+// Run implements command.Source: it feeds typed lines to the simulation and
+// returns when the user quits the dashboard, which ends the session.
+//
+// It also watches ctx, so a simulation that ends on its own -- a scheduled
+// exit, a body that has died and been told to stop -- closes the dashboard
+// instead of leaving it accepting commands nothing will ever read.
+func (a *App) Run(ctx context.Context, lines chan<- command.Line) {
 	// Capture before starting Bubble Tea, so nothing the simulation prints can
 	// reach the terminal directly and corrupt the rendered frame.
 	capture, err := console.CaptureStdout(1024)
@@ -83,9 +86,9 @@ func (a *App) Run(cmdChan chan step_sim.Command) {
 	// telemetry into the mutex-guarded state, and the Bubble Tea loop only
 	// renders (at renderInterval), so a fast simulation never floods or stalls
 	// the UI.
-	go ingest(a.sink.lines, state)
+	go ingest(a.sink.Lines(), state)
 
-	model := newModel(state, console.NewPane(a.commands, a.historyPath, cmdChan))
+	model := newModel(state, console.NewPane(a.commands, a.historyPath, lines))
 
 	// Render to the real terminal, not to os.Stdout: that now points at the
 	// capture pipe, and drawing there would make the UI invisible and echo its
@@ -104,6 +107,12 @@ func (a *App) Run(cmdChan chan step_sim.Command) {
 			program.Send(capturedLine(line))
 		}
 		program.Send(capturedLinesClosed{})
+	}()
+
+	// Close the dashboard when the simulation ends, whoever ended it.
+	go func() {
+		<-ctx.Done()
+		program.Quit()
 	}()
 
 	finalModel, err := program.Run()
@@ -144,7 +153,7 @@ func ingest(lines <-chan string, state *models.AppState) {
 
 // Messages fed in from the captured-output goroutine.
 type (
-	capturedLine       string
+	capturedLine        string
 	capturedLinesClosed struct{}
 )
 

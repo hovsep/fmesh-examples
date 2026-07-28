@@ -12,7 +12,8 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
-	"github.com/hovsep/fmesh-examples/simulation/step_sim"
+	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,8 +24,8 @@ import (
 // milliseconds of wall clock because the loop is unpaced.
 
 func Test_DrinkingReachesTheBody(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "intake:water 500ml"
+	sim := newCommandableSim(t)
+	sim.Do("intake:water 500ml")
 
 	gi := bodyComponent(t, sim, "da:gi_tract")
 	body := bodyComponent(t, sim, "physiology:physiological_state")
@@ -45,8 +46,8 @@ func Test_DrinkingReachesTheBody(t *testing.T) {
 }
 
 func Test_EatingRaisesBloodGlucoseAndReserves(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "intake:food 800kcal"
+	sim := newCommandableSim(t)
+	sim.Do("intake:food 800kcal")
 
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 
@@ -59,10 +60,10 @@ func Test_EatingRaisesBloodGlucoseAndReserves(t *testing.T) {
 }
 
 func Test_DigestionIsNotInstant(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	// A small meal, fully eaten in ~30 s at the eating rate, so this test is
 	// about slow digestion rather than slow eating.
-	cmdChan <- "intake:food 90kcal"
+	sim.Do("intake:food 90kcal")
 
 	gi := bodyComponent(t, sim, "da:gi_tract")
 
@@ -76,10 +77,10 @@ func Test_DigestionIsNotInstant(t *testing.T) {
 }
 
 func Test_EatingSpansTime(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	// A large meal cannot be eaten in a minute; most of it is still on the plate
 	// (not yet swallowed) rather than already in the stomach.
-	cmdChan <- "intake:food 600kcal"
+	sim.Do("intake:food 600kcal")
 
 	gi := bodyComponent(t, sim, "da:gi_tract")
 	intake := bodyComponent(t, sim, "controller:intake")
@@ -97,13 +98,13 @@ func Test_EatingSpansTime(t *testing.T) {
 func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
 	// A big glass takes proportionally longer than a small one. Sampled through
 	// the process runner's remaining volume, which is the mechanism under test.
-	remainingAfter := func(command string, d time.Duration) float64 {
-		sim, cmdChan := newCommandableSim(t)
-		cmdChan <- step_sim.Command(command)
+	remainingAfter := func(line command.Line, d time.Duration) float64 {
+		sim := newCommandableSim(t)
+		sim.Do(line)
 		intake := bodyComponent(t, sim, "controller:intake")
 
 		var remaining float64
-		sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+		simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 			hooks.AfterRun(func(*fmesh.FMesh) error {
 				processes, _ := intake.State().Get(controller.StateProcesses).(*helper.ProcessSet)
 				if processes != nil {
@@ -126,8 +127,8 @@ func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
 }
 
 func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "activity:start 8"
+	sim := newCommandableSim(t)
+	sim.Do("activity:start 8")
 
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 
@@ -140,8 +141,8 @@ func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {
 }
 
 func Test_HardExertionDoesNotCookTheBody(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
-	cmdChan <- "activity:start 8"
+	sim := newCommandableSim(t)
+	sim.Do("activity:start 8")
 
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 	skin := bodyComponent(t, sim, "da:skin")
@@ -166,7 +167,7 @@ func Test_HardExertionDoesNotCookTheBody(t *testing.T) {
 }
 
 func Test_RestingBodyStaysNearNormal(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 
 	// Left alone the body should drift slowly, not run away. This is the guard
@@ -185,7 +186,7 @@ func Test_RestingBodyStaysNearNormal(t *testing.T) {
 }
 
 func Test_BladderFillsAndVoids(t *testing.T) {
-	sim, cmdChan := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	kidney := bodyComponent(t, sim, "organ:kidney")
 
 	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
@@ -194,8 +195,8 @@ func Test_BladderFillsAndVoids(t *testing.T) {
 	})
 
 	// A fresh run, this time voiding at the end.
-	sim, cmdChan = newCommandableSim(t)
-	cmdChan <- "after 2m excretion:urinate"
+	sim = newCommandableSim(t)
+	sim.Do("after 2m excretion:urinate")
 	kidney = bodyComponent(t, sim, "organ:kidney")
 
 	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
@@ -208,18 +209,18 @@ func Test_BladderFillsAndVoids(t *testing.T) {
 // published, because a component's output ports are drained at the end of every
 // mesh cycle -- reading them after the run finds nothing. Capturing at the
 // aggregator also proves the feelings reach telemetry, not just the port.
-func lastFeelings(t *testing.T, sim *step_sim.Simulation) func() *signal.Signal {
+func lastFeelings(t *testing.T, sim *session.Session) func() *signal.Signal {
 	t.Helper()
 
-	aggregator := sim.FM.ComponentByName("aggregated_state")
+	aggregator := simMesh(sim).ComponentByName("aggregated_state")
 	require.NotNil(t, aggregator)
 
-	body := helper.FindHumanComponent(sim.FM)
+	body := helper.FindHumanComponent(simMesh(sim))
 	require.NotNil(t, body)
 	key := body.Name() + telemetry.PathSeparator + "feelings"
 
 	var latest *signal.Signal
-	sim.FM.SetupHooks(func(hooks *fmesh.Hooks) {
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
 			if sig := aggregator.OutputByName(key).Signals().First(); sig != nil {
 				latest = sig
@@ -233,7 +234,7 @@ func lastFeelings(t *testing.T, sim *step_sim.Simulation) func() *signal.Signal 
 func Test_FeelingsRespondToTheBody(t *testing.T) {
 	tests := []struct {
 		name     string
-		commands []step_sim.Command
+		commands []command.Line
 		duration time.Duration
 		feeling  string
 		assert   func(t *testing.T, intensity float64)
@@ -256,7 +257,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 		},
 		{
 			name:     "sustained hard exertion is tiring",
-			commands: []step_sim.Command{"activity:start 9"},
+			commands: []command.Line{"activity:start 9"},
 			duration: 3 * time.Minute,
 			feeling:  common.FeelingTired,
 			assert: func(t *testing.T, intensity float64) {
@@ -265,7 +266,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 		},
 		{
 			name:     "an unpleasant shock reads as anxiety",
-			commands: []step_sim.Command{"emotion:stimulus 0.9 -0.9"},
+			commands: []command.Line{"emotion:stimulus 0.9 -0.9"},
 			duration: 10 * time.Second,
 			feeling:  common.FeelingAnxious,
 			assert: func(t *testing.T, intensity float64) {
@@ -274,7 +275,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 		},
 		{
 			name:     "a pleasant event reads as happiness, not anxiety",
-			commands: []step_sim.Command{"emotion:stimulus 0.9 0.9"},
+			commands: []command.Line{"emotion:stimulus 0.9 0.9"},
 			duration: 10 * time.Second,
 			feeling:  common.FeelingAnxious,
 			assert: func(t *testing.T, intensity float64) {
@@ -287,9 +288,9 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sim, cmdChan := newCommandableSim(t)
+			sim := newCommandableSim(t)
 			for _, cmd := range tt.commands {
-				cmdChan <- cmd
+				sim.Do(cmd)
 			}
 
 			feelings := lastFeelings(t, sim)
@@ -303,7 +304,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 }
 
 func Test_EveryFeelingIsPublished(t *testing.T) {
-	sim, _ := newCommandableSim(t)
+	sim := newCommandableSim(t)
 	feelings := lastFeelings(t, sim)
 
 	helper.RunSimulationAndThen(sim, time.Second, func() {
