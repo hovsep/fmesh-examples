@@ -52,6 +52,9 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	if err := wireCirculation(components); err != nil {
 		return nil, fmt.Errorf("wireCirculation: %w", err)
 	}
+	if err := wireVasculature(components); err != nil {
+		return nil, fmt.Errorf("wireVasculature: %w", err)
+	}
 	if err := wireHeart(components); err != nil {
 		return nil, fmt.Errorf("wireHeart: %w", err)
 	}
@@ -126,6 +129,40 @@ func wireCirculation(components *component.Collection) error {
 		}
 		return nil
 	})
+}
+
+// wireVasculature closes the loop that defends blood pressure.
+//
+//	heart rate ─┐
+//	blood volume├─> vasculature ─> pressure ─> baroreflex ─> heart rate
+//	vascular tone┘
+//
+// It is a genuine cycle, and it is resolved the way the blood and the reservoirs
+// already resolve theirs: the circulation publishes the pressure it achieved
+// before folding in this tick's inputs, so the reflex reacts to a pressure that
+// was real one tick ago rather than waiting on a value its own reaction
+// produces.
+func wireVasculature(components *component.Collection) error {
+	vasculature := components.ByName("da:vasculature")
+	obs := components.ByName("physiology:observable_state")
+
+	if err := helper.MultiPipe(
+		// What the circulation needs to know.
+		helper.PipeSpec{From: components.ByName("organ:heart").OutputByName("rate"), To: vasculature.InputByName("heart_rate")},
+		helper.PipeSpec{From: components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone"), To: vasculature.InputByName("autonomic_tone")},
+		helper.PipeSpec{From: components.ByName("da:blood_system").OutputByName("venous_blood"), To: vasculature.InputByName("venous_blood")},
+	); err != nil {
+		return err
+	}
+
+	// Pressure drives the reflex, and is worth watching.
+	return helper.MultiPipe(
+		helper.PipeSpec{From: vasculature.OutputByName("map"), To: components.ByName("physiology:autonomic_coordination").InputByName("map")},
+		helper.PipeSpec{From: vasculature.OutputByName("map"), To: obs.InputByName("mean_arterial_pressure")},
+		helper.PipeSpec{From: vasculature.OutputByName("cardiac_output"), To: obs.InputByName("cardiac_output")},
+		helper.PipeSpec{From: vasculature.OutputByName("svr"), To: obs.InputByName("vascular_resistance")},
+		helper.PipeSpec{From: vasculature.OutputByName("stroke_volume"), To: obs.InputByName("stroke_volume")},
+	)
 }
 
 func wireAutotomicCoordination(components *component.Collection) error {
@@ -440,6 +477,10 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("da.GetBloodSystem: %w", err)
 	}
+	vasculature, err := da.GetVasculature()
+	if err != nil {
+		return nil, fmt.Errorf("da.GetVasculature: %w", err)
+	}
 
 	// Controllers are the body's command surface: every instruction from outside
 	// the simulation ("eat", "run", "urinate") is addressed to one of these.
@@ -499,6 +540,7 @@ func getComponents() (*component.Collection, error) {
 	if err := coll.Add(
 		resp,
 		blood,
+		vasculature,
 		autonomic,
 		obsState,
 		brain,

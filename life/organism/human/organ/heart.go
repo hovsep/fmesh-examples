@@ -21,6 +21,13 @@ const (
 	// passing through it than any other organ, so when supply falls it has
 	// almost no reserve left to draw on.
 	HeartO2PerMinute = 30.0
+
+	// cardiacRateHalfLifeSec is how quickly the heart follows a change in the
+	// rate it is being asked for -- a few beats, not instantly.
+	cardiacRateHalfLifeSec = 1.5
+
+	// stateRateExact holds the unrounded rate the smoothing works on.
+	stateRateExact common.State = "rate_exact"
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase
@@ -51,7 +58,8 @@ func GetHeart() (*component.Component, error) {
 			),
 		),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.Rate, 60)   // Initial BPM
+			state.Set(common.Rate, 60) // Initial BPM
+			state.Set(stateRateExact, 60.0)
 			state.Set(common.Phase, 0.0) // Phase in the current heartbeat cycle
 		}),
 	)
@@ -97,10 +105,26 @@ func handleCardiacBias(this *component.Component) error {
 		return err
 	}
 
-	// Update rate
-	this.State().Update(common.Rate, func(v any) any {
-		return int(helper.Lerp(minBPM, maxBPM, bias))
+	// A heart takes a few beats to change its mind. Following the demanded rate
+	// rather than snapping to it is both what a real heart does and what keeps
+	// the reflex that commands it from ringing.
+	dt := 0.01
+	if in := this.InputByName("time"); in.HasSignals() {
+		if d, err := helper.TickDurationInSec(in.Signals().First()); err == nil {
+			dt = d
+		}
+	}
+
+	// The exact rate is kept as a real number and only rounded when reported.
+	// Rounding it into the stored value instead would be a silent brake: a tick
+	// moves the rate by a fraction of a beat, and truncating that to a whole one
+	// discards it, so the heart would sit at its resting rate for ever however
+	// hard the reflex called for tachycardia.
+	demanded := helper.Lerp(minBPM, maxBPM, bias)
+	this.State().Update(stateRateExact, func(v any) any {
+		return helper.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})
+	this.State().Set(common.Rate, int(math.Round(this.State().Get(stateRateExact).(float64))))
 	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
 	return nil
 }

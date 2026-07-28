@@ -228,6 +228,36 @@ var Catalog = []Metric{
 			HealthMin: 0, HealthMax: 1, Decimals: 3, View: ViewCardiovascular,
 		},
 	},
+	// The circulation: what the heart is achieving, and against what.
+	{
+		Port: "mean_arterial_pressure", Source: "mean_arterial_pressure",
+		Display: &Display{
+			Label: "MAP", Unit: "mmHg", Min: 0, Max: 140,
+			HealthMin: 70, HealthMax: 105, Decimals: 0, View: ViewCardiovascular,
+		},
+	},
+	{
+		Port: "cardiac_output", Source: "cardiac_output",
+		Display: &Display{
+			Label: "Cardiac Output", Unit: "L/min", Min: 0, Max: 12,
+			HealthMin: 4, HealthMax: 8, Decimals: 1, View: ViewCardiovascular,
+		},
+	},
+	{
+		Port: "stroke_volume", Source: "stroke_volume",
+		Display: &Display{
+			Label: "Stroke Volume", Unit: "mL", Min: 0, Max: 100,
+			HealthMin: 55, HealthMax: 90, Decimals: 0, View: ViewCardiovascular,
+		},
+	},
+	{
+		Port: "vascular_resistance", Source: "vascular_resistance",
+		Display: &Display{
+			Label: "SVR", Unit: "WU", Min: 0, Max: 40,
+			HealthMin: 12, HealthMax: 24, Decimals: 1, View: ViewCardiovascular,
+		},
+	},
+
 	// Blood gases are reported in the units and reference ranges a clinician
 	// reads them in, so every value here can be checked against a textbook:
 	// SpO₂ 95-100%, PaO₂ 80-100 mmHg, PaCO₂ 35-45 mmHg, pH 7.35-7.45.
