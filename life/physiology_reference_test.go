@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh/component"
@@ -256,5 +257,139 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 		assert.Less(t, lastSpO2, 90.0, "and saturation should have fallen off the plateau")
 		assert.Greater(t, lastPaCO2, bloodstream.NormalPaCO2,
 			"carbon dioxide should accumulate once it cannot be blown off")
+	})
+}
+
+// TestReference_RestingCirculation checks that a resting body settles on a
+// circulation a clinician would call normal, and that it does so because the
+// numbers agree rather than because any one of them was set.
+//
+// Mean arterial pressure 70-105 mmHg, cardiac output 4-8 L/min, stroke volume
+// 55-90 mL, systemic vascular resistance 12-24 Wood units. The pressure is the
+// product of the other two plus venous pressure, so getting all four right at
+// once is the check.
+func TestReference_RestingCirculation(t *testing.T) {
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	require.NotNil(t, agg)
+
+	series := map[string][]float64{}
+	ports := []string{"mean_arterial_pressure", "cardiac_output", "stroke_volume", "vascular_resistance", "heart_rate"}
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			for _, p := range ports {
+				if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
+					if v, ok := helper.NumericPayload(sig); ok {
+						series[p] = append(series[p], v)
+					}
+				}
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 20*time.Second, func() {
+		steady := func(p string) float64 {
+			xs := series[p]
+			require.NotEmpty(t, xs, p)
+			return helper.Mean(xs[len(xs)/2:])
+		}
+
+		mapPressure := steady("mean_arterial_pressure")
+		output := steady("cardiac_output")
+		resistance := steady("vascular_resistance")
+
+		assert.InDelta(t, 90, mapPressure, 20, "resting MAP should be 70-105 mmHg")
+		assert.InDelta(t, 5.0, output, 1.5, "resting cardiac output should be 4-8 L/min")
+		assert.InDelta(t, 70, steady("stroke_volume"), 15, "resting stroke volume should be 55-90 mL")
+		assert.InDelta(t, 18, resistance, 6, "resting SVR should be 12-24 Wood units")
+		assert.InDelta(t, 65, steady("heart_rate"), 20, "a resting heart rate")
+
+		// The identity that ties them together: pressure is flow against
+		// resistance, on top of the pressure blood returns at.
+		assert.InDelta(t, mapPressure, output*resistance+da.CentralVenousPressure, 3,
+			"MAP should be cardiac output x resistance + venous pressure")
+	})
+}
+
+// TestReference_BaroreflexDefendsPressure is the compensated half of shock.
+//
+// A class III hemorrhage (30-40% of blood volume) costs the heart most of its
+// preload, and stroke volume falls with it. What keeps the patient conscious is
+// that pressure is not flow: the baroreflex answers within seconds by speeding
+// the heart and tightening the vessels, so pressure falls far less than output
+// does. This is why a bleeding patient can look deceptively well, and why a
+// falling blood pressure is a late sign rather than an early one.
+func TestReference_BaroreflexDefendsPressure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-second physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	blood := bodyComponent(t, sim, "da:blood_system")
+
+	read := func(port string) float64 {
+		sig := agg.OutputByName("human-Leon::" + port).Signals().First()
+		if sig == nil {
+			return 0
+		}
+		v, _ := helper.NumericPayload(sig)
+		return v
+	}
+
+	var before, after map[string]float64
+	snapshot := func() map[string]float64 {
+		return map[string]float64{
+			"map": read("mean_arterial_pressure"),
+			"co":  read("cardiac_output"),
+			"sv":  read("stroke_volume"),
+			"svr": read("vascular_resistance"),
+			"hr":  read("heart_rate"),
+		}
+	}
+
+	elapsed, bled := 0.0, false
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			if elapsed > 9.9 && !bled {
+				before = snapshot()
+				// 1.5 L lost, and the hemoglobin that was in it.
+				blood.State().Set("volume_l", 3.5)
+				blood.State().Set("hemoglobin", 10.5)
+				bled = true
+			}
+			if elapsed > 29 {
+				after = snapshot()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+		require.NotNil(t, before)
+		require.NotNil(t, after)
+
+		// Preload is gone, so each beat ejects far less.
+		assert.Less(t, after["sv"], before["sv"]*0.6, "stroke volume should fall with preload")
+
+		// The reflex answers on both arms.
+		assert.Greater(t, after["hr"], before["hr"]*1.2, "the heart should speed up")
+		assert.Greater(t, after["svr"], before["svr"]*1.15, "the vessels should tighten")
+
+		// And the point of it all: pressure is defended far better than flow.
+		pressureLoss := 1 - after["map"]/before["map"]
+		flowLoss := 1 - after["co"]/before["co"]
+		assert.Less(t, pressureLoss, flowLoss*0.6,
+			"pressure should fall proportionally much less than cardiac output")
+		assert.Greater(t, after["map"], 65.0,
+			"a compensated class III hemorrhage should still be perfusing")
+
+		// Without the reflex, pressure would be flow against an unchanged
+		// resistance -- which is how much of the fall it actually prevented.
+		uncompensated := after["co"]*before["svr"] + da.CentralVenousPressure
+		assert.Greater(t, after["map"], uncompensated+5,
+			"the reflex should be holding pressure well above what it would be without it")
 	})
 }
