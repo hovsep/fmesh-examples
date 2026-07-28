@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -24,17 +25,15 @@ const (
 	bowelNoticeable = 40.0
 	bowelUrgent     = 90.0
 
-	// Blood gas thresholds are calibrated to this simulation's blood model, not
-	// to clinical values. da:blood_system swings roughly 81-99% oxygen and 1-19%
-	// carbon dioxide within every single breath, which is far wider than real
-	// arterial blood moves; the values below sit around the middle of that range
-	// rather than around a real SpO2 of 95-100%. If the blood model is ever made
-	// more faithful, these have to move with it.
-	o2Comfortable = 86.0 // percent saturation, smoothed across breaths
-	o2Alarming    = 68.0
+	// Air hunger is driven far more by carbon dioxide than by oxygen: a diver
+	// holding their breath feels the urge from rising CO₂ long before oxygen runs
+	// short, which is why hyperventilating first is dangerous. Both are smoothed
+	// across breaths.
+	o2Comfortable = 80.0 // mmHg PaO₂
+	o2Alarming    = 45.0
 
-	co2Comfortable = 22.0 // percent, smoothed across breaths
-	co2Alarming    = 45.0
+	co2Comfortable = 45.0 // mmHg PaCO₂
+	co2Alarming    = 60.0
 
 	// bloodGasHalfLifeSec smooths the per-breath swing away before it is judged.
 	// Chemoreceptors respond to a sustained level, not to the peak of each
@@ -85,8 +84,8 @@ func GetAffect() (*component.Component, error) {
 			state.Set(common.HydrationPct, 100.0)
 			state.Set(common.Glycemia, NormalGlycemia)
 			state.Set(common.CoreTemperature, NormalCoreTemperature)
-			state.Set(stateO2, 100.0)
-			state.Set(stateCO2, 30.0)
+			state.Set(stateO2, da.NormalPaO2)
+			state.Set(stateCO2, da.NormalPaCO2)
 			state.Set(stateBladder, 0.0)
 			state.Set(stateBowel, 0.0)
 			state.Set(stateExertion, 1.0)
@@ -184,8 +183,8 @@ func rememberInputs(this *component.Component) {
 					sig.Scalars().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
 			})
 		}
-		smooth(stateO2, "O2_level", 100)
-		smooth(stateCO2, "CO2_level", 30)
+		smooth(stateO2, "PaO2", da.NormalPaO2)
+		smooth(stateCO2, "PaCO2", da.NormalPaCO2)
 	}
 	if sig := firstSignal(this, "bladder_fill"); sig != nil {
 		this.State().Set(stateBladder, helper.AsF64OrDefault(sig, 0))

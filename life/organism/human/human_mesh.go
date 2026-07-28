@@ -546,18 +546,12 @@ func wireBloodSystem(components *component.Collection) error {
 		}
 	}
 
-	// Venous blood and O2/CO2 levels are observable
-	if err := blood.OutputByName("venous_blood").PipeTo(
-		obsState.InputByName("venous_blood"),
-	); err != nil {
-		return err
-	}
-	if err := blood.OutputByName("o2_level").PipeTo(
-		obsState.InputByName("blood_o2_level"),
-	); err != nil {
-		return err
-	}
-	return blood.OutputByName("co2_level").PipeTo(
-		obsState.InputByName("blood_co2_level"),
+	// The blood gases are observable, both as the composite the organs read and
+	// as the individual readings a clinician would look at.
+	return helper.MultiPipe(
+		helper.PipeSpec{From: blood.OutputByName("venous_blood"), To: obsState.InputByName("venous_blood")},
+		helper.PipeSpec{From: blood.OutputByName("spo2"), To: obsState.InputByName("blood_spo2")},
+		helper.PipeSpec{From: blood.OutputByName("pao2"), To: obsState.InputByName("blood_pao2")},
+		helper.PipeSpec{From: blood.OutputByName("paco2"), To: obsState.InputByName("blood_paco2")},
 	)
 }

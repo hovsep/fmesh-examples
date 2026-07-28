@@ -32,6 +32,11 @@ const (
 	baseO2Consumption     = 7 * Percent // fraction of inspired O2 consumed at rest
 	o2ConsumptionMaxDelta = 5 * Percent // additional O2 consumption when blood is O2-depleted
 
+	// ExhaledCO2AtNormalPaCO2 is the carbon dioxide fraction of exhaled air when
+	// the blood is at a normal PaCO₂ -- room air carries almost none, breath
+	// carries about a twentieth.
+	ExhaledCO2AtNormalPaCO2 = 5.0 * Percent
+
 	// Below are per-instance lung params that makes left and
 	// right lungs slightly different (anatomically, the left one has less space due to the heart).
 	statePleuralAsymmetry common.State = "pleural_asymmetry"
@@ -141,22 +146,25 @@ func handleGasExchange(this *component.Component) error {
 
 	var bloodCO2, bloodO2 float64
 	if bloodSig := this.InputByName("venous_blood").Signals().First(); bloodSig != nil {
-		bloodCO2 = bloodSig.Scalars().ValueOrDefault("CO2_level", 0)
-		bloodO2 = bloodSig.Scalars().ValueOrDefault("O2_level", 0)
+		bloodCO2 = bloodSig.Scalars().ValueOrDefault("PaCO2", 0)
+		bloodO2 = bloodSig.Scalars().ValueOrDefault("PaO2", 0)
 	}
 
-	// Scale O2 consumption based on blood O2 demand
-	o2Deficit := helper.Clamp((da.MaxO2Level-bloodO2)/da.MaxO2Level, 0, 1)
+	// Blood that arrives short of oxygen takes more of it out of the air, so the
+	// exhaled fraction falls as the deficit grows.
+	o2Deficit := helper.Clamp((da.NormalPaO2-bloodO2)/da.NormalPaO2, 0, 1)
 	o2Consumed := baseO2Consumption + o2ConsumptionMaxDelta*o2Deficit
 
 	o2New := o - o2Consumed
 	if o2New < 0 {
 		o2New = 0
 	}
-	// CO2 fraction = (mL blood would excrete this tick) / (mL of air this tick).
-	// Using CO2_level × ExcretionFraction mirrors blood.go's excretion model and
-	// avoids a per-tick transient scalar that is sensitive to inner-mesh cycle order.
-	co2Frac := (bloodCO2 * da.CO2ExcretionFraction / tickVolume) * 100 * Percent
+	// Carbon dioxide leaves in proportion to the tension pushing it out: exhaled
+	// air is about 5% CO₂ at a normal PaCO₂, and richer when the blood is
+	// carrying more. (The previous formula divided by the tick's air volume,
+	// which produced fractions of several hundred percent that only looked
+	// sane after the normalisation below.)
+	co2Frac := ExhaledCO2AtNormalPaCO2 * (bloodCO2 / da.NormalPaCO2)
 	if co2Frac < 0 {
 		co2Frac = 0
 	}

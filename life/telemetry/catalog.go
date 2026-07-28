@@ -228,30 +228,35 @@ var Catalog = []Metric{
 			HealthMin: 0, HealthMax: 1, Decimals: 3, View: ViewCardiovascular,
 		},
 	},
-	// Blood gas bands follow this simulation's blood model, not clinical values.
-	// da:blood_system swings roughly 81-99% oxygen and 1-19% carbon dioxide
-	// within every breath, so a clinical band of 30-45% CO2 marked the body
-	// permanently critical while it was in fact breathing normally. The same
-	// caveat applies to the thresholds in physiology/affect.go.
+	// Blood gases are reported in the units and reference ranges a clinician
+	// reads them in, so every value here can be checked against a textbook:
+	// SpO₂ 95-100%, PaO₂ 80-100 mmHg, PaCO₂ 35-45 mmHg, pH 7.35-7.45.
 	{
-		Port: "blood_o2_level", Source: "blood_o2_level",
+		Port: "blood_spo2", Source: "blood_spo2",
 		Display: &Display{
-			Label: "Blood O₂", Unit: "%", Min: 0, Max: 100,
-			HealthMin: 78, HealthMax: 100, Decimals: 1, View: ViewCardiovascular,
+			Label: "SpO₂", Unit: "%", Min: 50, Max: 100,
+			HealthMin: 95, HealthMax: 100, Decimals: 1, View: ViewCardiovascular,
 		},
 	},
 	{
-		Port: "blood_co2_level", Source: "blood_co2_level",
+		Port: "blood_pao2", Source: "blood_pao2",
 		Display: &Display{
-			Label: "Blood CO₂", Unit: "%", Min: 0, Max: 100,
-			HealthMin: 0, HealthMax: 25, Decimals: 1, View: ViewCardiovascular,
+			Label: "PaO₂", Unit: "mmHg", Min: 0, Max: 120,
+			HealthMin: 80, HealthMax: 100, Decimals: 0, View: ViewCardiovascular,
+		},
+	},
+	{
+		Port: "blood_paco2", Source: "blood_paco2",
+		Display: &Display{
+			Label: "PaCO₂", Unit: "mmHg", Min: 0, Max: 100,
+			HealthMin: 35, HealthMax: 45, Decimals: 0, View: ViewCardiovascular,
 		},
 	},
 	{
 		Port: "venous_blood", Source: "venous_blood",
 		Scalars: []Scalar{
-			{Name: "O2_level", Display: Display{Label: "Venous O₂", Unit: "%", Min: 0, Max: 100, HealthMin: 78, HealthMax: 100, Decimals: 1, View: ViewCardiovascular}},
-			{Name: "CO2_level", Display: Display{Label: "Venous CO₂", Unit: "%", Min: 0, Max: 100, HealthMin: 0, HealthMax: 25, Decimals: 1, View: ViewCardiovascular}},
+			{Name: "SpO2", Display: Display{Label: "Saturation", Unit: "%", Min: 50, Max: 100, HealthMin: 95, HealthMax: 100, Decimals: 1, View: ViewCardiovascular}},
+			{Name: "pH", Display: Display{Label: "Blood pH", Unit: "", Min: 7.0, Max: 7.8, HealthMin: 7.35, HealthMax: 7.45, Decimals: 2, View: ViewCardiovascular}},
 		},
 	},
 
