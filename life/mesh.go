@@ -213,6 +213,23 @@ func setBodyCommands(sim *session.Session) {
 			return scalars, nil
 		})
 
+	bodyCommand(sim, "trauma:bleed",
+		"open a wound, e.g. 'trauma:bleed 1500ml' (blood leaves over time, not at once)",
+		func(args []string) (map[string]float64, error) {
+			if len(args) != 1 {
+				return nil, fmt.Errorf("expects one volume, e.g. '1500ml' or '1.5l'")
+			}
+			quantity, err := helper.ParseQuantity(args[0])
+			if err != nil {
+				return nil, err
+			}
+			ml, err := quantity.Milliliters()
+			if err != nil {
+				return nil, err
+			}
+			return map[string]float64{controller.ScalarVolumeMl: ml}, nil
+		})
+
 	bodyCommand(sim, "activity:stop", "stop exerting and return to rest", noArgs)
 	bodyCommand(sim, "excretion:urinate", "empty the bladder", noArgs)
 	bodyCommand(sim, "excretion:defecate", "empty the bowel", noArgs)

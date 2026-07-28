@@ -45,6 +45,7 @@ func GetBloodSystem() (*component.Component, error) {
 			"airflow",    // lung airflow: >0 inhaling (fresh air), <0 exhaling
 			"secretions", // shared bus: any organ emits labeled substance signals here
 			"glucose",    // current blood sugar from the reservoir, carried to organs
+			"blood_loss", // mL leaving the body through a wound
 		),
 		component.WithOutputs(
 			"venous_blood", // composite: gases, content, hemoglobin, volume, glucose
@@ -89,6 +90,17 @@ func exchangeBloodGases(this *component.Component) error {
 	// own mesh cycle), so the published venous blood always carries a value.
 	if in := this.InputByName("glucose"); in.HasSignals() {
 		this.State().Set(stateGlucoseLevel, helper.AsF64OrDefault(in.Signals().First(), bloodstream.DefaultGlucoseLevel))
+	}
+
+	// Blood leaving through a wound takes its hemoglobin with it, which is the
+	// part that matters: what is lost is not water but carrying capacity.
+	if in := this.InputByName("blood_loss"); in.HasSignals() {
+		var lost float64
+		in.Signals().ForEach(func(sig *signal.Signal) error {
+			lost += helper.AsF64OrDefault(sig, 0)
+			return nil
+		})
+		bleed(this, lost)
 	}
 
 	// Phase A: time tick -> publish current levels and remember dt.
@@ -195,6 +207,8 @@ func updateBloodLevels(this *component.Component) {
 
 	updateHormones(this, hormoneRates, dt)
 
+	refill(this, dt)
+
 	if capacity := bloodstream.HufnerConstant * hemoglobin * volume * bloodstream.DLPerLiter; capacity > 0 {
 		saturation -= (o2DrawPerSec * dt) / capacity * 100.0
 	}
@@ -242,4 +256,53 @@ func circulatingHormones(this *component.Component) map[string]float64 {
 		levels[hormone], _ = this.State().Get(hormoneState(hormone)).(float64)
 	}
 	return levels
+}
+
+// MinSurvivableVolume is the blood a circulation cannot go below and still be a
+// circulation, in litres.
+const MinSurvivableVolume = 1.5 // litres
+
+// bleed takes whole blood out of the circulation.
+//
+// Whole blood, not water: what leaves a wound is blood, cells and all, so the
+// concentration of what remains is unchanged. This is the reason a haemoglobin
+// measured early in a haemorrhage is a trap -- it reads normal while the patient
+// is exsanguinating, because the patient is losing red cells and plasma in the
+// proportion they were already in.
+func bleed(this *component.Component, lostMl float64) {
+	if lostMl <= 0 {
+		return
+	}
+
+	volume := this.State().Get(stateVolume).(float64)
+	this.State().Set(stateVolume, max(volume-lostMl/1000.0, MinSurvivableVolume))
+}
+
+// transcapillaryRefillHalfLifeSec is how fast the body pulls fluid in from its
+// own tissues to replace a lost volume.
+//
+// It is slow -- this is an hours-long process, not a minutes-long one -- and its
+// slowness is the whole clinical picture of the first hour after an injury: the
+// pressure has to be defended by the heart and the vessels because the volume is
+// not coming back yet. When it does come back it arrives as fluid without cells,
+// which is why the haemoglobin falls *after* the bleeding has stopped.
+const transcapillaryRefillHalfLifeSec = 20 * 60.0
+
+// refill moves interstitial fluid into the circulation, toward the volume the
+// body wants. It buys back pressure at the cost of concentration.
+func refill(this *component.Component, dt float64) {
+	volume := this.State().Get(stateVolume).(float64)
+	if volume >= bloodstream.NormalBloodVolume {
+		return
+	}
+
+	restored := helper.DecayToward(volume, bloodstream.NormalBloodVolume, dt, transcapillaryRefillHalfLifeSec)
+
+	// The red cells are however many there were; they are now spread through a
+	// larger volume.
+	hemoglobin := this.State().Get(stateHemoglobin).(float64)
+	if restored > 0 {
+		this.State().Set(stateHemoglobin, hemoglobin*volume/restored)
+	}
+	this.State().Set(stateVolume, restored)
 }

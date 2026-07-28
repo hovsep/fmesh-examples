@@ -26,6 +26,7 @@ var commandRoutes = map[string]string{
 	"activity":  "controller:physical_stress",
 	"emotion":   "controller:mental_stress",
 	"excretion": "controller:excretion",
+	"trauma":    "controller:trauma",
 }
 
 // CommandNamespaces returns the command namespaces the body accepts, sorted.
