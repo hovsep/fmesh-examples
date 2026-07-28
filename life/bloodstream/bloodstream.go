@@ -12,6 +12,8 @@ package bloodstream
 import (
 	"math"
 
+	"github.com/hovsep/fmesh/component"
+
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/signal"
@@ -187,10 +189,93 @@ const (
 	SubstanceO2Draw = "o2_draw"
 	// SubstanceCO2Load: payload is carbon dioxide returned, in mL/s.
 	SubstanceCO2Load = "co2_load"
-	// Future: toxins, hormones, nutrients, ... just add a case in updateBloodLevels.
+	// SubstanceHormone: a gland's secretion rate for the hormone named by the
+	// HormoneLabel on the same signal, in units of saturation per second.
+	SubstanceHormone = "hormone"
+	// Future: toxins, drugs, nutrients, ... add a case in updateBloodLevels.
+)
+
+// SupplyPort is the input every organ receives blood on, and ReturnPort the
+// output it puts things back into the blood on. They are named here because the
+// plugins that use them have to agree, and only one of them may create each.
+const (
+	SupplyPort = "blood"
+	ReturnPort = "blood"
+)
+
+// HormoneLabel names which hormone a secretion carries.
+const HormoneLabel = "hormone"
+
+// The hormones this body knows about, as levels between 0 (none circulating)
+// and 1 (as much as this body ever makes).
+//
+// Two of them answer the same stressor on two timescales, which is the point of
+// having both: adrenaline arrives in seconds and is gone in minutes, cortisol
+// takes minutes to arrive and hours to leave. A fright and a siege are not the
+// same problem and are not solved by the same chemistry.
+const (
+	HormoneAdrenaline = "adrenaline"
+	HormoneCortisol   = "cortisol"
+)
+
+// Hormones is every hormone the bloodstream carries, so the blood can clear them
+// and telemetry can report them without either being told about each new one.
+var Hormones = []string{HormoneAdrenaline, HormoneCortisol}
+
+// HormoneSecretion builds a signal for a gland to emit on its blood output.
+// Rate is in level per second: how fast the gland is raising the circulating
+// level, against the clearance that is always pulling it back down.
+func HormoneSecretion(hormone string, rate float64) *signal.Signal {
+	return signal.New(rate).
+		WithLabel(SubstanceLabel, SubstanceHormone).
+		WithLabel(HormoneLabel, hormone)
+}
+
+// Hormone half-lives: how long the blood takes to clear away half of what is
+// circulating, in seconds. These are what make the two axes feel different.
+const (
+	AdrenalineHalfLifeSec = 120.0  // minutes: a fright passes
+	CortisolHalfLifeSec   = 3600.0 // an hour: a siege does not
 )
 
 // Secretion builds a substance signal for an organ to emit on its "blood" output.
 func Secretion(substance string, rate float64) *signal.Signal {
 	return signal.New(rate).WithLabel(SubstanceLabel, substance)
+}
+
+// HormoneHalfLife returns how long the blood takes to clear half of a hormone.
+func HormoneHalfLife(hormone string) float64 {
+	switch hormone {
+	case HormoneAdrenaline:
+		return AdrenalineHalfLifeSec
+	case HormoneCortisol:
+		return CortisolHalfLifeSec
+	default:
+		return AdrenalineHalfLifeSec
+	}
+}
+
+// EnsureSupplyPort gives a component the input it receives blood on, if it does
+// not already have one.
+//
+// Two plugins need that port -- perfusion, to read what is being delivered, and
+// receptor, to read what is being signalled -- and an organ may carry either or
+// both. fmesh keeps a component's plugins in a map, so which of them initialises
+// first is undefined: whichever arrives first must create the port and the other
+// must find it. Adding it unconditionally works right up until the day the map
+// hands them over in the other order, which is exactly how this was found.
+func EnsureSupplyPort(c *component.Component) error {
+	if c.InputByName(SupplyPort) != nil {
+		return nil
+	}
+	return c.AddInputs(SupplyPort)
+}
+
+// EnsureReturnPort gives a component the output it puts things back into the
+// blood on, if it does not already have one.
+func EnsureReturnPort(c *component.Component) error {
+	if c.OutputByName(ReturnPort) != nil {
+		return nil
+	}
+	return c.AddOutputs(ReturnPort)
 }

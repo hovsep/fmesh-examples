@@ -20,7 +20,10 @@ var (
 	stateVolume       common.State = "volume_l"
 	statePaCO2        common.State = "PaCO2"
 	stateGlucoseLevel common.State = "glucose_level"
-	stateDt           common.State = "dt" // last known tick duration (seconds)
+
+	// Circulating hormone levels, keyed by hormone name.
+	stateHormonePrefix              = "hormone_"
+	stateDt            common.State = "dt" // last known tick duration (seconds)
 )
 
 const (
@@ -57,6 +60,9 @@ func GetBloodSystem() (*component.Component, error) {
 			state.Set(stateVolume, bloodstream.NormalBloodVolume)
 			state.Set(statePaCO2, bloodstream.NormalPaCO2)
 			state.Set(stateGlucoseLevel, bloodstream.DefaultGlucoseLevel)
+			for _, hormone := range bloodstream.Hormones {
+				state.Set(hormoneState(hormone), 0.0)
+			}
 			state.Set(stateDt, defaultDt)
 		}),
 	)
@@ -127,7 +133,8 @@ func publishBloodLevels(this *component.Component) {
 			WithScalar("CaO2", content).
 			WithScalar("hemoglobin", hemoglobin).
 			WithScalar("volume_l", this.State().Get(stateVolume).(float64)).
-			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)),
+			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
+			WithScalars(circulatingHormones(this)),
 	)
 	this.OutputByName("spo2").PutPayloads(saturation)
 	this.OutputByName("pao2").PutPayloads(paO2)
@@ -172,6 +179,7 @@ func updateBloodLevels(this *component.Component) {
 	// fast -- which is why bleeding suffocates a body whose lungs are perfectly
 	// good.
 	var o2DrawPerSec, co2LoadPerSec float64
+	hormoneRates := map[string]float64{}
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
 		rate := helper.AsF64OrDefault(sig, 0)
 		switch sig.Labels().ValueOrDefault(bloodstream.SubstanceLabel, "") {
@@ -179,9 +187,13 @@ func updateBloodLevels(this *component.Component) {
 			o2DrawPerSec += rate
 		case bloodstream.SubstanceCO2Load:
 			co2LoadPerSec += rate
+		case bloodstream.SubstanceHormone:
+			hormoneRates[sig.Labels().ValueOrDefault(bloodstream.HormoneLabel, "")] += rate
 		}
 		return nil
 	})
+
+	updateHormones(this, hormoneRates, dt)
 
 	if capacity := bloodstream.HufnerConstant * hemoglobin * volume * bloodstream.DLPerLiter; capacity > 0 {
 		saturation -= (o2DrawPerSec * dt) / capacity * 100.0
@@ -197,4 +209,37 @@ func updateBloodLevels(this *component.Component) {
 
 	this.State().Set(stateSaturation, saturation)
 	this.State().Set(statePaCO2, co2)
+}
+
+func hormoneState(hormone string) common.State {
+	return common.State(stateHormonePrefix + hormone)
+}
+
+// updateHormones folds this tick's secretion into each circulating level and
+// lets the rest decay away.
+//
+// A hormone level is therefore never a command that has to be cancelled: a
+// gland that stops secreting is a level that fades on its own, at whatever pace
+// that hormone is cleared. Adrenaline is gone in minutes; cortisol takes hours.
+// That difference is the whole reason a body has both.
+func updateHormones(this *component.Component, secreted map[string]float64, dt float64) {
+	for _, hormone := range bloodstream.Hormones {
+		key := hormoneState(hormone)
+		level, _ := this.State().Get(key).(float64)
+
+		level += secreted[hormone] * dt
+		level = helper.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone))
+
+		this.State().Set(key, helper.Clamp(level, 0, 1))
+	}
+}
+
+// circulatingHormones is what the blood is currently carrying, ready to ride on
+// the venous signal for any organ with the receptors to feel it.
+func circulatingHormones(this *component.Component) map[string]float64 {
+	levels := make(map[string]float64, len(bloodstream.Hormones))
+	for _, hormone := range bloodstream.Hormones {
+		levels[hormone], _ = this.State().Get(hormoneState(hormone)).(float64)
+	}
+	return levels
 }

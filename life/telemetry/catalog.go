@@ -287,6 +287,15 @@ var Catalog = []Metric{
 		Scalars: []Scalar{
 			{Name: "SpO2", Display: Display{Label: "Saturation", Unit: "%", Min: 50, Max: 100, HealthMin: 95, HealthMax: 100, Decimals: 1, View: ViewCardiovascular}},
 			{Name: "pH", Display: Display{Label: "Blood pH", Unit: "", Min: 7.0, Max: 7.8, HealthMin: 7.35, HealthMax: 7.45, Decimals: 2, View: ViewCardiovascular}},
+			{Name: "CaO2", Display: Display{Label: "O₂ Content", Unit: "mL/dL", Min: 0, Max: 25, HealthMin: 16, HealthMax: 22, Decimals: 1, View: ViewCardiovascular}},
+			{Name: "hemoglobin", Display: Display{Label: "Hemoglobin", Unit: "g/dL", Min: 0, Max: 20, HealthMin: 12, HealthMax: 17, Decimals: 1, View: ViewCardiovascular}},
+			{Name: "volume_l", Display: Display{Label: "Blood Volume", Unit: "L", Min: 0, Max: 6, HealthMin: 4.5, HealthMax: 5.5, Decimals: 2, View: ViewCardiovascular}},
+
+			// The endocrine answer, on its two clocks. Adrenaline arrives in
+			// seconds and is gone in minutes; cortisol takes minutes to arrive
+			// and hours to leave.
+			{Name: "adrenaline", Display: Display{Label: "Adrenaline", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 0.3, Decimals: 2, View: ViewNervous}},
+			{Name: "cortisol", Display: Display{Label: "Cortisol", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 0.3, Decimals: 2, View: ViewNervous}},
 		},
 	},
 

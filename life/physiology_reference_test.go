@@ -182,9 +182,14 @@ func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
 // not a number anybody typed in: it is the sum of what its organs ask for.
 //
 // The published resting figures -- brain 50, heart 30, kidneys 18, gut 50, muscle
-// 50, skin 12, diaphragm 3 mL/min -- come to about 213, against a whole-body
-// resting consumption of roughly 250. The rest belongs to organs this simulation
-// does not have yet (liver most of all), which is a gap worth being able to see.
+// 50, skin 12, diaphragm 3, adrenals 2 mL/min -- come to about 215, against a
+// whole-body resting consumption of roughly 250. The rest belongs to organs this
+// simulation does not have yet (liver most of all), which is a gap worth being
+// able to see.
+//
+// This assertion is deliberately exact, so that giving the body a new organ
+// fails it. That is not a nuisance: adding a tissue changes what the body burns,
+// and the change should have to be acknowledged rather than absorbed silently.
 func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 	sim := newCommandableSim(t)
 	body := helper.FindHumanComponent(simMesh(sim))
@@ -203,8 +208,8 @@ func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 		return nil
 	}))
 
-	assert.Len(t, perfused, 7, "brain, heart, kidney, diaphragm, gut, skin and muscle should be perfused")
-	assert.InDelta(t, 213, total, 1, "the modelled organs should account for ~213 mL/min")
+	assert.Len(t, perfused, 8, "brain, heart, kidney, diaphragm, adrenals, gut, skin and muscle should be perfused")
+	assert.InDelta(t, 215, total, 1, "the modelled organs should account for ~215 mL/min")
 	assert.Less(t, total, 250.0, "which is less than a whole body: the liver is still missing")
 }
 
@@ -392,4 +397,91 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 		assert.Greater(t, after["map"], uncompensated+5,
 			"the reflex should be holding pressure well above what it would be without it")
 	})
+}
+
+// TestReference_StressHormonesRunOnTwoClocks is why a body bothers with an
+// endocrine system at all when it already has nerves.
+//
+// The same stressor provokes both adrenal outputs, but they answer on different
+// timescales: adrenaline arrives within seconds and is cleared within minutes,
+// cortisol takes minutes to arrive and hours to leave. A fright and a siege are
+// not the same problem, and the chemistry that solves one does not solve the
+// other.
+//
+// The body is bled, held there, and then given its volume back, so both the
+// rise and the fall can be compared.
+func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	blood := bodyComponent(t, sim, "da:blood_system")
+
+	level := func(hormone string) float64 {
+		sig := agg.OutputByName("human-Leon::venous_blood").Signals().First()
+		if sig == nil {
+			return 0
+		}
+		return sig.Scalars().ValueOrDefault(hormone, 0)
+	}
+
+	var atRest, earlyAdrenaline, earlyCortisol, peakAdrenaline, peakCortisol float64
+	var afterRecoveryAdrenaline, afterRecoveryCortisol float64
+
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			switch {
+			case within(elapsed, 5):
+				atRest = level(bloodstream.HormoneAdrenaline)
+				blood.State().Set("volume_l", 3.5)
+				blood.State().Set("hemoglobin", 10.5)
+			case within(elapsed, 15):
+				// Ten seconds in: the fast arm should already be working.
+				earlyAdrenaline = level(bloodstream.HormoneAdrenaline)
+				earlyCortisol = level(bloodstream.HormoneCortisol)
+			case within(elapsed, 120):
+				peakAdrenaline = level(bloodstream.HormoneAdrenaline)
+				peakCortisol = level(bloodstream.HormoneCortisol)
+				// Transfused: the stressor is gone.
+				blood.State().Set("volume_l", bloodstream.NormalBloodVolume)
+				blood.State().Set("hemoglobin", bloodstream.NormalHemoglobin)
+			case within(elapsed, 300):
+				afterRecoveryAdrenaline = level(bloodstream.HormoneAdrenaline)
+				afterRecoveryCortisol = level(bloodstream.HormoneCortisol)
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 305*time.Second, func() {
+		// An unstressed body is not marinating in stress hormones.
+		assert.InDelta(t, 0, atRest, 0.01, "nothing should circulate at rest")
+
+		// Ten seconds after the injury, adrenaline is already doing its job and
+		// cortisol has barely started.
+		assert.Greater(t, earlyAdrenaline, 0.05, "adrenaline should arrive within seconds")
+		assert.Less(t, earlyCortisol, earlyAdrenaline/5,
+			"cortisol should still be far behind at ten seconds")
+
+		// Both keep climbing while the stressor lasts, adrenaline far higher.
+		assert.Greater(t, peakAdrenaline, earlyAdrenaline, "adrenaline should keep rising under a sustained stressor")
+		assert.Greater(t, peakCortisol, earlyCortisol, "so should cortisol, more slowly")
+		assert.Greater(t, peakAdrenaline, peakCortisol*5, "adrenaline should dominate the acute response")
+
+		// And the point: three minutes after the stressor is removed, the fast
+		// hormone has largely gone and the slow one has not.
+		assert.Less(t, afterRecoveryAdrenaline, peakAdrenaline*0.5,
+			"adrenaline should clear within minutes of the stressor ending")
+		assert.Greater(t, afterRecoveryCortisol, peakCortisol*0.8,
+			"cortisol should still be circulating long after")
+	})
+}
+
+// within reports whether the run has just passed a given moment, so a hook can
+// act on it exactly once.
+func within(elapsed, moment float64) bool {
+	return elapsed >= moment && elapsed < moment+0.011
 }

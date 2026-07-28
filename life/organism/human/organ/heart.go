@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 )
@@ -25,6 +27,11 @@ const (
 	// cardiacRateHalfLifeSec is how quickly the heart follows a change in the
 	// rate it is being asked for -- a few beats, not instantly.
 	cardiacRateHalfLifeSec = 1.5
+
+	// adrenalineChronotropy is how much fully saturated adrenaline adds to the
+	// cardiac bias -- worth roughly another 50 beats a minute on top of what the
+	// nerves are asking for.
+	adrenalineChronotropy = 0.3
 
 	// stateRateExact holds the unrounded rate the smoothing works on.
 	stateRateExact common.State = "rate_exact"
@@ -48,6 +55,10 @@ func GetHeart() (*component.Component, error) {
 		component.WithPlugins(
 			damage.New(damage.Config{Organ: "heart"}),
 			perfusion.New(perfusion.Config{Organ: "heart", O2PerMinute: HeartO2PerMinute}),
+			// A heart feels adrenaline directly, which is why fright quickens
+			// it faster than any nerve could and why the quickening outlasts
+			// the moment that caused it.
+			receptor.For(bloodstream.HormoneAdrenaline),
 		),
 		component.WithInputs("time", "autonomic_tone"),
 		component.WithOutputs("cardiac_activation", "rate"),
@@ -120,7 +131,9 @@ func handleCardiacBias(this *component.Component) error {
 	// moves the rate by a fraction of a beat, and truncating that to a whole one
 	// discards it, so the heart would sit at its resting rate for ever however
 	// hard the reflex called for tachycardia.
-	demanded := helper.Lerp(minBPM, maxBPM, bias)
+	// Circulating adrenaline adds to whatever the nerves are asking for.
+	adrenaline := receptor.Level(this, bloodstream.HormoneAdrenaline)
+	demanded := helper.Lerp(minBPM, maxBPM, helper.Clamp(bias+adrenaline*adrenalineChronotropy, 0, 1))
 	this.State().Update(stateRateExact, func(v any) any {
 		return helper.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})
