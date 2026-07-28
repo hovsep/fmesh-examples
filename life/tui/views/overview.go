@@ -89,16 +89,16 @@ func (v *OverviewView) renderCardiovascular(width, height int) string {
 
 	content.WriteString("\n")
 
-	if signal, exists := v.State.GetSignal("human-Leon::blood_o2_level"); exists {
-		metadata := models.SignalRegistry["human-Leon::blood_o2_level"]
+	if signal, exists := v.State.GetSignal("human-Leon::blood_spo2"); exists {
+		metadata := models.SignalRegistry["human-Leon::blood_spo2"]
 		gauge := widgets.NewGauge(metadata, signal)
 		content.WriteString(gauge.Render(width-4) + "\n")
 	}
 
 	content.WriteString("\n")
 
-	if signal, exists := v.State.GetSignal("human-Leon::blood_co2_level"); exists {
-		metadata := models.SignalRegistry["human-Leon::blood_co2_level"]
+	if signal, exists := v.State.GetSignal("human-Leon::blood_paco2"); exists {
+		metadata := models.SignalRegistry["human-Leon::blood_paco2"]
 		gauge := widgets.NewGauge(metadata, signal)
 		content.WriteString(gauge.Render(width-4) + "\n")
 	}

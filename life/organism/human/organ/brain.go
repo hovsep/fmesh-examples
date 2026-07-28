@@ -22,18 +22,26 @@ const (
 	// 0.7 - 1.0 Stress, exercise, threat
 	defaultNeuralDrive = 0.3 * DNCS
 
-	// Metabolism: the brain is O2-hungry and returns CO2 to the blood (rates in %/s).
-	BrainO2Consumption = 3.0 * PercentPerSecond
-	BrainCO2Production = 3.0 * PercentPerSecond
+	// Metabolism: the brain is the body's hungriest organ for its size, taking
+	// about a fifth of resting oxygen use, and returns carbon dioxide to the
+	// blood. Rates are in mmHg/s of arterial tension.
+	BrainO2Consumption = 0.35 * MmHgPerSecond
+	BrainCO2Production = 0.05 * MmHgPerSecond
 
 	// The brain is the first organ to suffer when the blood cannot supply it.
-	// Below these levels its drive fades toward zero (unconsciousness); above the
-	// comfortable levels it is unaffected. Tuned to this sim's blood game-scale.
+	// Below these tensions its drive fades toward zero (unconsciousness); above
+	// the comfortable ones it is unaffected.
 	lastBloodO2      common.State = "last_blood_o2"
 	lastBloodGlucose common.State = "last_blood_glucose"
 
-	o2FailLevel      = 35.0 * Percent // blood O2 (game scale) at which drive is gone
-	o2ComfortLevel   = 60.0 * Percent
+	// o2ComfortLevel is the PaO₂ at which saturation is still ~90%, the point at
+	// which oxygen would be given clinically; o2FailLevel is roughly where
+	// saturation has fallen far enough to cost consciousness.
+	o2FailLevel    = 25.0 * MmHg
+	o2ComfortLevel = 60.0 * MmHg
+
+	// Neuroglycopenia: confusion sets in in the 50s mg/dL and consciousness goes
+	// around 30.
 	glucoseFailLevel = 30.0 // mg/dL
 	glucoseComfort   = 55.0
 )
@@ -53,7 +61,7 @@ func GetBrain() (*component.Component, error) {
 		)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(NeuralDrive, defaultNeuralDrive)
-			state.Set(lastBloodO2, da.DefaultO2Level)
+			state.Set(lastBloodO2, da.NormalPaO2)
 			state.Set(lastBloodGlucose, da.DefaultGlucoseLevel)
 		}),
 	)
@@ -71,7 +79,7 @@ func senseBlood(this *component.Component) error {
 		return nil
 	}
 	if sig := in.Signals().First(); sig != nil {
-		this.State().Set(lastBloodO2, sig.Scalars().ValueOrDefault("O2_level", da.DefaultO2Level))
+		this.State().Set(lastBloodO2, sig.Scalars().ValueOrDefault("PaO2", da.NormalPaO2))
 		this.State().Set(lastBloodGlucose, sig.Scalars().ValueOrDefault("glucose_level", da.DefaultGlucoseLevel))
 	}
 	return nil

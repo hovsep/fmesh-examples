@@ -233,8 +233,8 @@ func Test_HumanLiveness(t *testing.T) {
 						if sig == nil {
 							return nil
 						}
-						observedO2 = append(observedO2, sig.Scalars().ValueOrDefault("O2_level", 0))
-						observedCO2 = append(observedCO2, sig.Scalars().ValueOrDefault("CO2_level", 0))
+						observedO2 = append(observedO2, sig.Scalars().ValueOrDefault("PaO2", 0))
+						observedCO2 = append(observedCO2, sig.Scalars().ValueOrDefault("PaCO2", 0))
 						return nil
 					})
 				})
@@ -244,12 +244,12 @@ func Test_HumanLiveness(t *testing.T) {
 					require.NotEmpty(t, observedCO2, "should collect blood CO2 samples")
 
 					for _, v := range observedO2 {
-						assert.GreaterOrEqual(t, v, da.MinO2Level, "O2 should stay above min level")
-						assert.LessOrEqual(t, v, da.MaxO2Level, "O2 should stay below max level")
+						assert.GreaterOrEqual(t, v, da.MinPaO2, "PaO2 should stay above the survivable floor")
+						assert.LessOrEqual(t, v, da.MaxPaO2, "PaO2 should stay below the ceiling")
 					}
 					for _, v := range observedCO2 {
-						assert.GreaterOrEqual(t, v, da.MinCO2Level, "CO2 should stay above min level")
-						assert.LessOrEqual(t, v, da.MaxCO2Level, "CO2 should stay below max level")
+						assert.GreaterOrEqual(t, v, da.MinPaCO2, "PaCO2 should stay above the floor")
+						assert.LessOrEqual(t, v, da.MaxPaCO2, "PaCO2 should stay below the ceiling")
 					}
 
 					meanO2 := helper.Mean(observedO2)
@@ -280,7 +280,7 @@ func Test_HumanLiveness(t *testing.T) {
 					assert.Greater(t, co2Range, 0.5, "CO2 should fluctuate (gas exchange active)")
 
 					// Mean O2 should stay near the resting level, not drift to a clamp boundary
-					assert.InDelta(t, da.DefaultO2Level, meanO2, 50.0, "mean O2 should be near resting level")
+					assert.InDelta(t, da.NormalPaO2, meanO2, 50.0, "mean O2 should be near resting level")
 				})
 			},
 		},
@@ -359,8 +359,8 @@ func Test_HumanLiveness(t *testing.T) {
 						if sig == nil {
 							return nil
 						}
-						o2 = append(o2, sig.Scalars().ValueOrDefault("O2_level", 0))
-						co2 = append(co2, sig.Scalars().ValueOrDefault("CO2_level", 0))
+						o2 = append(o2, sig.Scalars().ValueOrDefault("PaO2", 0))
+						co2 = append(co2, sig.Scalars().ValueOrDefault("PaCO2", 0))
 						return nil
 					})
 				})
@@ -378,18 +378,22 @@ func Test_HumanLiveness(t *testing.T) {
 					o2Min, o2Max := minMax(steadyO2)
 					co2Min, co2Max := minMax(steadyCO2)
 
-					// Levels must keep moving (breathing in, organs consuming out).
-					assert.Greater(t, o2Max-o2Min, 3.0, "steady-state O2 should keep oscillating")
-					assert.Greater(t, co2Max-co2Min, 3.0, "steady-state CO2 should keep oscillating")
+					// Tensions must keep moving (breathing in, organs consuming out).
+					// The swing is small on purpose: arterial blood gases barely
+					// move within a breath in a healthy body -- a couple of mmHg of
+					// PaO₂ and well under one of PaCO₂ -- which is precisely what
+					// makes them a stable reading to take.
+					assert.Greater(t, o2Max-o2Min, 1.0, "steady-state PaO2 should keep oscillating")
+					assert.Greater(t, co2Max-co2Min, 0.1, "steady-state PaCO2 should keep oscillating")
 
 					// ... and repeatedly reverse direction (up and down), not drift monotonically.
 					assert.Greater(t, countDirectionChanges(steadyO2), 3, "O2 should rise and fall repeatedly")
 					assert.Greater(t, countDirectionChanges(steadyCO2), 3, "CO2 should rise and fall repeatedly")
 
 					// ... and must not be pinned flat at a clamp boundary.
-					assert.Greater(t, o2Min, da.MinO2Level, "O2 should not be stuck at the floor")
-					assert.Less(t, o2Max, da.MaxO2Level, "O2 should not be stuck at the ceiling")
-					assert.Less(t, co2Max, da.MaxCO2Level, "CO2 should not be stuck at the ceiling")
+					assert.Greater(t, o2Min, da.MinPaO2, "O2 should not be stuck at the floor")
+					assert.Less(t, o2Max, da.MaxPaO2, "O2 should not be stuck at the ceiling")
+					assert.Less(t, co2Max, da.MaxPaCO2, "CO2 should not be stuck at the ceiling")
 				})
 			},
 		},

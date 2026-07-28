@@ -16,9 +16,10 @@ const (
 	minBPM float64 = 40 * PerMinute
 	maxBPM float64 = 200 * PerMinute
 
-	// Metabolism: the heart consumes O2 and returns CO2 to the blood (rates in %/s).
-	HeartO2Consumption = 2.0 * PercentPerSecond
-	HeartCO2Production = 2.0 * PercentPerSecond
+	// Metabolism: the heart never rests, and pays for it. Rates are in mmHg/s of
+	// arterial tension.
+	HeartO2Consumption = 0.25 * MmHgPerSecond
+	HeartCO2Production = 0.03 * MmHgPerSecond
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase

@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -21,9 +22,10 @@ const (
 	dehydrationOnset = 97.0
 	dehydrationFull  = 90.0
 
-	// Hypoxia (blood O2, game scale).
-	hypoxiaOnset = 60.0
-	hypoxiaFull  = 30.0
+	// Hypoxia (arterial oxygen tension, mmHg). Tissue injury begins where the
+	// dissociation curve turns steep and is severe once saturation collapses.
+	hypoxiaOnset = 55.0
+	hypoxiaFull  = 25.0
 
 	// Hypoglycemia (mg/dL).
 	hypoglycemiaOnset = 55.0
@@ -92,7 +94,7 @@ func latchVitals(this *component.Component) error {
 		this.State().Set(common.CoreTemperature, s.ValueOrDefault(common.CoreTemperature, NormalCoreTemperature))
 	}
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
-		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("O2_level", 100))
+		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", da.NormalPaO2))
 	}
 	return nil
 }

@@ -32,4 +32,14 @@ const (
 
 	// Celsius is a temperature unit
 	Celsius = 1.0
+
+	// MmHg is pressure in millimetres of mercury, the unit blood gases and blood
+	// pressure are read in clinically (PaO₂, PaCO₂, mean arterial pressure).
+	MmHg = 1.0
+
+	// MmHgPerSecond is a rate of change of a partial pressure, per second.
+	MmHgPerSecond = 1.0
+
+	// Liter is a unit of volume in litres, used for blood volume.
+	Liter = 1.0
 )

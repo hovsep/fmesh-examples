@@ -2,6 +2,7 @@ package da
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -10,32 +11,87 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// Blood tracks two game-style "levels" (0-100%, not real physiology).
-// Breathing (fresh air on inhale) pushes O2 up and CO2 down; other organs
-// (brain, heart, ...) continuously consume O2 and return CO2, so the levels
-// oscillate in phase with the breath.
+// Blood carries arterial blood gases in the units they are read in clinically:
+// oxygen and carbon dioxide as partial pressures in mmHg, saturation as a
+// percentage, and pH. Breathing pulls the gases toward what the alveoli offer;
+// every organ draws oxygen out and returns carbon dioxide, so the values
+// oscillate with the breath and drift away when breathing stops.
+//
+// Reference values for a resting adult breathing room air at sea level.
 const (
-	// O2/CO2 level bounds (0-100% game scale). O2 has a floor > 0 so it never hits zero.
-	MinO2Level     = 20.0 * Percent
-	MaxO2Level     = 100.0 * Percent
-	DefaultO2Level = 100.0 * Percent
+	NormalPaO2  = 95.0 * MmHg
+	NormalPaCO2 = 40.0 * MmHg
+	NormalPH    = 7.40
 
-	MinCO2Level     = 0.0 * Percent
-	MaxCO2Level     = 100.0 * Percent
-	DefaultCO2Level = 30.0 * Percent
+	// AlveolarPO2 is the oxygen tension inside the alveoli on room air at sea
+	// level: the pressure driving oxygen into the blood. It is a constant here
+	// and becomes a function of barometric pressure and inspired fraction once
+	// the airway carries them -- which is what makes altitude work.
+	AlveolarPO2 = 104.0 * MmHg
+
+	// AaGradient is the alveolar-arterial difference. Blood leaves the lungs a
+	// little short of alveolar tension because some of it passes unventilated
+	// alveoli, which is why a healthy PaO₂ is about 95 and not 104.
+	AaGradient = 9.0 * MmHg
+
+	// VentilatedPaCO2 is what ventilation pulls carbon dioxide down towards;
+	// metabolism pushes it back up and the two settle near 40.
+	VentilatedPaCO2 = 38.0 * MmHg
+
+	// Survivable bounds. The oxygen ceiling is what hyperbaric therapy reaches.
+	MinPaO2  = 5.0 * MmHg
+	MaxPaO2  = 600.0 * MmHg
+	MinPaCO2 = 10.0 * MmHg
+	MaxPaCO2 = 150.0 * MmHg
 
 	// CO2ExcretionFraction is kept for the lung component, which references it.
 	CO2ExcretionFraction = 0.15 * Proportion
 
-	// Inhale approach rates: fractional-per-second pull toward the healthy target
-	// (proportional to the remaining gap, so levels can't overshoot or pin flat).
+	// Inhale approach rates: fractional-per-second pull toward what the lungs
+	// offer, proportional to the remaining gap, so tensions cannot overshoot.
 	o2InhaleGain = 6.0 * PerSecond
 	co2ClearGain = 6.0 * PerSecond
 )
 
+// The oxyhemoglobin dissociation curve.
+const (
+	// P50 is the oxygen tension at which hemoglobin is half saturated.
+	P50 = 26.6 * MmHg
+
+	// hillCoefficient is the curve's cooperativity: binding one oxygen molecule
+	// makes hemoglobin readier to bind the next, which is what gives the curve
+	// its S shape.
+	hillCoefficient = 2.7
+)
+
+// SaturationAt returns hemoglobin saturation (%) at an arterial oxygen tension,
+// from the Hill equation.
+//
+// This is the curve every physiology course draws. It is flat above about
+// 80 mmHg, so a large fall in PaO₂ costs almost no saturation, and steep below
+// about 60 mmHg, where saturation collapses. PaO₂ 60 → SpO₂ ≈ 90% is the corner
+// it is known by, and the point at which supplemental oxygen is given.
+func SaturationAt(paO2 float64) float64 {
+	if paO2 <= 0 {
+		return 0
+	}
+	bound := math.Pow(paO2, hillCoefficient)
+	return 100.0 * bound / (bound + math.Pow(P50, hillCoefficient))
+}
+
+// PHAt returns blood pH at an arterial carbon dioxide tension.
+//
+// Carbon dioxide dissolves into carbonic acid, so ventilation sets pH:
+// hypoventilation is an acidosis, hyperventilation an alkalosis. Acutely the
+// shift is about 0.008 per mmHg -- the textbook "0.08 per 10 mmHg". Metabolic
+// acid-base disturbance and renal compensation are not modelled.
+func PHAt(paCO2 float64) float64 {
+	return NormalPH - 0.008*(paCO2-NormalPaCO2)
+}
+
 var (
-	stateO2Level      common.State = "O2_level"
-	stateCO2Level     common.State = "CO2_level"
+	statePaO2         common.State = "PaO2"
+	statePaCO2        common.State = "PaCO2"
 	stateGlucoseLevel common.State = "glucose_level"
 	stateDt           common.State = "dt" // last known tick duration (seconds)
 )
@@ -56,9 +112,9 @@ const defaultDt = 0.01
 const SubstanceLabel = "substance"
 
 const (
-	// SubstanceO2Consumption: payload is an O2 demand rate in %/s (decreases blood O2).
+	// SubstanceO2Consumption: payload is an oxygen demand in mmHg/s (lowers PaO₂).
 	SubstanceO2Consumption = "o2_consumption"
-	// SubstanceCO2Production: payload is a CO2 return rate in %/s (increases blood CO2).
+	// SubstanceCO2Production: payload is a carbon dioxide return in mmHg/s (raises PaCO₂).
 	SubstanceCO2Production = "co2_production"
 	// Future: toxins, hormones, nutrients, ... just add a case in updateBloodLevels.
 )
@@ -78,14 +134,15 @@ func GetBloodSystem() (*component.Component, error) {
 			"glucose",    // current blood sugar from the reservoir, carried to organs
 		),
 		component.WithOutputs(
-			"venous_blood", // composite signal (O2_level, CO2_level) broadcast to organs
-			"o2_level",     // plain float, for observation/rendering
-			"co2_level",    // plain float, for observation/rendering
+			"venous_blood", // composite signal (PaO₂, PaCO₂, SpO₂, pH) broadcast to organs
+			"spo2",         // plain floats, for observation/rendering
+			"pao2",
+			"paco2",
 		),
 		component.WithActivationFunc(exchangeBloodGases),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateO2Level, DefaultO2Level)
-			state.Set(stateCO2Level, DefaultCO2Level)
+			state.Set(statePaO2, NormalPaO2)
+			state.Set(statePaCO2, NormalPaCO2)
 			state.Set(stateGlucoseLevel, DefaultGlucoseLevel)
 			state.Set(stateDt, defaultDt)
 		}),
@@ -139,25 +196,29 @@ func exchangeBloodGases(this *component.Component) error {
 }
 
 func publishBloodLevels(this *component.Component) {
-	o2 := this.State().Get(stateO2Level).(float64)
-	co2 := this.State().Get(stateCO2Level).(float64)
+	paO2 := this.State().Get(statePaO2).(float64)
+	paCO2 := this.State().Get(statePaCO2).(float64)
+	spO2 := SaturationAt(paO2)
 
 	this.OutputByName("venous_blood").PutSignals(
 		signal.New("venous_blood").
 			WithLabel("category", "gas").
 			WithLabel("type", "venous").
-			WithScalar("O2_level", o2).
-			WithScalar("CO2_level", co2).
+			WithScalar("PaO2", paO2).
+			WithScalar("PaCO2", paCO2).
+			WithScalar("SpO2", spO2).
+			WithScalar("pH", PHAt(paCO2)).
 			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)),
 	)
-	this.OutputByName("o2_level").PutPayloads(o2)
-	this.OutputByName("co2_level").PutPayloads(co2)
+	this.OutputByName("spo2").PutPayloads(spO2)
+	this.OutputByName("pao2").PutPayloads(paO2)
+	this.OutputByName("paco2").PutPayloads(paCO2)
 }
 
 func updateBloodLevels(this *component.Component) {
 	dt := this.State().Get(stateDt).(float64)
-	o2 := this.State().Get(stateO2Level).(float64)
-	co2 := this.State().Get(stateCO2Level).(float64)
+	o2 := this.State().Get(statePaO2).(float64)
+	co2 := this.State().Get(statePaCO2).(float64)
 
 	// Net airflow across both lungs.
 	var netFlow float64
@@ -166,15 +227,17 @@ func updateBloodLevels(this *component.Component) {
 		return nil
 	})
 
-	// On inhale (fresh air) pull both gases toward their healthy targets. Magnitude is
-	// proportional to the remaining gap, giving smooth waves that never overshoot.
+	// On inhale, fresh air pulls the gases toward what the lungs offer: oxygen
+	// toward alveolar tension less the alveolar-arterial gradient, carbon dioxide
+	// down toward what ventilation clears it to. The pull is proportional to the
+	// remaining gap, giving smooth waves that never overshoot.
 	if netFlow > 0 {
-		o2 += (MaxO2Level - o2) * o2InhaleGain * dt
-		co2 -= (co2 - MinCO2Level) * co2ClearGain * dt
+		o2 += (AlveolarPO2 - AaGradient - o2) * o2InhaleGain * dt
+		co2 -= (co2 - VentilatedPaCO2) * co2ClearGain * dt
 	}
 
 	// Organ metabolism: read every substance secreted into the blood this tick and apply
-	// it by kind. Rates are in %/s, integrated over dt. Unknown substances are ignored.
+	// it by kind. Rates are in mmHg/s, integrated over dt. Unknown substances are ignored.
 	var o2DemandRate, co2ReturnRate float64
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
 		rate := helper.AsF64OrDefault(sig, 0)
@@ -189,10 +252,10 @@ func updateBloodLevels(this *component.Component) {
 	o2 -= o2DemandRate * dt
 	co2 += co2ReturnRate * dt
 
-	// Safety-net clamp (the approach math already keeps levels in range).
-	o2 = helper.Clamp(o2, MinO2Level, MaxO2Level)
-	co2 = helper.Clamp(co2, MinCO2Level, MaxCO2Level)
+	// Safety-net clamp (the approach math already keeps tensions in range).
+	o2 = helper.Clamp(o2, MinPaO2, MaxPaO2)
+	co2 = helper.Clamp(co2, MinPaCO2, MaxPaCO2)
 
-	this.State().Set(stateO2Level, o2)
-	this.State().Set(stateCO2Level, co2)
+	this.State().Set(statePaO2, o2)
+	this.State().Set(statePaCO2, co2)
 }

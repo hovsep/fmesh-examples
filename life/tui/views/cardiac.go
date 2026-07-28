@@ -29,8 +29,8 @@ func (v *CardiacView) Render(width, height int) string {
 	}
 
 	hr := v.State.GetLatestValue("human-Leon::heart_rate")
-	o2 := v.State.GetLatestValue("human-Leon::blood_o2_level")
-	co2 := v.State.GetLatestValue("human-Leon::blood_co2_level")
+	o2 := v.State.GetLatestValue("human-Leon::blood_spo2")
+	co2 := v.State.GetLatestValue("human-Leon::blood_paco2")
 	header := styles.LabelStyle.Render("Heart rate: ") +
 		styles.ValueNormalStyle.Render(fmt.Sprintf("%.0f", hr)) + styles.UnitStyle.Render(" BPM") +
 		styles.LabelStyle.Render("     Blood O₂: ") +
@@ -51,11 +51,11 @@ func (v *CardiacView) Render(width, height int) string {
 	ecg := widgets.NewECG("ECG — heartbeat", bpm, elapsed.Seconds()).Render(width, ecgHeight)
 
 	var gauges strings.Builder
-	if s, ok := v.State.GetSignal("human-Leon::blood_o2_level"); ok {
-		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_o2_level"], s).Render(width) + "\n")
+	if s, ok := v.State.GetSignal("human-Leon::blood_spo2"); ok {
+		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_spo2"], s).Render(width) + "\n")
 	}
-	if s, ok := v.State.GetSignal("human-Leon::blood_co2_level"); ok {
-		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_co2_level"], s).Render(width))
+	if s, ok := v.State.GetSignal("human-Leon::blood_paco2"); ok {
+		gauges.WriteString(widgets.NewGauge(models.SignalRegistry["human-Leon::blood_paco2"], s).Render(width))
 	}
 
 	return strings.Join([]string{header, "", ecg, "", gauges.String()}, "\n")
