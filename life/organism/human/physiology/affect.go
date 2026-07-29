@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -147,8 +148,8 @@ func deriveFeelings(this *component.Component) error {
 		),
 
 		common.FeelingFeverish: ramp(get(common.CoreTemperature), temperatureComfortable, temperatureFeverish),
-		common.FeelingAnxious:  helper.Clamp(get(stateArousal)*negativeOnly(get(stateValence)), 0, 1),
-		common.FeelingHappy:    helper.Clamp(get(stateValence), 0, 1),
+		common.FeelingAnxious:  mathx.Clamp(get(stateArousal)*negativeOnly(get(stateValence)), 0, 1),
+		common.FeelingHappy:    mathx.Clamp(get(stateValence), 0, 1),
 	}
 
 	// Exhaustion is exertion on top of an empty tank: hard work while well
@@ -179,7 +180,7 @@ func rememberInputs(this *component.Component) {
 		dt := this.State().Get(stateDt).(float64)
 		smooth := func(key common.State, scalar string, fallback float64) {
 			this.State().Update(key, func(v any) any {
-				return helper.DecayToward(v.(float64),
+				return mathx.DecayToward(v.(float64),
 					sig.Scalars().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
 			})
 		}
@@ -214,7 +215,7 @@ func firstSignal(this *component.Component, portName string) *signal.Signal {
 func packFeelings(feelings map[string]float64) *signal.Signal {
 	sig := signal.New("feelings").WithLabel("category", "affect")
 	for _, name := range common.Feelings {
-		sig = sig.WithScalar(name, helper.Clamp(feelings[name], 0, 1))
+		sig = sig.WithScalar(name, mathx.Clamp(feelings[name], 0, 1))
 	}
 	return sig
 }
@@ -228,7 +229,7 @@ func ramp(value, comfortable, extreme float64) float64 {
 	if comfortable == extreme {
 		return 0
 	}
-	return helper.Clamp((comfortable-value)/(comfortable-extreme), 0, 1)
+	return mathx.Clamp((comfortable-value)/(comfortable-extreme), 0, 1)
 }
 
 // negativeOnly returns how unpleasant a mood is, ignoring pleasant ones. Arousal
@@ -244,7 +245,7 @@ func strongest(feelings map[string]float64) float64 {
 		if name == common.FeelingContent || name == common.FeelingHappy {
 			continue
 		}
-		peak = max(peak, helper.Clamp(intensity, 0, 1))
+		peak = max(peak, mathx.Clamp(intensity, 0, 1))
 	}
 	return peak
 }

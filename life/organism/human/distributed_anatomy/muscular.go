@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -106,9 +107,9 @@ func integrateFatigue(this *component.Component) error {
 		if intensity > 1.0 {
 			fatigue += (intensity - 1.0) * fatiguePerIntensityPerSec * dt
 		} else {
-			fatigue = helper.DecayToward(fatigue, 0, dt, fatigueRecoveryHalfLifeSec)
+			fatigue = mathx.DecayToward(fatigue, 0, dt, fatigueRecoveryHalfLifeSec)
 		}
-		return helper.Clamp(fatigue, 0, maxFatigue)
+		return mathx.Clamp(fatigue, 0, maxFatigue)
 	})
 
 	return this.OutputByName("fatigue").PutPayloads(this.State().Get(StateFatigue).(float64))

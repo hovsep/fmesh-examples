@@ -14,8 +14,8 @@ import (
 
 	"github.com/hovsep/fmesh/component"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -195,7 +195,7 @@ const (
 // that. Inverting the Hill equation is what lets the model keep both, and keep
 // them consistent.
 func TensionAt(saturationPct float64) float64 {
-	s := helper.Clamp(saturationPct, 0.01, 99.99) / 100.0
+	s := mathx.Clamp(saturationPct, 0.01, 99.99) / 100.0
 	return P50 * math.Pow(s/(1-s), 1.0/hillCoefficient)
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -119,7 +120,7 @@ func handleRespiratoryBias(this *component.Component) error {
 	}
 
 	this.State().Update(common.Rate, func(v any) any {
-		return int(helper.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias))
+		return int(mathx.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias))
 	})
 
 	return nil

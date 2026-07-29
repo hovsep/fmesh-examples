@@ -12,6 +12,7 @@ package damage
 import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -113,7 +114,7 @@ func (d *Damage) onActivation(this *component.Component) error {
 		return nil
 	}
 
-	level := helper.Clamp(this.State().Get(stateLevel).(float64)+insult+aging, 0, CriticalLevel)
+	level := mathx.Clamp(this.State().Get(stateLevel).(float64)+insult+aging, 0, CriticalLevel)
 	this.State().Set(stateLevel, level)
 
 	if err := this.OutputByName(LevelOutput).PutPayloads(level); err != nil {
@@ -138,7 +139,7 @@ func Inflict(c *component.Component, amount float64) {
 		return
 	}
 	level, _ := c.State().Get(stateLevel).(float64)
-	level = helper.Clamp(level+amount, 0, CriticalLevel)
+	level = mathx.Clamp(level+amount, 0, CriticalLevel)
 	c.State().Set(stateLevel, level)
 	if level >= CriticalLevel {
 		c.State().Set(stateFailed, true)

@@ -19,7 +19,7 @@ package perfusion
 import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -238,7 +238,7 @@ func Sufficiency(c *component.Component) float64 {
 	if onset <= fail {
 		return 1
 	}
-	return helper.Clamp((content-fail)/(onset-fail), 0, 1)
+	return mathx.Clamp((content-fail)/(onset-fail), 0, 1)
 }
 
 // O2PerMinute returns an organ's resting oxygen demand, so the body can report

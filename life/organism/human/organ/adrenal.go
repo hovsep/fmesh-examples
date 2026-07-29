@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -78,7 +79,7 @@ func secreteStressHormones(this *component.Component) error {
 		return nil
 	}
 
-	stress := helper.Clamp(
+	stress := mathx.Clamp(
 		(this.State().Get(stateSympathetic).(float64)-secretionThreshold)/(1-secretionThreshold),
 		0, 1)
 	if stress <= 0 {
