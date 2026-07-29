@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -134,8 +135,8 @@ func digest(this *component.Component) error {
 	// What is left after this tick's emptying; the difference crossed into the
 	// body. Exponential emptying releases a big meal faster at first and tails
 	// off, which is how a stomach actually behaves.
-	kcalLeft := helper.DecayToward(kcal, 0, dt, foodEmptyingHalfLifeSec)
-	waterLeft := helper.DecayToward(water, 0, dt, waterEmptyingHalfLifeSec)
+	kcalLeft := mathx.DecayToward(kcal, 0, dt, foodEmptyingHalfLifeSec)
+	waterLeft := mathx.DecayToward(water, 0, dt, waterEmptyingHalfLifeSec)
 
 	absorbedKcal := kcal - kcalLeft
 	absorbedWater := water - waterLeft
@@ -145,7 +146,7 @@ func digest(this *component.Component) error {
 
 	if absorbedKcal > 0 {
 		this.State().Update(StateBowelPct, func(v any) any {
-			return helper.Clamp(v.(float64)+absorbedKcal*residuePctPerKcal, 0, 100)
+			return mathx.Clamp(v.(float64)+absorbedKcal*residuePctPerKcal, 0, 100)
 		})
 	}
 
@@ -160,7 +161,7 @@ func digest(this *component.Component) error {
 		}
 	}
 
-	stomachPct := helper.Clamp((waterLeft+kcalLeft*mealVolumeMlPerKcal)/StomachCapacityMl*100, 0, 100)
+	stomachPct := mathx.Clamp((waterLeft+kcalLeft*mealVolumeMlPerKcal)/StomachCapacityMl*100, 0, 100)
 	if err := this.OutputByName("stomach_fill").PutPayloads(stomachPct); err != nil {
 		return err
 	}

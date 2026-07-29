@@ -16,6 +16,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +130,7 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 		require.NotEmpty(t, paO2)
 
 		// Judge the second half, once the body has settled.
-		steady := func(xs []float64) float64 { return helper.Mean(xs[len(xs)/2:]) }
+		steady := func(xs []float64) float64 { return mathx.Mean(xs[len(xs)/2:]) }
 
 		assert.InDelta(t, 90, steady(paO2), 15, "resting PaO₂ should be in the normal range (80-100 mmHg)")
 		assert.InDelta(t, 40, steady(paCO2), 5, "resting PaCO₂ should be in the normal range (35-45 mmHg)")
@@ -309,7 +310,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 		steady := func(p string) float64 {
 			xs := series[p]
 			require.NotEmpty(t, xs, p)
-			return helper.Mean(xs[len(xs)/2:])
+			return mathx.Mean(xs[len(xs)/2:])
 		}
 
 		mapPressure := steady("mean_arterial_pressure")

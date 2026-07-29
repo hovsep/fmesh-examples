@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -181,10 +182,10 @@ func applyHepaticGlucose(this *component.Component) {
 	}
 
 	this.State().Update(StateGlycemia, func(v any) any {
-		return helper.Clamp(v.(float64)+delta, MinGlycemia, MaxGlycemia)
+		return mathx.Clamp(v.(float64)+delta, MinGlycemia, MaxGlycemia)
 	})
 	this.State().Update(StateEnergyKcal, func(v any) any {
-		return helper.Clamp(v.(float64)-delta/GlucosePerKcal, 0, MaxEnergyKcal)
+		return mathx.Clamp(v.(float64)-delta/GlucosePerKcal, 0, MaxEnergyKcal)
 	})
 }
 
@@ -200,12 +201,12 @@ func applyThermal(this *component.Component) {
 	rate := helper.AsF64OrDefault(in.Signals().First(), 0)
 	dt := this.State().Get(StateDt).(float64)
 	this.State().Update(StateCoreTemperature, func(v any) any {
-		return helper.Clamp(v.(float64)+rate*dt, MinCoreTemperature, MaxCoreTemperature)
+		return mathx.Clamp(v.(float64)+rate*dt, MinCoreTemperature, MaxCoreTemperature)
 	})
 }
 
 func publishBodyState(this *component.Component) error {
-	hydrationPct := helper.Clamp(this.State().Get(StateHydrationMl).(float64)/TotalBodyWaterMl*100, 0, 100)
+	hydrationPct := mathx.Clamp(this.State().Get(StateHydrationMl).(float64)/TotalBodyWaterMl*100, 0, 100)
 	glycemia := this.State().Get(StateGlycemia).(float64)
 	energy := this.State().Get(StateEnergyKcal).(float64)
 	temperature := this.State().Get(StateCoreTemperature).(float64)
@@ -253,7 +254,7 @@ func applyAbsorption(this *component.Component) {
 		// a hormone that had nothing left to regulate. One number, one place.
 		kcal := sig.Scalars().ValueOrDefault(common.GlucoseKcal, 0)
 		this.State().Update(StateGlycemia, func(v any) any {
-			return helper.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
+			return mathx.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
 		})
 		return nil
 	})
@@ -296,7 +297,7 @@ func applyExertion(this *component.Component) {
 		(1 + glucoseShareOfExertion*(intensity-1)) * dt
 
 	this.State().Update(StateGlycemia, func(v any) any {
-		return helper.Clamp(v.(float64)-glucoseUsed, MinGlycemia, MaxGlycemia)
+		return mathx.Clamp(v.(float64)-glucoseUsed, MinGlycemia, MaxGlycemia)
 	})
 
 	// Whatever the burn needed that the blood did not supply comes straight out
@@ -304,15 +305,15 @@ func applyExertion(this *component.Component) {
 	// counting it here as well would spend the same fuel twice.
 	if direct := burnt - glucoseUsed/GlucosePerKcal; direct > 0 {
 		this.State().Update(StateEnergyKcal, func(v any) any {
-			return helper.Clamp(v.(float64)-direct, 0, MaxEnergyKcal)
+			return mathx.Clamp(v.(float64)-direct, 0, MaxEnergyKcal)
 		})
 	}
 
 	// Exertion above rest adds heat; the body sheds it toward normal regardless.
 	this.State().Update(StateCoreTemperature, func(v any) any {
 		heated := v.(float64) + (intensity-1.0)*heatPerIntensityUnitPerSec*dt
-		return helper.Clamp(
-			helper.DecayToward(heated, NormalCoreTemperature, dt, temperatureHalfLifeSec),
+		return mathx.Clamp(
+			mathx.DecayToward(heated, NormalCoreTemperature, dt, temperatureHalfLifeSec),
 			MinCoreTemperature, MaxCoreTemperature)
 	})
 }
@@ -324,6 +325,6 @@ func addHydration(this *component.Component, deltaMl float64) {
 	this.State().Update(StateHydrationMl, func(v any) any {
 		// A little above full is possible right after drinking, before the
 		// kidneys catch up.
-		return helper.Clamp(v.(float64)+deltaMl, 0, TotalBodyWaterMl*1.1)
+		return mathx.Clamp(v.(float64)+deltaMl, 0, TotalBodyWaterMl*1.1)
 	})
 }

@@ -6,9 +6,9 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -97,8 +97,8 @@ func secretePancreaticHormones(this *component.Component) error {
 
 	// Only one arm is ever active: sugar is either above the setpoint or below
 	// it. Both being zero at the setpoint itself is what holds the body there.
-	insulin := helper.Clamp((glucose-GlycemicSetpoint)/insulinSpan, 0, 1)
-	glucagon := helper.Clamp((GlycemicSetpoint-glucose)/glucagonSpan, 0, 1)
+	insulin := mathx.Clamp((glucose-GlycemicSetpoint)/insulinSpan, 0, 1)
+	glucagon := mathx.Clamp((GlycemicSetpoint-glucose)/glucagonSpan, 0, 1)
 
 	if insulin <= 0 && glucagon <= 0 {
 		return nil

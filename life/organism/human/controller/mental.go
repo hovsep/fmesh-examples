@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -76,10 +77,10 @@ func acceptStimulusCommands(this *component.Component) error {
 		// Stimuli add to the current mood rather than replacing it, so two
 		// frights land harder than one.
 		this.State().Update(Arousal, func(v any) any {
-			return helper.Clamp(v.(float64)+args.ValueOrDefault(ScalarArousal, 0), 0, maxArousal)
+			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarArousal, 0), 0, maxArousal)
 		})
 		this.State().Update(Valence, func(v any) any {
-			return helper.Clamp(v.(float64)+args.ValueOrDefault(ScalarValence, 0), minValence, maxValence)
+			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarValence, 0), minValence, maxValence)
 		})
 		return nil
 	})
@@ -96,8 +97,8 @@ func emitMentalLoad(this *component.Component) error {
 		return fmt.Errorf("mental controller tick: %w", err)
 	}
 
-	arousal := helper.DecayToward(this.State().Get(Arousal).(float64), 0, dt, arousalHalfLifeSec)
-	valence := helper.DecayToward(this.State().Get(Valence).(float64), 0, dt, valenceHalfLifeSec)
+	arousal := mathx.DecayToward(this.State().Get(Arousal).(float64), 0, dt, arousalHalfLifeSec)
+	valence := mathx.DecayToward(this.State().Get(Valence).(float64), 0, dt, valenceHalfLifeSec)
 	this.State().Set(Arousal, arousal)
 	this.State().Set(Valence, valence)
 

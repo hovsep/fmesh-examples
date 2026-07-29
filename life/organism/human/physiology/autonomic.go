@@ -8,6 +8,7 @@ import (
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -55,7 +56,7 @@ func baroreflexResponse(meanArterialPressure float64) float64 {
 		return maxBaroreflexResponse
 	}
 	err := (da.NormalMAP - meanArterialPressure) / da.NormalMAP
-	return helper.Clamp(baroreflexGain*err, minBaroreflexResponse, maxBaroreflexResponse)
+	return mathx.Clamp(baroreflexGain*err, minBaroreflexResponse, maxBaroreflexResponse)
 }
 
 // The chemoreflex: what actually decides how hard a body breathes.
@@ -90,9 +91,9 @@ func chemoreflexResponse(paCO2, paO2 float64) float64 {
 	carbonDioxide := carbonDioxideGain * (paCO2 - da.NormalPaCO2Reference) / da.NormalPaCO2Reference
 
 	// Hypoxia contributes nothing until it is severe, and then a great deal.
-	hypoxic := helper.Clamp((hypoxicOnset-paO2)/(hypoxicOnset-hypoxicFull), 0, 1)
+	hypoxic := mathx.Clamp((hypoxicOnset-paO2)/(hypoxicOnset-hypoxicFull), 0, 1)
 
-	return helper.Clamp(max(carbonDioxide, hypoxic), minChemoreflexResponse, maxChemoreflexResponse)
+	return mathx.Clamp(max(carbonDioxide, hypoxic), minChemoreflexResponse, maxChemoreflexResponse)
 }
 
 // stateLastMAP latches the arterial pressure the reflex is answering, and the
@@ -172,21 +173,21 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float
 
 	// Sympathetic level rises with drive, and with a pressure that needs
 	// defending.
-	sym := helper.Clamp(neuralDrive+reflex, 0, 1)
-	paraSym := helper.Clamp(1.0-sym, 0.0, 1.0)
+	sym := mathx.Clamp(neuralDrive+reflex, 0, 1)
+	paraSym := mathx.Clamp(1.0-sym, 0.0, 1.0)
 	gain := sym
 
 	// Regional biases as a fraction of drive, each shifted by its own share of
 	// the reflex, with a little variability left on top.
 	base := neuralDrive * 0.5
 	bias := func(weight float64) float64 {
-		return helper.Clamp(helper.Jitter(base+reflex*weight, defaultRegionalBiasJitter), 0, 1)
+		return mathx.Clamp(mathx.Jitter(base+reflex*weight, defaultRegionalBiasJitter), 0, 1)
 	}
 
 	// Breathing answers to the blood far more than to anything else, so the
 	// respiratory bias takes whichever of its two callers is asking for more.
-	respiratory := helper.Clamp(
-		helper.Jitter(max(base+reflex*respiratoryWeight, base+chemo), defaultRegionalBiasJitter), 0, 1)
+	respiratory := mathx.Clamp(
+		mathx.Jitter(max(base+reflex*respiratoryWeight, base+chemo), defaultRegionalBiasJitter), 0, 1)
 
 	return helper.PackAutonomicTone(
 		sym, paraSym, defaultAutonomicCoordinationNoise, gain,

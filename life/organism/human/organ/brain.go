@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -81,7 +81,7 @@ func oscillateNeuralDrive(this *component.Component) error {
 	// recovers once the blood is restored.
 	var baseline float64
 	this.State().Update(NeuralDrive, func(currentND any) any {
-		baseline = helper.Clamp(helper.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
+		baseline = mathx.Clamp(mathx.Jitter(currentND.(float64), NeuralDriveJitter), MinNeuralDrive, MaxNeuralDrive)
 		return baseline
 	})
 
@@ -100,6 +100,6 @@ func oscillateNeuralDrive(this *component.Component) error {
 // tissues, cannot burn fat.
 func brainViability(this *component.Component) float64 {
 	glucose := perfusion.Read(this).Glucose
-	glucoseFactor := helper.Clamp((glucose-glucoseFailLevel)/(glucoseComfort-glucoseFailLevel), 0, 1)
+	glucoseFactor := mathx.Clamp((glucose-glucoseFailLevel)/(glucoseComfort-glucoseFailLevel), 0, 1)
 	return min(perfusion.Sufficiency(this), glucoseFactor)
 }

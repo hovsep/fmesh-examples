@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -183,7 +184,7 @@ func rampUpAsFalls(value, onset, full float64) float64 {
 	if onset == full {
 		return 0
 	}
-	return helper.Clamp((onset-value)/(onset-full), 0, 1)
+	return mathx.Clamp((onset-value)/(onset-full), 0, 1)
 }
 
 // rampUpAsRises returns 0 at or below onset and 1 at or above full, ramping up as
@@ -192,5 +193,5 @@ func rampUpAsRises(value, onset, full float64) float64 {
 	if onset == full {
 		return 0
 	}
-	return helper.Clamp((value-onset)/(full-onset), 0, 1)
+	return mathx.Clamp((value-onset)/(full-onset), 0, 1)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -114,7 +115,7 @@ func produceUrine(this *component.Component) error {
 	this.State().Update(StateBladderMl, func(v any) any {
 		// A full bladder does not stop the kidneys; it simply cannot hold more,
 		// so production above capacity is dropped rather than tracked.
-		return helper.Clamp(v.(float64)+produced, 0, BladderCapacityMl)
+		return mathx.Clamp(v.(float64)+produced, 0, BladderCapacityMl)
 	})
 
 	if err := this.OutputByName("urine_rate").PutPayloads(rate); err != nil {
@@ -139,5 +140,5 @@ func produceUrine(this *component.Component) error {
 // when dry and flushing freely when full.
 func diuresisFactor(hydrationPct float64) float64 {
 	t := (hydrationPct - dehydratedPct) / (fullyHydratedPct - dehydratedPct)
-	return helper.Lerp(minAntidiuresisFactor, maxDiuresisFactor, helper.Clamp(t, 0, 1))
+	return mathx.Lerp(minAntidiuresisFactor, maxDiuresisFactor, mathx.Clamp(t, 0, 1))
 }

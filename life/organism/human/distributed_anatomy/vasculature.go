@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -171,7 +172,7 @@ func circulate(this *component.Component) error {
 			// Vessels follow the order they are given, they do not snap to it.
 			dt := this.State().Get(stateVascDt).(float64)
 			this.State().Update(stateVascularTone, func(current any) any {
-				return helper.DecayToward(current.(float64), target, dt, vascularToneHalfLifeSec)
+				return mathx.DecayToward(current.(float64), target, dt, vascularToneHalfLifeSec)
 			})
 		}
 	}
@@ -207,7 +208,7 @@ func recomputeCirculation(this *component.Component) {
 // until it cannot stretch further.
 func StrokeVolumeAt(volumeL float64) float64 {
 	filling := (volumeL - UnstressedVolume) / (bloodstream.NormalBloodVolume - UnstressedVolume)
-	return NormalStrokeVolume * helper.Clamp(filling, 0, MaxStrokeVolumeFactor)
+	return NormalStrokeVolume * mathx.Clamp(filling, 0, MaxStrokeVolumeFactor)
 }
 
 // ResistanceAt returns systemic vascular resistance at a given sympathetic tone.

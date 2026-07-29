@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -188,7 +189,7 @@ func updateBloodLevels(this *component.Component) {
 	// each other and hold PaCO₂ almost perfectly flat -- which is not what an
 	// arterial line shows, and which cost this model most of its respiratory
 	// swing before the tests noticed.
-	ventilation := helper.Clamp(
+	ventilation := mathx.Clamp(
 		math.Abs(netFlow)/bloodstream.ReferenceVentilation, 0, bloodstream.MaxVentilationFactor)
 	this.State().Set(stateVentilation, ventilation)
 
@@ -243,8 +244,8 @@ func updateBloodLevels(this *component.Component) {
 	// range a body survives, so the extra machinery would buy nothing.
 	co2 += co2LoadPerSec * dt / bloodstream.CO2StoragePerMmHg
 
-	saturation = helper.Clamp(saturation, bloodstream.MinSaturation, bloodstream.MaxSaturation)
-	co2 = helper.Clamp(co2, bloodstream.MinPaCO2, bloodstream.MaxPaCO2)
+	saturation = mathx.Clamp(saturation, bloodstream.MinSaturation, bloodstream.MaxSaturation)
+	co2 = mathx.Clamp(co2, bloodstream.MinPaCO2, bloodstream.MaxPaCO2)
 
 	this.State().Set(stateSaturation, saturation)
 	this.State().Set(statePaCO2, co2)
@@ -281,8 +282,8 @@ func advanceWithTime(this *component.Component, dt float64) {
 	for _, hormone := range bloodstream.Hormones {
 		key := hormoneState(hormone)
 		level, _ := this.State().Get(key).(float64)
-		this.State().Set(key, helper.Clamp(
-			helper.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone)), 0, 1))
+		this.State().Set(key, mathx.Clamp(
+			mathx.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone)), 0, 1))
 	}
 
 	refill(this, dt)
@@ -294,7 +295,7 @@ func accumulateHormones(this *component.Component, secreted map[string]float64, 
 	for _, hormone := range bloodstream.Hormones {
 		key := hormoneState(hormone)
 		level, _ := this.State().Get(key).(float64)
-		this.State().Set(key, helper.Clamp(level+secreted[hormone]*dt, 0, 1))
+		this.State().Set(key, mathx.Clamp(level+secreted[hormone]*dt, 0, 1))
 	}
 }
 
@@ -346,7 +347,7 @@ func refill(this *component.Component, dt float64) {
 		return
 	}
 
-	restored := helper.DecayToward(volume, bloodstream.NormalBloodVolume, dt, transcapillaryRefillHalfLifeSec)
+	restored := mathx.DecayToward(volume, bloodstream.NormalBloodVolume, dt, transcapillaryRefillHalfLifeSec)
 
 	// The red cells are however many there were; they are now spread through a
 	// larger volume.

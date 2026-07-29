@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -62,10 +63,10 @@ func GetLung(side common.Side) (*component.Component, error) {
 			handleGasExchange,
 		)),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateVolume, helper.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
-			state.Set(stateCompliance, helper.Jitter(defaultLungCompliance, lungComplianceAsymmetry))
-			state.Set(stateResistance, helper.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
-			state.Set(statePleuralAsymmetry, helper.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
+			state.Set(stateVolume, mathx.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
+			state.Set(stateCompliance, mathx.Jitter(defaultLungCompliance, lungComplianceAsymmetry))
+			state.Set(stateResistance, mathx.Jitter(defaultAirwayResistance, lungResistanceAsymmetry))
+			state.Set(statePleuralAsymmetry, mathx.Jitter(pleuralPressureAsymmetryBase, pleuralPressureAsymmetry))
 		}),
 	)
 	if err != nil {
@@ -108,7 +109,7 @@ func handleMechanics(this *component.Component) error {
 
 	alveolarPressure := pleuralPressure + (V-restingLungVolume)/C
 	flow := -alveolarPressure / R
-	Vnext := helper.ClampAndLogAnomaly(V+flow*dt, ResidualLungVolume, TotalLungCapacity, this.Logger(), "lung volume")
+	Vnext := mathx.ClampAndLogAnomaly(V+flow*dt, ResidualLungVolume, TotalLungCapacity, this.Logger(), "lung volume")
 
 	this.State().Set(stateVolume, Vnext)
 
@@ -168,7 +169,7 @@ func handleGasExchange(this *component.Component) error {
 
 	// Blood that arrives short of oxygen takes more of it out of the air, so the
 	// exhaled fraction falls as the deficit grows.
-	o2Deficit := helper.Clamp((bloodstream.NormalPaO2-bloodO2)/bloodstream.NormalPaO2, 0, 1)
+	o2Deficit := mathx.Clamp((bloodstream.NormalPaO2-bloodO2)/bloodstream.NormalPaO2, 0, 1)
 	o2Consumed := baseO2Consumption + o2ConsumptionMaxDelta*o2Deficit
 
 	o2New := o - o2Consumed

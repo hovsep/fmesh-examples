@@ -11,6 +11,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -133,9 +134,9 @@ func handleCardiacBias(this *component.Component) error {
 	// hard the reflex called for tachycardia.
 	// Circulating adrenaline adds to whatever the nerves are asking for.
 	adrenaline := receptor.Level(this, bloodstream.HormoneAdrenaline)
-	demanded := helper.Lerp(minBPM, maxBPM, helper.Clamp(bias+adrenaline*adrenalineChronotropy, 0, 1))
+	demanded := mathx.Lerp(minBPM, maxBPM, mathx.Clamp(bias+adrenaline*adrenalineChronotropy, 0, 1))
 	this.State().Update(stateRateExact, func(v any) any {
-		return helper.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
+		return mathx.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})
 	this.State().Set(common.Rate, int(math.Round(this.State().Get(stateRateExact).(float64))))
 	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))

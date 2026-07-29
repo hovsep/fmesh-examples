@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -99,7 +100,7 @@ func acceptIntakeCommands(this *component.Component) error {
 			// One puff-stream: `count` cigarettes' worth of toxin metered at the
 			// pace of a single cigarette, so more cigarettes simply take longer.
 			// The duration is randomised so no two are identical.
-			durationSec := helper.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
+			durationSec := mathx.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
 			processes.Start(&helper.Process{
 				Kind:       KindToxin,
 				Remaining:  count * toxinPerCigarette,

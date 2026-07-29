@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -129,8 +130,8 @@ func Test_HumanLiveness(t *testing.T) {
 					assert.NotEmpty(t, observedPleuralPressure)
 					assert.NotEmpty(t, observedRespiratoryRate)
 
-					meanPressure := helper.Mean(observedPleuralPressure)
-					meanRespiratoryRate := helper.Mean(observedRespiratoryRate)
+					meanPressure := mathx.Mean(observedPleuralPressure)
+					meanRespiratoryRate := mathx.Mean(observedRespiratoryRate)
 					assert.Less(t, meanPressure, 0.0)
 					assert.InDelta(t, organ.TidalRespiratoryRate, meanRespiratoryRate, 1)
 				})
@@ -252,7 +253,7 @@ func Test_HumanLiveness(t *testing.T) {
 						assert.LessOrEqual(t, v, bloodstream.MaxPaCO2, "PaCO2 should stay below the ceiling")
 					}
 
-					meanO2 := helper.Mean(observedO2)
+					meanO2 := mathx.Mean(observedO2)
 
 					o2Min, o2Max := observedO2[0], observedO2[0]
 					for _, v := range observedO2 {
