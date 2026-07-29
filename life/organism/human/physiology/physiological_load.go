@@ -13,7 +13,9 @@ import (
 
 // DamageTargets are the organs physiological_load can injure. Each is an output
 // port here and wires to that organ's damage input.
-var DamageTargets = []string{"brain", "heart", "diaphragm", "lung_left", "lung_right", "kidney"}
+var DamageTargets = []string{
+	"brain", "heart", "diaphragm", "lung_left", "lung_right", "kidney", "liver", "pancreas",
+}
 
 // Thresholds at which a reservoir starts to injure organs, and the level at which
 // the injury is at full force. Between the two the severity ramps 0..1. These are
@@ -150,6 +152,15 @@ func inflictDamage(this *component.Component) error {
 		"diaphragm":  0.5*hypoxia + 0.4*temperature + 0.4*hypoperfusion,
 		"lung_left":  0.4 * temperature,
 		"lung_right": 0.4 * temperature,
+
+		// The liver is a shock organ. Ischaemic hepatitis -- "shock liver" -- is
+		// what a liver does after an hour of low pressure, and it closes a loop
+		// worth watching for: a liver hurt by shock stops defending blood sugar,
+		// the hypoglycaemia that follows injures the brain, and the brain was
+		// already being injured by the same shock. Nothing here arranges that
+		// spiral. It is what these numbers do when put next to each other.
+		"liver":    1.5*hypoperfusion + 0.8*hypoxia + 0.3*temperature,
+		"pancreas": 1.0*hypoperfusion + 0.4*hypoxia,
 	}
 
 	for organ, sensitivity := range damage {

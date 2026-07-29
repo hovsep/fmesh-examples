@@ -45,17 +45,30 @@ func Test_DrinkingReachesTheBody(t *testing.T) {
 	})
 }
 
-func Test_EatingRaisesBloodGlucoseAndReserves(t *testing.T) {
+// Test_EatingRaisesBloodGlucoseAndTheLiverStartsStoringIt follows a meal one hop
+// further than this test used to.
+//
+// It used to assert that eating raised blood sugar *and* the reserve, which it
+// did, because absorbed food was credited to both -- the same calories counted
+// twice, and blood sugar that no hormone had to do anything about. Food now
+// arrives in the blood only, and reaches the reserve the way it does in a body:
+// insulin, and a liver acting on it. So the second assertion is about the first
+// thing insulin does, which is to stop the liver adding sugar of its own.
+//
+// Reaching the reserve takes longer than five minutes and is checked in
+// TestReference_AMealIsClearedByInsulin.
+func Test_EatingRaisesBloodGlucoseAndTheLiverStartsStoringIt(t *testing.T) {
 	sim := newCommandableSim(t)
 	sim.Do("intake:food 800kcal")
 
 	body := bodyComponent(t, sim, "physiology:physiological_state")
+	liver := bodyComponent(t, sim, "organ:liver")
 
 	helper.RunSimulationAndThen(sim, 5*time.Minute, func() {
 		assert.Greater(t, body.State().Get(physiology.StateGlycemia).(float64), physiology.NormalGlycemia,
 			"a meal should raise blood glucose above fasting level")
-		assert.Greater(t, body.State().Get(physiology.StateEnergyKcal).(float64), physiology.StartingEnergyKcal,
-			"a meal should add to the energy reserve")
+		assert.Less(t, organ.GlucoseFlux(liver), organ.BasalHepaticGlucoseOutput,
+			"and insulin should already have damped the liver's own glucose output")
 	})
 }
 

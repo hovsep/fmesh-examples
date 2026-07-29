@@ -296,6 +296,14 @@ var Catalog = []Metric{
 			// and hours to leave.
 			{Name: "adrenaline", Display: Display{Label: "Adrenaline", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 0.3, Decimals: 2, View: ViewNervous}},
 			{Name: "cortisol", Display: Display{Label: "Cortisol", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 0.3, Decimals: 2, View: ViewNervous}},
+
+			// The pancreatic pair, shown against blood sugar rather than beside
+			// the stress hormones, because they are only legible next to the
+			// number they are arguing about. Either being high is normal at some
+			// point in a day, so neither has a healthy range worth drawing -- what
+			// matters is whether the right one is high.
+			{Name: "insulin", Display: Display{Label: "Insulin", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 1, Decimals: 2, View: ViewMetabolic}},
+			{Name: "glucagon", Display: Display{Label: "Glucagon", Unit: "", Min: 0, Max: 1, HealthMin: 0, HealthMax: 1, Decimals: 2, View: ViewMetabolic}},
 		},
 	},
 
@@ -435,6 +443,8 @@ var DamagedOrgans = []struct{ Port, Label string }{
 	{"lung_right", "Right Lung"},
 	{"diaphragm", "Diaphragm"},
 	{"kidney", "Kidney"},
+	{"liver", "Liver"},
+	{"pancreas", "Pancreas"},
 }
 
 func init() {

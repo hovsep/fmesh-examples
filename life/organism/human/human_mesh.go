@@ -339,6 +339,23 @@ func wireMetabolism(components *component.Collection) error {
 		return err
 	}
 
+	// The glucose loop closes here.
+	//
+	//	glycemia -> blood -> pancreas -> insulin/glucagon -> blood -> liver
+	//	                                                              |
+	//	                        glycemia <- reservoir <- glucose_flux -+
+	//
+	// Only the last hop is a wire; everything before it travels as a substance in
+	// the bloodstream, which is why adding the whole axis touched no component
+	// that was not part of it. The cycle is resolved the way the others are: the
+	// reservoir publishes glycemia before integrating, so the pancreas tastes a
+	// sugar that was real a tick ago rather than one its own answer produced.
+	if err := components.ByName("organ:liver").OutputByName("glucose_flux").PipeTo(
+		bodyState.InputByName("hepatic_glucose"),
+	); err != nil {
+		return err
+	}
+
 	// The blood carries the reservoir's glucose to the organs that draw on it
 	// (the brain), so the gut ultimately reaches the brain through the bloodstream.
 	if err := bodyState.OutputByName("glycemia").PipeTo(components.ByName("da:blood_system").InputByName("glucose")); err != nil {
@@ -438,6 +455,8 @@ func damagedOrgans(components *component.Collection) map[string]*component.Compo
 		"lung_left":  components.ByName("organ:lung_left"),
 		"lung_right": components.ByName("organ:lung_right"),
 		"kidney":     components.ByName("organ:kidney"),
+		"liver":      components.ByName("organ:liver"),
+		"pancreas":   components.ByName("organ:pancreas"),
 	}
 }
 
@@ -523,6 +542,14 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("organ.GetAdrenal: %w", err)
 	}
+	pancreas, err := organ.GetPancreas()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetPancreas: %w", err)
+	}
+	liver, err := organ.GetLiver()
+	if err != nil {
+		return nil, fmt.Errorf("organ.GetLiver: %w", err)
+	}
 
 	// Controllers are the body's command surface: every instruction from outside
 	// the simulation ("eat", "run", "urinate") is addressed to one of these.
@@ -592,6 +619,8 @@ func getComponents() (*component.Collection, error) {
 		blood,
 		vasculature,
 		adrenal,
+		pancreas,
+		liver,
 		autonomic,
 		obsState,
 		brain,

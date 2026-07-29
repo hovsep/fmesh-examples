@@ -237,14 +237,22 @@ const HormoneLabel = "hormone"
 // having both: adrenaline arrives in seconds and is gone in minutes, cortisol
 // takes minutes to arrive and hours to leave. A fright and a siege are not the
 // same problem and are not solved by the same chemistry.
+//
+// The pancreatic pair are arranged the other way round, and the contrast is
+// worth seeing. Insulin and glucagon share a clock -- both are gone within
+// minutes -- and differ in direction instead: one puts fuel away, the other
+// fetches it back. An axis can be built out of two speeds or out of two signs,
+// and the body uses both arrangements.
 const (
 	HormoneAdrenaline = "adrenaline"
 	HormoneCortisol   = "cortisol"
+	HormoneInsulin    = "insulin"
+	HormoneGlucagon   = "glucagon"
 )
 
 // Hormones is every hormone the bloodstream carries, so the blood can clear them
 // and telemetry can report them without either being told about each new one.
-var Hormones = []string{HormoneAdrenaline, HormoneCortisol}
+var Hormones = []string{HormoneAdrenaline, HormoneCortisol, HormoneInsulin, HormoneGlucagon}
 
 // HormoneSecretion builds a signal for a gland to emit on its blood output.
 // Rate is in level per second: how fast the gland is raising the circulating
@@ -260,6 +268,13 @@ func HormoneSecretion(hormone string, rate float64) *signal.Signal {
 const (
 	AdrenalineHalfLifeSec = 120.0  // minutes: a fright passes
 	CortisolHalfLifeSec   = 3600.0 // an hour: a siege does not
+
+	// Both pancreatic hormones are cleared in about five minutes, which is why
+	// blood sugar is corrected continuously rather than in one decision: the
+	// pancreas must keep saying it, and stops being obeyed shortly after it
+	// stops.
+	InsulinHalfLifeSec  = 300.0
+	GlucagonHalfLifeSec = 300.0
 )
 
 // Secretion builds a substance signal for an organ to emit on its "blood" output.
@@ -274,6 +289,10 @@ func HormoneHalfLife(hormone string) float64 {
 		return AdrenalineHalfLifeSec
 	case HormoneCortisol:
 		return CortisolHalfLifeSec
+	case HormoneInsulin:
+		return InsulinHalfLifeSec
+	case HormoneGlucagon:
+		return GlucagonHalfLifeSec
 	default:
 		return AdrenalineHalfLifeSec
 	}

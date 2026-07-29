@@ -9,8 +9,11 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
@@ -182,11 +185,15 @@ func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
 // TestReference_WholeBodyOxygenConsumption checks that the body's oxygen use is
 // not a number anybody typed in: it is the sum of what its organs ask for.
 //
-// The published resting figures -- brain 50, heart 30, kidneys 18, gut 50, muscle
-// 50, skin 12, diaphragm 3, adrenals 2 mL/min -- come to about 215, against a
-// whole-body resting consumption of roughly 250. The rest belongs to organs this
-// simulation does not have yet (liver most of all), which is a gap worth being
-// able to see.
+// The published resting figures -- brain 50, liver 40, muscle 50, heart 30, gut
+// 20, kidneys 18, skin 12, diaphragm 3, pancreas 3, adrenals 2 mL/min -- come to
+// 228, against a whole-body resting consumption of roughly 250. The remaining
+// twenty-odd belong to bone, connective tissue and the organs this simulation
+// still does not have, which is a gap worth being able to see.
+//
+// Note that gut and liver are quoted together in most sources, as the splanchnic
+// bed, at about 60 mL/min; they are split here because the two are separate
+// components and only one of them regulates blood sugar.
 //
 // This assertion is deliberately exact, so that giving the body a new organ
 // fails it. That is not a nuisance: adding a tissue changes what the body burns,
@@ -209,9 +216,10 @@ func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 		return nil
 	}))
 
-	assert.Len(t, perfused, 8, "brain, heart, kidney, diaphragm, adrenals, gut, skin and muscle should be perfused")
-	assert.InDelta(t, 215, total, 1, "the modelled organs should account for ~215 mL/min")
-	assert.Less(t, total, 250.0, "which is less than a whole body: the liver is still missing")
+	assert.Len(t, perfused, 10,
+		"brain, heart, kidney, liver, pancreas, diaphragm, adrenals, gut, skin and muscle should be perfused")
+	assert.InDelta(t, 228, total, 1, "the modelled organs should account for ~228 mL/min")
+	assert.Less(t, total, 250.0, "which is still less than a whole body, as it should be")
 }
 
 // TestReference_ApneaDesaturates checks that a body which stops breathing goes
@@ -358,7 +366,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 	elapsed, bled := 0.0, false
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			if elapsed > 9.9 && !bled {
 				before = snapshot()
 				// 1.5 L lost, and the hemoglobin that was in it.
@@ -433,7 +441,7 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 5):
 				atRest = level(bloodstream.HormoneAdrenaline)
@@ -483,9 +491,19 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 
 // within reports whether the run has just passed a given moment, so a hook can
 // act on it exactly once.
+//
+// The window is exactly one tick wide, and it has to be. It used to be 0.011
+// against a tick of 0.01, which is wider than the gap between consecutive
+// values -- so whether it matched one tick or two came down to how far the
+// accumulated elapsed time had drifted from a round number. A test that fed the
+// body one meal at t=300 fed it two at t=30, and the only visible symptom was a
+// blood sugar that would not come down.
 func within(elapsed, moment float64) bool {
-	return elapsed >= moment && elapsed < moment+0.011
+	return elapsed >= moment && elapsed < moment+tickSeconds
 }
+
+// tickSeconds is the fixed step every hook in this file counts in.
+const tickSeconds = 0.01
 
 // bleedAndWatch runs a hemorrhage of the given size and reports the worst
 // pressure reached, plus the state of the body at the end.
@@ -630,7 +648,7 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			// Halfway through the bleeding (2 L at 25 mL/s takes 80 s).
 			if within(elapsed, 40) {
 				duringBleed = hemoglobin()
@@ -674,7 +692,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 15):
 				atRest = rate()
@@ -724,7 +742,7 @@ func TestReference_VentilatorRescuesAParalysedDiaphragm(t *testing.T) {
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 10):
 				beforeInjury = saturation()
@@ -775,7 +793,7 @@ func TestReference_AVentilatorCannotFeelTheBlood(t *testing.T) {
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
-			elapsed += 0.01
+			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 20):
 				onMuscle = paCO2()
@@ -796,5 +814,197 @@ func TestReference_AVentilatorCannotFeelTheBlood(t *testing.T) {
 		// A machine set too fast does not.
 		assert.Less(t, onMachine, 35.0,
 			"an over-set ventilator should blow the CO₂ down and keep going")
+	})
+}
+
+// TestReference_FastingBloodSugarIsAnEquilibrium checks that a resting body's
+// blood sugar is held there by something, rather than simply written down.
+//
+// Guyton & Hall, ch. 79: a fasting adult holds blood glucose at about 90 mg/dL,
+// and the liver releases roughly 2 mg per kg per minute to keep it there against
+// continuous consumption. Those two figures are the same fact seen from either
+// end, and the test asserts both -- because a model can easily hold the level
+// right while getting the flux through it wrong, and it is the flux that
+// everything else depends on.
+//
+// This used to be a decay toward 90 with a fifteen-minute half-life, which held
+// the level and had no flux at all. Nothing could disturb it and nothing could
+// break it.
+func TestReference_FastingBloodSugarIsAnEquilibrium(t *testing.T) {
+	sim := newCommandableSim(t)
+	body := organComp(t, sim, "physiology:physiological_state")
+	liver := organComp(t, sim, "organ:liver")
+
+	helper.RunSimulationAndThen(sim, 4*time.Minute, func() {
+		glucose := body.State().Get(physiology.StateGlycemia).(float64)
+		assert.InDelta(t, physiology.NormalGlycemia, glucose, 0.5,
+			"a resting, fasting body should hold its blood sugar at the fasting level")
+
+		// 2 mg/kg/min for a 70 kg adult, arriving in ~50 dL of blood.
+		assert.InDelta(t, 2.8/60.0, organ.GlucoseFlux(liver), 0.001,
+			"and the liver should be supplying it at the textbook basal rate")
+	})
+}
+
+// TestReference_TheLiverDefendsBloodSugarDuringExercise is the control loop
+// working: a disturbance, a hormone, a correction.
+//
+// Running raises the body's glucose consumption several-fold. Blood sugar dips,
+// the alpha cells answer with glucagon, the liver empties glycogen into the
+// blood, and the level comes back. The dip is real and so is the recovery --
+// which is the shape of every genuine control loop and cannot be faked by a
+// number that decays toward its setpoint.
+//
+// The dip is deeper and slower here than in a real runner, and the reason is
+// worth knowing: glucagon takes minutes to accumulate, and it is the only
+// counter-regulator this body has. A real one also gets a fast, feed-forward
+// sympathetic signal the moment it starts running, rather than waiting to be
+// told that sugar has already fallen.
+func TestReference_TheLiverDefendsBloodSugarDuringExercise(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	body := organComp(t, sim, "physiology:physiological_state")
+	liver := organComp(t, sim, "organ:liver")
+
+	glucose := func() float64 { return body.State().Get(physiology.StateGlycemia).(float64) }
+
+	nadir := 1000.0
+	var glucagonAtNadir, final float64
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 30):
+				sim.Do("activity:start 8")
+			case elapsed > 30:
+				final = glucose()
+				if final < nadir {
+					nadir = final
+					glucagonAtNadir = receptor.Level(liver, bloodstream.HormoneGlucagon)
+				}
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 16*time.Minute, func() {
+		assert.Less(t, nadir, 85.0, "running should visibly draw blood sugar down")
+		assert.Greater(t, nadir, 60.0,
+			"but the counter-regulation should stop well short of hypoglycaemia")
+		assert.Greater(t, glucagonAtNadir, 0.2,
+			"and glucagon should be what stopped it")
+		assert.Greater(t, final, nadir+2,
+			"blood sugar should be recovering by the end, not still falling")
+	})
+}
+
+// TestReference_WithoutThePancreasBloodSugarIsUndefended cuts the loop and shows
+// that everything above depended on it.
+//
+// The islets are destroyed. Nothing else is touched: the liver is intact, it has
+// its glycogen, and it goes on releasing glucose at its basal rate forever. What
+// it no longer has is anyone to tell it that the body needs more. The same run
+// that a healthy body absorbs with a ten-point dip takes this one into
+// hypoglycaemia.
+//
+// This is the half of diabetes that is about signalling rather than sugar, and
+// it is worth doing in front of an audience: one component removed, no other
+// change anywhere, and a body that cannot look after itself.
+func TestReference_WithoutThePancreasBloodSugarIsUndefended(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	body := organComp(t, sim, "physiology:physiological_state")
+	liver := organComp(t, sim, "organ:liver")
+	pancreas := organComp(t, sim, "organ:pancreas")
+
+	var final, glucagon, flux float64
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 30):
+				damage.Inflict(pancreas, 2*damage.CriticalLevel)
+				sim.Do("activity:start 8")
+			case elapsed > 30:
+				final = body.State().Get(physiology.StateGlycemia).(float64)
+				glucagon = receptor.Level(liver, bloodstream.HormoneGlucagon)
+				flux = organ.GlucoseFlux(liver)
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 16*time.Minute, func() {
+		assert.Less(t, final, 60.0,
+			"without the islets, running should carry blood sugar into hypoglycaemia")
+		assert.InDelta(t, 0, glucagon, 0.01,
+			"because nothing is secreting glucagon any more")
+		assert.InDelta(t, organ.BasalHepaticGlucoseOutput, flux, 0.001,
+			"and the liver, hearing nothing, never leaves its basal rate")
+	})
+}
+
+// TestReference_AMealIsClearedByInsulin is the whole chain in one run, and the
+// other direction of the same loop.
+//
+// Food is absorbed into the blood; sugar climbs; the beta cells answer; the
+// liver first stops adding sugar of its own and then reverses, pulling it out of
+// the blood and into store. The reserve, which was falling all along because the
+// body was burning it, turns and starts to fill.
+//
+// The shape is what a glucose tolerance curve looks like -- a rise over about
+// half an hour, a rounded peak, a slow return -- and every part of it is
+// produced, not scripted. The peak here is a little higher and earlier than a
+// clinic would see, because this body treats a meal as pure rapidly-absorbed
+// carbohydrate, which is the worst case rather than the usual one.
+func TestReference_AMealIsClearedByInsulin(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	body := organComp(t, sim, "physiology:physiological_state")
+	liver := organComp(t, sim, "organ:liver")
+
+	var peakGlucose, finalGlucose, lowestFlux, finalReserve, peakInsulin float64
+	lowestFlux = 1000
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			if within(elapsed, 30) {
+				sim.Do("intake:food 400kcal")
+			}
+			if elapsed < 30 {
+				return nil
+			}
+			finalGlucose = body.State().Get(physiology.StateGlycemia).(float64)
+			finalReserve = body.State().Get(physiology.StateEnergyKcal).(float64)
+			peakGlucose = max(peakGlucose, finalGlucose)
+			lowestFlux = min(lowestFlux, organ.GlucoseFlux(liver))
+			peakInsulin = max(peakInsulin, receptor.Level(liver, bloodstream.HormoneInsulin))
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 36*time.Minute, func() {
+		assert.Greater(t, peakGlucose, 130.0, "a large meal should carry blood sugar well above fasting")
+		assert.Less(t, peakGlucose, 220.0,
+			"but a body with a working pancreas should not reach diabetic levels")
+		assert.Greater(t, peakInsulin, 0.2, "the beta cells should have answered it")
+		assert.Less(t, lowestFlux, 0.0,
+			"and the liver should have reversed: taking sugar out of the blood, not adding it")
+		assert.Less(t, finalGlucose, peakGlucose,
+			"blood sugar should be coming back down by the end")
+		assert.Greater(t, finalReserve, physiology.StartingEnergyKcal,
+			"and the meal should have reached storage, which is the only route it has")
 	})
 }
