@@ -93,6 +93,13 @@ const (
 	stateVascDt        common.State = "dt"
 )
 
+// The set points the reflexes defend, re-exported here so the physiology package
+// can compare against them without importing the bloodstream's whole vocabulary.
+const (
+	NormalPaCO2Reference = bloodstream.NormalPaCO2
+	NormalPaO2Reference  = bloodstream.NormalPaO2
+)
+
 // restingVascularTone is the sympathetic bias the vessels sit at when nothing is
 // wrong, and the point resistance is normal at.
 const restingVascularTone = 0.15

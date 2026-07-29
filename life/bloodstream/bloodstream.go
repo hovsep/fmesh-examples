@@ -65,6 +65,30 @@ const (
 	// against.
 	DLPerLiter = 10.0
 
+	// ReferenceVentilation is the air a quietly breathing adult moves, as the
+	// average magnitude of its airflow in mL/s. Ventilation is measured against
+	// it, so a body breathing normally is by definition ventilating normally.
+	ReferenceVentilation = 222.0
+
+	// CO2EliminationPerMmHg is how much carbon dioxide a normally ventilating
+	// body blows off per second, per mmHg of arterial tension, in mL.
+	//
+	// Elimination is proportional to how much air is moved AND to how much CO₂
+	// there is to carry away, which is what makes the textbook relationship fall
+	// out: at equilibrium PaCO₂ is production divided by ventilation. Halve the
+	// breathing and the CO₂ doubles.
+	//
+	// This replaced a formulation that pulled CO₂ toward a fixed target, which
+	// pinned it near normal however hard or feebly the body breathed -- so
+	// hypoventilation was harmless and the chemoreflex had nothing to do.
+	CO2EliminationPerMmHg = 0.0717
+
+	// MaxVentilationFactor caps how much good extra ventilation can do. Beyond a
+	// point the blood leaving the lungs is already saturated and moving more air
+	// past it achieves nothing, which is why hyperventilation can blow off carbon
+	// dioxide without raising oxygen much at all.
+	MaxVentilationFactor = 4.0
+
 	// CO2StoragePerMmHg is how much carbon dioxide the body takes up for each
 	// mmHg its arterial tension rises, in mL.
 	//

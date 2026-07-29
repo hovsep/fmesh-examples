@@ -91,7 +91,12 @@ func handleMechanics(this *component.Component) error {
 		return err
 	}
 
-	pp, err := helper.AsF64(this.InputByName("pleural_pressure").Signals().First())
+	// More than one thing may be driving the chest -- a diaphragm, a machine, or
+	// a failed diaphragm sitting at a constant pressure while a machine works.
+	// The lungs follow whichever is pulling hardest, which is what lets a
+	// ventilator take over from a muscle that has stopped without either of them
+	// needing to know about the other.
+	pp, err := strongestInspiratoryEffort(this.InputByName("pleural_pressure").Signals())
 	if err != nil {
 		return err
 	}
@@ -210,4 +215,25 @@ func handleGasExchange(this *component.Component) error {
 	this.OutputByName("alveolar_gas").PutSignals(alveolar)
 
 	return nil
+}
+
+// strongestInspiratoryEffort returns the most negative pleural pressure offered,
+// since a lower pressure is a stronger pull on the chest.
+func strongestInspiratoryEffort(signals *signal.Group) (float64, error) {
+	strongest := math.Inf(1)
+	err := signals.ForEach(func(sig *signal.Signal) error {
+		p, err := helper.AsF64(sig)
+		if err != nil {
+			return err
+		}
+		strongest = min(strongest, p)
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if math.IsInf(strongest, 1) {
+		return 0, fmt.Errorf("no pleural pressure offered")
+	}
+	return strongest, nil
 }
