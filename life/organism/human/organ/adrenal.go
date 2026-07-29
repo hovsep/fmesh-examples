@@ -85,7 +85,7 @@ func secreteStressHormones(this *component.Component) error {
 		return nil
 	}
 
-	return this.OutputByName(bloodstream.SupplyPort).PutSignals(
+	return this.OutputByName(bloodstream.ReturnPort).PutSignals(
 		bloodstream.HormoneSecretion(bloodstream.HormoneAdrenaline, stress*maxAdrenalineRate),
 		bloodstream.HormoneSecretion(bloodstream.HormoneCortisol, stress*maxCortisolRate),
 	)

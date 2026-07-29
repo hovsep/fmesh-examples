@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -27,8 +28,14 @@ const (
 	TotalBodyWaterMl = 42000.0 * Milliliter
 
 	NormalGlycemia = 90.0  // mg/dL, fasting
-	MinGlycemia    = 40.0  // hypoglycaemia; below this consciousness suffers
 	MaxGlycemia    = 300.0 // well into hyperglycaemia
+
+	// MinGlycemia is a floor on the arithmetic, not a physiological limit, and
+	// it sits well below the level at which a brain stops working (see
+	// organ.glucoseFailLevel). It used to be 40, which was above it -- so the
+	// brain's own starvation threshold could never be reached and hypoglycaemic
+	// collapse was unreachable however long the body went without fuel.
+	MinGlycemia = 10.0
 
 	// StartingEnergyKcal is roughly a day's worth of readily usable reserve.
 	StartingEnergyKcal = 2000.0
@@ -43,13 +50,15 @@ const (
 	// RestingBurnKcalPerSec is basal metabolism: about 1700 kcal a day.
 	RestingBurnKcalPerSec = 1700.0 / 86400.0
 
-	// glucoseDrawPerKcal converts energy moving in or out of reserve into a
-	// change in blood glucose.
-	glucoseDrawPerKcal = 0.35
-
-	// glucoseRestoreHalfLifeSec is how fast blood glucose is pulled back toward
-	// fasting level. This stands in for a liver until there is one.
-	glucoseRestoreHalfLifeSec = 900.0
+	// glucoseShareOfExertion is how much of the *extra* fuel effort needs comes
+	// out of the blood as sugar. The rest is fat and the muscle's own glycogen,
+	// burned where they are stored without ever being blood glucose.
+	//
+	// It is well under one, and that is why an hour of exercise does not empty
+	// the four grams of sugar the circulation holds. A body that drew all of its
+	// exertion from blood glucose would go hypoglycaemic within minutes of
+	// standing up, which is a mistake worth not making.
+	glucoseShareOfExertion = 0.25
 
 	// Exertion produces heat, and the body sheds it toward normal at rest.
 	//
@@ -61,6 +70,16 @@ const (
 	heatPerIntensityUnitPerSec = 0.0004 * Celsius
 	temperatureHalfLifeSec     = 600.0
 )
+
+// GlucosePerKcal converts fuel between the two units the body keeps it in: kcal
+// of stored reserve, and mg/dL of sugar dissolved in blood.
+//
+// It is derived from the liver's basal output rather than chosen, so that a
+// resting body's glucose use is exactly what its liver supplies. Pick the two
+// numbers independently and blood sugar creeps up or down forever at rest --
+// slowly enough to look like physiology and not like the arithmetic error it
+// would be. The same trick sets the resting vascular resistance.
+var GlucosePerKcal = organ.BasalHepaticGlucoseOutput / RestingBurnKcalPerSec
 
 // GetPhysiologicalState returns the body's internal reservoirs: how hydrated,
 // how fuelled and how warm it is.
@@ -77,10 +96,11 @@ func GetPhysiologicalState() (*component.Component, error) {
 		component.WithDescription("Internal physiological state (hydration, glycemia, energy, core temperature)"),
 		component.WithInputs(
 			common.TimePort,
-			"absorption",    // gains from the gut
-			"losses",        // water leaving through skin and kidneys
-			"physical_load", // current exertion, which sets the burn rate
-			"thermal",       // heating/cooling rate from the skin (ambient + sun)
+			"absorption",      // gains from the gut
+			"losses",          // water leaving through skin and kidneys
+			"physical_load",   // current exertion, which sets the burn rate
+			"thermal",         // heating/cooling rate from the skin (ambient + sun)
+			"hepatic_glucose", // the liver's net release into the blood, mg/dL per second
 		),
 		component.WithOutputs(
 			"body_state", // composite, broadcast to everything that needs to know
@@ -122,8 +142,50 @@ func updatePhysiologicalState(this *component.Component) error {
 	applyAbsorption(this)
 	applyLosses(this)
 	applyExertion(this)
+	applyHepaticGlucose(this)
 	applyThermal(this)
 	return nil
+}
+
+// applyHepaticGlucose moves fuel between the reserve and the blood at whatever
+// rate the liver has settled on.
+//
+// This is the only route by which stored fuel becomes blood sugar, and the only
+// one under hormonal control. Everything else in the body spends sugar; this
+// puts it back. Because the same number debits the reserve and credits the
+// blood, fuel is conserved across the transfer whichever way it is going -- and
+// a liver storing sugar after a meal is simply this running with the sign
+// reversed.
+func applyHepaticGlucose(this *component.Component) {
+	in := this.InputByName("hepatic_glucose")
+	if !in.HasSignals() {
+		return
+	}
+
+	dt := this.State().Get(StateDt).(float64)
+	delta := helper.AsF64OrDefault(in.Signals().First(), 0) * dt
+	if delta == 0 {
+		return
+	}
+
+	// A liver cannot release fuel the body does not have. Without this the
+	// reserve simply clamps at zero while sugar goes on appearing in the blood,
+	// and a starving body is kept comfortable by glucose made out of nothing.
+	// Capped, starvation ends the way it really does: the glycogen runs out
+	// first, and the hypoglycaemia follows.
+	if delta > 0 {
+		available := max(this.State().Get(StateEnergyKcal).(float64), 0) * GlucosePerKcal
+		if delta = min(delta, available); delta <= 0 {
+			return
+		}
+	}
+
+	this.State().Update(StateGlycemia, func(v any) any {
+		return helper.Clamp(v.(float64)+delta, MinGlycemia, MaxGlycemia)
+	})
+	this.State().Update(StateEnergyKcal, func(v any) any {
+		return helper.Clamp(v.(float64)-delta/GlucosePerKcal, 0, MaxEnergyKcal)
+	})
 }
 
 // applyThermal folds the skin's environmental heating/cooling rate into the core
@@ -181,14 +243,17 @@ func applyAbsorption(this *component.Component) {
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
 		addHydration(this, sig.Scalars().ValueOrDefault(common.WaterMl, 0))
 
+		// Absorbed food arrives in the blood, and only in the blood. Getting into
+		// storage from there is the liver's job and insulin's decision, which is
+		// the whole reason both exist.
+		//
+		// It used to arrive in both at once -- the reserve was credited here and
+		// credited again when insulin put the same sugar away -- so a meal was
+		// worth roughly twice its calories, and blood sugar could be regulated by
+		// a hormone that had nothing left to regulate. One number, one place.
 		kcal := sig.Scalars().ValueOrDefault(common.GlucoseKcal, 0)
-		this.State().Update(StateEnergyKcal, func(v any) any {
-			return helper.Clamp(v.(float64)+kcal, 0, MaxEnergyKcal)
-		})
-		// Food reaches the blood before it becomes reserve, which is what makes
-		// eating feel different from simply having eaten.
 		this.State().Update(StateGlycemia, func(v any) any {
-			return helper.Clamp(v.(float64)+kcal*glucoseDrawPerKcal, MinGlycemia, MaxGlycemia)
+			return helper.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
 		})
 		return nil
 	})
@@ -206,8 +271,15 @@ func applyLosses(this *component.Component) {
 	})
 }
 
-// applyExertion burns energy at a rate set by what the body is doing, and warms
-// it in proportion.
+// applyExertion burns fuel at a rate set by what the body is doing, and warms it
+// in proportion.
+//
+// Fuel leaves storage by two routes and this splits them, because they behave
+// differently and the difference matters. Some is burned where it lies -- fat in
+// the muscle that needs it -- and simply disappears from the reserve. The rest is
+// taken out of the blood as sugar, which the liver must then replace, and it is
+// only that second route that anything regulates. Blood sugar is a small tank in
+// the middle of a large flow, which is why it is defended so hard.
 func applyExertion(this *component.Component) {
 	in := this.InputByName("physical_load")
 	if !in.HasSignals() {
@@ -218,18 +290,23 @@ func applyExertion(this *component.Component) {
 	dt := this.State().Get(StateDt).(float64)
 	burnt := RestingBurnKcalPerSec * intensity * dt
 
-	this.State().Update(StateEnergyKcal, func(v any) any {
-		return helper.Clamp(v.(float64)-burnt, 0, MaxEnergyKcal)
+	// What the tissues take out of the blood. At rest it is the whole burn; the
+	// extra that effort adds is mostly met from elsewhere.
+	glucoseUsed := organ.BasalHepaticGlucoseOutput *
+		(1 + glucoseShareOfExertion*(intensity-1)) * dt
+
+	this.State().Update(StateGlycemia, func(v any) any {
+		return helper.Clamp(v.(float64)-glucoseUsed, MinGlycemia, MaxGlycemia)
 	})
 
-	// Glucose is drawn down by the burn and topped back up toward fasting level,
-	// so exertion dips it and rest recovers it.
-	this.State().Update(StateGlycemia, func(v any) any {
-		drawn := v.(float64) - burnt*glucoseDrawPerKcal
-		return helper.Clamp(
-			helper.DecayToward(drawn, NormalGlycemia, dt, glucoseRestoreHalfLifeSec),
-			MinGlycemia, MaxGlycemia)
-	})
+	// Whatever the burn needed that the blood did not supply comes straight out
+	// of reserve. The blood's share is debited when the liver replaces it, so
+	// counting it here as well would spend the same fuel twice.
+	if direct := burnt - glucoseUsed/GlucosePerKcal; direct > 0 {
+		this.State().Update(StateEnergyKcal, func(v any) any {
+			return helper.Clamp(v.(float64)-direct, 0, MaxEnergyKcal)
+		})
+	}
 
 	// Exertion above rest adds heat; the body sheds it toward normal regardless.
 	this.State().Update(StateCoreTemperature, func(v any) any {

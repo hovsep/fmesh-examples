@@ -40,7 +40,13 @@ const (
 //
 // It holds what has been swallowed, releases it into the body over time, and
 // accumulates the residue that eventually needs voiding.
-const GIO2PerMinute = 50.0
+// GIO2PerMinute is the gut's own resting oxygen demand, mL/min.
+//
+// Published figures usually quote the splanchnic bed as a whole -- gut and liver
+// together, around 60 mL/min -- and this used to carry all of it, because there
+// was no liver to carry the rest. There is now, so the gut keeps only its own
+// share.
+const GIO2PerMinute = 20.0
 
 func GetGITract() (*component.Component, error) {
 	c, err := component.New("da:gi_tract",
