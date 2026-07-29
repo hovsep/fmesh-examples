@@ -504,8 +504,13 @@ func within(elapsed, moment float64) bool {
 	return elapsed >= moment && elapsed < moment+tickSeconds
 }
 
-// tickSeconds is the fixed step every hook in this file counts in.
-const tickSeconds = 0.01
+// tickSeconds is the step every hook in this file counts in.
+//
+// Derived from the step the sims are actually built with rather than written
+// out, because the two drifting apart is silent: the hooks would keep counting
+// in hundredths while the body aged in twentieths, and every scheduled moment in
+// this file would land at the wrong time.
+const tickSeconds = float64(testTick) / float64(time.Second)
 
 // bleedAndWatch runs a hemorrhage of the given size and reports the worst
 // pressure reached, plus the state of the body at the end.

@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
+	"github.com/hovsep/fmesh/plugin"
 )
 
 const (
@@ -19,6 +20,18 @@ type Habitat struct {
 }
 
 // NewHabitat builds the new habitat
+//
+// Two naming conventions hold the habitat together, and both are declared here
+// rather than carried out by hand further down. A component that declares an
+// input called "time" gets the clock. A component that declares an input called
+// "habitat_<factor>_<port>" gets that factor's output -- which is how an
+// organism asks the world for exactly the parts of it that it cares about, and
+// gets them whether it was added before those factors or after.
+//
+// Both used to be loops that walked the mesh looking for ports by name. The
+// loops were correct and the failure mode was silent: anything added later that
+// the loop no longer covered simply sat there, activating on inputs that never
+// arrived, looking perfectly connected.
 func NewHabitat(factors *component.Collection) (*Habitat, error) {
 	fm, err := fmesh.New(meshName,
 		// A single tick converges in a handful of cycles; this generous cap turns
@@ -26,6 +39,10 @@ func NewHabitat(factors *component.Collection) (*Habitat, error) {
 		// until the wall-clock time limit.
 		fmesh.WithCyclesLimit(1000),
 		fmesh.WithTimeLimit(60*time.Second), // One mesh run (or 1 simulation tick) must not exceed this limit
+		fmesh.WithPlugins(
+			plugin.BroadcastAs("tick", common.TimePort),
+			plugin.Prefixed("habitat_"),
+		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create habitat mesh: %w", err)
@@ -43,65 +60,23 @@ func (h *Habitat) addFactors(factors *component.Collection) (*Habitat, error) {
 		return nil, fmt.Errorf("time factor is required for the habitat mesh")
 	}
 
-	// Add all factors to the mesh
 	if err := factors.ForEach(func(c *component.Component) error {
 		return h.FM.AddComponents(c)
 	}); err != nil {
 		return nil, fmt.Errorf("failed to add factors to habitat mesh: %w", err)
 	}
-
-	// Connect inter-factor pipes
-	if err := h.FM.Components().ForEach(func(c *component.Component) error {
-		return h.connectToTimeFactor(c)
-	}); err != nil {
-		return nil, fmt.Errorf("failed to connect time factor: %w", err)
-	}
 	return h, nil
 }
 
-// AddOrganisms adds organism components to the habitat mesh
+// AddOrganisms adds organism components to the habitat mesh.
+//
+// Adding is all there is to it: the conventions declared in NewHabitat wire each
+// organism to the world as it arrives.
 func (h *Habitat) AddOrganisms(organisms ...*component.Component) (*Habitat, error) {
 	for _, organism := range organisms {
 		if err := h.FM.AddComponents(organism); err != nil {
 			return nil, fmt.Errorf("failed to add organism to habitat: %w", err)
 		}
-
-		// Connect to habitat factors
-		if err := h.FM.Components().ForEach(func(factor *component.Component) error {
-			return factor.Outputs().ForEach(func(factorOutput *port.Port) error {
-				// Check if the organism has relevant input
-				orgInput := organism.Inputs().FindAny(func(p *port.Port) bool {
-					return p.Name() == fmt.Sprintf("habitat_%s_%s", factor.Name(), factorOutput.Name())
-				})
-
-				if orgInput == nil {
-					// No such input, skip
-					return nil
-				}
-
-				return factorOutput.PipeTo(orgInput)
-			})
-		}); err != nil {
-			return nil, fmt.Errorf("failed to connect organism to habitat factors: %w", err)
-		}
 	}
 	return h, nil
-}
-
-// getTimeFactor returns the time factor component
-func (h *Habitat) getTimeFactor() *component.Component {
-	return h.FM.Components().FindAny(func(c *component.Component) bool {
-		return c.Name() == "time"
-	})
-}
-
-// connectToTimeFactor connects the given component to the time factor
-func (h *Habitat) connectToTimeFactor(c *component.Component) error {
-	habitatTimeFactor := h.getTimeFactor()
-	return c.Inputs().ForEach(func(p *port.Port) error {
-		if p.Name() == "time" {
-			return habitatTimeFactor.OutputByName("tick").PipeTo(p)
-		}
-		return nil
-	})
 }

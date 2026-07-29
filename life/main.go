@@ -103,11 +103,11 @@ func usePlainREPL() bool {
 // newSession wraps the mesh in a simulation: a fixed-step engine over it, and
 // a session to drive it.
 //
-// A tick is worth factor.DurationPerTick of simulated time, and the engine
-// counts them, so "every 1d" means a day in Leon's life however fast the loop
-// happens to be running.
+// The mesh knows what a tick of it is worth, and the engine counts them, so
+// "every 1d" means a day in Leon's life however fast the loop happens to be
+// running -- and whatever step this particular simulation was built with.
 func newSession(simMesh *fmesh.FMesh) (*session.Session, error) {
-	engine := stepsim.New(simMesh, factor.DurationPerTick)
+	engine := stepsim.New(simMesh, factor.TickOf(simMesh))
 
 	// The mesh renders everything worth watching onto one port; the session
 	// forwards those lines to whatever is watching.
@@ -126,8 +126,12 @@ func newSession(simMesh *fmesh.FMesh) (*session.Session, error) {
 
 	// Run at real time by default: one simulated second per wall-clock second,
 	// so the body is watchable and interactive out of the box. "rate:sim 60"
-	// fast-forwards, "rate:sim max" removes the cap. Tests run uncapped (see
-	// Session.RunFor), so a simulated hour still costs milliseconds.
+	// fast-forwards, "rate:sim max" removes the cap.
+	//
+	// Tests run uncapped (see Session.RunFor), which removes the pacing but not
+	// the work: an hour of simulated time is 360,000 runs of the mesh at the
+	// default step, and costs minutes rather than milliseconds. Tests that need
+	// physiological stretches of time build themselves a coarser tick instead.
 	sim.Pacer.SetFactor(1)
 
 	// Add the commands addressed to this world; the loop's own -- pause, step,

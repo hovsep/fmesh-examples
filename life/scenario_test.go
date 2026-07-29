@@ -17,6 +17,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testTick is the step every test in this package runs at.
+//
+// The app steps at ten milliseconds because of the ECG, which is a display
+// concern (see factor.DefaultTickDuration). No test draws an ECG, and every test
+// pays for the step five times over: the tick is what a simulated second costs,
+// so a suite that watches hours of chemistry is a suite that spends most of its
+// life integrating a waveform nobody is looking at.
+//
+// Fifty milliseconds is still twenty samples a second -- far finer than
+// breathing, circulation, or anything chemical the reference tests assert on --
+// and it takes the suite from thirteen minutes to under three.
+const testTick = 50 * time.Millisecond
+
 // newCommandableSim builds the simulation with every command registered, ready
 // to be given commands and run for a stretch of simulated time.
 //
@@ -24,21 +37,21 @@ import (
 // test can set up a scenario and then let time pass.
 func newCommandableSim(t *testing.T) *session.Session {
 	t.Helper()
-
-	fm, err := getSimulationMesh()
-	require.NoError(t, err)
-
-	sim, err := newSession(fm)
-	require.NoError(t, err)
-	return sim
+	return newSimIn(t, factor.GetGasComponent)
 }
 
-// newChamberSimIn builds the same simulation inside a barochamber instead of the
+// newChamberSim builds the same simulation inside a barochamber instead of the
 // open atmosphere. Nothing about the body changes; only the world does.
 func newChamberSim(t *testing.T) *session.Session {
 	t.Helper()
+	return newSimIn(t, factor.GetBarochamberComponent)
+}
 
-	fm, err := getSimulationMeshIn(factor.GetBarochamberComponent)
+// newSimIn builds a test simulation in the given world, at the test step.
+func newSimIn(t *testing.T, environment func() (*component.Component, error)) *session.Session {
+	t.Helper()
+
+	fm, err := getSimulationMeshIn(environment, testTick)
 	require.NoError(t, err)
 
 	sim, err := newSession(fm)
