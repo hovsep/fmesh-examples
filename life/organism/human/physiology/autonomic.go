@@ -58,8 +58,50 @@ func baroreflexResponse(meanArterialPressure float64) float64 {
 	return helper.Clamp(baroreflexGain*err, minBaroreflexResponse, maxBaroreflexResponse)
 }
 
-// stateLastMAP latches the arterial pressure the reflex is answering.
-const stateLastMAP common.State = "last_map"
+// The chemoreflex: what actually decides how hard a body breathes.
+//
+// Ventilation is governed by carbon dioxide, not by oxygen. Central
+// chemoreceptors in the brainstem read the pH that PaCO₂ sets and adjust
+// breathing to hold it near 40 mmHg, and they do so with a gain that makes a few
+// mmHg of retained CO₂ feel unbearable. Oxygen only joins in late: the peripheral
+// receptors stay quiet until PaO₂ falls below about 60 mmHg, by which point
+// saturation is already off the shoulder of the curve.
+//
+// That asymmetry is the reason breath-holding is limited by the urge to breathe
+// rather than by hypoxia, and the reason hyperventilating before a dive is
+// dangerous: it lowers the CO₂ that would have made you surface without adding
+// any oxygen worth having.
+const (
+	// carbonDioxideGain converts a fractional deviation from the set point into
+	// respiratory drive. It is steep on purpose.
+	carbonDioxideGain = 2.5
+
+	// hypoxicOnset is where the peripheral receptors begin to contribute, and
+	// hypoxicFull where they are giving everything they have (mmHg).
+	hypoxicOnset = 60.0
+	hypoxicFull  = 35.0
+
+	maxChemoreflexResponse = 0.85
+	minChemoreflexResponse = -0.15
+)
+
+// chemoreflexResponse returns the respiratory drive called for by the blood.
+func chemoreflexResponse(paCO2, paO2 float64) float64 {
+	carbonDioxide := carbonDioxideGain * (paCO2 - da.NormalPaCO2Reference) / da.NormalPaCO2Reference
+
+	// Hypoxia contributes nothing until it is severe, and then a great deal.
+	hypoxic := helper.Clamp((hypoxicOnset-paO2)/(hypoxicOnset-hypoxicFull), 0, 1)
+
+	return helper.Clamp(max(carbonDioxide, hypoxic), minChemoreflexResponse, maxChemoreflexResponse)
+}
+
+// stateLastMAP latches the arterial pressure the reflex is answering, and the
+// blood gases the chemoreflex is answering.
+const (
+	stateLastMAP   common.State = "last_map"
+	stateLastPaCO2 common.State = "last_paco2"
+	stateLastPaO2  common.State = "last_pao2"
+)
 
 // GetAutonomicCoordination ...
 func GetAutonomicCoordination() (*component.Component, error) {
@@ -74,11 +116,17 @@ func GetAutonomicCoordination() (*component.Component, error) {
 		// Pressure is the exception: it arrives from the circulation on its own
 		// cycle and is latched, so a reflex answering last tick's pressure is
 		// still answering a pressure that was real.
-		component.WithInputs("neural_drive", "map"),
+		component.WithInputs("neural_drive", "map", "venous_blood"),
 		component.WithOutputs("autonomic_tone"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			if in := this.InputByName("map"); in.HasSignals() {
 				this.State().Set(stateLastMAP, helper.AsF64OrDefault(in.Signals().First(), da.NormalMAP))
+			}
+			if in := this.InputByName("venous_blood"); in.HasSignals() {
+				if sig := in.Signals().First(); sig != nil {
+					this.State().Set(stateLastPaCO2, sig.Scalars().ValueOrDefault("PaCO2", da.NormalPaCO2Reference))
+					this.State().Set(stateLastPaO2, sig.Scalars().ValueOrDefault("PaO2", da.NormalPaO2Reference))
+				}
 			}
 
 			if !this.InputByName("neural_drive").HasSignals() {
@@ -93,11 +141,16 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			}
 
 			pressure, _ := this.State().Get(stateLastMAP).(float64)
-			this.OutputByName("autonomic_tone").PutSignals(getAutonomicToneSignal(neuralDrive, pressure))
+			paCO2, _ := this.State().Get(stateLastPaCO2).(float64)
+			paO2, _ := this.State().Get(stateLastPaO2).(float64)
+			this.OutputByName("autonomic_tone").PutSignals(
+				getAutonomicToneSignal(neuralDrive, pressure, paCO2, paO2))
 			return nil
 		}),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateLastMAP, da.NormalMAP)
+			state.Set(stateLastPaCO2, da.NormalPaCO2Reference)
+			state.Set(stateLastPaO2, da.NormalPaO2Reference)
 		}),
 	)
 	if err != nil {
@@ -113,8 +166,9 @@ func GetAutonomicCoordination() (*component.Component, error) {
 // which meant they could never express anything: the heart, the vessels, the
 // airway and the gut all did the same thing at once. Under a pressure error they
 // now diverge, which is what the autonomic system is for.
-func getAutonomicToneSignal(neuralDrive, meanArterialPressure float64) *signal.Signal {
+func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float64) *signal.Signal {
 	reflex := baroreflexResponse(meanArterialPressure)
+	chemo := chemoreflexResponse(paCO2, paO2)
 
 	// Sympathetic level rises with drive, and with a pressure that needs
 	// defending.
@@ -129,11 +183,16 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure float64) *signal.S
 		return helper.Clamp(helper.Jitter(base+reflex*weight, defaultRegionalBiasJitter), 0, 1)
 	}
 
+	// Breathing answers to the blood far more than to anything else, so the
+	// respiratory bias takes whichever of its two callers is asking for more.
+	respiratory := helper.Clamp(
+		helper.Jitter(max(base+reflex*respiratoryWeight, base+chemo), defaultRegionalBiasJitter), 0, 1)
+
 	return helper.PackAutonomicTone(
 		sym, paraSym, defaultAutonomicCoordinationNoise, gain,
-		bias(1.0),               // cardiac: beat faster
-		bias(vascularWeight),    // vascular: squeeze
-		bias(respiratoryWeight), // respiratory: breathe harder
-		bias(giWeight),          // gut: give up its share
+		bias(1.0),            // cardiac: beat faster
+		bias(vascularWeight), // vascular: squeeze
+		respiratory,          // respiratory: breathe harder, mostly for the CO₂
+		bias(giWeight),       // gut: give up its share
 	)
 }

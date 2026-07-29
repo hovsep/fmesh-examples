@@ -2,6 +2,7 @@ package da
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
@@ -20,6 +21,7 @@ var (
 	stateVolume       common.State = "volume_l"
 	statePaCO2        common.State = "PaCO2"
 	stateGlucoseLevel common.State = "glucose_level"
+	stateVentilation  common.State = "ventilation"
 
 	// Circulating hormone levels, keyed by hormone name.
 	stateHormonePrefix              = "hormone_"
@@ -30,7 +32,6 @@ const (
 	// Inhale approach rates: a fractional-per-second pull toward what the lungs
 	// offer, proportional to the remaining gap, so nothing overshoots.
 	o2InhaleGain = 6.0
-	co2ClearGain = 6.0
 )
 
 // defaultDt matches the habitat's per-tick duration (10 ms); used as a fallback
@@ -61,6 +62,7 @@ func GetBloodSystem() (*component.Component, error) {
 			state.Set(stateVolume, bloodstream.NormalBloodVolume)
 			state.Set(statePaCO2, bloodstream.NormalPaCO2)
 			state.Set(stateGlucoseLevel, bloodstream.DefaultGlucoseLevel)
+			state.Set(stateVentilation, 1.0)
 			for _, hormone := range bloodstream.Hormones {
 				state.Set(hormoneState(hormone), 0.0)
 			}
@@ -173,11 +175,34 @@ func updateBloodLevels(this *component.Component) {
 	// gradient) supports, and carbon dioxide down toward what ventilation clears
 	// it to. Both pulls are proportional to the remaining gap, so nothing
 	// overshoots.
+	//
+	// How much of that happens depends on how much air is actually moving. This
+	// is what makes breathing worth controlling: without it, gasping and quiet
+	// breathing would exchange identically, a chemoreflex would have nothing to
+	// achieve, and hypoventilation would not be dangerous.
+	// How much air is moving, right now. It is deliberately not smoothed: carbon
+	// dioxide leaves the body in bursts, one per breath, while the tissues make
+	// it continuously. Averaging the airflow first would cancel the two against
+	// each other and hold PaCO₂ almost perfectly flat -- which is not what an
+	// arterial line shows, and which cost this model most of its respiratory
+	// swing before the tests noticed.
+	ventilation := helper.Clamp(
+		math.Abs(netFlow)/bloodstream.ReferenceVentilation, 0, bloodstream.MaxVentilationFactor)
+	this.State().Set(stateVentilation, ventilation)
+
+	// Oxygen is loaded on inhale, toward what the alveoli can offer. Moving more
+	// air loads it faster, but only up to a point: blood leaving a normally
+	// ventilated lung is already nearly saturated, which is why hyperventilating
+	// blows off carbon dioxide without adding much oxygen.
 	if netFlow > 0 {
 		target := bloodstream.SaturationAt(bloodstream.AlveolarPO2 - bloodstream.AaGradient)
-		saturation += (target - saturation) * o2InhaleGain * dt
-		co2 -= (co2 - bloodstream.VentilatedPaCO2) * co2ClearGain * dt
+		saturation += (target - saturation) * o2InhaleGain * ventilation * dt
 	}
+
+	// Carbon dioxide leaves in proportion to how much air is moving and how much
+	// of it there is to carry away, so its arterial tension settles wherever
+	// production divided by ventilation puts it.
+	co2 -= bloodstream.CO2EliminationPerMmHg * ventilation * co2 * dt / bloodstream.CO2StoragePerMmHg
 
 	// What the organs took out and put back. Draws are volumes per second, so
 	// they have to be turned into a change in saturation, and that conversion is

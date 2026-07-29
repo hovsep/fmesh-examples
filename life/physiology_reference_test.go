@@ -647,3 +647,154 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 			"and should fall afterwards, as fluid replaces the volume without the cells")
 	})
 }
+
+// TestReference_BreathingIsDrivenByCarbonDioxide is the control loop that
+// governs ventilation, and the one most people get backwards.
+//
+// Breathing is regulated to hold PaCO₂ near 40 mmHg, not to hold oxygen up.
+// Central chemoreceptors read the pH that CO₂ sets and answer steeply, which is
+// why a few mmHg of retained CO₂ is unbearable while a considerable fall in
+// oxygen goes unnoticed. It is also why hyperventilating before a breath-hold is
+// dangerous: it removes the signal that would have made you surface without
+// adding oxygen worth having.
+func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	blood := bodyComponent(t, sim, "da:blood_system")
+
+	rate := func() float64 {
+		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
+			v, _ := helper.NumericPayload(sig)
+			return v
+		}
+		return 0
+	}
+
+	var atRest, hypercapnic float64
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			switch {
+			case within(elapsed, 15):
+				atRest = rate()
+				// A carbon dioxide load, as if from a rebreathed atmosphere.
+				blood.State().Set("PaCO2", 60.0)
+			case within(elapsed, 25):
+				hypercapnic = rate()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+		assert.InDelta(t, 12, atRest, 3, "a resting adult breathes about 12 times a minute")
+		assert.Greater(t, hypercapnic, atRest*2,
+			"20 mmHg of retained CO₂ should more than double the respiratory rate")
+	})
+}
+
+// TestReference_VentilatorRescuesAParalysedDiaphragm is the drop-in replacement,
+// and the argument that a component here is a contract rather than an
+// implementation.
+//
+// The muscle that breathes is destroyed; the body suffocates. A machine that
+// works nothing like a muscle -- pushing air in on a schedule of its own rather
+// than pulling it in when the blood asks -- is switched on, and the lungs, the
+// blood and the brain carry on without knowing anything has changed. Nothing in
+// the body was written to accommodate it.
+func TestReference_VentilatorRescuesAParalysedDiaphragm(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	diaphragm := organComp(t, sim, "organ:diaphragm")
+
+	saturation := func() float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault("SpO2", 0)
+		}
+		return 0
+	}
+
+	var beforeInjury, worstBeforeRescue, afterRescue float64
+	worstBeforeRescue = 1000
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			switch {
+			case within(elapsed, 10):
+				beforeInjury = saturation()
+				damage.Inflict(diaphragm, 2*damage.CriticalLevel)
+			case elapsed > 10 && elapsed < 70:
+				worstBeforeRescue = min(worstBeforeRescue, saturation())
+			case within(elapsed, 70):
+				sim.Do("device:ventilate 16")
+			case within(elapsed, 110):
+				afterRescue = saturation()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 115*time.Second, func() {
+		assert.Greater(t, beforeInjury, 94.0, "a healthy body before the injury")
+		assert.Less(t, worstBeforeRescue, 80.0,
+			"a body whose diaphragm has stopped should desaturate badly")
+		assert.Greater(t, afterRescue, 94.0,
+			"and the machine should bring it back, with nothing else in the body changed")
+	})
+}
+
+// TestReference_AVentilatorCannotFeelTheBlood is the other half of the same
+// point: the machine is not a diaphragm, and the difference matters.
+//
+// A diaphragm is commanded by chemoreceptors and settles wherever the CO₂ needs
+// it to. A machine runs at the rate it was given. Set it too fast and it will
+// blow the CO₂ down and keep going, because nothing about it can tell -- which is
+// why a ventilated patient's blood gases belong to whoever set the dial.
+func TestReference_AVentilatorCannotFeelTheBlood(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	diaphragm := organComp(t, sim, "organ:diaphragm")
+
+	paCO2 := func() float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault("PaCO2", 0)
+		}
+		return 0
+	}
+
+	var onMuscle, onMachine float64
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += 0.01
+			switch {
+			case within(elapsed, 20):
+				onMuscle = paCO2()
+				// Take the muscle out and hand the body to a machine set fast.
+				damage.Inflict(diaphragm, 2*damage.CriticalLevel)
+				sim.Do("device:ventilate 20")
+			case within(elapsed, 200):
+				onMachine = paCO2()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 205*time.Second, func() {
+		// A body breathing for itself holds its carbon dioxide where it wants it.
+		assert.InDelta(t, 40, onMuscle, 5, "a self-ventilating body regulates its own PaCO₂")
+
+		// A machine set too fast does not.
+		assert.Less(t, onMachine, 35.0,
+			"an over-set ventilator should blow the CO₂ down and keep going")
+	})
+}

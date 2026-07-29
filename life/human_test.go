@@ -275,9 +275,21 @@ func Test_HumanLiveness(t *testing.T) {
 					o2Range := o2Max - o2Min
 					co2Range := co2Max - co2Min
 
-					// 0.5 is a meaningful exchange signal; floating-point drift alone cannot reach this
+					// Enough movement to prove gas exchange is running; floating-point
+					// drift alone cannot reach this.
+					//
+					// The carbon dioxide threshold is much the smaller of the two,
+					// and deliberately so. The body holds one carbon dioxide store,
+					// sized so that a body which stops breathing accumulates CO₂ at
+					// the textbook few mmHg a minute. That store is enormous -- most
+					// of it is buffered as bicarbonate -- so a single breath moves the
+					// arterial tension only a fraction of a mmHg. A real body has two
+					// compartments, a small fast arterial one that oscillates
+					// visibly and a vast slow tissue one that sets the apnoeic rate;
+					// with only one, the apnoeic rate is the property worth being
+					// right, and the per-breath swing is what it costs.
 					assert.Greater(t, o2Range, 0.5, "O2 should fluctuate (gas exchange active)")
-					assert.Greater(t, co2Range, 0.5, "CO2 should fluctuate (gas exchange active)")
+					assert.Greater(t, co2Range, 0.05, "CO2 should fluctuate (gas exchange active)")
 
 					// Mean O2 should stay near the resting level, not drift to a clamp boundary
 					assert.InDelta(t, bloodstream.NormalPaO2, meanO2, 50.0, "mean O2 should be near resting level")
@@ -384,7 +396,7 @@ func Test_HumanLiveness(t *testing.T) {
 					// PaO₂ and well under one of PaCO₂ -- which is precisely what
 					// makes them a stable reading to take.
 					assert.Greater(t, o2Max-o2Min, 1.0, "steady-state PaO2 should keep oscillating")
-					assert.Greater(t, co2Max-co2Min, 0.1, "steady-state PaCO2 should keep oscillating")
+					assert.Greater(t, co2Max-co2Min, 0.05, "steady-state PaCO2 should keep oscillating")
 
 					// ... and repeatedly reverse direction (up and down), not drift monotonically.
 					assert.Greater(t, countDirectionChanges(steadyO2), 3, "O2 should rise and fall repeatedly")
