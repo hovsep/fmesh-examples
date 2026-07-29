@@ -106,13 +106,14 @@ func exchangeBloodGases(this *component.Component) error {
 		bleed(this, lost)
 	}
 
-	// Phase A: time tick -> publish current levels and remember dt.
+	// Phase A: time tick -> let time pass, publish current levels, remember dt.
 	if this.InputByName("time").HasSignals() {
 		dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
 		if err != nil {
 			return err
 		}
 		this.State().Set(stateDt, dt)
+		advanceWithTime(this, dt)
 		publishBloodLevels(this)
 		return nil
 	}
@@ -231,9 +232,7 @@ func updateBloodLevels(this *component.Component) {
 		return nil
 	})
 
-	updateHormones(this, hormoneRates, dt)
-
-	refill(this, dt)
+	accumulateHormones(this, hormoneRates, dt)
 
 	if capacity := bloodstream.HufnerConstant * hemoglobin * volume * bloodstream.DLPerLiter; capacity > 0 {
 		saturation -= (o2DrawPerSec * dt) / capacity * 100.0
@@ -255,22 +254,47 @@ func hormoneState(hormone string) common.State {
 	return common.State(stateHormonePrefix + hormone)
 }
 
-// updateHormones folds this tick's secretion into each circulating level and
-// lets the rest decay away.
+// advanceWithTime runs everything that happens because time passed rather than
+// because a signal arrived: hormones clearing, and fluid seeping back into an
+// emptied circulation.
 //
-// A hormone level is therefore never a command that has to be cancelled: a
-// gland that stops secreting is a level that fades on its own, at whatever pace
-// that hormone is cleared. Adrenaline is gone in minutes; cortisol takes hours.
-// That difference is the whole reason a body has both.
-func updateHormones(this *component.Component, secreted map[string]float64, dt float64) {
+// It lives in the tick phase, and that placement is the whole point of it. This
+// component is activated twice per tick -- once when the lungs report their
+// airflow and once when the organs report what they consumed, because those
+// arrive on different mesh cycles -- so anything time-based that ran in the
+// integrating phase ran twice and aged the body at double speed. Hormone
+// half-lives were half what they claimed and transcapillary refill was twice as
+// quick.
+//
+// The doubling was survivable while the step was small enough to hide it. It
+// stopped being survivable the moment the step became a choice: at a coarser
+// tick, decay applied twice outruns secretion applied once, and a body under a
+// sustained stressor answers it by letting its adrenaline fall.
+//
+// Signals may arrive any number of times per tick. A tick happens once. Work
+// that depends on elapsed time belongs where the elapsed time is.
+func advanceWithTime(this *component.Component, dt float64) {
+	// A hormone level is never a command that has to be cancelled: a gland that
+	// stops secreting is a level that fades on its own, at whatever pace that
+	// hormone is cleared. Adrenaline is gone in minutes, cortisol takes hours,
+	// and that difference is the whole reason a body has both.
 	for _, hormone := range bloodstream.Hormones {
 		key := hormoneState(hormone)
 		level, _ := this.State().Get(key).(float64)
+		this.State().Set(key, helper.Clamp(
+			helper.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone)), 0, 1))
+	}
 
-		level += secreted[hormone] * dt
-		level = helper.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone))
+	refill(this, dt)
+}
 
-		this.State().Set(key, helper.Clamp(level, 0, 1))
+// accumulateHormones folds this tick's secretion into each circulating level.
+// The clearing half of the story is in advanceWithTime.
+func accumulateHormones(this *component.Component, secreted map[string]float64, dt float64) {
+	for _, hormone := range bloodstream.Hormones {
+		key := hormoneState(hormone)
+		level, _ := this.State().Get(key).(float64)
+		this.State().Set(key, helper.Clamp(level+secreted[hormone]*dt, 0, 1))
 	}
 }
 

@@ -380,7 +380,13 @@ func Test_HumanLiveness(t *testing.T) {
 				// Run several breath cycles (one quiet breath ~= 5s) so the steady-state
 				// window below spans multiple breaths.
 				helper.RunSimulationAndThen(sim, 25*time.Second, func() {
-					require.Greater(t, len(o2), 1000, "should collect enough samples")
+					// One sample per run of the mesh, so the count follows the
+					// step the simulation was built with. Spelling it as a round
+					// number asserted the tick rate rather than the sampling: at
+					// a coarser step this failed with five hundred perfectly
+					// good samples spanning exactly the same five breaths.
+					require.Greater(t, len(o2), int(25*time.Second/testTick)*3/4,
+						"should collect enough samples")
 
 					// Skip the initial settling transient and analyze the steady state,
 					// so we prove the levels keep oscillating (not just drift once and flatten).

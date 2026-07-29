@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
@@ -27,7 +28,7 @@ import (
 // getSimulationMesh returns the main mesh of the simulation, in the world the
 // body normally lives in.
 func getSimulationMesh() (*fmesh.FMesh, error) {
-	return getSimulationMeshIn(factor.GetGasComponent)
+	return getSimulationMeshIn(factor.GetGasComponent, factor.DefaultTickDuration)
 }
 
 // getSimulationMeshIn builds the same simulation inside a different environment.
@@ -37,9 +38,13 @@ func getSimulationMesh() (*fmesh.FMesh, error) {
 // atmosphere, a barochamber, and whatever else is written later. Nothing inside
 // the organism is parameterised, because nothing inside it needs to be -- it
 // receives air on a port and has no way to ask where the air came from.
-func getSimulationMeshIn(environment func() (*component.Component, error)) (*fmesh.FMesh, error) {
+//
+// The tick is the other axis: how much simulated time one run of this mesh is
+// worth. It is a property of the simulation rather than of the body, and the
+// body cannot tell the difference.
+func getSimulationMeshIn(environment func() (*component.Component, error), tick time.Duration) (*fmesh.FMesh, error) {
 	// Set up the world
-	habitat, err := getHabitat(environment)
+	habitat, err := getHabitat(environment, tick)
 	if err != nil {
 		return nil, fmt.Errorf("getHabitat: %w", err)
 	}
@@ -72,6 +77,10 @@ func getSimulationMeshIn(environment func() (*component.Component, error)) (*fme
 		})
 	})
 
+	// Note the step on the mesh so the engine driving it does not have to be told
+	// separately, and cannot be told something different.
+	factor.RecordTick(habitat.FM, tick)
+
 	err = internal.HandleGraphFlag(habitat.FM, false)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
@@ -82,10 +91,10 @@ func getSimulationMeshIn(environment func() (*component.Component, error)) (*fme
 }
 
 // getHabitat builds the habitat mesh around the given environment.
-func getHabitat(environment func() (*component.Component, error)) (*env.Habitat, error) {
+func getHabitat(environment func() (*component.Component, error), tick time.Duration) (*env.Habitat, error) {
 	factors := component.NewCollection()
 
-	timeComponent, err := factor.GetTimeComponent()
+	timeComponent, err := factor.GetTimeComponent(tick)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
