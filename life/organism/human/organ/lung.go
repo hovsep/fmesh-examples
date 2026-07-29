@@ -56,7 +56,7 @@ func GetLung(side common.Side) (*component.Component, error) {
 		component.WithDescription(string(side)+" lung"),
 		component.WithPlugins(damage.New(damage.Config{Organ: "lung_" + string(side)})),
 		component.WithInputs("time", "pleural_pressure", "inspired_gas", "venous_blood"),
-		component.WithOutputs("volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas"),
+		component.WithOutputs("volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas", "alveolar_po2"),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			handleMechanics,
 			handleGasExchange,
@@ -155,6 +155,17 @@ func handleGasExchange(this *component.Component) error {
 		bloodO2 = bloodSig.Scalars().ValueOrDefault("PaO2", 0)
 	}
 
+	// What the alveoli are actually offering the blood.
+	//
+	// This is the lung's own business and nowhere else's: it is the only
+	// component that holds both the air arriving (how much of it there is, and
+	// what fraction is oxygen) and the blood arriving (how much carbon dioxide it
+	// brought). The blood used to assume a fixed 104 mmHg, which meant the body
+	// breathed the same air on a mountain as in a diving bell.
+	if err := publishAlveolarPO2(this, gas, o, bloodCO2); err != nil {
+		return err
+	}
+
 	// Blood that arrives short of oxygen takes more of it out of the air, so the
 	// exhaled fraction falls as the deficit grows.
 	o2Deficit := helper.Clamp((bloodstream.NormalPaO2-bloodO2)/bloodstream.NormalPaO2, 0, 1)
@@ -236,4 +247,26 @@ func strongestInspiratoryEffort(signals *signal.Group) (float64, error) {
 		return 0, fmt.Errorf("no pleural pressure offered")
 	}
 	return strongest, nil
+}
+
+// publishAlveolarPO2 works out the oxygen tension in the alveoli and offers it to
+// the blood.
+//
+// Everything the equation needs arrives on a port. Nothing here knows whether
+// the air came from an atmosphere, a mountain, a barochamber or a cylinder --
+// only what its pressure and oxygen fraction are -- which is exactly why an
+// environment can be swapped for a different one without the lungs noticing.
+func publishAlveolarPO2(this *component.Component, gas *signal.Signal, oxygenPct, bloodCO2 float64) error {
+	if bloodCO2 <= 0 {
+		bloodCO2 = bloodstream.NormalPaCO2
+	}
+
+	pAO2 := bloodstream.AlveolarPO2At(
+		helper.AirPressure(gas), oxygenPct/100.0, bloodCO2)
+
+	// The sum can come out negative, and that is not an error to be hidden: it is
+	// the arithmetic saying this air cannot sustain a body at this PaCO₂. Held at
+	// the floor, the blood desaturates and the chemoreflex is left to find the
+	// hyperventilation that makes the sum work -- which is what a climber does.
+	return this.OutputByName("alveolar_po2").PutPayloads(max(pAO2, bloodstream.MinPaO2))
 }

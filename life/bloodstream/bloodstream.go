@@ -31,24 +31,52 @@ const (
 	NormalPaCO2 = 40.0 * MmHg
 	NormalPH    = 7.40
 
-	// AlveolarPO2 is the oxygen tension inside the alveoli on room air at sea
-	// level: the pressure driving oxygen into the blood. It is a constant here
-	// and becomes a function of barometric pressure and inspired fraction once
-	// the airway carries them -- which is what makes altitude work.
-	AlveolarPO2 = 104.0 * MmHg
+	// WaterVaporPressure is what the airway's own moisture contributes, in mmHg.
+	//
+	// It is a constant 47 whatever the weather, because inspired air arrives at
+	// the alveoli fully saturated at body temperature -- and it is subtracted
+	// before anything else, which is why it matters more the higher you go. At
+	// sea level it costs 6% of the available pressure; on the summit of Everest,
+	// where the barometer reads 253, it costs nearly a fifth of it before a
+	// single molecule of oxygen is accounted for.
+	WaterVaporPressure = 47.0 * MmHg
 
-	// AaGradient is the alveolar-arterial difference. Blood leaves the lungs a
-	// little short of alveolar tension because some of it passes unventilated
-	// alveoli, which is why a healthy PaO₂ is about 95 and not 104.
-	AaGradient = 9.0 * MmHg
+	// RespiratoryQuotient is carbon dioxide produced per oxygen consumed. About
+	// 0.8 on a mixed diet: eight molecules out for every ten in.
+	RespiratoryQuotient = 0.8
+
+	// AaGradient is the alveolar-arterial difference: blood leaves the lungs a
+	// little short of alveolar tension, because some of it passes alveoli that
+	// are perfused but not ventilated and arrives having exchanged nothing.
+	//
+	// Five mmHg is a healthy young adult. It widens with age, and it widens
+	// sharply with anything that spoils the match between air and blood --
+	// which is what makes it the number a clinician reaches for to tell a lung
+	// problem from a breathing problem. A body that is simply not breathing
+	// enough has a normal gradient and a high PaCO₂; a body with a damaged lung
+	// has a wide one. This model has no such damage term yet, so the gradient is
+	// a constant, and the honest way to read it is as a healthy pair of lungs.
+	//
+	// Taken with the alveolar gas equation it puts a resting arterial PaO₂ at
+	// 99.7 − 5 ≈ 95, which is NormalPaO2. The two are meant to agree, and if one
+	// is changed the other has to be.
+	AaGradient = 5.0 * MmHg
 
 	// VentilatedPaCO2 is what ventilation pulls carbon dioxide down towards;
 	// metabolism pushes it back up and the two settle near 40.
 	VentilatedPaCO2 = 38.0 * MmHg
 
-	// Survivable bounds. The oxygen ceiling is what hyperbaric therapy reaches.
+	// Survivable bounds.
+	//
+	// The oxygen ceiling is what hyperbaric therapy actually reaches, and it is
+	// far higher than most people expect. Pure oxygen at three atmospheres puts
+	// alveolar PO₂ over 2000 mmHg -- enough that the oxygen merely *dissolved* in
+	// plasma, normally a rounding error against what hemoglobin carries, can by
+	// itself supply a resting body. That is why a hyperbaric chamber can keep
+	// someone alive whose hemoglobin has been taken out of service by carbon
+	// monoxide. The ceiling used to be 600, which quietly made that impossible.
 	MinPaO2  = 5.0 * MmHg
-	MaxPaO2  = 600.0 * MmHg
+	MaxPaO2  = 2200.0 * MmHg
 	MinPaCO2 = 10.0 * MmHg
 	MaxPaCO2 = 150.0 * MmHg
 
@@ -322,3 +350,35 @@ func EnsureReturnPort(c *component.Component) error {
 	}
 	return c.AddOutputs(ReturnPort)
 }
+
+// AlveolarPO2At is the alveolar gas equation: the oxygen tension inside the
+// alveoli, which is the pressure driving oxygen into the blood.
+//
+//	PAO₂ = FiO₂ × (Pb − PH₂O) − PaCO₂ / R
+//
+// It is the single most useful equation in respiratory physiology, and it says
+// that alveolar oxygen depends on three things a body does not control -- how
+// much air there is, how much of it is oxygen, and how wet the airway makes it --
+// and one thing it does: how hard it breathes.
+//
+// That last term is why the equation is worth having rather than a constant.
+// Breathing harder lowers PaCO₂, and every mmHg of carbon dioxide removed buys
+// back 1.25 mmHg of alveolar oxygen. At sea level that is a refinement. At 8848
+// metres it is the whole margin: 21% of (253 − 47) is 43 mmHg of oxygen, and a
+// body at a normal PaCO₂ of 40 would be subtracting 50 of them and arriving at
+// less than nothing. Climbers survive by hyperventilating their PaCO₂ down to
+// near 10, which turns an impossible sum into a survivable one -- and the
+// chemoreflex in physiology:autonomic_coordination does exactly that, without
+// having been told anything about mountains.
+func AlveolarPO2At(barometric, inspiredO2Fraction, paCO2 float64) float64 {
+	return inspiredO2Fraction*(barometric-WaterVaporPressure) - paCO2/RespiratoryQuotient
+}
+
+// RoomAirO2Fraction is the oxygen fraction of the atmosphere, as a proportion.
+// It is the same on a mountain as at sea level; only the pressure changes.
+const RoomAirO2Fraction = 0.21
+
+// SeaLevelAlveolarPO2 is what the equation gives for a resting adult breathing
+// room air at sea level: about 100 mmHg, which is where the textbook figure
+// comes from.
+var SeaLevelAlveolarPO2 = AlveolarPO2At(760.0, RoomAirO2Fraction, NormalPaCO2)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/env"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
@@ -23,10 +24,22 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// getSimulationMesh returns the main mesh of the simulation
+// getSimulationMesh returns the main mesh of the simulation, in the world the
+// body normally lives in.
 func getSimulationMesh() (*fmesh.FMesh, error) {
+	return getSimulationMeshIn(factor.GetGasComponent)
+}
+
+// getSimulationMeshIn builds the same simulation inside a different environment.
+//
+// The parameter is the whole of the drop-in argument. Anything that publishes
+// environmental_gas under the name "gas" is a world this body can live in: the
+// atmosphere, a barochamber, and whatever else is written later. Nothing inside
+// the organism is parameterised, because nothing inside it needs to be -- it
+// receives air on a port and has no way to ask where the air came from.
+func getSimulationMeshIn(environment func() (*component.Component, error)) (*fmesh.FMesh, error) {
 	// Set up the world
-	habitat, err := getHabitat()
+	habitat, err := getHabitat(environment)
 	if err != nil {
 		return nil, fmt.Errorf("getHabitat: %w", err)
 	}
@@ -68,15 +81,15 @@ func getSimulationMesh() (*fmesh.FMesh, error) {
 	return habitat.FM, nil
 }
 
-// getHabitat builds the habitat mesh
-func getHabitat() (*env.Habitat, error) {
+// getHabitat builds the habitat mesh around the given environment.
+func getHabitat(environment func() (*component.Component, error)) (*env.Habitat, error) {
 	factors := component.NewCollection()
 
 	timeComponent, err := factor.GetTimeComponent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
-	gasComponent, err := factor.GetGasComponent()
+	gasComponent, err := environment()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
@@ -290,6 +303,23 @@ func setMeshCommands(sim *session.Session) {
 		}
 	}
 
+	// gasSetting returns a handler that sends one numeric setting to whatever is
+	// currently playing the part of the environment.
+	gasSetting := func(cmd string, fallback float64) command.Handler {
+		return func(out io.Writer, args []string) error {
+			value := fallback
+			if len(args) > 0 {
+				parsed, err := strconv.ParseFloat(args[0], 64)
+				if err != nil {
+					return fmt.Errorf("expected a number, got %q", args[0])
+				}
+				value = parsed
+			}
+			return gas.InputByName("ctl").PutSignals(
+				signal.New(value).WithLabel(helper.CommandLabel, cmd))
+		}
+	}
+
 	sim.Commands.Add(
 		command.Command{
 			Name: "time:now", Group: "Environment",
@@ -303,9 +333,30 @@ func setMeshCommands(sim *session.Session) {
 		},
 		command.Command{
 			Name: "habitat:show", Group: "Environment",
-			Description: "print the habitat state",
+			Description: "print what the environment is currently offering",
 			Run: func(out io.Writer, _ []string) error {
-				fmt.Fprintln(out, "Current gas temperature: ", gas.State().Get("temperature"))
+				// Read the air rather than the environment's private state. An
+				// atmosphere keeps an altitude and a chamber keeps a pressure, and
+				// neither has the other's; what they have in common is the breath
+				// they publish, which is the only thing the body sees either.
+				air := gas.OutputByName("environmental_gas").Signals().First()
+				if air == nil {
+					fmt.Fprintln(out, "the environment has not published any air yet")
+					return nil
+				}
+
+				_, oxygen, _, _, temperature, humidity, err := helper.UnpackAir(air)
+				if err != nil {
+					return err
+				}
+				pressure := helper.AirPressure(air)
+
+				fmt.Fprintf(out, "%s (%s)\n", gas.Name(), gas.Description())
+				fmt.Fprintf(out, "  pressure     %.0f mmHg (%.2f atm)\n", pressure, pressure/helper.SeaLevelPressure)
+				fmt.Fprintf(out, "  oxygen       %.1f%% -> inspired PO₂ %.0f mmHg\n",
+					oxygen, oxygen/100*(pressure-bloodstream.WaterVaporPressure))
+				fmt.Fprintf(out, "  temperature  %.1f °C\n", temperature)
+				fmt.Fprintf(out, "  humidity     %.0f%%\n", humidity)
 				return nil
 			},
 		},
@@ -333,6 +384,25 @@ func setMeshCommands(sim *session.Session) {
 			Name: "temp:cold", Group: "Environment",
 			Description: "set the gas temperature to -35",
 			Run:         setTemperature("set_temperature", -35.0),
+		},
+		command.Command{
+			Name: "altitude", Group: "Environment",
+			Description: "move the habitat to a height above sea level, e.g. `altitude 5500`",
+			Run:         gasSetting("set_altitude", 0),
+		},
+		// The chamber commands are registered whatever the world is, because the
+		// alternative is a command list that changes shape depending on which
+		// environment was built -- and a body in the open air simply ignores an
+		// instruction to pressurise, exactly as the atmosphere ignores it.
+		command.Command{
+			Name: "chamber:pressure", Group: "Environment",
+			Description: "set the chamber pressure in mmHg (760 is sea level), e.g. `chamber:pressure 2280`",
+			Run:         gasSetting("set_pressure", helper.SeaLevelPressure),
+		},
+		command.Command{
+			Name: "chamber:oxygen", Group: "Environment",
+			Description: "set the chamber oxygen percentage, e.g. `chamber:oxygen 100`",
+			Run:         gasSetting("set_oxygen", 21),
 		},
 	)
 

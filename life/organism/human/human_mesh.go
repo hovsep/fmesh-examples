@@ -662,6 +662,16 @@ func wireBloodSystem(components *component.Collection) error {
 			return err
 		}
 
+		// And each lung says what oxygen tension it is offering, which is what
+		// the blood loads toward. Both arrive on the same port and the blood
+		// averages them, so this is the wire that carries altitude, a barochamber
+		// or an oxygen mask into the circulation without any of them being named.
+		if err := lung.OutputByName("alveolar_po2").PipeTo(
+			blood.InputByName("alveolar_po2"),
+		); err != nil {
+			return err
+		}
+
 		// Venous blood feeds back to each lung
 		if err := blood.OutputByName("venous_blood").PipeTo(
 			lung.InputByName("venous_blood"),
