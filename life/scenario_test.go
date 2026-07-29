@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
@@ -25,6 +26,19 @@ func newCommandableSim(t *testing.T) *session.Session {
 	t.Helper()
 
 	fm, err := getSimulationMesh()
+	require.NoError(t, err)
+
+	sim, err := newSession(fm)
+	require.NoError(t, err)
+	return sim
+}
+
+// newChamberSimIn builds the same simulation inside a barochamber instead of the
+// open atmosphere. Nothing about the body changes; only the world does.
+func newChamberSim(t *testing.T) *session.Session {
+	t.Helper()
+
+	fm, err := getSimulationMeshIn(factor.GetBarochamberComponent)
 	require.NoError(t, err)
 
 	sim, err := newSession(fm)

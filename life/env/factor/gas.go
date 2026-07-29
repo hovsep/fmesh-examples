@@ -17,6 +17,22 @@ const (
 	pollutionFraction = 0.4
 )
 
+// Atmospheric state.
+const (
+	// StateAltitude is how high the habitat is, in metres above sea level. The
+	// atmosphere reports a pressure derived from it rather than a pressure set
+	// directly, because that is the thing an atmosphere actually has: you can
+	// stand somewhere, and the pressure follows.
+	//
+	// A barochamber is the other way round -- it has a pressure and no altitude
+	// at all -- which is most of what makes the two different components rather
+	// than one component with a flag.
+	StateAltitude = "altitude_m"
+
+	// Command verb: altitude <metres>.
+	cmdSetAltitude = "set_altitude"
+)
+
 // GetGasComponent returns the gas component of the habitat
 func GetGasComponent() (*component.Component, error) {
 	c, err := component.New("gas",
@@ -31,9 +47,10 @@ func GetGasComponent() (*component.Component, error) {
 			),
 		),
 		component.WithInitialState(func(state component.State) {
-			// Average air conditions in Valencia
+			// Average air conditions in Valencia, which is at sea level.
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
+			state.Set(StateAltitude, 0.0)
 		}),
 	)
 	if err != nil {
@@ -55,6 +72,12 @@ func handleControlSignals(this *component.Component) error {
 			this.State().Update("temperature", func(currentTemp any) any {
 				return currentTemp.(float64) + helper.AsF64OrDefault(ctlSig, 0.0)
 			})
+			return nil
+		case cmdSetAltitude:
+			metres := helper.AsF64OrDefault(ctlSig, 0.0)
+			this.State().Set(StateAltitude, metres)
+			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
+				metres, helper.PressureAtAltitude(metres))
 			return nil
 		case "set_temperature":
 			this.Logger().Println("Setting temperature to ", helper.AsF64OrDefault(ctlSig, 0.0))
@@ -89,5 +112,11 @@ func emitEnvironmentalGas(this *component.Component) error {
 		return fmt.Errorf("emit environmental gas: %w", err)
 	}
 
-	return this.OutputByName("environmental_gas").PutSignals(air)
+	// Altitude changes the pressure and nothing else. The air on a mountain is
+	// still 21% oxygen; there is simply less of it, and every consequence of
+	// being up there follows from that one number falling.
+	altitude := this.State().Get(StateAltitude).(float64)
+
+	return this.OutputByName("environmental_gas").PutSignals(
+		helper.WithPressure(air, helper.PressureAtAltitude(altitude)))
 }

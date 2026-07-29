@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1007,4 +1009,226 @@ func TestReference_AMealIsClearedByInsulin(t *testing.T) {
 		assert.Greater(t, finalReserve, physiology.StartingEnergyKcal,
 			"and the meal should have reached storage, which is the only route it has")
 	})
+}
+
+// TestReference_AlveolarGasEquation checks the equation at the points the
+// textbooks and the expedition reports name.
+//
+// West, "High Life"; Guyton & Hall ch. 43. The equation is
+//
+//	PAO₂ = FiO₂ × (Pb − PH₂O) − PaCO₂ / R
+//
+// and the interesting thing about it is the last term, which is the only one a
+// body controls. The Everest rows are the point of the whole test: at the
+// summit, a body breathing normally arrives at a negative number -- the sum says
+// there is no oxygen to be had -- and the same body hyperventilating to a PaCO₂
+// of 10 arrives at something survivable. Nobody climbs Everest without oxygen by
+// finding more air. They do it by breathing off carbon dioxide.
+func TestReference_AlveolarGasEquation(t *testing.T) {
+	const roomAir = bloodstream.RoomAirO2Fraction
+
+	tests := []struct {
+		barometric, fiO2, paCO2, want, tolerance float64
+		note                                     string
+	}{
+		{760, roomAir, 40, 99.7, 1, "sea level, resting: the textbook ~100 mmHg"},
+		{760, 1.00, 40, 663, 2, "sea level on pure oxygen: what a face mask buys"},
+		{523, roomAir, 40, 50, 2, "3000 m, not yet acclimatised"},
+		{523, roomAir, 30, 62.5, 2, "3000 m, hyperventilating: 10 mmHg of CO₂ buys 12.5 of O₂"},
+		{253, roomAir, 40, -6.7, 1, "Everest summit at a normal PaCO₂: the sum says no"},
+		{253, roomAir, 10, 30.8, 1, "Everest summit, hyperventilated: how it is actually done"},
+	}
+
+	for _, tt := range tests {
+		got := bloodstream.AlveolarPO2At(tt.barometric, tt.fiO2, tt.paCO2)
+		assert.InDelta(t, tt.want, got, tt.tolerance,
+			"PAO₂ at Pb %g, FiO₂ %.2f, PaCO₂ %g (%s)", tt.barometric, tt.fiO2, tt.paCO2, tt.note)
+	}
+
+	// Every mmHg of carbon dioxide removed is worth 1/R = 1.25 mmHg of alveolar
+	// oxygen, whatever the altitude. This is the exchange rate a climber lives on.
+	atForty := bloodstream.AlveolarPO2At(400, roomAir, 40)
+	atThirty := bloodstream.AlveolarPO2At(400, roomAir, 30)
+	assert.InDelta(t, 12.5, atThirty-atForty, 0.1,
+		"blowing off 10 mmHg of CO₂ should buy 12.5 mmHg of alveolar O₂")
+}
+
+// TestReference_PressureFallsWithAltitude checks the barometric formula against
+// heights people actually go to.
+func TestReference_PressureFallsWithAltitude(t *testing.T) {
+	tests := []struct{ metres, want, tolerance float64 }{
+		{0, 760, 1},
+		{2400, 549, 15}, // a high city; mild hypoxia, no acclimatisation needed
+		{5500, 361, 25}, // roughly Everest base camp, near half an atmosphere
+		{8848, 253, 25}, // the summit
+	}
+	for _, tt := range tests {
+		assert.InDelta(t, tt.want, helper.PressureAtAltitude(tt.metres), tt.tolerance,
+			"barometric pressure at %g m", tt.metres)
+	}
+
+	// Composition does not change with height, only pressure. This is the fact
+	// the model is built to keep straight, and the one people get wrong.
+	assert.Greater(t, helper.PressureAtAltitude(0), helper.PressureAtAltitude(3000),
+		"air thins with height")
+}
+
+// TestReference_AltitudeThinsTheAirAndTheBodyAnswers is the end-to-end version:
+// a body is moved to a high city and left there.
+//
+// Everything that follows was already in the model before altitude existed. The
+// lungs work out what their alveoli can offer from the air that arrives; the
+// blood loads toward it; the chemoreceptors, which were built to hold carbon
+// dioxide at 40 and have never heard of mountains, find that they are being
+// driven by hypoxia instead and breathe harder. The result is the textbook
+// picture of acute altitude exposure: a saturation in the high eighties, a
+// respiratory rate up by half, and a PaCO₂ blown down into respiratory
+// alkalosis.
+//
+// What the model does not have is acclimatisation -- no shift in the
+// dissociation curve, no extra red cells, no renal compensation for the
+// alkalosis -- so this is a visitor on their first day, not a resident. That is
+// also why the altitude here is a survivable one: at 5500 m this body, unable to
+// acclimatise, injures its brain and dies, which is a fair description of what
+// happens to someone helicoptered there and left.
+func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+
+	blood := func(name string) float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault(name, 0)
+		}
+		return 0
+	}
+	rate := func() float64 {
+		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
+			v, _ := helper.NumericPayload(sig)
+			return v
+		}
+		return 0
+	}
+
+	var seaLevel, atAltitude map[string]float64
+	snapshot := func() map[string]float64 {
+		return map[string]float64{
+			"SpO2": blood("SpO2"), "PaO2": blood("PaO2"),
+			"PaCO2": blood("PaCO2"), "pH": blood("pH"), "rr": rate(),
+		}
+	}
+
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 25):
+				seaLevel = snapshot()
+			case within(elapsed, 30):
+				sim.Do("altitude 2400")
+			case elapsed > 240 && rate() > 0:
+				atAltitude = snapshot()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 250*time.Second, func() {
+		require.NotNil(t, seaLevel)
+		require.NotNil(t, atAltitude)
+
+		// At sea level, a normal blood gas.
+		assert.InDelta(t, 97, seaLevel["SpO2"], 3, "a healthy body at sea level")
+		assert.InDelta(t, 40, seaLevel["PaCO2"], 3, "with a normal PaCO₂")
+
+		// At 2400 m, thin air and a body working at it.
+		assert.InDelta(t, 88, atAltitude["SpO2"], 4,
+			"saturation in the high eighties is what a visitor to a high city has")
+		assert.Less(t, atAltitude["PaO2"], 70.0, "and an arterial PO₂ well below sea level's")
+		assert.Greater(t, atAltitude["rr"], seaLevel["rr"],
+			"the hypoxic drive should have raised the respiratory rate")
+
+		// Blowing off carbon dioxide is not a side effect. It is the mechanism:
+		// the alkalosis is the price of the oxygen the hyperventilation buys.
+		assert.Less(t, atAltitude["PaCO2"], 38.0,
+			"breathing harder should have blown the CO₂ down")
+		assert.Greater(t, atAltitude["pH"], 7.42,
+			"which is a respiratory alkalosis, the classic finding at altitude")
+	})
+}
+
+// TestReference_ABarochamberIsADropInForTheAtmosphere swaps the world.
+//
+// The habitat is built with a sealed chamber where the sky should be. Nothing
+// inside the organism is parameterised for it, told about it, or aware of it:
+// the body has an input port that air arrives on, and no way to ask where the
+// air came from. One argument to getSimulationMeshIn is the whole of the change.
+//
+// The chamber is then used for the demonstration only a chamber can give. A
+// hypobaric setting and a normobaric-hypoxic setting are chosen to deliver the
+// same inspired oxygen tension by opposite means -- thin air at ordinary
+// mixture, against ordinary air at a thin mixture -- and the body answers both
+// the same way, because the alveolar gas equation multiplies the two together
+// and has no way to know which one moved. That is the principle an altitude tent
+// is sold on, and it is not obvious until you see a body fail to notice the
+// difference.
+func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+
+	// Both settings deliver ~70 mmHg of inspired oxygen, by opposite means.
+	const (
+		hypobaricPressure = 380.0 // half an atmosphere, ordinary air
+		hypoxicOxygen     = 10.0  // a full atmosphere, thin mixture
+	)
+	assert.InDelta(t,
+		bloodstream.RoomAirO2Fraction*(hypobaricPressure-bloodstream.WaterVaporPressure),
+		hypoxicOxygen/100*(helper.SeaLevelPressure-bloodstream.WaterVaporPressure),
+		2.0, "the two chamber settings should offer the same inspired PO₂")
+
+	settle := func(t *testing.T, setup func(sim *session.Session)) float64 {
+		t.Helper()
+		sim := newChamberSim(t)
+		agg := simMesh(sim).ComponentByName("aggregated_state")
+
+		var final float64
+		elapsed := 0.0
+		simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+			hooks.AfterRun(func(*fmesh.FMesh) error {
+				elapsed += tickSeconds
+				if within(elapsed, 20) {
+					setup(sim)
+				}
+				if elapsed > 30 {
+					if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+						final = sig.Scalars().ValueOrDefault("SpO2", 0)
+					}
+				}
+				return nil
+			})
+		})
+		helper.RunSimulationAndThen(sim, 300*time.Second, func() {})
+		return final
+	}
+
+	// A chamber nobody has touched is a room, and a body in it is a body indoors.
+	indoors := settle(t, func(*session.Session) {})
+	assert.Greater(t, indoors, 94.0,
+		"a body in an unset chamber should be as healthy as one outdoors")
+
+	thinAir := settle(t, func(sim *session.Session) {
+		sim.Do(command.Line(fmt.Sprintf("chamber:pressure %g", hypobaricPressure)))
+	})
+	thinMixture := settle(t, func(sim *session.Session) {
+		sim.Do(command.Line(fmt.Sprintf("chamber:oxygen %g", hypoxicOxygen)))
+	})
+
+	assert.Less(t, thinAir, 80.0, "half an atmosphere should desaturate a body badly")
+	assert.Less(t, thinMixture, 80.0, "and so should a tenth-oxygen mixture at full pressure")
+	assert.InDelta(t, thinAir, thinMixture, 6,
+		"and to nearly the same degree, because the body multiplies the two and cannot tell them apart")
 }

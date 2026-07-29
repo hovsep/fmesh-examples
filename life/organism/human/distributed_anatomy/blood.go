@@ -43,10 +43,11 @@ func GetBloodSystem() (*component.Component, error) {
 		component.WithDescription("Blood system tracking O2 and CO2 levels"),
 		component.WithInputs(
 			"time",
-			"airflow",    // lung airflow: >0 inhaling (fresh air), <0 exhaling
-			"secretions", // shared bus: any organ emits labeled substance signals here
-			"glucose",    // current blood sugar from the reservoir, carried to organs
-			"blood_loss", // mL leaving the body through a wound
+			"airflow",      // lung airflow: >0 inhaling (fresh air), <0 exhaling
+			"alveolar_po2", // what the lungs are offering, mmHg (one signal per lung)
+			"secretions",   // shared bus: any organ emits labeled substance signals here
+			"glucose",      // current blood sugar from the reservoir, carried to organs
+			"blood_loss",   // mL leaving the body through a wound
 		),
 		component.WithOutputs(
 			"venous_blood", // composite: gases, content, hemoglobin, volume, glucose
@@ -195,7 +196,7 @@ func updateBloodLevels(this *component.Component) {
 	// ventilated lung is already nearly saturated, which is why hyperventilating
 	// blows off carbon dioxide without adding much oxygen.
 	if netFlow > 0 {
-		target := bloodstream.SaturationAt(bloodstream.AlveolarPO2 - bloodstream.AaGradient)
+		target := bloodstream.SaturationAt(alveolarPO2(this) - bloodstream.AaGradient)
 		saturation += (target - saturation) * o2InhaleGain * ventilation * dt
 	}
 
@@ -330,4 +331,29 @@ func refill(this *component.Component, dt float64) {
 		this.State().Set(stateHemoglobin, hemoglobin*volume/restored)
 	}
 	this.State().Set(stateVolume, restored)
+}
+
+// alveolarPO2 is what the lungs are currently offering, averaged across them.
+//
+// Arterial blood is the mixture of what came back from every ventilated part of
+// the lung, so an average is the right summary -- and it is why one destroyed
+// lung halves neither the oxygen nor the body, but does drag the average down.
+// Before a lung has said anything, the sea-level figure stands in.
+func alveolarPO2(this *component.Component) float64 {
+	in := this.InputByName("alveolar_po2")
+	if in == nil || !in.HasSignals() {
+		return bloodstream.SeaLevelAlveolarPO2
+	}
+
+	var sum float64
+	var n int
+	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
+		sum += helper.AsF64OrDefault(sig, bloodstream.SeaLevelAlveolarPO2)
+		n++
+		return nil
+	})
+	if n == 0 {
+		return bloodstream.SeaLevelAlveolarPO2
+	}
+	return sum / float64(n)
 }

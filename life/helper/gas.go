@@ -2,15 +2,66 @@ package helper
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/signal"
 )
 
+// SeaLevelPressure is one atmosphere in mmHg. Air with no pressure stamped on
+// it is read as being at sea level, which is what every caller meant before
+// pressure existed.
+const SeaLevelPressure = 760.0
+
+// ScalarPressure is the barometric pressure an air signal is at, in mmHg.
+//
+// It is deliberately outside the "composition:" distribution and so is left
+// alone by MapAirScalar's rebalancing. Composition is what fraction of the air
+// each gas is; pressure is how much air there is. Confusing the two is the
+// single most common mistake about altitude: the air on a mountain is 21%
+// oxygen, exactly as at sea level, and there is simply less of it.
+const ScalarPressure = "pressure"
+
+// WithPressure stamps a barometric pressure onto an air signal.
+func WithPressure(air *signal.Signal, mmHg float64) *signal.Signal {
+	return air.WithScalar(ScalarPressure, mmHg)
+}
+
+// AirPressure reads the barometric pressure of an air signal, defaulting to sea
+// level for air that has none.
+func AirPressure(air *signal.Signal) float64 {
+	if air == nil {
+		return SeaLevelPressure
+	}
+	return air.Scalars().ValueOrDefault(ScalarPressure, SeaLevelPressure)
+}
+
+// PressureAtAltitude returns the barometric pressure at a height above sea
+// level, in mmHg, by the barometric formula.
+//
+// The scale height of 8000 m is the isothermal one, and it fits the range people
+// actually go to within about a percent: 563 mmHg at 2400 m against a standard
+// atmosphere's 567, 382 at 5500 m against 379, and 251 on the summit of Everest
+// against the 253 the 1981 American Medical Research Expedition measured with a
+// barometer they carried up there.
+//
+// That last figure is worth the digression. The standard atmosphere predicts 236
+// mmHg at 8848 m, and the expedition found 253. The mountain sits under a
+// permanent bulge in the equatorial stratosphere, and those seventeen millimetres
+// are roughly the difference between a summit that can be reached without
+// supplementary oxygen and one that cannot. Everest is climbable partly because
+// of where it is on the planet, not only how high it is.
+func PressureAtAltitude(metres float64) float64 {
+	return SeaLevelPressure * math.Exp(-metres/8000.0)
+}
+
 // PackAir packs air composition into a single signal with scalars.
 // Distribution members ("composition:...") are auto-rebalanced by MapAirScalar
 // because the signal declares WithLabel("distribution:composition", "true").
+//
+// The air it produces is at sea level; use WithPressure to put it somewhere
+// else.
 func PackAir(nitrogen, oxygen, argon, pollution, temperature, humidity float64) (*signal.Signal, error) {
 	if nitrogen+oxygen+argon+pollution != 100.00 {
 		return nil, fmt.Errorf("check air composition: total amount of gases is not equal to 100%%")
