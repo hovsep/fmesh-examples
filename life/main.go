@@ -138,7 +138,6 @@ func newSession(simMesh *fmesh.FMesh) (*session.Session, error) {
 	// rate:sim, scheduling -- come with the session.
 	setMeshCommands(sim)
 
-	//@TODO: what auto started means? is not it just started? remove stupic emojis
-	fmt.Println("🚀 Simulation auto-started! Type 'help' for commands ('pause'/'resume', 'exit' to quit).")
+	fmt.Println("Running. 'help' lists the commands; 'pause' and 'resume' stop and start the clock; 'exit' quits.")
 	return sim, nil
 }
