@@ -3,6 +3,7 @@ package boundary
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -33,7 +34,7 @@ func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
 		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
-		return helper.MapAirScalar(airSignal, "composition:pollution", func(p float64) float64 {
+		return atmosphere.MapScalar(airSignal, "composition:pollution", func(p float64) float64 {
 			return p * 0.5
 		})
 	})
@@ -45,7 +46,7 @@ func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
 		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
-		return helper.MapAirScalar(airSignal, "humidity", func(h float64) float64 {
+		return atmosphere.MapScalar(airSignal, "humidity", func(h float64) float64 {
 			return h * 1.1
 		})
 	})
@@ -57,7 +58,7 @@ func warmUpInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
 		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
-		return helper.MapAirScalar(airSignal, "temperature", func(t float64) float64 {
+		return atmosphere.MapScalar(airSignal, "temperature", func(t float64) float64 {
 			return t + 0.2
 		})
 	})

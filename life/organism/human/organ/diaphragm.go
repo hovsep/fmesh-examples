@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
@@ -112,7 +113,7 @@ func handleRespiratoryBias(this *component.Component) error {
 	}
 
 	// @TODO: mixin noise
-	bias, err := helper.GetBias(
+	bias, err := autonomic.Bias(
 		this.InputByName("autonomic_tone").Signals().First(),
 		common.Respiratory,
 	)

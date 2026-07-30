@@ -3,6 +3,7 @@ package da
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
@@ -108,7 +109,7 @@ func rememberEnvironment(this *component.Component) error {
 			sig.Scalars().ValueOrDefault(common.CoreTemperature, NormalSkinCoreTemperature))
 	}
 	if sig := firstSignal(this, "ambient_gas"); sig != nil {
-		if _, _, _, _, temp, _, err := helper.UnpackAir(sig); err == nil {
+		if _, _, _, _, temp, _, err := atmosphere.Unpack(sig); err == nil {
 			this.State().Set(stateAmbientTemp, temp)
 		}
 	}

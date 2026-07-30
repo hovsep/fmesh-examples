@@ -3,6 +3,7 @@ package physiology
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
@@ -189,7 +190,7 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float
 	respiratory := mathx.Clamp(
 		mathx.Jitter(max(base+reflex*respiratoryWeight, base+chemo), defaultRegionalBiasJitter), 0, 1)
 
-	return helper.PackAutonomicTone(
+	return autonomic.Pack(
 		sym, paraSym, defaultAutonomicCoordinationNoise, gain,
 		bias(1.0),            // cardiac: beat faster
 		bias(vascularWeight), // vascular: squeeze

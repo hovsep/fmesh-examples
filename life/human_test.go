@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
@@ -197,11 +198,11 @@ func Test_HumanLiveness(t *testing.T) {
 						}
 
 						var err error
-						_, _, _, envP, envTemp, envHum, err = helper.UnpackAir(envSig)
+						_, _, _, envP, envTemp, envHum, err = atmosphere.Unpack(envSig)
 						if err != nil {
 							return nil
 						}
-						inspN, inspO, inspA, inspP, inspTemp, inspHum, err = helper.UnpackAir(inspSig)
+						inspN, inspO, inspA, inspP, inspTemp, inspHum, err = atmosphere.Unpack(inspSig)
 						if err != nil {
 							return nil
 						}
@@ -319,7 +320,7 @@ func Test_HumanLiveness(t *testing.T) {
 						right++
 
 						var err error
-						_, inspO, _, _, inspTemp, inspHum, err = helper.UnpackAir(inspSig)
+						_, inspO, _, _, inspTemp, inspHum, err = atmosphere.Unpack(inspSig)
 						if err != nil {
 							return nil
 						}
@@ -332,10 +333,10 @@ func Test_HumanLiveness(t *testing.T) {
 					assert.Greater(t, right, 0, "should collect right exhaled gas samples")
 
 					lSig := aggState.OutputByName("human-Leon::lung_left_exhaled_gas").Signals().First()
-					lN, lO, lA, lP, lTemp, lHum, err := helper.UnpackAir(lSig)
+					lN, lO, lA, lP, lTemp, lHum, err := atmosphere.Unpack(lSig)
 					require.NoError(t, err)
 					rSig := aggState.OutputByName("human-Leon::lung_right_exhaled_gas").Signals().First()
-					rN, rO, rA, rP, rTemp, rHum, err := helper.UnpackAir(rSig)
+					rN, rO, rA, rP, rTemp, rHum, err := atmosphere.Unpack(rSig)
 					require.NoError(t, err)
 
 					lCO2 := lSig.Scalars().ValueOrDefault("composition:carbon_dioxide", 0)

@@ -3,6 +3,7 @@ package da
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -169,7 +170,7 @@ func circulate(this *component.Component) error {
 		}
 	}
 	if in := this.InputByName("autonomic_tone"); in.HasSignals() {
-		if target, err := helper.GetBias(in.Signals().First(), common.Vascular); err == nil {
+		if target, err := autonomic.Bias(in.Signals().First(), common.Vascular); err == nil {
 			// Vessels follow the order they are given, they do not snap to it.
 			dt := this.State().Get(stateVascDt).(float64)
 			this.State().Update(stateVascularTone, func(current any) any {

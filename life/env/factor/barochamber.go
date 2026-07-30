@@ -5,6 +5,7 @@ package factor
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -57,7 +58,7 @@ const (
 	// Chamber conditions before anyone touches the dials: ordinary room air at
 	// one atmosphere, so a body put inside a chamber nobody has set is simply a
 	// body indoors.
-	defaultChamberPressure = helper.SeaLevelPressure
+	defaultChamberPressure = atmosphere.SeaLevelPressure
 	defaultChamberOxygen   = 21.0
 
 	// A chamber is climate-controlled, which is one more way it is not weather.
@@ -108,7 +109,7 @@ func handleChamberControls(this *component.Component) error {
 			pressure := max(helper.AsF64OrDefault(ctlSig, defaultChamberPressure), 50.0)
 			this.State().Set(StateChamberPressure, pressure)
 			this.Logger().Printf("chamber at %.0f mmHg (%.2f atmospheres)",
-				pressure, pressure/helper.SeaLevelPressure)
+				pressure, pressure/atmosphere.SeaLevelPressure)
 		case cmdSetCO:
 			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
 			this.State().Set(StateChamberCOppm, ppm)
@@ -136,13 +137,13 @@ func emitChamberGas(this *component.Component) error {
 	// Whatever is not oxygen is nitrogen. Real chambers use helium in the deep
 	// mixes, for reasons -- narcosis, density, the work of breathing -- that this
 	// body has no way to feel, so pretending otherwise would be decoration.
-	air, err := helper.PackAir(100.0-oxygen, oxygen, 0, 0, chamberTemperature, chamberHumidity)
+	air, err := atmosphere.Pack(100.0-oxygen, oxygen, 0, 0, chamberTemperature, chamberHumidity)
 	if err != nil {
 		return fmt.Errorf("emit chamber gas: %w", err)
 	}
 
 	return this.OutputByName("environmental_gas").PutSignals(
-		helper.WithCarbonMonoxide(
-			helper.WithPressure(air, pressure),
+		atmosphere.WithCarbonMonoxide(
+			atmosphere.WithPressure(air, pressure),
 			this.State().Get(StateChamberCOppm).(float64)))
 }

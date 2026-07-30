@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
@@ -1070,13 +1071,13 @@ func TestReference_PressureFallsWithAltitude(t *testing.T) {
 		{8848, 253, 25}, // the summit
 	}
 	for _, tt := range tests {
-		assert.InDelta(t, tt.want, helper.PressureAtAltitude(tt.metres), tt.tolerance,
+		assert.InDelta(t, tt.want, atmosphere.PressureAtAltitude(tt.metres), tt.tolerance,
 			"barometric pressure at %g m", tt.metres)
 	}
 
 	// Composition does not change with height, only pressure. This is the fact
 	// the model is built to keep straight, and the one people get wrong.
-	assert.Greater(t, helper.PressureAtAltitude(0), helper.PressureAtAltitude(3000),
+	assert.Greater(t, atmosphere.PressureAtAltitude(0), atmosphere.PressureAtAltitude(3000),
 		"air thins with height")
 }
 
@@ -1194,7 +1195,7 @@ func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
 	)
 	assert.InDelta(t,
 		bloodstream.RoomAirO2Fraction*(hypobaricPressure-bloodstream.WaterVaporPressure),
-		hypoxicOxygen/100*(helper.SeaLevelPressure-bloodstream.WaterVaporPressure),
+		hypoxicOxygen/100*(atmosphere.SeaLevelPressure-bloodstream.WaterVaporPressure),
 		2.0, "the two chamber settings should offer the same inspired PO₂")
 
 	settle := func(t *testing.T, setup func(sim *session.Session)) float64 {

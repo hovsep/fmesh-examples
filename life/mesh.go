@@ -10,6 +10,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/env"
@@ -354,14 +355,14 @@ func setMeshCommands(sim *session.Session) {
 					return nil
 				}
 
-				_, oxygen, _, _, temperature, humidity, err := helper.UnpackAir(air)
+				_, oxygen, _, _, temperature, humidity, err := atmosphere.Unpack(air)
 				if err != nil {
 					return err
 				}
-				pressure := helper.AirPressure(air)
+				pressure := atmosphere.Pressure(air)
 
 				fmt.Fprintf(out, "%s (%s)\n", gas.Name(), gas.Description())
-				fmt.Fprintf(out, "  pressure     %.0f mmHg (%.2f atm)\n", pressure, pressure/helper.SeaLevelPressure)
+				fmt.Fprintf(out, "  pressure     %.0f mmHg (%.2f atm)\n", pressure, pressure/atmosphere.SeaLevelPressure)
 				fmt.Fprintf(out, "  oxygen       %.1f%% -> inspired PO₂ %.0f mmHg\n",
 					oxygen, oxygen/100*(pressure-bloodstream.WaterVaporPressure))
 				fmt.Fprintf(out, "  temperature  %.1f °C\n", temperature)
@@ -406,7 +407,7 @@ func setMeshCommands(sim *session.Session) {
 		command.Command{
 			Name: "chamber:pressure", Group: "Environment",
 			Description: "set the chamber pressure in mmHg (760 is sea level), e.g. `chamber:pressure 2280`",
-			Run:         gasSetting("set_pressure", helper.SeaLevelPressure),
+			Run:         gasSetting("set_pressure", atmosphere.SeaLevelPressure),
 		},
 		command.Command{
 			Name: "air:co", Group: "Environment",

@@ -3,9 +3,9 @@ package organ
 import (
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -70,7 +70,7 @@ func GetAdrenal() (*component.Component, error) {
 // its own within minutes while cortisol is still there an hour later.
 func secreteStressHormones(this *component.Component) error {
 	if in := this.InputByName("autonomic_tone"); in.HasSignals() {
-		if tone, err := helper.GetBias(in.Signals().First(), common.Sympathetic); err == nil {
+		if tone, err := autonomic.Bias(in.Signals().First(), common.Sympathetic); err == nil {
 			this.State().Set(stateSympathetic, tone)
 		}
 	}

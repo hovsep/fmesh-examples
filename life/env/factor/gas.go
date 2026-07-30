@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -93,7 +94,7 @@ func handleControlSignals(this *component.Component) error {
 			metres := helper.AsF64OrDefault(ctlSig, 0.0)
 			this.State().Set(StateAltitude, metres)
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
-				metres, helper.PressureAtAltitude(metres))
+				metres, atmosphere.PressureAtAltitude(metres))
 			return nil
 		case cmdSetCO:
 			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
@@ -128,7 +129,7 @@ func emitEnvironmentalGas(this *component.Component) error {
 	currentTemperature := this.State().Get("temperature").(float64)
 	currentHumidity := this.State().Get("humidity").(float64)
 
-	air, err := helper.PackAir(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity)
+	air, err := atmosphere.Pack(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity)
 	if err != nil {
 		return fmt.Errorf("emit environmental gas: %w", err)
 	}
@@ -139,7 +140,7 @@ func emitEnvironmentalGas(this *component.Component) error {
 	altitude := this.State().Get(StateAltitude).(float64)
 
 	return this.OutputByName("environmental_gas").PutSignals(
-		helper.WithCarbonMonoxide(
-			helper.WithPressure(air, helper.PressureAtAltitude(altitude)),
+		atmosphere.WithCarbonMonoxide(
+			atmosphere.WithPressure(air, atmosphere.PressureAtAltitude(altitude)),
 			this.State().Get(StateCOppm).(float64)))
 }

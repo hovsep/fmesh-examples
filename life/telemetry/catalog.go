@@ -358,7 +358,7 @@ func feelingScalars() []Scalar {
 // airScalars describes the composition a breathable-gas signal carries.
 //
 // Every gas signal in the body (inspired, exhaled) uses the same scalar names,
-// set by helper.PackAir, so the descriptions are generated rather than repeated.
+// set by atmosphere.Pack, so the descriptions are generated rather than repeated.
 func airScalars(prefix string, view View) []Scalar {
 	gases := []struct {
 		scalar   string
