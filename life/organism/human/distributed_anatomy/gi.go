@@ -3,8 +3,9 @@ package da
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -14,9 +15,9 @@ import (
 // GI tract state: what is in the stomach, and what has worked its way to the
 // far end.
 const (
-	StateStomachKcal common.State = "stomach_kcal"
-	StateStomachMl   common.State = "stomach_ml"
-	StateBowelPct    common.State = "bowel_fill_pct"
+	StateStomachKcal string = "stomach_kcal"
+	StateStomachMl   string = "stomach_ml"
+	StateBowelPct    string = "bowel_fill_pct"
 )
 
 const (
@@ -58,7 +59,7 @@ func GetGITract() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "gi_tract", O2PerMinute: GIO2PerMinute}),
 		),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"nutrient_load",  // from boundary:ingestion
 			"hydration_load", // from boundary:ingestion
 			"void",           // from controller:excretion
@@ -95,10 +96,10 @@ func acceptSwallowed(this *component.Component) error {
 
 		if err := in.Signals().ForEach(func(sig *signal.Signal) error {
 			this.State().Update(StateStomachKcal, func(v any) any {
-				return v.(float64) + sig.Scalars().ValueOrDefault(common.GlucoseKcal, 0)
+				return v.(float64) + sig.Scalars().ValueOrDefault(body.GlucoseKcal, 0)
 			})
 			this.State().Update(StateStomachMl, func(v any) any {
-				return v.(float64) + sig.Scalars().ValueOrDefault(common.WaterMl, 0)
+				return v.(float64) + sig.Scalars().ValueOrDefault(body.WaterMl, 0)
 			})
 			return nil
 		}); err != nil {
@@ -118,7 +119,7 @@ func voidBowel(this *component.Component) error {
 // digest moves a share of the stomach's contents into the body each tick, and
 // leaves residue behind.
 func digest(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}
@@ -153,8 +154,8 @@ func digest(this *component.Component) error {
 		if err := this.OutputByName("absorption").PutSignals(
 			signal.New("absorption").
 				WithLabel("category", "digestion").
-				WithScalar(common.GlucoseKcal, absorbedKcal).
-				WithScalar(common.WaterMl, absorbedWater),
+				WithScalar(body.GlucoseKcal, absorbedKcal).
+				WithScalar(body.WaterMl, absorbedWater),
 		); err != nil {
 			return err
 		}

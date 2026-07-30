@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -25,10 +25,10 @@ const (
 const (
 	// PendingBleedMl is blood asked for but not yet taken, in mL. It is a
 	// running total rather than a flag: two wounds bleed twice.
-	PendingBleedMl common.State = "pending_bleed_ml"
+	PendingBleedMl string = "pending_bleed_ml"
 
 	// TotalBledMl is what the body has lost over the run, for observation.
-	TotalBledMl common.State = "total_bled_ml"
+	TotalBledMl string = "total_bled_ml"
 )
 
 // BleedRateMlPerSec is how fast blood actually leaves once a wound is opened.
@@ -48,7 +48,7 @@ const BleedRateMlPerSec = 25.0
 func GetTrauma() (*component.Component, error) {
 	c, err := component.New("controller:trauma",
 		component.WithDescription("Turns injuries into blood loss"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("blood_loss"),
 		component.WithActivationFunc(component.Sequential(
 			acceptTraumaCommands,
@@ -66,7 +66,7 @@ func GetTrauma() (*component.Component, error) {
 }
 
 func acceptTraumaCommands(this *component.Component) error {
-	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbBleed:
 			volume := args.ValueOrDefault(ScalarVolumeMl, 0)
@@ -84,7 +84,7 @@ func acceptTraumaCommands(this *component.Component) error {
 
 // emitBloodLoss lets out this tick's share of whatever is still bleeding.
 func emitBloodLoss(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 
@@ -93,7 +93,7 @@ func emitBloodLoss(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName(simulation.TimePort).Signals().First())
 	if err != nil {
 		return err
 	}

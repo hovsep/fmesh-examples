@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -67,7 +68,7 @@ func GetAffect() (*component.Component, error) {
 	c, err := component.New("physiology:affect",
 		component.WithDescription("Interprets physiological state as named feelings (hungry, thirsty, exhausted...)"),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"body_state",    // hydration, glycemia, energy, temperature
 			"venous_blood",  // O2 and CO2 saturation
 			"bladder_fill",  //
@@ -81,10 +82,10 @@ func GetAffect() (*component.Component, error) {
 			// The last reading of each input is remembered, because they arrive
 			// on different mesh cycles; without that, feelings would flicker as
 			// each signal came and went.
-			state.Set(common.EnergyKcal, StartingEnergyKcal)
-			state.Set(common.HydrationPct, 100.0)
-			state.Set(common.Glycemia, NormalGlycemia)
-			state.Set(common.CoreTemperature, NormalCoreTemperature)
+			state.Set(body.EnergyKcal, StartingEnergyKcal)
+			state.Set(body.HydrationPct, 100.0)
+			state.Set(body.Glycemia, NormalGlycemia)
+			state.Set(body.CoreTemperature, NormalCoreTemperature)
 			state.Set(stateO2, bloodstream.NormalPaO2)
 			state.Set(stateCO2, bloodstream.NormalPaCO2)
 			state.Set(stateBladder, 0.0)
@@ -102,20 +103,20 @@ func GetAffect() (*component.Component, error) {
 }
 
 const (
-	stateO2       common.State = "o2_level"
-	stateCO2      common.State = "co2_level"
-	stateBladder  common.State = "bladder_pct"
-	stateBowel    common.State = "bowel_pct"
-	stateExertion common.State = "exertion"
-	stateArousal  common.State = "arousal"
-	stateValence  common.State = "valence"
-	stateDt       common.State = "dt"
+	stateO2       string = "o2_level"
+	stateCO2      string = "co2_level"
+	stateBladder  string = "bladder_pct"
+	stateBowel    string = "bowel_pct"
+	stateExertion string = "exertion"
+	stateArousal  string = "arousal"
+	stateValence  string = "valence"
+	stateDt       string = "dt"
 )
 
 func deriveFeelings(this *component.Component) error {
 	// The tick arrives on its own cycle, and smoothing needs to know how much
 	// time it represents, so record it before anything is folded in.
-	if tick := firstSignal(this, common.TimePort); tick != nil {
+	if tick := firstSignal(this, simulation.TimePort); tick != nil {
 		if dt, err := simtime.TickDurationInSec(tick); err == nil {
 			this.State().Set(stateDt, dt)
 		}
@@ -125,41 +126,41 @@ func deriveFeelings(this *component.Component) error {
 
 	// Feelings are published once per tick, so the set is always internally
 	// consistent rather than a mix of readings from different cycles.
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 
-	get := func(key common.State) float64 { return this.State().Get(key).(float64) }
+	get := func(key string) float64 { return this.State().Get(key).(float64) }
 
 	feelings := map[string]float64{
 		// Falling reserves read as hunger; falling blood sugar as a headache.
-		common.FeelingHungry:   ramp(get(common.EnergyKcal), energyComfortable, energyStarving),
-		common.FeelingHeadache: ramp(get(common.Glycemia), glycemiaComfortable, glycemiaAlarming),
-		common.FeelingThirsty:  ramp(get(common.HydrationPct), hydrationComfortable, hydrationParched),
+		body.FeelingHungry:   ramp(get(body.EnergyKcal), energyComfortable, energyStarving),
+		body.FeelingHeadache: ramp(get(body.Glycemia), glycemiaComfortable, glycemiaAlarming),
+		body.FeelingThirsty:  ramp(get(body.HydrationPct), hydrationComfortable, hydrationParched),
 
-		common.FeelingNeedToUrinate:  ramp(get(stateBladder), bladderNoticeable, bladderUrgent),
-		common.FeelingNeedToDefecate: ramp(get(stateBowel), bowelNoticeable, bowelUrgent),
+		body.FeelingNeedToUrinate:  ramp(get(stateBladder), bladderNoticeable, bladderUrgent),
+		body.FeelingNeedToDefecate: ramp(get(stateBowel), bowelNoticeable, bowelUrgent),
 
 		// Air hunger comes from either too little oxygen or too much carbon
 		// dioxide; whichever is worse is what the body notices.
-		common.FeelingBreathless: max(
+		body.FeelingBreathless: max(
 			ramp(get(stateO2), o2Comfortable, o2Alarming),
 			ramp(get(stateCO2), co2Comfortable, co2Alarming),
 		),
 
-		common.FeelingFeverish: ramp(get(common.CoreTemperature), temperatureComfortable, temperatureFeverish),
-		common.FeelingAnxious:  mathx.Clamp(get(stateArousal)*negativeOnly(get(stateValence)), 0, 1),
-		common.FeelingHappy:    mathx.Clamp(get(stateValence), 0, 1),
+		body.FeelingFeverish: ramp(get(body.CoreTemperature), temperatureComfortable, temperatureFeverish),
+		body.FeelingAnxious:  mathx.Clamp(get(stateArousal)*negativeOnly(get(stateValence)), 0, 1),
+		body.FeelingHappy:    mathx.Clamp(get(stateValence), 0, 1),
 	}
 
 	// Exhaustion is exertion on top of an empty tank: hard work while well
 	// fuelled is merely tiring.
 	exertion := ramp(get(stateExertion), exertionComfortable, exertionPunishing)
-	feelings[common.FeelingTired] = exertion
-	feelings[common.FeelingExhausted] = exertion * feelings[common.FeelingHungry]
+	feelings[body.FeelingTired] = exertion
+	feelings[body.FeelingExhausted] = exertion * feelings[body.FeelingHungry]
 
 	// Contentment is what is left when nothing else is pressing.
-	feelings[common.FeelingContent] = contentCeiling * (1 - strongest(feelings))
+	feelings[body.FeelingContent] = contentCeiling * (1 - strongest(feelings))
 
 	return this.OutputByName("feelings").PutSignals(packFeelings(feelings))
 }
@@ -169,16 +170,16 @@ func deriveFeelings(this *component.Component) error {
 func rememberInputs(this *component.Component) {
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		s := sig.Scalars()
-		this.State().Set(common.EnergyKcal, s.ValueOrDefault(common.EnergyKcal, StartingEnergyKcal))
-		this.State().Set(common.HydrationPct, s.ValueOrDefault(common.HydrationPct, 100))
-		this.State().Set(common.Glycemia, s.ValueOrDefault(common.Glycemia, NormalGlycemia))
-		this.State().Set(common.CoreTemperature, s.ValueOrDefault(common.CoreTemperature, NormalCoreTemperature))
+		this.State().Set(body.EnergyKcal, s.ValueOrDefault(body.EnergyKcal, StartingEnergyKcal))
+		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100))
+		this.State().Set(body.Glycemia, s.ValueOrDefault(body.Glycemia, NormalGlycemia))
+		this.State().Set(body.CoreTemperature, s.ValueOrDefault(body.CoreTemperature, NormalCoreTemperature))
 	}
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
 		// Smoothed rather than stored outright, so a feeling reflects how the
 		// blood has been rather than where it happened to be mid-breath.
 		dt := this.State().Get(stateDt).(float64)
-		smooth := func(key common.State, scalar string, fallback float64) {
+		smooth := func(key string, scalar string, fallback float64) {
 			this.State().Update(key, func(v any) any {
 				return mathx.DecayToward(v.(float64),
 					sig.Scalars().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
@@ -214,7 +215,7 @@ func firstSignal(this *component.Component, portName string) *signal.Signal {
 // travels together and cannot be read half-updated.
 func packFeelings(feelings map[string]float64) *signal.Signal {
 	sig := signal.New("feelings").WithLabel("category", "affect")
-	for _, name := range common.Feelings {
+	for _, name := range body.Feelings {
 		sig = sig.WithScalar(name, mathx.Clamp(feelings[name], 0, 1))
 	}
 	return sig
@@ -242,7 +243,7 @@ func negativeOnly(valence float64) float64 {
 func strongest(feelings map[string]float64) float64 {
 	var peak float64
 	for name, intensity := range feelings {
-		if name == common.FeelingContent || name == common.FeelingHappy {
+		if name == body.FeelingContent || name == body.FeelingHappy {
 			continue
 		}
 		peak = max(peak, mathx.Clamp(intensity, 0, 1))

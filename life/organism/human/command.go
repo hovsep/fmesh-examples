@@ -6,14 +6,14 @@ import (
 	"slices"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
 // ControlPort is the input every commandable component exposes.
-const ControlPort = common.ControlPort
+const ControlPort = simulation.ControlPort
 
 // commandRoutes maps a command namespace to the controller that owns it.
 //

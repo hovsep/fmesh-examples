@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
@@ -13,7 +13,7 @@ import (
 // InnerMeshState is where the human component keeps the mesh that simulates its
 // body. The body is a mesh wrapped as a single component, so from the outside
 // there is otherwise no way to reach an organ -- which observation and tests need.
-const InnerMeshState common.State = "inner_mesh"
+const InnerMeshState string = "inner_mesh"
 
 // InnerMesh returns the mesh simulating the given human's body, or nil if the
 // component is not a human.
@@ -106,7 +106,7 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		// its own factors the same way (see env/habitat.go).
 		tick := this.InputByName("habitat_time_tick")
 		if err := mesh.Components().ForEach(func(c *component.Component) error {
-			timePort := c.InputByName(common.TimePort)
+			timePort := c.InputByName(simulation.TimePort)
 			if timePort == nil {
 				return nil
 			}

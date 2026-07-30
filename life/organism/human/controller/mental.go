@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -20,10 +20,10 @@ const VerbStimulus = "stimulus"
 const (
 	// Arousal is how activated the mind is, 0 (calm) to 1 (panic). It decays
 	// back toward calm on its own.
-	Arousal common.State = "arousal"
+	Arousal string = "arousal"
 	// Valence is how pleasant the current mood is, -1 (dread) to +1 (joy). It
 	// decays back toward neutral.
-	Valence common.State = "valence"
+	Valence string = "valence"
 )
 
 // Scalar names on the stimulus command and the emitted mental load signal.
@@ -50,7 +50,7 @@ const (
 func GetMental() (*component.Component, error) {
 	c, err := component.New("controller:mental_stress",
 		component.WithDescription("Turns emotional stimuli into a decaying mental load"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("mental_load"),
 		component.WithActivationFunc(component.Sequential(
 			acceptStimulusCommands,
@@ -68,7 +68,7 @@ func GetMental() (*component.Component, error) {
 }
 
 func acceptStimulusCommands(this *component.Component) error {
-	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		if command.Verb(name) != VerbStimulus {
 			this.Logger().Printf("unknown emotion command %q\n", name)
 			return nil
@@ -87,7 +87,7 @@ func acceptStimulusCommands(this *component.Component) error {
 }
 
 func emitMentalLoad(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}

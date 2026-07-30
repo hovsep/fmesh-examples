@@ -3,9 +3,10 @@ package organ
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -14,11 +15,11 @@ import (
 
 // Kidney state.
 const (
-	StateBladderMl common.State = "bladder_ml"
+	StateBladderMl string = "bladder_ml"
 	// StateHydrationPct is the last hydration reading the kidney saw. It arrives
 	// on its own mesh cycle, so the kidney remembers it rather than pausing urine
 	// production on ticks where the signal has not landed.
-	StateHydrationPct common.State = "hydration_pct"
+	StateHydrationPct string = "hydration_pct"
 )
 
 const (
@@ -53,7 +54,7 @@ func GetKidney() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "kidney", O2PerMinute: KidneyO2PerMinute}),
 		),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"body_state", // from physiology:physiological_state
 			"void",       // from controller:excretion
 		),
@@ -88,7 +89,7 @@ func readHydration(this *component.Component) error {
 		return nil
 	}
 	if sig := in.Signals().First(); sig != nil {
-		this.State().Set(StateHydrationPct, sig.Scalars().ValueOrDefault(common.HydrationPct, 100.0))
+		this.State().Set(StateHydrationPct, sig.Scalars().ValueOrDefault(body.HydrationPct, 100.0))
 	}
 	return nil
 }
@@ -101,7 +102,7 @@ func voidBladder(this *component.Component) error {
 }
 
 func produceUrine(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}
@@ -135,7 +136,7 @@ func produceUrine(this *component.Component) error {
 	return this.OutputByName("losses").PutSignals(
 		signal.New("losses").
 			WithLabel("category", "kidney").
-			WithScalar(common.WaterMl, produced),
+			WithScalar(body.WaterMl, produced),
 	)
 }
 

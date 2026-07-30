@@ -16,7 +16,6 @@ package receptor
 
 import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -75,7 +74,7 @@ func (r *Receptors) latch(this *component.Component) error {
 	return nil
 }
 
-func stateKey(hormone string) common.State { return common.State(statePrefix + hormone) }
+func stateKey(hormone string) string { return string(statePrefix + hormone) }
 
 // Level returns how much of a hormone an organ is currently feeling, 0..1.
 // An organ without the receptor reads zero, whatever is circulating.

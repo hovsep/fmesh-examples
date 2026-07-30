@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -19,10 +19,10 @@ const (
 // Excretion controller state: whether a voiding is queued for the next tick,
 // plus the lifetime counts.
 const (
-	PendingUrination  common.State = "pending_urination"
-	PendingDefecation common.State = "pending_defecation"
-	TotalUrinations   common.State = "total_urinations"
-	TotalDefecations  common.State = "total_defecations"
+	PendingUrination  string = "pending_urination"
+	PendingDefecation string = "pending_defecation"
+	TotalUrinations   string = "total_urinations"
+	TotalDefecations  string = "total_defecations"
 )
 
 //@TODO: check if this component is only cmd executor or it also manages feelings\intentions over time (e.g. human must want to urinate after certain time)
@@ -36,7 +36,7 @@ const (
 func GetExcretion() (*component.Component, error) {
 	c, err := component.New("controller:excretion",
 		component.WithDescription("Turns voiding commands into excretion intent"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("urine_out", "feces_out"),
 		component.WithActivationFunc(component.Sequential(
 			acceptExcretionCommands,
@@ -56,7 +56,7 @@ func GetExcretion() (*component.Component, error) {
 }
 
 func acceptExcretionCommands(this *component.Component) error {
-	return command.ForEach(this, common.ControlPort, func(name string, _ *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, _ *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbUrinate:
 			// A flag rather than a counter: asking twice in one tick still means
@@ -74,7 +74,7 @@ func acceptExcretionCommands(this *component.Component) error {
 }
 
 func emitExcretionIntent(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 

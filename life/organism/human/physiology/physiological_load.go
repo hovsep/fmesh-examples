@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -66,17 +67,17 @@ const (
 func GetPhysiologicalLoad() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_load",
 		component.WithDescription("Turns out-of-range reservoirs into organ damage (the death cascade)"),
-		component.WithInputs(common.TimePort, "body_state", "venous_blood", "map"),
+		component.WithInputs(simulation.TimePort, "body_state", "venous_blood", "map"),
 		component.WithOutputs(damageOutputs()...),
 		component.WithActivationFunc(component.Sequential(
 			latchVitals,
 			inflictDamage,
 		)),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.HydrationPct, 100.0)
-			state.Set(common.Glycemia, NormalGlycemia)
+			state.Set(body.HydrationPct, 100.0)
+			state.Set(body.Glycemia, NormalGlycemia)
 			state.Set(loadMAP, da.NormalMAP)
-			state.Set(common.CoreTemperature, NormalCoreTemperature)
+			state.Set(body.CoreTemperature, NormalCoreTemperature)
 			state.Set(loadO2, 100.0)
 		}),
 	)
@@ -87,8 +88,8 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 }
 
 const (
-	loadO2  common.State = "load_o2"
-	loadMAP common.State = "load_map"
+	loadO2  string = "load_o2"
+	loadMAP string = "load_map"
 )
 
 func damageOutputs() []string {
@@ -104,9 +105,9 @@ func damageOutputs() []string {
 func latchVitals(this *component.Component) error {
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		s := sig.Scalars()
-		this.State().Set(common.HydrationPct, s.ValueOrDefault(common.HydrationPct, 100))
-		this.State().Set(common.Glycemia, s.ValueOrDefault(common.Glycemia, NormalGlycemia))
-		this.State().Set(common.CoreTemperature, s.ValueOrDefault(common.CoreTemperature, NormalCoreTemperature))
+		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100))
+		this.State().Set(body.Glycemia, s.ValueOrDefault(body.Glycemia, NormalGlycemia))
+		this.State().Set(body.CoreTemperature, s.ValueOrDefault(body.CoreTemperature, NormalCoreTemperature))
 	}
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
 		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", bloodstream.NormalPaO2))
@@ -118,7 +119,7 @@ func latchVitals(this *component.Component) error {
 }
 
 func inflictDamage(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}
@@ -127,15 +128,15 @@ func inflictDamage(this *component.Component) error {
 		return fmt.Errorf("physiological load tick: %w", err)
 	}
 
-	get := func(key common.State) float64 { return this.State().Get(key).(float64) }
+	get := func(key string) float64 { return this.State().Get(key).(float64) }
 
 	// Severity of each stressor, 0..1.
-	dehydration := rampUpAsFalls(get(common.HydrationPct), dehydrationOnset, dehydrationFull)
+	dehydration := rampUpAsFalls(get(body.HydrationPct), dehydrationOnset, dehydrationFull)
 	hypoxia := rampUpAsFalls(get(loadO2), hypoxiaOnset, hypoxiaFull)
-	hypoglycemia := rampUpAsFalls(get(common.Glycemia), hypoglycemiaOnset, hypoglycemiaFull)
+	hypoglycemia := rampUpAsFalls(get(body.Glycemia), hypoglycemiaOnset, hypoglycemiaFull)
 	hypoperfusion := rampUpAsFalls(get(loadMAP), hypoperfusionOnset, hypoperfusionFull)
-	hyperthermia := rampUpAsRises(get(common.CoreTemperature), hyperthermiaOnset, hyperthermiaFull)
-	hypothermia := rampUpAsFalls(get(common.CoreTemperature), hypothermiaOnset, hypothermiaFull)
+	hyperthermia := rampUpAsRises(get(body.CoreTemperature), hyperthermiaOnset, hyperthermiaFull)
+	hypothermia := rampUpAsFalls(get(body.CoreTemperature), hypothermiaOnset, hypothermiaFull)
 	temperature := max(hyperthermia, hypothermia)
 
 	// Per-organ sensitivity to each stressor. Different profiles give the collapse

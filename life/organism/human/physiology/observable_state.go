@@ -3,25 +3,25 @@ package physiology
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	LastBrainActivity                   common.State = "last_brain_activity"
-	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
-	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
+	LastBrainActivity                   string = "last_brain_activity"
+	defaultBrainActivitySmoothingFactor        = 0.1    // alpha in ema
+	defaultBrainActivityThreshold              = 0.0001 // epsilon in ema
 
 	// Death is derived from the brain: once the body has been alive, a whole tick
 	// with no brain activity (the brain has failed and stopped emitting) means it
 	// is dead. Death latches -- there is no coming back.
-	stateEverAlive common.State = "ever_alive"
-	stateDead      common.State = "dead"
-	stateSawBrain  common.State = "saw_brain_this_tick"
+	stateEverAlive string = "ever_alive"
+	stateDead      string = "dead"
+	stateSawBrain  string = "saw_brain_this_tick"
 )
 
 //@TODO: this component must not just aggregate all signals from humans
@@ -38,7 +38,7 @@ const (
 func GetObservableState() (*component.Component, error) {
 	c, err := component.New("physiology:observable_state",
 		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
-		component.WithInputs(append([]string{common.TimePort}, telemetry.SourcePorts()...)...),
+		component.WithInputs(append([]string{simulation.TimePort}, telemetry.SourcePorts()...)...),
 		component.WithOutputs(telemetry.Ports()...),
 		component.WithActivationFunc(component.Sequential(
 			handleBrainSignals,
@@ -90,7 +90,7 @@ func handleBrainSignals(this *component.Component) error {
 	lastSmoothedBrainActivity := this.State().Get(LastBrainActivity).(float64)
 
 	// Exponential Moving Average helps to determine trend without storing historical data
-	ema := helper.NewEMA(defaultBrainActivitySmoothingFactor, lastSmoothedBrainActivity, defaultBrainActivityThreshold)
+	ema := body.NewEMA(defaultBrainActivitySmoothingFactor, lastSmoothedBrainActivity, defaultBrainActivityThreshold)
 	smoothedBrainActivity := ema.Update(currentBrainActivity)
 	brainActivityTrend := ema.ClassifyTrend(currentBrainActivity)
 
@@ -99,7 +99,7 @@ func handleBrainSignals(this *component.Component) error {
 	// The trend rides as a number so it survives telemetry; the human-readable
 	// name stays available in-mesh as a label.
 	return this.OutputByName("brain_activity_trend").PutSignals(
-		signal.New(helper.TrendCode(brainActivityTrend)).WithLabel("trend", brainActivityTrend),
+		signal.New(body.TrendCode(brainActivityTrend)).WithLabel("trend", brainActivityTrend),
 	)
 }
 
@@ -107,7 +107,7 @@ func handleBrainSignals(this *component.Component) error {
 // been alive and the brain produced nothing during the whole previous tick, the
 // brain has failed and death latches. Otherwise it keeps the alive flag steady.
 func checkDeath(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil // not a tick cycle, nothing to decide
 	}
 

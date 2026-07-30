@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -26,10 +26,10 @@ import (
 // Ventilator settings and state.
 const (
 	// StateRate is the set rate in breaths per minute; zero means switched off.
-	StateRate common.State = "set_rate"
+	StateRate string = "set_rate"
 
 	// StatePhase is where the machine is in its current breath.
-	StatePhase common.State = "phase"
+	StatePhase string = "phase"
 
 	// DefaultRate is what the machine delivers when switched on without a rate.
 	DefaultRate = 14
@@ -66,7 +66,7 @@ const ScalarRate = "rate"
 func GetVentilator() (*component.Component, error) {
 	c, err := component.New("device:ventilator",
 		component.WithDescription("Mechanical ventilator: positive pressure at a set rate, deaf to the blood"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("pleural_pressure"),
 		component.WithActivationFunc(component.Sequential(
 			acceptSettings,
@@ -84,7 +84,7 @@ func GetVentilator() (*component.Component, error) {
 }
 
 func acceptSettings(this *component.Component) error {
-	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		if command.Verb(name) != VerbVentilate {
 			return nil
 		}
@@ -102,7 +102,7 @@ func acceptSettings(this *component.Component) error {
 
 // deliverBreath drives the chest on the machine's own schedule.
 func deliverBreath(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func deliverBreath(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName(simulation.TimePort).Signals().First())
 	if err != nil {
 		return err
 	}

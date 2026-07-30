@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 )
@@ -27,18 +27,18 @@ const maxFeelingsShown = 6
 // measured as one cell and drawn as two by most terminals. The selector on the
 // plate is what makes it measure the two cells it is drawn in.
 var feelingIcons = map[string]string{
-	common.FeelingExhausted:      "🥵",
-	common.FeelingBreathless:     "😧",
-	common.FeelingHeadache:       "🤕",
-	common.FeelingFeverish:       "🤒",
-	common.FeelingThirsty:        "🥤",
-	common.FeelingHungry:         "🍽️",
-	common.FeelingNeedToUrinate:  "🚻",
-	common.FeelingNeedToDefecate: "🚽",
-	common.FeelingAnxious:        "😰",
-	common.FeelingTired:          "😴",
-	common.FeelingHappy:          "😀",
-	common.FeelingContent:        "🙂",
+	body.FeelingExhausted:      "🥵",
+	body.FeelingBreathless:     "😧",
+	body.FeelingHeadache:       "🤕",
+	body.FeelingFeverish:       "🤒",
+	body.FeelingThirsty:        "🥤",
+	body.FeelingHungry:         "🍽️",
+	body.FeelingNeedToUrinate:  "🚻",
+	body.FeelingNeedToDefecate: "🚽",
+	body.FeelingAnxious:        "😰",
+	body.FeelingTired:          "😴",
+	body.FeelingHappy:          "😀",
+	body.FeelingContent:        "🙂",
 }
 
 // Feelings renders what the body currently feels, strongest first.
@@ -73,7 +73,7 @@ func (f *Feelings) Render(width int) string {
 
 	lines := make([]string, 0, len(felt))
 	for _, item := range felt {
-		name := padRight(truncate(common.FeelingLabels[item.name], nameWidth), nameWidth)
+		name := padRight(truncate(body.FeelingLabels[item.name], nameWidth), nameWidth)
 
 		lines = append(lines, fmt.Sprintf("%s %s %s %s %s",
 			Icon(icon(item.name)),
@@ -89,14 +89,14 @@ func (f *Feelings) Render(width int) string {
 // current returns the feelings worth showing, strongest first.
 func (f *Feelings) current() []feeling {
 	var felt []feeling
-	for _, name := range common.Feelings {
+	for _, name := range body.Feelings {
 		key := f.subject + telemetry.PathSeparator + "feelings" + telemetry.ScalarSeparator + name
 		if intensity := f.state.GetLatestValue(key); intensity >= feltThreshold {
 			felt = append(felt, feeling{name: name, intensity: intensity})
 		}
 	}
 
-	// Strongest first. Ties keep common.Feelings order, which is severity, so
+	// Strongest first. Ties keep body.Feelings order, which is severity, so
 	// the list does not reshuffle between frames when several are equally weak.
 	slices.SortStableFunc(felt, func(a, b feeling) int {
 		switch {

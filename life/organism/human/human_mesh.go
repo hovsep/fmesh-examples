@@ -7,7 +7,6 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
@@ -533,11 +532,11 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("organ.GetDiaphragm: %w", err)
 	}
-	lungLeft, err := organ.GetLung(common.Left)
+	lungLeft, err := organ.GetLung(organ.Left)
 	if err != nil {
 		return nil, fmt.Errorf("organ.GetLung(left): %w", err)
 	}
-	lungRight, err := organ.GetLung(common.Right)
+	lungRight, err := organ.GetLung(organ.Right)
 	if err != nil {
 		return nil, fmt.Errorf("organ.GetLung(right): %w", err)
 	}
@@ -663,7 +662,7 @@ func wireBloodSystem(components *component.Collection) error {
 	blood := components.ByName("da:blood_system")
 	obsState := components.ByName("physiology:observable_state")
 
-	for _, side := range []string{string(common.Left), string(common.Right)} {
+	for _, side := range []string{string(organ.Left), string(organ.Right)} {
 		lung := components.ByName("organ:lung_" + side)
 
 		// Lung airflow drives blood gas exchange (>0 inhaling, <0 exhaling)

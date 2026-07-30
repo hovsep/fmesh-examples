@@ -5,9 +5,9 @@ import (
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
@@ -72,7 +72,7 @@ func GetPancreas() (*component.Component, error) {
 			damage.New(damage.Config{Organ: "pancreas"}),
 			perfusion.New(perfusion.Config{Organ: "pancreas", O2PerMinute: PancreasO2PerMinute}),
 		),
-		component.WithInputs(common.TimePort),
+		component.WithInputs(simulation.TimePort),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(secretePancreaticHormones)),
 	)
 	if err != nil {
@@ -89,7 +89,7 @@ func GetPancreas() (*component.Component, error) {
 // either end -- is how the two halves of diabetes differ: no signal sent, or a
 // signal sent and not heard.
 func secretePancreaticHormones(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 

@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -26,17 +25,17 @@ var (
 	// something needed oxygen that hemoglobin was not carrying: saturation stops
 	// at 100, so the tension derived from it stopped too, and hyperbaric oxygen
 	// -- entirely a story about oxygen dissolved in plasma -- was inexpressible.
-	stateContent      common.State = "CaO2"
-	stateCarboxy      common.State = "COHb"
-	stateHemoglobin   common.State = "hemoglobin"
-	stateVolume       common.State = "volume_l"
-	statePaCO2        common.State = "PaCO2"
-	stateGlucoseLevel common.State = "glucose_level"
-	stateVentilation  common.State = "ventilation"
+	stateContent      string = "CaO2"
+	stateCarboxy      string = "COHb"
+	stateHemoglobin   string = "hemoglobin"
+	stateVolume       string = "volume_l"
+	statePaCO2        string = "PaCO2"
+	stateGlucoseLevel string = "glucose_level"
+	stateVentilation  string = "ventilation"
 
 	// Circulating hormone levels, keyed by hormone name.
-	stateHormonePrefix              = "hormone_"
-	stateDt            common.State = "dt" // last known tick duration (seconds)
+	stateHormonePrefix        = "hormone_"
+	stateDt            string = "dt" // last known tick duration (seconds)
 )
 
 const (
@@ -307,8 +306,8 @@ func updateBloodLevels(this *component.Component) {
 	this.State().Set(statePaCO2, co2)
 }
 
-func hormoneState(hormone string) common.State {
-	return common.State(stateHormonePrefix + hormone)
+func hormoneState(hormone string) string {
+	return string(stateHormonePrefix + hormone)
 }
 
 // advanceWithTime runs everything that happens because time passed rather than
