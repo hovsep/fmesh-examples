@@ -42,7 +42,7 @@ const (
 	StartingEnergyKcal = 2000.0
 	MaxEnergyKcal      = 4000.0
 
-	NormalCoreTemperature = 37.0
+	NormalCoreTemperature = body.NormalCoreTemperature
 	MinCoreTemperature    = 30.0
 	MaxCoreTemperature    = 43.0
 )

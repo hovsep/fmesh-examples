@@ -469,6 +469,13 @@ func wireDamage(components *component.Collection) error {
 	obs := components.ByName("physiology:observable_state")
 	organs := damagedOrgans(components)
 
+	// The heart hears how hot the body is, which is why a fever comes with a
+	// fast pulse.
+	if err := bodyState.OutputByName("body_state").PipeTo(
+		organs["heart"].InputByName("body_state")); err != nil {
+		return err
+	}
+
 	// The damage engine reads the reservoirs and the blood.
 	if err := bodyState.OutputByName("body_state").PipeTo(load.InputByName("body_state")); err != nil {
 		return err

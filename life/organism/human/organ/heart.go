@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
@@ -61,10 +62,13 @@ func GetHeart() (*component.Component, error) {
 			// the moment that caused it.
 			receptor.For(bloodstream.HormoneAdrenaline),
 		),
-		component.WithInputs("time", "autonomic_tone"), // @TODO: now it looks like heart can only beat, let's make it more interesting and connect to other components and add more effects that can increase\decrease heartbeat or damage
+		// The heart is driven by the nerves, hurried by adrenaline in the blood,
+		// and hurried again by a body that is simply hot.
+		component.WithInputs("time", "autonomic_tone", "body_state"),
 		component.WithOutputs("cardiac_activation", "rate"),
 		component.WithActivationFunc(
 			damage.FlatlineWhenFailed(
+				rememberBodyTemperature,
 				oscillateHeart,
 				handleCardiacBias,
 			),
@@ -73,6 +77,7 @@ func GetHeart() (*component.Component, error) {
 			state.Set(stateRate, 60) // Initial BPM
 			state.Set(stateRateExact, 60.0)
 			state.Set(statePhase, 0.0) // Phase in the current heartbeat cycle
+			state.Set(stateCoreTemperature, body.NormalCoreTemperature)
 		}),
 	)
 	if err != nil {
@@ -107,6 +112,27 @@ func oscillateHeart(this *component.Component) error {
 	return nil
 }
 
+// stateCoreTemperature is the last core temperature the body reported.
+//
+// Latched rather than read where it is used: body_state arrives on its own mesh
+// cycle, not on the tick, and a port is drained before the next one comes.
+const stateCoreTemperature = "core_temperature"
+
+// feverBpmPerDegree is how much faster the heart runs per degree of fever.
+// About ten beats a degree is the figure taught at the bedside.
+const feverBpmPerDegree = 9.0
+
+// rememberBodyTemperature latches the core temperature whenever it arrives.
+func rememberBodyTemperature(this *component.Component) error {
+	in := this.InputByName("body_state")
+	if in == nil || !in.HasSignals() {
+		return nil
+	}
+	this.State().Set(stateCoreTemperature, in.Signals().First().Scalars().
+		ValueOrDefault(body.CoreTemperature, body.NormalCoreTemperature))
+	return nil
+}
+
 func handleCardiacBias(this *component.Component) error {
 	if !this.InputByName("autonomic_tone").HasSignals() {
 		return nil
@@ -135,6 +161,13 @@ func handleCardiacBias(this *component.Component) error {
 	// Circulating adrenaline adds to whatever the nerves are asking for.
 	adrenaline := receptor.Level(this, bloodstream.HormoneAdrenaline)
 	demanded := mathx.Lerp(minBPM, maxBPM, mathx.Clamp(bias+adrenaline*adrenalineChronotropy, 0, 1))
+
+	// And a hot body asks for more again, whatever the nerves think. This is why
+	// a fever comes with a fast pulse, and it is the far end of a chain that
+	// starts outdoors: the sun warms the air, the air warms the body, and the
+	// heart answers a temperature nobody told it about.
+	demanded = min(demanded+feverBpmPerDegree*
+		max(this.State().Get(stateCoreTemperature).(float64)-body.NormalCoreTemperature, 0), maxBPM)
 	this.State().Update(stateRateExact, func(v any) any {
 		return mathx.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})

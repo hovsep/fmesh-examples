@@ -38,7 +38,11 @@ const (
 	glucoseComfort   = 55.0
 )
 
-// @TODO: make brain to reduce\increase activity depending on inputs from other components (daylight, tireness, energy level, critical hungry etc)
+// The brain's drive already varies with the two things that actually starve it:
+// the oxygen the blood is carrying and the sugar in it (see brainViability).
+// Daylight, tiredness and hunger were considered and left out on purpose --
+// each would be a second, weaker way of saying what glucose already says, and
+// this model only carries a concept once.
 func GetBrain() (*component.Component, error) {
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
@@ -53,8 +57,14 @@ func GetBrain() (*component.Component, error) {
 				ContentFail:  brainContentFail,
 			}),
 		),
-		component.WithInputs("time"),          //@TODO while we strive to keep brain simple (brain must not directly command organs or say heart to beat, it only emits some driver signal), there must be many inputs from almost all organs and systems, right?
-		component.WithOutputs("neural_drive"), // @TODO: let's think, maybe brain should emit more outputs (still keeping the golden rule: never directly command organs (double check if it is phisiologically correct))
+		// One input and one output, and that is the design rather than an
+		// omission. The brain reads the blood through its perfusion plugin like
+		// every other organ, and answers with a single driver signal. It never
+		// addresses an organ: the autonomic system downstream decides what a
+		// given drive means for a heart or a gut, which is both how the body
+		// works and what stops this component becoming a switchboard.
+		component.WithInputs("time"),
+		component.WithOutputs("neural_drive"),
 		// When the brain fails it emits nothing; the body then reads no brain
 		// activity and is declared dead.
 		component.WithActivationFunc(damage.FlatlineWhenFailed(

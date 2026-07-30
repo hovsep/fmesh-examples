@@ -76,7 +76,11 @@ func GetLiver() (*component.Component, error) {
 		component.WithInputs(simulation.TimePort),
 		component.WithOutputs("glucose_flux"),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(
-			//@TODO: looks like liver only does regulate glucose, should it also filter the blood?
+			// Glucose only, deliberately. A liver also clears drugs, hormones and
+			// ammonia, but nothing in this body produces any of them in a form
+			// that would accumulate, so filtering would be a component with
+			// nothing to filter -- and the glucose story is the one a reader
+			// came here to see.
 			regulateGlucose)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateGlucoseFlux, BasalHepaticGlucoseOutput)

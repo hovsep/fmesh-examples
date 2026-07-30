@@ -25,8 +25,11 @@ const (
 	TotalDefecations  string = "total_defecations"
 )
 
-//@TODO: check if this component is only cmd executor or it also manages feelings\intentions over time (e.g. human must want to urinate after certain time)
-//if this is not the best place to generate intentions\feeling on excretion topic - let's implement it in proper component - some regulation
+// Only a command surface, and the urge is elsewhere on purpose: a bladder fills
+// whether or not anyone intends anything, so the wanting is a physiological
+// state rather than a controller's business. physiology:affect ramps
+// FeelingNeedToUrinate from how full the bladder actually is, which is why the
+// feeling arrives without anybody commanding it.
 
 // GetExcretion returns the excretion controller.
 //
