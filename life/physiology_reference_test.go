@@ -1063,7 +1063,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 	})
 }
 
-// TestReference_ABarochamberIsADropInForTheAtmosphere swaps the world.
+// TestReference_PressureAndMixtureAreInterchangeable swaps the world.
 //
 // The habitat is built with a sealed chamber where the sky should be. Nothing
 // inside the organism is parameterised for it, told about it, or aware of it:
@@ -1078,7 +1078,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 // and has no way to know which one moved. That is the principle an altitude tent
 // is sold on, and it is not obvious until you see a body fail to notice the
 // difference.
-func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
+func TestReference_PressureAndMixtureAreInterchangeable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1095,7 +1095,7 @@ func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
 
 	settle := func(t *testing.T, setup func(sim *session.Session)) float64 {
 		t.Helper()
-		sim := newChamberSim(t)
+		sim := newCommandableSim(t)
 		agg := simMesh(sim).ComponentByName("aggregated_state")
 
 		var final float64
@@ -1118,16 +1118,16 @@ func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
 		return final
 	}
 
-	// A chamber nobody has touched is a room, and a body in it is a body indoors.
+	// Ordinary air, for comparison.
 	indoors := settle(t, func(*session.Session) {})
 	assert.Greater(t, indoors, 94.0,
-		"a body in an unset chamber should be as healthy as one outdoors")
+		"a body breathing ordinary air should be healthy")
 
 	thinAir := settle(t, func(sim *session.Session) {
-		sim.Do(command.Line(fmt.Sprintf("chamber:pressure %g", hypobaricPressure)))
+		sim.Do(command.Line(fmt.Sprintf("air:pressure %g", hypobaricPressure)))
 	})
 	thinMixture := settle(t, func(sim *session.Session) {
-		sim.Do(command.Line(fmt.Sprintf("chamber:oxygen %g", hypoxicOxygen)))
+		sim.Do(command.Line(fmt.Sprintf("air:oxygen %g", hypoxicOxygen)))
 	})
 
 	assert.Less(t, thinAir, 80.0, "half an atmosphere should desaturate a body badly")
@@ -1217,7 +1217,7 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
-	sim := newChamberSim(t)
+	sim := newCommandableSim(t)
 	agg := simMesh(sim).ComponentByName("aggregated_state")
 
 	blood := func(name string) float64 {
@@ -1247,8 +1247,8 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 				poisoned = snapshot()
 				// The room is cleared and pressurised on pure oxygen.
 				sim.Do("air:co 0")
-				sim.Do("chamber:pressure 2280")
-				sim.Do("chamber:oxygen 100")
+				sim.Do("air:pressure 2280")
+				sim.Do("air:oxygen 100")
 			case elapsed > 2300:
 				treated = snapshot()
 			}

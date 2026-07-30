@@ -40,13 +40,6 @@ func newCommandableSim(t *testing.T) *session.Session {
 	return newSimIn(t, factor.GetGasComponent)
 }
 
-// newChamberSim builds the same simulation inside a barochamber instead of the
-// open atmosphere. Nothing about the body changes; only the world does.
-func newChamberSim(t *testing.T) *session.Session {
-	t.Helper()
-	return newSimIn(t, factor.GetBarochamberComponent)
-}
-
 // newSimIn builds a test simulation in the given world, at the test step.
 func newSimIn(t *testing.T, environment func() (*component.Component, error)) *session.Session {
 	t.Helper()

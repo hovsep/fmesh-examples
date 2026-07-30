@@ -7,6 +7,8 @@ package factor
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -40,10 +42,55 @@ const (
 	// garage -- rather than of a body, which is why it lives out here.
 	StateCOppm = "co_ppm"
 
+	// StatePressure is the absolute pressure of the air, in mmHg.
+	//
+	// Pressure is the thing the body actually feels, and altitude is only one way
+	// of setting it. A sealed room has a pressure and no altitude at all, which
+	// is why the pressure is stored and the altitude is not derived from it.
+	StatePressure = "pressure_mmhg"
+
+	// StateOxygenPct is the oxygen fraction of the mixture, as a percentage.
+	// Ordinary air is 21 everywhere; anything else is a room somebody pumped.
+	StateOxygenPct = "oxygen_pct"
+
 	// Command verbs.
 	cmdSetAltitude = "set_altitude"
 	cmdSetCO       = "set_co"
+	cmdSetPressure = "set_pressure"
+	cmdSetOxygen   = "set_oxygen"
+	cmdSetPreset   = "set_preset"
 )
+
+// A preset is a place, named. The alternative is asking someone to remember that
+// three atmospheres of pure oxygen is 2280 and 100, which is how a demonstration
+// becomes a lookup table.
+type preset struct {
+	pressure    float64
+	oxygenPct   float64
+	temperature float64
+	humidity    float64
+}
+
+// Presets worth having in front of an audience.
+//
+// The last two are the pair to run one after the other. They deliver almost
+// exactly the same inspired oxygen tension -- 0.21 x (380 - 47) = 70 mmHg
+// against 0.10 x (760 - 47) = 71 -- by opposite means, and the body cannot tell
+// them apart, because the alveolar gas equation multiplies pressure by fraction
+// and has no way to know which of the two moved. That is the whole principle an
+// altitude tent is sold on.
+var presets = map[string]preset{
+	"sea_level":     {atmosphere.SeaLevelPressure, 21, 26.0, 58.8},
+	"everest":       {atmosphere.PressureAtAltitude(8848), 21, -30.0, 20.0},
+	"hyperbaric":    {3 * atmosphere.SeaLevelPressure, 100, 21.0, 40.0},
+	"hypobaric":     {380, 21, 21.0, 40.0},
+	"altitude_tent": {atmosphere.SeaLevelPressure, 10, 21.0, 40.0},
+}
+
+// PresetNames lists the presets, sorted, for the command that offers them.
+func PresetNames() []string {
+	return slices.Sorted(maps.Keys(presets))
+}
 
 //@TODO: let's add a feature called "modes or profiles or presets":
 // - the idea: the same factor (gas or sun or other env factors in future like noise) can operate in different modes, example: for gas: sea level atmosphere\ everest peak atmosphere, for sun: mode:Valencia and mode:Oslo will have different UV and other params
@@ -76,6 +123,8 @@ func GetGasComponent() (*component.Component, error) {
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
 			state.Set(StateAltitude, 0.0)
+			state.Set(StatePressure, atmosphere.SeaLevelPressure)
+			state.Set(StateOxygenPct, 21.0)
 			state.Set(StateCOppm, 0.0)
 		}),
 	)
@@ -101,8 +150,38 @@ func handleControlSignals(this *component.Component) error {
 		case cmdSetAltitude:
 			metres := signal.AsFloat64OrDefault(ctlSig, 0.0)
 			this.State().Set(StateAltitude, metres)
+			this.State().Set(StatePressure, atmosphere.PressureAtAltitude(metres))
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
 				metres, atmosphere.PressureAtAltitude(metres))
+			return nil
+		case cmdSetPressure:
+			// The floor is not arithmetic tidiness but a safety feature: below
+			// the vapour pressure of water at body temperature the alveolar gas
+			// equation has no positive term left, and a body would not be short
+			// of oxygen so much as boiling.
+			pressure := max(signal.AsFloat64OrDefault(ctlSig, atmosphere.SeaLevelPressure), 50.0)
+			this.State().Set(StatePressure, pressure)
+			this.Logger().Printf("air at %.0f mmHg (%.2f atmospheres)",
+				pressure, pressure/atmosphere.SeaLevelPressure)
+			return nil
+		case cmdSetOxygen:
+			oxygen := min(max(signal.AsFloat64OrDefault(ctlSig, 21.0), 1.0), 100.0)
+			this.State().Set(StateOxygenPct, oxygen)
+			this.Logger().Printf("mixture now %.0f%% oxygen", oxygen)
+			return nil
+		case cmdSetPreset:
+			name := ctlSig.Labels().ValueOrDefault("preset", "")
+			p, ok := presets[name]
+			if !ok {
+				return fmt.Errorf("unknown preset %q (have %v)", name, PresetNames())
+			}
+			this.State().Set(StatePressure, p.pressure)
+			this.State().Set(StateOxygenPct, p.oxygenPct)
+			this.State().Set(StateSunUVI, 0.0)
+			setShade(this, p.temperature)
+			this.State().Set("humidity", p.humidity)
+			this.Logger().Printf("air is now %q: %.0f mmHg, %.0f%% oxygen, %.0f C",
+				name, p.pressure, p.oxygenPct, p.temperature)
 			return nil
 		case cmdSetCO:
 			ppm := max(signal.AsFloat64OrDefault(ctlSig, 0.0), 0)
@@ -208,10 +287,19 @@ func emitEnvironmentalGas(this *component.Component) error {
 		return nil
 	}
 
-	currentTemperature := this.State().Get("temperature").(float64)
-	currentHumidity := this.State().Get("humidity").(float64)
+	oxygen := this.State().Get(StateOxygenPct).(float64)
 
-	air, err := atmosphere.Pack(nitrogenFraction, oxygenFraction, argonFraction, pollutionFraction, currentTemperature, currentHumidity)
+	// Whatever is not oxygen is nitrogen, with the traces kept if there is room
+	// for them. Real enriched mixtures use helium in the deep ones, for reasons
+	// -- narcosis, density, the work of breathing -- this body has no way to
+	// feel, so pretending otherwise would be decoration.
+	remaining := 100.0 - oxygen
+	argon := min(argonFraction, remaining)
+	pollution := min(pollutionFraction, remaining-argon)
+	nitrogen := remaining - argon - pollution
+
+	air, err := atmosphere.Pack(nitrogen, oxygen, argon, pollution,
+		this.State().Get("temperature").(float64), this.State().Get("humidity").(float64))
 	if err != nil {
 		return fmt.Errorf("emit environmental gas: %w", err)
 	}
@@ -219,10 +307,8 @@ func emitEnvironmentalGas(this *component.Component) error {
 	// Altitude changes the pressure and nothing else. The air on a mountain is
 	// still 21% oxygen; there is simply less of it, and every consequence of
 	// being up there follows from that one number falling.
-	altitude := this.State().Get(StateAltitude).(float64)
-
 	return this.OutputByName("environmental_gas").PutSignals(
 		atmosphere.WithCarbonMonoxide(
-			atmosphere.WithPressure(air, atmosphere.PressureAtAltitude(altitude)),
+			atmosphere.WithPressure(air, this.State().Get(StatePressure).(float64)),
 			this.State().Get(StateCOppm).(float64)))
 }

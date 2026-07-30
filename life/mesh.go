@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -404,9 +405,23 @@ func setMeshCommands(sim *session.Session) {
 		// environment was built -- and a body in the open air simply ignores an
 		// instruction to pressurise, exactly as the atmosphere ignores it.
 		command.Command{
-			Name: "chamber:pressure", Group: "Environment",
-			Description: "set the chamber pressure in mmHg (760 is sea level), e.g. `chamber:pressure 2280`",
+			Name: "air:pressure", Group: "Environment",
+			Description: "set the air pressure in mmHg (760 is sea level), e.g. `air:pressure 2280`",
 			Run:         gasSetting("set_pressure", atmosphere.SeaLevelPressure),
+		},
+		command.Command{
+			Name: "air:preset", Group: "Environment",
+			Description: "put the body somewhere, e.g. `air:preset hyperbaric` (" +
+				strings.Join(factor.PresetNames(), ", ") + ")",
+			Run: func(_ io.Writer, args []string) error {
+				if len(args) != 1 {
+					return fmt.Errorf("expects one preset: %v", factor.PresetNames())
+				}
+				return gas.InputByName("ctl").PutSignals(
+					signal.New(args[0]).
+						WithLabel(command.Label, "set_preset").
+						WithLabel("preset", args[0]))
+			},
 		},
 		command.Command{
 			Name: "air:co", Group: "Environment",
@@ -414,8 +429,8 @@ func setMeshCommands(sim *session.Session) {
 			Run:         gasSetting("set_co", 0),
 		},
 		command.Command{
-			Name: "chamber:oxygen", Group: "Environment",
-			Description: "set the chamber oxygen percentage, e.g. `chamber:oxygen 100`",
+			Name: "air:oxygen", Group: "Environment",
+			Description: "set the oxygen percentage of the mixture, e.g. `air:oxygen 100`",
 			Run:         gasSetting("set_oxygen", 21),
 		},
 	)
