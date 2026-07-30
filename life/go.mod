@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/guptarohit/asciigraph v0.8.1
-	github.com/hovsep/fmesh v1.11.0-Shirak
+	github.com/hovsep/fmesh v1.11.1-Shirak
 	github.com/hovsep/fmesh-examples v0.0.7
 	github.com/hovsep/fmesh-examples/simulation v0.0.0
 	github.com/stretchr/testify v1.11.1
@@ -45,5 +45,3 @@ require (
 replace github.com/hovsep/fmesh-examples => ./../
 
 replace github.com/hovsep/fmesh-examples/simulation => ./../simulation
-
-replace github.com/hovsep/fmesh => /Users/ovsep.avakian/repos/fmesh
