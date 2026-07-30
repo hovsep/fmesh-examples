@@ -59,7 +59,43 @@ const (
 	cmdSetPressure = "set_pressure"
 	cmdSetOxygen   = "set_oxygen"
 	cmdSetPreset   = "set_preset"
+	cmdAddMixin    = "add_mixin"
+	cmdClearMixins = "clear_mixins"
+
+	// StateMixins maps each active mixin to the seconds it has left.
+	StateMixins = "mixins"
 )
+
+// A mixin is something in the air that is not the air: smoke, exhaust, a fire
+// two streets away. It is separate from a preset because the two compose -- a
+// cigarette lit at altitude is both -- and because a preset says where the body
+// is while a mixin says what has got in.
+//
+// Each carries a duration, since none of them are permanent. That is most of
+// what distinguishes smoke from weather.
+type mixin struct {
+	coPpm     float64 // carbon monoxide added, parts per million
+	pollution float64 // percentage points of the mixture that become soot
+}
+
+var mixins = map[string]mixin{
+	// A lit cigarette puts several hundred ppm into the smoke drawn through it,
+	// which is why the standing carboxyhemoglobin of a smoker is measurable.
+	"cigarette_smoke": {coPpm: 450, pollution: 2.0},
+
+	// An unventilated fire is the classic domestic poisoning, and it is worse
+	// than a cigarette for exactly the reason it kills: nobody is puffing on it,
+	// so nobody notices.
+	"wood_fire": {coPpm: 800, pollution: 5.0},
+
+	// An engine running in a closed garage. The number is deliberately lethal.
+	"car_exhaust": {coPpm: 1500, pollution: 3.0},
+}
+
+// MixinNames lists the mixins, sorted, for the command that offers them.
+func MixinNames() []string {
+	return slices.Sorted(maps.Keys(mixins))
+}
 
 // A preset is a place, named. The alternative is asking someone to remember that
 // three atmospheres of pure oxygen is 2280 and 100, which is how a demonstration
@@ -121,6 +157,7 @@ func GetGasComponent() (*component.Component, error) {
 			state.Set(StatePressure, atmosphere.SeaLevelPressure)
 			state.Set(StateOxygenPct, 21.0)
 			state.Set(StateCOppm, 0.0)
+			state.Set(StateMixins, map[string]float64{})
 		}),
 	)
 	if err != nil {
@@ -163,6 +200,25 @@ func handleControlSignals(this *component.Component) error {
 			oxygen := min(max(signal.AsFloat64OrDefault(ctlSig, 21.0), 1.0), 100.0)
 			this.State().Set(StateOxygenPct, oxygen)
 			this.Logger().Printf("mixture now %.0f%% oxygen", oxygen)
+			return nil
+		case cmdAddMixin:
+			name := ctlSig.Labels().ValueOrDefault("mixin", "")
+			if _, ok := mixins[name]; !ok {
+				return fmt.Errorf("unknown mixin %q (have %v)", name, MixinNames())
+			}
+			seconds := max(signal.AsFloat64OrDefault(ctlSig, 0), 0)
+			this.State().Update(StateMixins, func(v any) any {
+				active := v.(map[string]float64)
+				// Lighting a second cigarette while the first is still going
+				// adds to the time rather than restarting it.
+				active[name] += seconds
+				return active
+			})
+			this.Logger().Printf("%s in the air for %.0f s", name, seconds)
+			return nil
+		case cmdClearMixins:
+			this.State().Set(StateMixins, map[string]float64{})
+			this.Logger().Println("the air is clear again")
 			return nil
 		case cmdSetPreset:
 			name := ctlSig.Labels().ValueOrDefault("preset", "")
@@ -262,6 +318,8 @@ func warmInTheSun(this *component.Component) error {
 		return fmt.Errorf("gas tick: %w", err)
 	}
 
+	expireMixins(this, dt)
+
 	uvi := this.State().Get(StateSunUVI).(float64)
 	shade := this.State().Get(StateShadeTemperature).(float64)
 	target := shade + solarAirWarmingPerUVI*uvi
@@ -270,6 +328,33 @@ func warmInTheSun(this *component.Component) error {
 		return mathx.DecayToward(current.(float64), target, dt, airWarmingHalfLifeSec)
 	})
 	return nil
+}
+
+// expireMixins counts every active mixin down and forgets the ones that are
+// spent. Smoke clears whether or not anybody opens a window.
+func expireMixins(this *component.Component, dt float64) {
+	this.State().Update(StateMixins, func(v any) any {
+		active := v.(map[string]float64)
+		for name, left := range active {
+			if left-dt <= 0 {
+				delete(active, name)
+				continue
+			}
+			active[name] = left - dt
+		}
+		return active
+	})
+}
+
+// inTheAir totals what the active mixins are currently contributing.
+func inTheAir(this *component.Component) mixin {
+	var total mixin
+	for name := range this.State().Get(StateMixins).(map[string]float64) {
+		m := mixins[name]
+		total.coPpm += m.coPpm
+		total.pollution += m.pollution
+	}
+	return total
 }
 
 func emitEnvironmentalGas(this *component.Component) error {
@@ -288,9 +373,11 @@ func emitEnvironmentalGas(this *component.Component) error {
 	// for them. Real enriched mixtures use helium in the deep ones, for reasons
 	// -- narcosis, density, the work of breathing -- this body has no way to
 	// feel, so pretending otherwise would be decoration.
+	added := inTheAir(this)
+
 	remaining := 100.0 - oxygen
 	argon := min(argonFraction, remaining)
-	pollution := min(pollutionFraction, remaining-argon)
+	pollution := min(pollutionFraction+added.pollution, remaining-argon)
 	nitrogen := remaining - argon - pollution
 
 	air, err := atmosphere.Pack(nitrogen, oxygen, argon, pollution,
@@ -305,5 +392,5 @@ func emitEnvironmentalGas(this *component.Component) error {
 	return this.OutputByName("environmental_gas").PutSignals(
 		atmosphere.WithCarbonMonoxide(
 			atmosphere.WithPressure(air, this.State().Get(StatePressure).(float64)),
-			this.State().Get(StateCOppm).(float64)))
+			this.State().Get(StateCOppm).(float64)+added.coPpm))
 }
