@@ -133,3 +133,10 @@ func TrendCode(t string) float64 {
 		return 0
 	}
 }
+
+// NormalCoreTemperature is the temperature a healthy body holds itself at.
+//
+// It was written out in three places -- the reservoir that defends it, the skin
+// that assumes it before being told otherwise, and the lung that warms air to it
+// -- which is three chances for them to disagree about what normal means.
+const NormalCoreTemperature = 37.0

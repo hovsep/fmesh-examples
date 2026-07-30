@@ -15,7 +15,7 @@ import (
 const (
 	// NormalSkinCoreTemperature is what the skin assumes before it has been told
 	// otherwise.
-	NormalSkinCoreTemperature = 37.0
+	NormalSkinCoreTemperature = body.NormalCoreTemperature
 
 	// InsensibleLossMlPerSec is the water a resting body loses through skin and
 	// breath without noticing: roughly 700 mL a day.

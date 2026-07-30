@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -201,7 +202,11 @@ func handleGasExchange(this *component.Component) error {
 		co2Frac = 0
 	}
 	pollNew := 0.0
-	tempNew := 37.0 // @TODO: get current temp instead of hardcoding
+	// Air leaves the airway at body temperature and fully saturated, whatever it
+	// arrived as. Nothing downstream reads either back, so the body core is not
+	// tracked here: a feverish person exhaling warmer air is real and changes
+	// nothing any part of this simulation can see.
+	tempNew := body.NormalCoreTemperature
 	humidNew := 100.0
 
 	// Normalize composition to sum to 100%
