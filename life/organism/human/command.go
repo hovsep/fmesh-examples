@@ -28,9 +28,6 @@ var commandRoutes = map[string]string{
 	"emotion":   "controller:mental_stress",
 	"excretion": "controller:excretion",
 	"trauma":    "controller:trauma",
-	// The machines answer directly: a device is not something the body wills,
-	// it is something done to it.
-	"device": "device:ventilator",
 }
 
 // CommandNamespaces returns the command namespaces the body accepts, sorted.

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
@@ -70,9 +69,6 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	}
 	if err := wireRespiratoryBoundary(components); err != nil {
 		return nil, fmt.Errorf("wireRespiratoryBoundary: %w", err)
-	}
-	if err := wireVentilator(components); err != nil {
-		return nil, fmt.Errorf("wireVentilator: %w", err)
 	}
 	if err := wireLungs(components); err != nil {
 		return nil, fmt.Errorf("wireLungs: %w", err)
@@ -238,19 +234,6 @@ func wireDiaphragm(components *component.Collection) error {
 			// Respiratory rate is observable
 			components.ByName("physiology:observable_state").InputByName("respiratory_rate"),
 		)
-}
-
-// wireVentilator gives the machine the same lungs the diaphragm has.
-//
-// It is the same pipe, to the same port, carrying the same signal. Nothing in
-// the lungs, the blood or the brain is aware that a machine exists; the only
-// difference is that this driver decides when to breathe by a dial rather than
-// by the carbon dioxide.
-func wireVentilator(components *component.Collection) error {
-	return components.ByName("device:ventilator").OutputByName("pleural_pressure").PipeTo(
-		components.ByName("organ:lung_left").InputByName("pleural_pressure"),
-		components.ByName("organ:lung_right").InputByName("pleural_pressure"),
-	)
 }
 
 func wireRespiratoryBoundary(components *component.Collection) error {
@@ -590,11 +573,6 @@ func getComponents() (*component.Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("controller.GetTrauma: %w", err)
 	}
-	ventilator, err := device.GetVentilator()
-	if err != nil {
-		return nil, fmt.Errorf("device.GetVentilator: %w", err)
-	}
-
 	// The metabolic loop: what is swallowed, what becomes of it, what is lost,
 	// and how the body feels about the result.
 	ingestion, err := boundary.GetIngestion()
@@ -650,7 +628,6 @@ func getComponents() (*component.Collection, error) {
 		physical,
 		mental,
 		trauma,
-		ventilator,
 		ingestion,
 		gi,
 		kidney,

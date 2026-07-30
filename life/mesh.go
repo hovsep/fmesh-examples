@@ -12,7 +12,6 @@ import (
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/env"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
@@ -251,21 +250,6 @@ func setBodyCommands(sim *session.Session) {
 				return nil, err
 			}
 			return map[string]float64{controller.ScalarVolumeMl: ml}, nil
-		})
-
-	// A machine is not something the body wills, so this reads oddly next to the
-	// others -- which is the point of it being here.
-	bodyCommand(sim, "device:ventilate",
-		"put the body on a ventilator, e.g. 'device:ventilate 16' (breaths per minute, 0 to switch off)",
-		func(args []string) (map[string]float64, error) {
-			if len(args) != 1 {
-				return nil, fmt.Errorf("expects a rate in breaths per minute, e.g. '16', or '0' to switch off")
-			}
-			rate, err := strconv.ParseFloat(args[0], 64)
-			if err != nil || rate < 0 {
-				return nil, fmt.Errorf("invalid rate %q", args[0])
-			}
-			return map[string]float64{device.ScalarRate: rate}, nil
 		})
 
 	bodyCommand(sim, "activity:stop", "stop exerting and return to rest", noArgs)
