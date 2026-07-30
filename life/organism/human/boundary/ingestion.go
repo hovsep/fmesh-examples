@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
+	"github.com/hovsep/fmesh-examples/simulation"
 
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -27,7 +28,7 @@ func GetIngestion() (*component.Component, error) {
 	c, err := component.New("boundary:ingestion",
 		component.WithDescription("Transforms intake signals (food, water, substances) into physiological ingestion and absorption signals"),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"intake_intent",   // from controller:intake
 			"food_properties", // optional: temperature, type, calories
 		),
@@ -59,7 +60,7 @@ func handleIngestion(this *component.Component) error {
 			if err := this.OutputByName("hydration_load").PutSignals(
 				signal.New(water).
 					WithLabel("category", "ingestion").
-					WithScalar(common.WaterMl, water),
+					WithScalar(body.WaterMl, water),
 			); err != nil {
 				return err
 			}
@@ -71,13 +72,12 @@ func handleIngestion(this *component.Component) error {
 			if err := this.OutputByName("nutrient_load").PutSignals(
 				signal.New(food).
 					WithLabel("category", "ingestion").
-					WithScalar(common.GlucoseKcal, food).
-					WithScalar(common.WaterMl, food*mealWaterMlPerKcal),
+					WithScalar(body.GlucoseKcal, food).
+					WithScalar(body.WaterMl, food*mealWaterMlPerKcal),
 			); err != nil {
 				return err
 			}
 		}
-
 
 		//@TODO: ingestion is only about eating and drinking, not breathing in smoke or other gas
 		// Inhaled toxins (cigarette smoke) are not swallowed; they leave here as a

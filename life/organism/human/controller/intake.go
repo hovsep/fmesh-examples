@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -23,13 +23,13 @@ const (
 const (
 	// Processes are the swallows and puffs currently in progress. Drinking,
 	// eating and smoking each meter out over time, so several can overlap.
-	StateProcesses common.State = "processes"
+	StateProcesses string = "processes"
 
 	// Lifetime totals of what was commanded (not yet what was delivered), useful
 	// for observing and for tests.
-	TotalWaterMl    common.State = "total_water_ml"
-	TotalFoodKcal   common.State = "total_food_kcal"
-	TotalCigarettes common.State = "total_cigarettes"
+	TotalWaterMl    string = "total_water_ml"
+	TotalFoodKcal   string = "total_food_kcal"
+	TotalCigarettes string = "total_cigarettes"
 )
 
 // Kinds delivered by intake processes; also the scalar names on intake_intent.
@@ -63,7 +63,7 @@ const (
 func GetIntake() (*component.Component, error) {
 	c, err := component.New("controller:intake",
 		component.WithDescription("Turns eating, drinking and smoking commands into ingestion metered over time"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("intake_intent"),
 		component.WithActivationFunc(component.Sequential(
 			acceptIntakeCommands,
@@ -86,7 +86,7 @@ func GetIntake() (*component.Component, error) {
 func acceptIntakeCommands(this *component.Component) error {
 	processes := this.State().Get(StateProcesses).(*simtime.ProcessSet)
 
-	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbWater:
 			ml := args.ValueOrDefault(KindWaterMl, 0)
@@ -115,7 +115,7 @@ func acceptIntakeCommands(this *component.Component) error {
 	})
 }
 
-func addTotal(this *component.Component, key common.State, amount float64) {
+func addTotal(this *component.Component, key string, amount float64) {
 	if amount <= 0 {
 		this.Logger().Printf("ignoring non-positive intake amount %v for %s\n", amount, key)
 		return
@@ -126,7 +126,7 @@ func addTotal(this *component.Component, key common.State, amount float64) {
 // meterIntake delivers each in-progress process's portion for this tick and
 // emits it as a single ingestion intent.
 func meterIntake(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}

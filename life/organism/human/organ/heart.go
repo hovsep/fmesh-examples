@@ -6,7 +6,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
@@ -35,7 +34,7 @@ const (
 	adrenalineChronotropy = 0.3
 
 	// stateRateExact holds the unrounded rate the smoothing works on.
-	stateRateExact common.State = "rate_exact"
+	stateRateExact string = "rate_exact"
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase
@@ -71,9 +70,9 @@ func GetHeart() (*component.Component, error) {
 			),
 		),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.Rate, 60) // Initial BPM
+			state.Set(stateRate, 60) // Initial BPM
 			state.Set(stateRateExact, 60.0)
-			state.Set(common.Phase, 0.0) // Phase in the current heartbeat cycle
+			state.Set(statePhase, 0.0) // Phase in the current heartbeat cycle
 		}),
 	)
 	if err != nil {
@@ -94,9 +93,9 @@ func oscillateHeart(this *component.Component) error {
 
 	// Advance phase
 	var nextPhase float64
-	this.State().Update(common.Phase, func(old any) any {
+	this.State().Update(statePhase, func(old any) any {
 		currentPhase := old.(float64)
-		currentRate := this.State().Get(common.Rate).(int)
+		currentRate := this.State().Get(stateRate).(int)
 		phaseStep := dt / (60.0 / float64(currentRate))
 		nextPhase = math.Mod(currentPhase+phaseStep, 1.0)
 		return nextPhase
@@ -113,7 +112,7 @@ func handleCardiacBias(this *component.Component) error {
 		return nil
 	}
 
-	bias, err := autonomic.Bias(this.InputByName("autonomic_tone").Signals().First(), common.Cardiac)
+	bias, err := autonomic.Bias(this.InputByName("autonomic_tone").Signals().First(), autonomic.Cardiac)
 	if err != nil {
 		return err
 	}
@@ -139,7 +138,7 @@ func handleCardiacBias(this *component.Component) error {
 	this.State().Update(stateRateExact, func(v any) any {
 		return mathx.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})
-	this.State().Set(common.Rate, int(math.Round(this.State().Get(stateRateExact).(float64))))
-	this.OutputByName("rate").PutPayloads(this.State().Get(common.Rate).(int))
+	this.State().Set(stateRate, int(math.Round(this.State().Get(stateRateExact).(float64))))
+	this.OutputByName("rate").PutPayloads(this.State().Get(stateRate).(int))
 	return nil
 }

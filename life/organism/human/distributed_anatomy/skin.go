@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -65,7 +66,7 @@ func GetSkin() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "skin", O2PerMinute: SkinO2PerMinute}),
 		),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"body_state",  // from physiology:physiological_state (current core temp)
 			"ambient_gas", // habitat air, carrying its temperature
 			"radiation",   // sun UV index
@@ -83,7 +84,7 @@ func GetSkin() (*component.Component, error) {
 			regulateSkin,
 		)),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.CoreTemperature, NormalSkinCoreTemperature)
+			state.Set(body.CoreTemperature, NormalSkinCoreTemperature)
 			state.Set(stateAmbientTemp, NormalSkinCoreTemperature)
 			state.Set(stateUVIndex, 0.0)
 		}),
@@ -95,16 +96,16 @@ func GetSkin() (*component.Component, error) {
 }
 
 const (
-	stateAmbientTemp common.State = "ambient_temperature"
-	stateUVIndex     common.State = "uv_index"
+	stateAmbientTemp string = "ambient_temperature"
+	stateUVIndex     string = "uv_index"
 )
 
 // rememberEnvironment latches the latest core temperature, ambient temperature
 // and sun, since each arrives on its own mesh cycle.
 func rememberEnvironment(this *component.Component) error {
 	if sig := firstSignal(this, "body_state"); sig != nil {
-		this.State().Set(common.CoreTemperature,
-			sig.Scalars().ValueOrDefault(common.CoreTemperature, NormalSkinCoreTemperature))
+		this.State().Set(body.CoreTemperature,
+			sig.Scalars().ValueOrDefault(body.CoreTemperature, NormalSkinCoreTemperature))
 	}
 	if sig := firstSignal(this, "ambient_gas"); sig != nil {
 		if _, _, _, _, temp, _, err := atmosphere.Unpack(sig); err == nil {
@@ -126,7 +127,7 @@ func firstSignal(this *component.Component, portName string) *signal.Signal {
 }
 
 func regulateSkin(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}
@@ -136,7 +137,7 @@ func regulateSkin(this *component.Component) error {
 		return fmt.Errorf("skin tick: %w", err)
 	}
 
-	core := this.State().Get(common.CoreTemperature).(float64)
+	core := this.State().Get(body.CoreTemperature).(float64)
 	ambient := this.State().Get(stateAmbientTemp).(float64)
 	uvi := this.State().Get(stateUVIndex).(float64)
 
@@ -160,7 +161,7 @@ func regulateSkin(this *component.Component) error {
 	return this.OutputByName("losses").PutSignals(
 		signal.New("losses").
 			WithLabel("category", "skin").
-			WithScalar(common.WaterMl, lostMl),
+			WithScalar(body.WaterMl, lostMl),
 	)
 }
 

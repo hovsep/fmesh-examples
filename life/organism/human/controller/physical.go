@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -21,10 +21,10 @@ const (
 const (
 	// ActivityIntensity is the metabolic demand of what the body is currently
 	// doing, as a multiple of rest: 1 is sitting still, ~8 is running.
-	ActivityIntensity common.State = "activity_intensity"
+	ActivityIntensity string = "activity_intensity"
 	// ActivityRemaining counts down the requested duration in seconds; a
 	// negative value means "until told to stop".
-	ActivityRemaining common.State = "activity_remaining_s"
+	ActivityRemaining string = "activity_remaining_s"
 )
 
 // Scalar names on the activity command and the emitted load signal.
@@ -47,7 +47,7 @@ const Indefinite = -1.0
 func GetPhysical() (*component.Component, error) {
 	c, err := component.New("controller:physical_stress",
 		component.WithDescription("Turns physical activity commands into a sustained metabolic load"),
-		component.WithInputs(common.TimePort, common.ControlPort),
+		component.WithInputs(simulation.TimePort, simulation.ControlPort),
 		component.WithOutputs("physical_load"),
 		component.WithActivationFunc(component.Sequential(
 			acceptActivityCommands,
@@ -65,7 +65,7 @@ func GetPhysical() (*component.Component, error) {
 }
 
 func acceptActivityCommands(this *component.Component) error {
-	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbStart:
 			intensity := args.ValueOrDefault(ScalarIntensity, RestingIntensity)
@@ -87,7 +87,7 @@ func acceptActivityCommands(this *component.Component) error {
 
 // emitPhysicalLoad publishes the current demand and ages the activity out.
 func emitPhysicalLoad(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}

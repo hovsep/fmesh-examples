@@ -18,7 +18,7 @@ package perfusion
 
 import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
@@ -32,14 +32,14 @@ const (
 
 // State the plugin keeps on its host.
 const (
-	stateSaO2        common.State = "perfusion_sao2"
-	statePaO2        common.State = "perfusion_pao2"
-	statePaCO2       common.State = "perfusion_paco2"
-	stateContent     common.State = "perfusion_content"
-	stateGlucose     common.State = "perfusion_glucose"
-	stateO2PerMinute common.State = "perfusion_o2_per_minute"
-	stateOnset       common.State = "perfusion_onset"
-	stateFail        common.State = "perfusion_fail"
+	stateSaO2        string = "perfusion_sao2"
+	statePaO2        string = "perfusion_pao2"
+	statePaCO2       string = "perfusion_paco2"
+	stateContent     string = "perfusion_content"
+	stateGlucose     string = "perfusion_glucose"
+	stateO2PerMinute string = "perfusion_o2_per_minute"
+	stateOnset       string = "perfusion_onset"
+	stateFail        string = "perfusion_fail"
 )
 
 // Default thresholds, in arterial oxygen content (mL of oxygen per dL of blood).
@@ -147,7 +147,7 @@ func (p *Perfusion) onActivation(this *component.Component) error {
 	// The draw is emitted on the tick alone, so an organ that activates several
 	// times in one run (the blood bus and its own inputs arrive on different
 	// cycles) still consumes exactly one tick's worth.
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 
@@ -200,7 +200,7 @@ func Read(c *component.Component) Supply {
 	if c == nil {
 		return Supply{}
 	}
-	get := func(key common.State, fallback float64) float64 {
+	get := func(key string, fallback float64) float64 {
 		v, ok := c.State().Get(key).(float64)
 		if !ok {
 			return fallback

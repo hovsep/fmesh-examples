@@ -16,7 +16,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 )
 
 // PathSeparator joins a component name to one of its ports to form a telemetry
@@ -341,12 +341,12 @@ var Catalog = []Metric{
 // them, so a feeling can never be published under one name and drawn under
 // another.
 func feelingScalars() []Scalar {
-	scalars := make([]Scalar, 0, len(common.Feelings))
-	for _, name := range common.Feelings {
+	scalars := make([]Scalar, 0, len(body.Feelings))
+	for _, name := range body.Feelings {
 		scalars = append(scalars, Scalar{
 			Name: name,
 			Display: Display{
-				Label: common.FeelingLabels[name], Unit: "",
+				Label: body.FeelingLabels[name], Unit: "",
 				Min: 0, Max: 1, HealthMin: 0, HealthMax: 1,
 				Decimals: 2, View: ViewAffect,
 			},

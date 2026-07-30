@@ -3,8 +3,8 @@ package da
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -12,11 +12,11 @@ import (
 )
 
 // Muscle fatigue is a 0..100 scale: exertion builds it up, rest works it off.
-const StateFatigue common.State = "fatigue"
+const StateFatigue string = "fatigue"
 
 // stateIntensity latches the most recent exertion, since physical_load arrives on
 // its own mesh cycle rather than together with the tick.
-const stateIntensity common.State = "intensity"
+const stateIntensity string = "intensity"
 
 const (
 	// fatiguePerIntensityPerSec is how fast hard work tires the muscles. At
@@ -63,7 +63,7 @@ func GetMuscularSystem() (*component.Component, error) {
 				Demand:      exertionDemand,
 			}),
 		),
-		component.WithInputs(common.TimePort, "physical_load"),
+		component.WithInputs(simulation.TimePort, "physical_load"),
 		component.WithOutputs("fatigue"),
 		component.WithActivationFunc(component.Sequential(
 			latchExertion,
@@ -89,7 +89,7 @@ func latchExertion(this *component.Component) error {
 }
 
 func integrateFatigue(this *component.Component) error {
-	tick := this.InputByName(common.TimePort).Signals().First()
+	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil
 	}

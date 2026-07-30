@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -64,8 +63,8 @@ func GetDiaphragm() (*component.Component, error) {
 			),
 		),
 		component.WithInitialState(func(state component.State) {
-			state.Set(common.Rate, TidalRespiratoryRate)
-			state.Set(common.Phase, 0.0)
+			state.Set(stateRate, TidalRespiratoryRate)
+			state.Set(statePhase, 0.0)
 		}),
 	)
 	if err != nil {
@@ -94,13 +93,13 @@ func oscillateBreathing(this *component.Component) error {
 		return err
 	}
 
-	currentPhase := this.State().Get(common.Phase).(float64)
-	currentRate := this.State().Get(common.Rate).(int)
+	currentPhase := this.State().Get(statePhase).(float64)
+	currentRate := this.State().Get(stateRate).(int)
 	nextPhase := math.Mod(currentPhase+dt/(60.0/float64(currentRate)), 1.0)
-	this.State().Set(common.Phase, nextPhase)
+	this.State().Set(statePhase, nextPhase)
 
 	this.OutputByName("pleural_pressure").PutPayloads(diaphragmPressureWave(nextPhase))
-	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(common.Rate).(int))
+	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(stateRate).(int))
 
 	return nil
 }
@@ -113,13 +112,13 @@ func handleRespiratoryBias(this *component.Component) error {
 	// @TODO: mixin noise
 	bias, err := autonomic.Bias(
 		this.InputByName("autonomic_tone").Signals().First(),
-		common.Respiratory,
+		autonomic.Respiratory,
 	)
 	if err != nil {
 		return err
 	}
 
-	this.State().Update(common.Rate, func(v any) any {
+	this.State().Update(stateRate, func(v any) any {
 		return int(mathx.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias))
 	})
 

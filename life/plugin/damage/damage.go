@@ -10,7 +10,7 @@
 package damage
 
 import (
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -27,8 +27,8 @@ const (
 	// LevelOutput publishes the current damage level (0..1) for observation.
 	LevelOutput = "damage_level"
 
-	stateLevel  common.State = "damage_level"
-	stateFailed common.State = "damage_failed"
+	stateLevel  string = "damage_level"
+	stateFailed string = "damage_failed"
 )
 
 const (
@@ -104,7 +104,7 @@ func (d *Damage) onActivation(this *component.Component) error {
 
 	// Aging accrues once per tick, scaled by the tick's real duration.
 	var aging float64
-	if tick := this.InputByName(common.TimePort); tick != nil && tick.HasSignals() {
+	if tick := this.InputByName(simulation.TimePort); tick != nil && tick.HasSignals() {
 		if dt, err := simtime.TickDurationInSec(tick.Signals().First()); err == nil {
 			aging = d.agingRatePerSec * dt
 		}

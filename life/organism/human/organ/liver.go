@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -61,7 +61,7 @@ const (
 	// diabetic's curve rather than a healthy one.
 	insulinSuppression = 6.0
 
-	stateGlucoseFlux common.State = "glucose_flux"
+	stateGlucoseFlux string = "glucose_flux"
 )
 
 // GetLiver returns the liver.
@@ -73,7 +73,7 @@ func GetLiver() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "liver", O2PerMinute: LiverO2PerMinute}),
 			receptor.For(bloodstream.HormoneInsulin, bloodstream.HormoneGlucagon),
 		),
-		component.WithInputs(common.TimePort),
+		component.WithInputs(simulation.TimePort),
 		component.WithOutputs("glucose_flux"),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			//@TODO: looks like liver only does regulate glucose, should it also filter the blood?
@@ -98,7 +98,7 @@ func GetLiver() (*component.Component, error) {
 // responding to anything. Destroy the liver and the pancreas goes on shouting
 // into a blood supply where nothing is listening.
 func regulateGlucose(this *component.Component) error {
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 

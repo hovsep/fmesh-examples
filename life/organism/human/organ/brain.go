@@ -3,7 +3,6 @@ package organ
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -11,10 +10,10 @@ import (
 )
 
 const (
-	NeuralDrive       common.State = "neural_drive"
-	NeuralDriveJitter              = 0.02
-	MinNeuralDrive                 = 0.0
-	MaxNeuralDrive                 = 1.0
+	NeuralDrive       string = "neural_drive"
+	NeuralDriveJitter        = 0.02
+	MinNeuralDrive           = 0.0
+	MaxNeuralDrive           = 1.0
 
 	// 0.0 - 0.2 Sleep
 	// 0.3 - 0.6 Baseline activity

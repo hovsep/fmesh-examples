@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
@@ -257,7 +257,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 		{
 			name:     "a rested, fed body is content",
 			duration: time.Minute,
-			feeling:  common.FeelingContent,
+			feeling:  body.FeelingContent,
 			assert: func(t *testing.T, intensity float64) {
 				assert.Greater(t, intensity, 0.5, "nothing is wrong, so the body should feel fine")
 			},
@@ -265,7 +265,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 		{
 			name:     "a rested body is not hungry",
 			duration: time.Minute,
-			feeling:  common.FeelingHungry,
+			feeling:  body.FeelingHungry,
 			assert: func(t *testing.T, intensity float64) {
 				assert.Less(t, intensity, 0.1, "a full reserve should not read as hunger")
 			},
@@ -274,7 +274,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 			name:     "sustained hard exertion is tiring",
 			commands: []command.Line{"activity:start 9"},
 			duration: 3 * time.Minute,
-			feeling:  common.FeelingTired,
+			feeling:  body.FeelingTired,
 			assert: func(t *testing.T, intensity float64) {
 				assert.Greater(t, intensity, 0.5, "running flat out should read as tiring")
 			},
@@ -283,7 +283,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 			name:     "an unpleasant shock reads as anxiety",
 			commands: []command.Line{"emotion:stimulus 0.9 -0.9"},
 			duration: 10 * time.Second,
-			feeling:  common.FeelingAnxious,
+			feeling:  body.FeelingAnxious,
 			assert: func(t *testing.T, intensity float64) {
 				assert.Greater(t, intensity, 0.2, "a frightening event should read as anxiety")
 			},
@@ -292,7 +292,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 			name:     "a pleasant event reads as happiness, not anxiety",
 			commands: []command.Line{"emotion:stimulus 0.9 0.9"},
 			duration: 10 * time.Second,
-			feeling:  common.FeelingAnxious,
+			feeling:  body.FeelingAnxious,
 			assert: func(t *testing.T, intensity float64) {
 				// Arousal alone is not distress; it is the direction of the mood
 				// that separates excitement from dread.
@@ -328,7 +328,7 @@ func Test_EveryFeelingIsPublished(t *testing.T) {
 
 		// A missing feeling would render as a permanent zero rather than an
 		// obvious gap, so check the whole set arrives every time.
-		for _, feeling := range common.Feelings {
+		for _, feeling := range body.Feelings {
 			assert.True(t, sig.Scalars().Has(feeling), "feeling %q was not published", feeling)
 		}
 	})

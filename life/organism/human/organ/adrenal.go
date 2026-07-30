@@ -5,9 +5,9 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
@@ -37,7 +37,7 @@ const (
 	// Above it, secretion rises with the drive.
 	secretionThreshold = 0.35
 
-	stateSympathetic common.State = "sympathetic_tone"
+	stateSympathetic string = "sympathetic_tone"
 )
 
 // GetAdrenal returns the adrenal glands.
@@ -48,7 +48,7 @@ func GetAdrenal() (*component.Component, error) {
 			damage.New(damage.Config{Organ: "adrenal"}),
 			perfusion.New(perfusion.Config{Organ: "adrenal", O2PerMinute: AdrenalO2PerMinute}),
 		),
-		component.WithInputs(common.TimePort, "autonomic_tone"),
+		component.WithInputs(simulation.TimePort, "autonomic_tone"),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(secreteStressHormones)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateSympathetic, 0.0)
@@ -69,12 +69,12 @@ func GetAdrenal() (*component.Component, error) {
 // its own within minutes while cortisol is still there an hour later.
 func secreteStressHormones(this *component.Component) error {
 	if in := this.InputByName("autonomic_tone"); in.HasSignals() {
-		if tone, err := autonomic.Bias(in.Signals().First(), common.Sympathetic); err == nil {
+		if tone, err := autonomic.Bias(in.Signals().First(), autonomic.Sympathetic); err == nil {
 			this.State().Set(stateSympathetic, tone)
 		}
 	}
 
-	if !this.InputByName(common.TimePort).HasSignals() {
+	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}
 

@@ -5,8 +5,8 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -84,14 +84,14 @@ const (
 )
 
 const (
-	stateMAP           common.State = "map"
-	stateCardiacOutput common.State = "cardiac_output"
-	stateSVR           common.State = "svr"
-	stateStrokeVolume  common.State = "stroke_volume"
-	stateHeartRate     common.State = "heart_rate"
-	stateVascularTone  common.State = "vascular_tone"
-	stateBloodVolume   common.State = "blood_volume"
-	stateVascDt        common.State = "dt"
+	stateMAP           string = "map"
+	stateCardiacOutput string = "cardiac_output"
+	stateSVR           string = "svr"
+	stateStrokeVolume  string = "stroke_volume"
+	stateHeartRate     string = "heart_rate"
+	stateVascularTone  string = "vascular_tone"
+	stateBloodVolume   string = "blood_volume"
+	stateVascDt        string = "dt"
 )
 
 // The set points the reflexes defend, re-exported here so the physiology package
@@ -114,7 +114,7 @@ func GetVasculature() (*component.Component, error) {
 	c, err := component.New("da:vasculature",
 		component.WithDescription("Systemic circulation: stroke volume, cardiac output and arterial pressure"),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"heart_rate",     // beats per minute, from the heart
 			"autonomic_tone", // vascular bias sets the resistance
 			"venous_blood",   // for the volume that fills the heart
@@ -153,8 +153,8 @@ func circulate(this *component.Component) error {
 	// Phase A: the tick publishes what the circulation was doing, so the
 	// baroreflex has a pressure to react to without waiting on this tick's
 	// heart rate -- which is the thing its own reaction will change.
-	if this.InputByName(common.TimePort).HasSignals() {
-		if dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First()); err == nil {
+	if this.InputByName(simulation.TimePort).HasSignals() {
+		if dt, err := simtime.TickDurationInSec(this.InputByName(simulation.TimePort).Signals().First()); err == nil {
 			this.State().Set(stateVascDt, dt)
 		}
 		publishCirculation(this)
@@ -168,7 +168,7 @@ func circulate(this *component.Component) error {
 		}
 	}
 	if in := this.InputByName("autonomic_tone"); in.HasSignals() {
-		if target, err := autonomic.Bias(in.Signals().First(), common.Vascular); err == nil {
+		if target, err := autonomic.Bias(in.Signals().First(), autonomic.Vascular); err == nil {
 			// Vessels follow the order they are given, they do not snap to it.
 			dt := this.State().Get(stateVascDt).(float64)
 			this.State().Update(stateVascularTone, func(current any) any {
@@ -219,7 +219,7 @@ func ResistanceAt(tone float64) float64 {
 }
 
 func publishCirculation(this *component.Component) {
-	get := func(key common.State) float64 { return this.State().Get(key).(float64) }
+	get := func(key string) float64 { return this.State().Get(key).(float64) }
 
 	this.OutputByName("map").PutSignals(
 		signal.New(get(stateMAP)).WithLabel("category", "circulation"),

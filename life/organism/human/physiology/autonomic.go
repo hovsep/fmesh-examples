@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
-	"github.com/hovsep/fmesh-examples/life/common"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -98,9 +97,9 @@ func chemoreflexResponse(paCO2, paO2 float64) float64 {
 // stateLastMAP latches the arterial pressure the reflex is answering, and the
 // blood gases the chemoreflex is answering.
 const (
-	stateLastMAP   common.State = "last_map"
-	stateLastPaCO2 common.State = "last_paco2"
-	stateLastPaO2  common.State = "last_pao2"
+	stateLastMAP   string = "last_map"
+	stateLastPaCO2 string = "last_paco2"
+	stateLastPaO2  string = "last_pao2"
 )
 
 // GetAutonomicCoordination ...

@@ -6,7 +6,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -40,10 +39,10 @@ const (
 
 	// Below are per-instance lung params that makes left and
 	// right lungs slightly different (anatomically, the left one has less space due to the heart).
-	statePleuralAsymmetry common.State = "pleural_asymmetry"
-	stateCompliance       common.State = "compliance"
-	stateVolume           common.State = "volume"
-	stateResistance       common.State = "resistance"
+	statePleuralAsymmetry string = "pleural_asymmetry"
+	stateCompliance       string = "compliance"
+	stateVolume           string = "volume"
+	stateResistance       string = "resistance"
 )
 
 var (
@@ -52,7 +51,7 @@ var (
 	FRC = restingLungVolume + defaultLungCompliance*math.Abs(BasePleuralPressure)
 )
 
-func GetLung(side common.Side) (*component.Component, error) {
+func GetLung(side string) (*component.Component, error) {
 	c, err := component.New("organ:lung_"+string(side),
 		component.WithDescription(string(side)+" lung"),
 		component.WithPlugins(damage.New(damage.Config{Organ: "lung_" + string(side)})),

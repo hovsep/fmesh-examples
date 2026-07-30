@@ -3,8 +3,9 @@ package physiology
 import (
 	"fmt"
 
-	"github.com/hovsep/fmesh-examples/life/common"
+	"github.com/hovsep/fmesh-examples/life/body"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
+	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -13,11 +14,11 @@ import (
 
 // Reservoir levels, held as component state.
 const (
-	StateHydrationMl     common.State = "hydration_ml"
-	StateGlycemia        common.State = "glycemia"
-	StateEnergyKcal      common.State = "energy_kcal"
-	StateCoreTemperature common.State = "core_temperature"
-	StateDt              common.State = "dt"
+	StateHydrationMl     string = "hydration_ml"
+	StateGlycemia        string = "glycemia"
+	StateEnergyKcal      string = "energy_kcal"
+	StateCoreTemperature string = "core_temperature"
+	StateDt              string = "dt"
 )
 
 // Reference values for a resting adult.
@@ -95,7 +96,7 @@ func GetPhysiologicalState() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_state",
 		component.WithDescription("Internal physiological state (hydration, glycemia, energy, core temperature)"),
 		component.WithInputs(
-			common.TimePort,
+			simulation.TimePort,
 			"absorption",      // gains from the gut
 			"losses",          // water leaving through skin and kidneys
 			"physical_load",   // current exertion, which sets the burn rate
@@ -127,8 +128,8 @@ func GetPhysiologicalState() (*component.Component, error) {
 func updatePhysiologicalState(this *component.Component) error {
 	// Phase A: the tick publishes current levels straight away, so organs reading
 	// body_state are never a run behind.
-	if this.InputByName(common.TimePort).HasSignals() {
-		dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+	if this.InputByName(simulation.TimePort).HasSignals() {
+		dt, err := simtime.TickDurationInSec(this.InputByName(simulation.TimePort).Signals().First())
 		if err != nil {
 			return err
 		}
@@ -213,10 +214,10 @@ func publishBodyState(this *component.Component) error {
 	if err := this.OutputByName("body_state").PutSignals(
 		signal.New("body_state").
 			WithLabel("category", "physiology").
-			WithScalar(common.HydrationPct, hydrationPct).
-			WithScalar(common.Glycemia, glycemia).
-			WithScalar(common.EnergyKcal, energy).
-			WithScalar(common.CoreTemperature, temperature),
+			WithScalar(body.HydrationPct, hydrationPct).
+			WithScalar(body.Glycemia, glycemia).
+			WithScalar(body.EnergyKcal, energy).
+			WithScalar(body.CoreTemperature, temperature),
 	); err != nil {
 		return err
 	}
@@ -241,7 +242,7 @@ func applyAbsorption(this *component.Component) {
 	}
 
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		addHydration(this, sig.Scalars().ValueOrDefault(common.WaterMl, 0))
+		addHydration(this, sig.Scalars().ValueOrDefault(body.WaterMl, 0))
 
 		// Absorbed food arrives in the blood, and only in the blood. Getting into
 		// storage from there is the liver's job and insulin's decision, which is
@@ -251,7 +252,7 @@ func applyAbsorption(this *component.Component) {
 		// credited again when insulin put the same sugar away -- so a meal was
 		// worth roughly twice its calories, and blood sugar could be regulated by
 		// a hormone that had nothing left to regulate. One number, one place.
-		kcal := sig.Scalars().ValueOrDefault(common.GlucoseKcal, 0)
+		kcal := sig.Scalars().ValueOrDefault(body.GlucoseKcal, 0)
 		this.State().Update(StateGlycemia, func(v any) any {
 			return mathx.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
 		})
@@ -266,7 +267,7 @@ func applyLosses(this *component.Component) {
 	}
 
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		addHydration(this, -sig.Scalars().ValueOrDefault(common.WaterMl, 0))
+		addHydration(this, -sig.Scalars().ValueOrDefault(body.WaterMl, 0))
 		return nil
 	})
 }
