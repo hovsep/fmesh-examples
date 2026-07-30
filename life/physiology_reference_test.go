@@ -1401,3 +1401,80 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 			"and carried more oxygen than a healthy body does, with plasma making up what the hemoglobin cannot")
 	})
 }
+
+// TestReference_TheSunWarmsTheAirAndTheBodySweats is the invariant this whole
+// habitat exists to demonstrate, end to end and in one test.
+//
+// It is not a physiological reference in the way the others are -- no textbook
+// quotes a number for it -- but it is the chain the simulation is *for*: an
+// environmental factor changes, the world it describes changes with it, the body
+// notices through an organ, and the body answers. Every link is a separate
+// component that knows nothing about the others.
+//
+//	sun → air temperature → skin → core temperature → sweating
+//
+// Only the first link was ever missing. The sun published a UV index that the
+// skin read directly, so a body would burn in the sun while standing in air the
+// sun had no effect on. The air is downstream of the sun now, and the chain
+// starts where it should.
+func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	gas := simMesh(sim).ComponentByName("gas")
+
+	// A hot day rather than a mild one. In a temperate 26 degrees the body
+	// compensates the ambient completely -- which is correct, and which is why
+	// the thermoneutral band exists -- so the air has to be genuinely hot before
+	// it becomes a load the body must answer rather than absorb.
+	sim.Do("temp:hot")   // 38 in the shade
+	sim.Do("sun:hour 11") // an hour before the sun peaks
+
+	reading := func(port string) float64 {
+		if sig := agg.OutputByName("human-Leon::" + port).Signals().First(); sig != nil {
+			return signal.AsFloat64OrDefault(sig, 0)
+		}
+		return 0
+	}
+	airTemperature := func() float64 {
+		return gas.State().Get("temperature").(float64)
+	}
+
+	var airAtEarly, airAtNoon, coreAtNoon, sweatAtNoon float64
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 30):
+				airAtEarly = airTemperature()
+			case elapsed > 3000:
+				airAtNoon = airTemperature()
+				coreAtNoon = reading("body_temperature")
+				sweatAtNoon = reading("sweat_rate")
+			}
+			return nil
+		})
+	})
+
+	// The sky is set rather than waited for: a day is twenty-four hours long and
+	// this test is not.
+	simtest.RunFor(sim, 3100*time.Second, func() {
+		require.NotZero(t, airAtEarly, "the air should have been sampled early")
+
+		// Link one: the sun reaches the air.
+		assert.Greater(t, airAtNoon, airAtEarly+1,
+			"a climbing sun should warm the air above where it started")
+
+		// Link two and three: the air and the sun reach the body, and the body
+		// answers. Sweating begins above 37.2, so a sweating body is by
+		// definition one whose core has been pushed past where it defends.
+		assert.Greater(t, coreAtNoon, da.NormalSkinCoreTemperature,
+			"a body in the hot sun should be warmer than a body at rest indoors")
+		assert.Positive(t, sweatAtNoon,
+			"and having got warm, it should sweat -- which is the whole point")
+	})
+}

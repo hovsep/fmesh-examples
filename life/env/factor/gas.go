@@ -9,6 +9,8 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
+	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -52,17 +54,25 @@ const (
 func GetGasComponent() (*component.Component, error) {
 	c, err := component.New("gas",
 		component.WithDescription("Gas factor"),
-		component.WithInputs("time", "ctl"),
+		component.WithInputs(
+			"time", "ctl",
+			// The sun, by the habitat's naming convention (see env/habitat.go).
+			// Nothing wires this by hand; declaring the port is the whole of it.
+			"habitat_sun_uvi",
+		),
 		// For the sake of simplicity, we skip parameters like barometric pressure or wind
 		component.WithOutputs("environmental_gas"),
 		component.WithActivationFunc(
 			component.Sequential(
 				handleControlSignals,
+				warmInTheSun,
 				emitEnvironmentalGas,
 			),
 		),
 		component.WithInitialState(func(state component.State) {
 			// Average air conditions in Valencia, which is at sea level.
+			state.Set(StateShadeTemperature, +26.0)
+			state.Set(StateSunUVI, 0.0)
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
 			state.Set(StateAltitude, 0.0)
@@ -85,9 +95,8 @@ func handleControlSignals(this *component.Component) error {
 		}).ForEach(func(ctlSig *signal.Signal) error {
 		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
 		case "change_temperature":
-			this.State().Update("temperature", func(currentTemp any) any {
-				return currentTemp.(float64) + signal.AsFloat64OrDefault(ctlSig, 0.0)
-			})
+			setShade(this, this.State().Get(StateShadeTemperature).(float64)+
+				signal.AsFloat64OrDefault(ctlSig, 0.0))
 			return nil
 		case cmdSetAltitude:
 			metres := signal.AsFloat64OrDefault(ctlSig, 0.0)
@@ -101,10 +110,9 @@ func handleControlSignals(this *component.Component) error {
 			this.Logger().Printf("carbon monoxide in the air: %.0f ppm", ppm)
 			return nil
 		case "set_temperature":
-			this.Logger().Println("Setting temperature to ", signal.AsFloat64OrDefault(ctlSig, 0.0))
-			this.State().Update("temperature", func(currentTemp any) any {
-				return signal.AsFloat64OrDefault(ctlSig, 0.0)
-			})
+			shade := signal.AsFloat64OrDefault(ctlSig, 0.0)
+			this.Logger().Printf("shade temperature now %.1f C; the sun adds to it", shade)
+			setShade(this, shade)
 			return nil
 		default:
 			return errors.New("unknown command")
@@ -112,6 +120,81 @@ func handleControlSignals(this *component.Component) error {
 
 	})
 
+	return nil
+}
+
+const (
+	// StateSunUVI is the last UV index the sun reported.
+	//
+	// It is remembered rather than read where it is used, because it does not
+	// arrive on the tick. The sun publishes during a cycle, the signal reaches
+	// this component's port at the end of it, and the port is drained on the
+	// following cycle -- by which time the next tick has not yet come. Read
+	// directly, the sun would appear to be shining only on the cycles nobody was
+	// looking, which is how the air came to warm toward the shade and no further.
+	StateSunUVI = "sun_uvi"
+
+	// StateShadeTemperature is the air's temperature out of the sun -- the
+	// weather, as opposed to the day. It is what "gas:temperature" sets, because
+	// that is what a person means when they say how warm it is somewhere.
+	StateShadeTemperature = "shade_temperature"
+
+	// solarAirWarmingPerUVI is how much hotter full sun makes the air, per unit
+	// of UV index. At the peak index of 8 that is eight degrees over the shade,
+	// which is about the difference a clear midday makes.
+	solarAirWarmingPerUVI = 1.0
+
+	// airWarmingHalfLifeSec is how sluggishly the air follows the sun. Ten
+	// minutes: enough that dawn warms gradually and dusk cools gradually rather
+	// than the temperature snapping to wherever the sun currently is.
+	//
+	// The lag is the whole reason this is a relaxation and not an assignment.
+	// Air has heat capacity; a cloud passing over does not instantly cool a
+	// street, and the hottest part of the afternoon is not noon.
+	airWarmingHalfLifeSec = 600.0
+)
+
+// setShade changes the weather, and the air with it.
+//
+// The lag below is the sun's, not the thermostat's: air takes time to follow the
+// sky, but a command that says the place is now freezing means it is freezing
+// now. Relaxing into it instead would make "make it cold" mean "make it cold in
+// about ten minutes", which is not what anyone typing it wants -- and it is why
+// three minutes in a freezer stopped injuring anybody.
+func setShade(this *component.Component, shade float64) {
+	this.State().Set(StateShadeTemperature, shade)
+	this.State().Set("temperature", shade+solarAirWarmingPerUVI*this.State().Get(StateSunUVI).(float64))
+}
+
+// warmInTheSun moves the air toward the temperature the current sunlight would
+// eventually hold it at.
+//
+// This is the first link of the chain the whole habitat exists to demonstrate:
+// the sun warms the air, the air warms the body through the skin, and a warm
+// enough body sweats. Every step after this one was already built; the sun
+// simply never reached the air, so the chain began in the middle.
+func warmInTheSun(this *component.Component) error {
+	// Latch the sun whenever it speaks, whichever cycle that is.
+	if sun := this.InputByName("habitat_sun_uvi"); sun != nil && sun.HasSignals() {
+		this.State().Set(StateSunUVI, signal.AsFloat64OrDefault(sun.Signals().First(), 0))
+	}
+
+	tick := this.InputByName("time").Signals().First()
+	if tick == nil {
+		return nil
+	}
+	dt, err := simtime.TickDurationInSec(tick)
+	if err != nil {
+		return fmt.Errorf("gas tick: %w", err)
+	}
+
+	uvi := this.State().Get(StateSunUVI).(float64)
+	shade := this.State().Get(StateShadeTemperature).(float64)
+	target := shade + solarAirWarmingPerUVI*uvi
+
+	this.State().Update("temperature", func(current any) any {
+		return mathx.DecayToward(current.(float64), target, dt, airWarmingHalfLifeSec)
+	})
 	return nil
 }
 

@@ -110,7 +110,7 @@ func getHabitat(environment func() (*component.Component, error), tick time.Dura
 	if err := factors.Add(
 		timeComponent,
 		gasComponent,
-		sunComponent, // @todo: make sun to affect gas temperature
+		sunComponent,
 	); err != nil {
 		return nil, fmt.Errorf("failed to build habitat factors: %w", err)
 	}
@@ -301,6 +301,7 @@ func setMeshCommands(sim *session.Session) {
 	mesh := sim.Engine.(*stepsim.Engine).Mesh()
 	timeComponent := mesh.ComponentByName("time")
 	gas := mesh.ComponentByName("gas")
+	sun := mesh.ComponentByName("sun")
 
 	// setTemperature returns a handler steering the habitat's gas temperature.
 	// The habitat takes both a delta and an absolute value, told apart by the
@@ -367,6 +368,21 @@ func setMeshCommands(sim *session.Session) {
 				fmt.Fprintf(out, "  temperature  %.1f °C\n", temperature)
 				fmt.Fprintf(out, "  humidity     %.0f%%\n", humidity)
 				return nil
+			},
+		},
+		command.Command{
+			Name: "sun:hour", Group: "Environment",
+			Description: "set the hour of the day, e.g. `sun:hour 12` for midday (6 to 20 is daylight)",
+			Run: func(_ io.Writer, args []string) error {
+				if len(args) != 1 {
+					return errors.New("expects one hour, e.g. '12'")
+				}
+				hour, err := strconv.ParseFloat(args[0], 64)
+				if err != nil || hour < 0 || hour > 24 {
+					return fmt.Errorf("invalid hour %q (0 to 24)", args[0])
+				}
+				return sun.InputByName("ctl").PutSignals(
+					command.Pack("set_hour", map[string]float64{"hour": hour}))
 			},
 		},
 		command.Command{
