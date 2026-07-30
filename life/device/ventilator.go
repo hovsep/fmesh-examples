@@ -20,6 +20,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 )
@@ -115,7 +116,7 @@ func deliverBreath(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
 	if err != nil {
 		return err
 	}

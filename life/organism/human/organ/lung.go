@@ -10,6 +10,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -90,7 +91,7 @@ func handleMechanics(this *component.Component) error {
 		return component.ErrWaitingForInputsKeep
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}
@@ -143,7 +144,7 @@ func handleGasExchange(this *component.Component) error {
 		return err
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}

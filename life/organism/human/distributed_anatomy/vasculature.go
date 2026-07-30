@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -154,7 +155,7 @@ func circulate(this *component.Component) error {
 	// baroreflex has a pressure to react to without waiting on this tick's
 	// heart rate -- which is the thing its own reaction will change.
 	if this.InputByName(common.TimePort).HasSignals() {
-		if dt, err := helper.TickDurationInSec(this.InputByName(common.TimePort).Signals().First()); err == nil {
+		if dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First()); err == nil {
 			this.State().Set(stateVascDt, dt)
 		}
 		publishCirculation(this)

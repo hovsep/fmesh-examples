@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -94,7 +95,7 @@ func emitBloodLoss(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
 	if err != nil {
 		return err
 	}

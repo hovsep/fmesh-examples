@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -122,7 +123,7 @@ func inflictDamage(this *component.Component) error {
 	if tick == nil {
 		return nil
 	}
-	dt, err := helper.TickDurationInSec(tick)
+	dt, err := simtime.TickDurationInSec(tick)
 	if err != nil {
 		return fmt.Errorf("physiological load tick: %w", err)
 	}

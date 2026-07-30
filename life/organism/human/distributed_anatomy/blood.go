@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -120,7 +121,7 @@ func exchangeBloodGases(this *component.Component) error {
 
 	// Phase A: time tick -> let time pass, publish current levels, remember dt.
 	if this.InputByName("time").HasSignals() {
-		dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+		dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
 		if err != nil {
 			return err
 		}

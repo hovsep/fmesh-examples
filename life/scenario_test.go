@@ -11,6 +11,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/hovsep/fmesh-examples/simulation/stepsim"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
@@ -189,7 +190,7 @@ func Test_BodyCommands(t *testing.T) {
 			}
 
 			target := bodyComponent(t, sim, tt.component)
-			helper.RunSimulationAndThen(sim, 500*time.Millisecond, func() {
+			simtest.RunFor(sim, 500*time.Millisecond, func() {
 				tt.assertions(t, target.State())
 			})
 		})
@@ -208,7 +209,7 @@ func Test_ScheduledCommandsReachTheBody(t *testing.T) {
 	sim.Do("every 50ms intake:water 250ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
+	simtest.RunFor(sim, 300*time.Millisecond, func() {
 		total := intake.State().Get(controller.TotalWaterMl).(float64)
 		assert.GreaterOrEqual(t, total, 4*250.0, "repeating job fired too few times")
 		assert.LessOrEqual(t, total, 6*250.0, "repeating job fired too many times")
@@ -222,7 +223,7 @@ func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
 	sim.Do("after 10s intake:water 500ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
+	simtest.RunFor(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl),
 			"a job scheduled beyond the run fired early")
 		assert.Len(t, sim.Timeline.Jobs(), 1, "the pending job should still be queued")
@@ -236,7 +237,7 @@ func Test_CancelledJobNeverFires(t *testing.T) {
 	sim.Do("cancel all")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
+	simtest.RunFor(sim, 300*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl))
 		assert.Empty(t, sim.Timeline.Jobs())
 	})
@@ -251,7 +252,7 @@ func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
 	intake := bodyComponent(t, sim, "controller:intake")
 	physical := bodyComponent(t, sim, "controller:physical_stress")
 
-	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
+	simtest.RunFor(sim, 300*time.Millisecond, func() {
 		assert.Equal(t, 200.0, intake.State().Get(controller.TotalFoodKcal),
 			"the pre-wait step did not run")
 		assert.Equal(t, 8.0, physical.State().Get(controller.ActivityIntensity),
@@ -269,7 +270,7 @@ func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
 	intake := bodyComponent(t, sim, "controller:intake")
 	physical := bodyComponent(t, sim, "controller:physical_stress")
 
-	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
+	simtest.RunFor(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 200.0, intake.State().Get(controller.TotalFoodKcal),
 			"the pre-wait step did not run")
 		assert.Equal(t, controller.RestingIntensity, physical.State().Get(controller.ActivityIntensity),
@@ -285,7 +286,7 @@ func Test_NamedScenarioIsReusable(t *testing.T) {
 	sim.Do("run hydrate")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 300*time.Millisecond, func() {
+	simtest.RunFor(sim, 300*time.Millisecond, func() {
 		assert.Equal(t, 500.0, intake.State().Get(controller.TotalWaterMl),
 			"both steps of the named scenario should have run")
 
@@ -303,7 +304,7 @@ func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
 	sim.Do("script hydrate intake:water 250ml; wait 50ms; intake:water 250ml")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
+	simtest.RunFor(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl))
 		assert.Empty(t, sim.Timeline.Scenarios())
 	})
@@ -318,7 +319,7 @@ func Test_UnknownBodyCommandDoesNotStopTheSimulation(t *testing.T) {
 	sim.Do("intake:plutonium 1kg")
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	helper.RunSimulationAndThen(sim, 200*time.Millisecond, func() {
+	simtest.RunFor(sim, 200*time.Millisecond, func() {
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalWaterMl))
 		assert.Equal(t, 0.0, intake.State().Get(controller.TotalFoodKcal))
 	})

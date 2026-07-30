@@ -11,6 +11,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +45,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Second, func() {
+				simtest.RunFor(sim, time.Second, func() {
 					assert.NotEmpty(t, observedIsAlive)
 					assert.Contains(t, observedIsAlive, true)
 					assert.NotContains(t, observedIsAlive, false)
@@ -85,7 +86,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Second*10, func() {
+				simtest.RunFor(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedCardiacActivity)
 					assert.NotEmpty(t, observedHeartRate)
 					assertRPeaks(t, observedCardiacActivity)
@@ -126,7 +127,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Second*10, func() {
+				simtest.RunFor(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedPleuralPressure)
 					assert.NotEmpty(t, observedRespiratoryRate)
 
@@ -170,7 +171,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Second*10, func() {
+				simtest.RunFor(sim, time.Second*10, func() {
 					assert.NotEmpty(t, observedLeftFlow)
 					assert.NotEmpty(t, observedRightFlow)
 					assertBidirectionalFlow(t, observedLeftFlow, "left")
@@ -208,7 +209,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, 100*time.Millisecond, func() {
+				simtest.RunFor(sim, 100*time.Millisecond, func() {
 					// Inspired air should be warmer, cleaner, and more humid than environmental air
 					assert.Greater(t, inspTemp, envTemp, "inspired air should be warmer")
 					assert.Greater(t, inspHum, envHum, "inspired air should be more humid")
@@ -240,7 +241,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, 10*time.Second, func() {
+				simtest.RunFor(sim, 10*time.Second, func() {
 					require.NotEmpty(t, observedO2, "should collect blood O2 samples")
 					require.NotEmpty(t, observedCO2, "should collect blood CO2 samples")
 
@@ -326,7 +327,7 @@ func Test_HumanLiveness(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, 10*time.Second, func() {
+				simtest.RunFor(sim, 10*time.Second, func() {
 					assert.Greater(t, left, 0, "should collect left exhaled gas samples")
 					assert.Greater(t, right, 0, "should collect right exhaled gas samples")
 
@@ -380,7 +381,7 @@ func Test_HumanLiveness(t *testing.T) {
 
 				// Run several breath cycles (one quiet breath ~= 5s) so the steady-state
 				// window below spans multiple breaths.
-				helper.RunSimulationAndThen(sim, 25*time.Second, func() {
+				simtest.RunFor(sim, 25*time.Second, func() {
 					// One sample per run of the mesh, so the count follows the
 					// step the simulation was built with. Spelling it as a round
 					// number asserted the tick rate rather than the sampling: at

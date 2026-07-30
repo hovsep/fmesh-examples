@@ -18,6 +18,7 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,7 +127,7 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 
 	// Long enough to settle out of the initial transient and average over
 	// several breaths.
-	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+	simtest.RunFor(sim, 30*time.Second, func() {
 		require.NotEmpty(t, paO2)
 
 		// Judge the second half, once the body has settled.
@@ -268,7 +269,7 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 90*time.Second, func() {
+	simtest.RunFor(sim, 90*time.Second, func() {
 		assert.Less(t, lastPaO2, 60.0,
 			"after a minute and a half without breathing, PaO₂ should be well below the 60 mmHg shoulder")
 		assert.Less(t, lastSpO2, 90.0, "and saturation should have fallen off the plateau")
@@ -306,7 +307,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 20*time.Second, func() {
+	simtest.RunFor(sim, 20*time.Second, func() {
 		steady := func(p string) float64 {
 			xs := series[p]
 			require.NotEmpty(t, xs, p)
@@ -384,7 +385,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+	simtest.RunFor(sim, 30*time.Second, func() {
 		require.NotNil(t, before)
 		require.NotNil(t, after)
 
@@ -468,7 +469,7 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 305*time.Second, func() {
+	simtest.RunFor(sim, 305*time.Second, func() {
 		// An unstressed body is not marinating in stress hormones.
 		assert.InDelta(t, 0, atRest, 0.01, "nothing should circulate at rest")
 
@@ -565,7 +566,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, forDuration, func() {})
+	simtest.RunFor(sim, forDuration, func() {})
 	return worstMAP, final
 }
 
@@ -666,7 +667,7 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 300*time.Second, func() {
+	simtest.RunFor(sim, 300*time.Second, func() {
 		assert.InDelta(t, bloodstream.NormalHemoglobin, duringBleed, 0.3,
 			"haemoglobin should read normal while the patient is actively bleeding")
 		assert.Less(t, afterRefill, duringBleed-1.0,
@@ -713,7 +714,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+	simtest.RunFor(sim, 30*time.Second, func() {
 		assert.InDelta(t, 12, atRest, 3, "a resting adult breathes about 12 times a minute")
 		assert.Greater(t, hypercapnic, atRest*2,
 			"20 mmHg of retained CO₂ should more than double the respiratory rate")
@@ -766,7 +767,7 @@ func TestReference_VentilatorRescuesAParalysedDiaphragm(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 115*time.Second, func() {
+	simtest.RunFor(sim, 115*time.Second, func() {
 		assert.Greater(t, beforeInjury, 94.0, "a healthy body before the injury")
 		assert.Less(t, worstBeforeRescue, 80.0,
 			"a body whose diaphragm has stopped should desaturate badly")
@@ -815,7 +816,7 @@ func TestReference_AVentilatorCannotFeelTheBlood(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 205*time.Second, func() {
+	simtest.RunFor(sim, 205*time.Second, func() {
 		// A body breathing for itself holds its carbon dioxide where it wants it.
 		assert.InDelta(t, 40, onMuscle, 5, "a self-ventilating body regulates its own PaCO₂")
 
@@ -843,7 +844,7 @@ func TestReference_FastingBloodSugarIsAnEquilibrium(t *testing.T) {
 	body := organComp(t, sim, "physiology:physiological_state")
 	liver := organComp(t, sim, "organ:liver")
 
-	helper.RunSimulationAndThen(sim, 4*time.Minute, func() {
+	simtest.RunFor(sim, 4*time.Minute, func() {
 		glucose := body.State().Get(physiology.StateGlycemia).(float64)
 		assert.InDelta(t, physiology.NormalGlycemia, glucose, 0.5,
 			"a resting, fasting body should hold its blood sugar at the fasting level")
@@ -899,7 +900,7 @@ func TestReference_TheLiverDefendsBloodSugarDuringExercise(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 16*time.Minute, func() {
+	simtest.RunFor(sim, 16*time.Minute, func() {
 		assert.Less(t, nadir, 85.0, "running should visibly draw blood sugar down")
 		assert.Greater(t, nadir, 60.0,
 			"but the counter-regulation should stop well short of hypoglycaemia")
@@ -950,7 +951,7 @@ func TestReference_WithoutThePancreasBloodSugarIsUndefended(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 16*time.Minute, func() {
+	simtest.RunFor(sim, 16*time.Minute, func() {
 		assert.Less(t, final, 60.0,
 			"without the islets, running should carry blood sugar into hypoglycaemia")
 		assert.InDelta(t, 0, glucagon, 0.01,
@@ -1003,7 +1004,7 @@ func TestReference_AMealIsClearedByInsulin(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 36*time.Minute, func() {
+	simtest.RunFor(sim, 36*time.Minute, func() {
 		assert.Greater(t, peakGlucose, 130.0, "a large meal should carry blood sugar well above fasting")
 		assert.Less(t, peakGlucose, 220.0,
 			"but a body with a working pancreas should not reach diabetic levels")
@@ -1142,7 +1143,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 250*time.Second, func() {
+	simtest.RunFor(sim, 250*time.Second, func() {
 		require.NotNil(t, seaLevel)
 		require.NotNil(t, atAltitude)
 
@@ -1217,7 +1218,7 @@ func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
 				return nil
 			})
 		})
-		helper.RunSimulationAndThen(sim, 300*time.Second, func() {})
+		simtest.RunFor(sim, 300*time.Second, func() {})
 		return final
 	}
 
@@ -1359,7 +1360,7 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 2350*time.Second, func() {
+	simtest.RunFor(sim, 2350*time.Second, func() {
 		require.NotNil(t, clean)
 		require.NotNil(t, poisoned)
 		require.NotNil(t, treated)

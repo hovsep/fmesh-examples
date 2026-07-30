@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -43,7 +43,7 @@ func emitSunlight(this *component.Component) error {
 		return nil
 	}
 
-	_, simDuration, _, _, err := helper.UnpackTick(tick)
+	_, simDuration, _, _, err := simtime.UnpackTick(tick)
 	if err != nil {
 		return fmt.Errorf("sun tick: %w", err)
 	}

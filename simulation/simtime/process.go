@@ -1,4 +1,4 @@
-package helper
+package simtime
 
 // Process meters a quantity out over time at a fixed rate. It models any bodily
 // action that is not instantaneous: drinking a glass, eating a meal, smoking a

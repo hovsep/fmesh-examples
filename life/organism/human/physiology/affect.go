@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -116,7 +117,7 @@ func deriveFeelings(this *component.Component) error {
 	// The tick arrives on its own cycle, and smoothing needs to know how much
 	// time it represents, so record it before anything is folded in.
 	if tick := firstSignal(this, common.TimePort); tick != nil {
-		if dt, err := helper.TickDurationInSec(tick); err == nil {
+		if dt, err := simtime.TickDurationInSec(tick); err == nil {
 			this.State().Set(stateDt, dt)
 		}
 	}

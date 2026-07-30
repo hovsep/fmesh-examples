@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -70,7 +71,7 @@ func GetIntake() (*component.Component, error) {
 			meterIntake,
 		)),
 		component.WithInitialState(func(state component.State) {
-			state.Set(StateProcesses, &helper.ProcessSet{})
+			state.Set(StateProcesses, &simtime.ProcessSet{})
 			state.Set(TotalWaterMl, 0.0)
 			state.Set(TotalFoodKcal, 0.0)
 			state.Set(TotalCigarettes, 0.0)
@@ -84,17 +85,17 @@ func GetIntake() (*component.Component, error) {
 
 // acceptIntakeCommands starts a metered process for each arriving command.
 func acceptIntakeCommands(this *component.Component) error {
-	processes := this.State().Get(StateProcesses).(*helper.ProcessSet)
+	processes := this.State().Get(StateProcesses).(*simtime.ProcessSet)
 
 	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbWater:
 			ml := args.ValueOrDefault(KindWaterMl, 0)
-			processes.Start(&helper.Process{Kind: KindWaterMl, Remaining: ml, RatePerSec: DrinkRateMlPerSec})
+			processes.Start(&simtime.Process{Kind: KindWaterMl, Remaining: ml, RatePerSec: DrinkRateMlPerSec})
 			addTotal(this, TotalWaterMl, ml)
 		case VerbFood:
 			kcal := args.ValueOrDefault(KindFoodKcal, 0)
-			processes.Start(&helper.Process{Kind: KindFoodKcal, Remaining: kcal, RatePerSec: EatRateKcalPerSec})
+			processes.Start(&simtime.Process{Kind: KindFoodKcal, Remaining: kcal, RatePerSec: EatRateKcalPerSec})
 			addTotal(this, TotalFoodKcal, kcal)
 		case VerbCigarette:
 			count := args.ValueOrDefault("count", 1)
@@ -102,7 +103,7 @@ func acceptIntakeCommands(this *component.Component) error {
 			// pace of a single cigarette, so more cigarettes simply take longer.
 			// The duration is randomised so no two are identical.
 			durationSec := mathx.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
-			processes.Start(&helper.Process{
+			processes.Start(&simtime.Process{
 				Kind:       KindToxin,
 				Remaining:  count * ToxinPerCigarette,
 				RatePerSec: ToxinPerCigarette / durationSec,
@@ -131,12 +132,12 @@ func meterIntake(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(tick)
+	dt, err := simtime.TickDurationInSec(tick)
 	if err != nil {
 		return fmt.Errorf("intake controller tick: %w", err)
 	}
 
-	delivered := this.State().Get(StateProcesses).(*helper.ProcessSet).Advance(dt)
+	delivered := this.State().Get(StateProcesses).(*simtime.ProcessSet).Advance(dt)
 	if len(delivered) == 0 {
 		return nil
 	}

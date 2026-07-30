@@ -7,6 +7,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -93,7 +94,7 @@ func emitPhysicalLoad(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(tick)
+	dt, err := simtime.TickDurationInSec(tick)
 	if err != nil {
 		return fmt.Errorf("physical controller tick: %w", err)
 	}

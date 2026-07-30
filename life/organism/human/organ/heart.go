@@ -12,6 +12,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -87,7 +88,7 @@ func oscillateHeart(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func handleCardiacBias(this *component.Component) error {
 	// the reflex that commands it from ringing.
 	dt := 0.01
 	if in := this.InputByName("time"); in.HasSignals() {
-		if d, err := helper.TickDurationInSec(in.Signals().First()); err == nil {
+		if d, err := simtime.TickDurationInSec(in.Signals().First()); err == nil {
 			dt = d
 		}
 	}

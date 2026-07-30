@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -124,7 +125,7 @@ func digest(this *component.Component) error {
 		return nil
 	}
 
-	dt, err := helper.TickDurationInSec(tick)
+	dt, err := simtime.TickDurationInSec(tick)
 	if err != nil {
 		return fmt.Errorf("gi tract tick: %w", err)
 	}
