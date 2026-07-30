@@ -57,6 +57,7 @@ const (
 // not yet modelled.
 const SkinO2PerMinute = 12.0
 
+// @TODO: check if skin is connected to all relevant components like thermal boundary and thermo-regulation (if exist)
 func GetSkin() (*component.Component, error) {
 	c, err := component.New("da:skin",
 		component.WithDescription("Skin: loses water, sweats when hot, and couples the body to ambient temperature and sun"),

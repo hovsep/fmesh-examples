@@ -1,5 +1,7 @@
 package factor
 
+//@TODO: let's drop the file for simplicity
+
 import (
 	"fmt"
 
@@ -44,6 +46,10 @@ const (
 	// StateChamberOxygen is the oxygen fraction of the mixture, as a percentage.
 	StateChamberOxygen = "chamber_oxygen_pct"
 
+	// StateChamberCOppm is carbon monoxide inside, parts per million. A sealed
+	// room is exactly where it accumulates, and exactly where it is treated.
+	StateChamberCOppm = "chamber_co_ppm"
+
 	// Command verbs the chamber answers to.
 	cmdSetPressure = "set_pressure"
 	cmdSetOxygen   = "set_oxygen"
@@ -78,6 +84,7 @@ func GetBarochamberComponent() (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set(StateChamberPressure, defaultChamberPressure)
 			state.Set(StateChamberOxygen, defaultChamberOxygen)
+			state.Set(StateChamberCOppm, 0.0)
 		}),
 	)
 	if err != nil {
@@ -102,6 +109,10 @@ func handleChamberControls(this *component.Component) error {
 			this.State().Set(StateChamberPressure, pressure)
 			this.Logger().Printf("chamber at %.0f mmHg (%.2f atmospheres)",
 				pressure, pressure/helper.SeaLevelPressure)
+		case cmdSetCO:
+			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
+			this.State().Set(StateChamberCOppm, ppm)
+			this.Logger().Printf("chamber air carrying %.0f ppm carbon monoxide", ppm)
 		case cmdSetOxygen:
 			oxygen := min(max(helper.AsF64OrDefault(ctlSig, defaultChamberOxygen), 1.0), 100.0)
 			this.State().Set(StateChamberOxygen, oxygen)
@@ -130,5 +141,8 @@ func emitChamberGas(this *component.Component) error {
 		return fmt.Errorf("emit chamber gas: %w", err)
 	}
 
-	return this.OutputByName("environmental_gas").PutSignals(helper.WithPressure(air, pressure))
+	return this.OutputByName("environmental_gas").PutSignals(
+		helper.WithCarbonMonoxide(
+			helper.WithPressure(air, pressure),
+			this.State().Get(StateChamberCOppm).(float64)))
 }

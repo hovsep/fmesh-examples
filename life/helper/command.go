@@ -10,6 +10,8 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+//@TODO: this sounds like a part of generic simulation package, check
+
 // CommandLabel marks a signal as a control command. The habitat factors already
 // use this convention (see env/factor/gas.go), and the body follows it so there
 // is a single way to steer the simulation from outside.

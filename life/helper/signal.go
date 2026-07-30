@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+// @TODO: check if such helper funcs can be moved to signal package of fmesh itself, like we can cover all standard types and have such methods on signal type
 func AsBoolOrFalse(s *signal.Signal) bool {
 	return AsTypeOrDefault[bool](s, false)
 }

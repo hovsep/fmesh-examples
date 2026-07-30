@@ -13,11 +13,21 @@ import (
 )
 
 var (
-	// Saturation is the stored quantity, not tension: organs take oxygen out by
-	// the millilitre, and how much they can take depends on how much hemoglobin
-	// is there to carry it. PaO₂ is derived from saturation, not the other way
-	// round.
-	stateSaturation   common.State = "SaO2"
+	// Content is the stored quantity: oxygen actually carried, in mL per dL.
+	//
+	// Organs take oxygen out by the millilitre, so millilitres are what has to be
+	// tracked. Tension and saturation are what a clinician reads, so they are
+	// derived and published -- and the direction matters, because the two part
+	// company exactly when a patient is in trouble. Bleed a body, or bind its
+	// hemoglobin up with carbon monoxide, and the content collapses while the
+	// tension and the saturation sit there looking normal.
+	//
+	// This used to be stored the other way round, as saturation. It worked until
+	// something needed oxygen that hemoglobin was not carrying: saturation stops
+	// at 100, so the tension derived from it stopped too, and hyperbaric oxygen
+	// -- entirely a story about oxygen dissolved in plasma -- was inexpressible.
+	stateContent      common.State = "CaO2"
+	stateCarboxy      common.State = "COHb"
 	stateHemoglobin   common.State = "hemoglobin"
 	stateVolume       common.State = "volume_l"
 	statePaCO2        common.State = "PaCO2"
@@ -59,7 +69,8 @@ func GetBloodSystem() (*component.Component, error) {
 		),
 		component.WithActivationFunc(exchangeBloodGases),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateSaturation, bloodstream.NormalSaO2)
+			state.Set(stateContent, bloodstream.NormalOxygenContent)
+			state.Set(stateCarboxy, 0.0)
 			state.Set(stateHemoglobin, bloodstream.NormalHemoglobin)
 			state.Set(stateVolume, bloodstream.NormalBloodVolume)
 			state.Set(statePaCO2, bloodstream.NormalPaCO2)
@@ -132,12 +143,27 @@ func exchangeBloodGases(this *component.Component) error {
 }
 
 func publishBloodLevels(this *component.Component) {
-	saturation := this.State().Get(stateSaturation).(float64)
+	content := this.State().Get(stateContent).(float64)
 	hemoglobin := this.State().Get(stateHemoglobin).(float64)
+	carboxy := this.State().Get(stateCarboxy).(float64)
 	paCO2 := this.State().Get(statePaCO2).(float64)
 
-	paO2 := bloodstream.TensionAt(saturation)
-	content := bloodstream.OxygenContent(hemoglobin, saturation, paO2)
+	effective := bloodstream.EffectiveHemoglobin(hemoglobin, carboxy)
+	paO2 := bloodstream.TensionForContent(effective, content)
+
+	// What a pulse oximeter would read, which is not the same as how much of the
+	// blood is carrying oxygen.
+	//
+	// The instrument cannot tell oxyhemoglobin from carboxyhemoglobin and reports
+	// the sum, so in carbon monoxide poisoning it reads *higher* than the truth
+	// while the patient suffocates. Publishing the honest number here would be
+	// modelling a better oximeter than exists and would quietly delete the most
+	// dangerous fact about the poison. The number organs act on is the content,
+	// which is on the same signal and is not fooled.
+	oxyFraction := bloodstream.SaturationAt(paO2) / 100
+	displayed := mathx.Clamp(
+		(oxyFraction*(1-carboxy)+carboxy)*100,
+		bloodstream.MinSaturation, bloodstream.MaxSaturation)
 
 	this.OutputByName("venous_blood").PutSignals(
 		signal.New("venous_blood").
@@ -145,7 +171,8 @@ func publishBloodLevels(this *component.Component) {
 			WithLabel("type", "venous").
 			WithScalar("PaO2", paO2).
 			WithScalar("PaCO2", paCO2).
-			WithScalar("SpO2", saturation).
+			WithScalar("SpO2", displayed).
+			WithScalar("COHb", carboxy*100).
 			WithScalar("pH", bloodstream.PHAt(paCO2)).
 			WithScalar("CaO2", content).
 			WithScalar("hemoglobin", hemoglobin).
@@ -153,7 +180,7 @@ func publishBloodLevels(this *component.Component) {
 			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
 			WithScalars(circulatingHormones(this)),
 	)
-	this.OutputByName("spo2").PutPayloads(saturation)
+	this.OutputByName("spo2").PutPayloads(displayed)
 	this.OutputByName("pao2").PutPayloads(paO2)
 	this.OutputByName("paco2").PutPayloads(paCO2)
 	this.OutputByName("cao2").PutPayloads(content)
@@ -161,10 +188,13 @@ func publishBloodLevels(this *component.Component) {
 
 func updateBloodLevels(this *component.Component) {
 	dt := this.State().Get(stateDt).(float64)
-	saturation := this.State().Get(stateSaturation).(float64)
+	content := this.State().Get(stateContent).(float64)
 	hemoglobin := this.State().Get(stateHemoglobin).(float64)
-	volume := this.State().Get(stateVolume).(float64)
+	carboxy := this.State().Get(stateCarboxy).(float64)
 	co2 := this.State().Get(statePaCO2).(float64)
+
+	// Only the hemoglobin carbon monoxide has left alone can carry anything.
+	effective := bloodstream.EffectiveHemoglobin(hemoglobin, carboxy)
 
 	// Net airflow across both lungs.
 	var netFlow float64
@@ -198,8 +228,14 @@ func updateBloodLevels(this *component.Component) {
 	// ventilated lung is already nearly saturated, which is why hyperventilating
 	// blows off carbon dioxide without adding much oxygen.
 	if netFlow > 0 {
-		target := bloodstream.SaturationAt(alveolarPO2(this) - bloodstream.AaGradient)
-		saturation += (target - saturation) * o2InhaleGain * ventilation * dt
+		// Blood leaving the lung is in equilibrium with the alveoli, so the
+		// content it carries away is whatever that tension supports on whatever
+		// carrier is left. Both halves of that matter: the tension is what
+		// altitude and a chamber move, and the carrier is what bleeding and
+		// carbon monoxide take away.
+		arterial := max(alveolarPO2(this)-bloodstream.AaGradient, bloodstream.MinPaO2)
+		target := bloodstream.OxygenContentAt(effective, arterial)
+		content += (target - content) * o2InhaleGain * ventilation * dt
 	}
 
 	// Carbon dioxide leaves in proportion to how much air is moving and how much
@@ -218,7 +254,7 @@ func updateBloodLevels(this *component.Component) {
 	// of it a minute. Halve the hemoglobin and the same draw empties it twice as
 	// fast -- which is why bleeding suffocates a body whose lungs are perfectly
 	// good.
-	var o2DrawPerSec, co2LoadPerSec float64
+	var o2DrawPerSec, co2LoadPerSec, coLoad float64
 	hormoneRates := map[string]float64{}
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
 		rate := helper.AsF64OrDefault(sig, 0)
@@ -227,6 +263,10 @@ func updateBloodLevels(this *component.Component) {
 			o2DrawPerSec += rate
 		case bloodstream.SubstanceCO2Load:
 			co2LoadPerSec += rate
+		case bloodstream.SubstanceCOLoad:
+			// A dose, not a rate: a lungful of carbon monoxide binds what it
+			// binds and does not un-bind on its own.
+			coLoad += rate
 		case bloodstream.SubstanceHormone:
 			hormoneRates[sig.Labels().ValueOrDefault(bloodstream.HormoneLabel, "")] += rate
 		}
@@ -235,8 +275,12 @@ func updateBloodLevels(this *component.Component) {
 
 	accumulateHormones(this, hormoneRates, dt)
 
-	if capacity := bloodstream.HufnerConstant * hemoglobin * volume * bloodstream.DLPerLiter; capacity > 0 {
-		saturation -= (o2DrawPerSec * dt) / capacity * 100.0
+	// What the organs took: millilitres out of the millilitres carried, spread
+	// through however many decilitres of blood there are. Lose volume and the
+	// same draw costs more, which is why haemorrhage suffocates a body whose
+	// lungs are perfectly good.
+	if dl := this.State().Get(stateVolume).(float64) * bloodstream.DLPerLiter; dl > 0 {
+		content -= o2DrawPerSec * dt / dl
 	}
 
 	// Carbon dioxide is still carried as a tension: it is far more soluble than
@@ -244,10 +288,22 @@ func updateBloodLevels(this *component.Component) {
 	// range a body survives, so the extra machinery would buy nothing.
 	co2 += co2LoadPerSec * dt / bloodstream.CO2StoragePerMmHg
 
-	saturation = mathx.Clamp(saturation, bloodstream.MinSaturation, bloodstream.MaxSaturation)
+	// Carbon monoxide arrives here and leaves in advanceWithTime: binding is
+	// something a breath does, and coming off again is something time does.
+	if coLoad > 0 {
+		this.State().Update(stateCarboxy, func(v any) any {
+			return mathx.Clamp(v.(float64)+coLoad, 0, bloodstream.MaxCarboxyhemoglobin)
+		})
+	}
+
+	// The ceiling is whatever the surviving carrier could hold at the highest
+	// tension the body can be put at. It is a real ceiling and not a formality:
+	// in a hyperbaric chamber the content genuinely does exceed what hemoglobin
+	// alone can carry, because plasma is holding the difference.
+	content = mathx.Clamp(content, 0, bloodstream.OxygenContentAt(effective, bloodstream.MaxPaO2))
 	co2 = mathx.Clamp(co2, bloodstream.MinPaCO2, bloodstream.MaxPaCO2)
 
-	this.State().Set(stateSaturation, saturation)
+	this.State().Set(stateContent, content)
 	this.State().Set(statePaCO2, co2)
 }
 
@@ -256,21 +312,17 @@ func hormoneState(hormone string) common.State {
 }
 
 // advanceWithTime runs everything that happens because time passed rather than
-// because a signal arrived: hormones clearing, and fluid seeping back into an
-// emptied circulation.
+// because a signal arrived: hormones clearing, carbon monoxide coming off the
+// hemoglobin, fluid seeping back into an emptied circulation.
 //
 // It lives in the tick phase, and that placement is the whole point of it. This
 // component is activated twice per tick -- once when the lungs report their
 // airflow and once when the organs report what they consumed, because those
 // arrive on different mesh cycles -- so anything time-based that ran in the
 // integrating phase ran twice and aged the body at double speed. Hormone
-// half-lives were half what they claimed and transcapillary refill was twice as
-// quick.
-//
-// The doubling was survivable while the step was small enough to hide it. It
-// stopped being survivable the moment the step became a choice: at a coarser
-// tick, decay applied twice outruns secretion applied once, and a body under a
-// sustained stressor answers it by letting its adrenaline fall.
+// half-lives were half what they said, transcapillary refill was twice as
+// quick, and carbon monoxide came off the carrier in fourteen minutes where the
+// constant asked for twenty-eight.
 //
 // Signals may arrive any number of times per tick. A tick happens once. Work
 // that depends on elapsed time belongs where the elapsed time is.
@@ -285,6 +337,21 @@ func advanceWithTime(this *component.Component, dt float64) {
 		this.State().Set(key, mathx.Clamp(
 			mathx.DecayToward(level, 0, dt, bloodstream.HormoneHalfLife(hormone)), 0, 1))
 	}
+
+	// Carbon monoxide comes off the hemoglobin at a pace set by how much oxygen
+	// is competing for the same site, which is why the treatment for the poison
+	// is the gas it displaced.
+	content := this.State().Get(stateContent).(float64)
+	effective := bloodstream.EffectiveHemoglobin(
+		this.State().Get(stateHemoglobin).(float64),
+		this.State().Get(stateCarboxy).(float64))
+	paO2 := bloodstream.TensionForContent(effective, content)
+
+	this.State().Update(stateCarboxy, func(v any) any {
+		return mathx.Clamp(
+			mathx.DecayToward(v.(float64), 0, dt, bloodstream.COHalfLifeAt(paO2)),
+			0, bloodstream.MaxCarboxyhemoglobin)
+	})
 
 	refill(this, dt)
 }
@@ -350,10 +417,12 @@ func refill(this *component.Component, dt float64) {
 	restored := mathx.DecayToward(volume, bloodstream.NormalBloodVolume, dt, transcapillaryRefillHalfLifeSec)
 
 	// The red cells are however many there were; they are now spread through a
-	// larger volume.
-	hemoglobin := this.State().Get(stateHemoglobin).(float64)
+	// larger volume, and so is the oxygen they are carrying. Diluting one without
+	// the other would have the body gain oxygen by being given water.
 	if restored > 0 {
-		this.State().Set(stateHemoglobin, hemoglobin*volume/restored)
+		dilution := volume / restored
+		this.State().Update(stateHemoglobin, func(v any) any { return v.(float64) * dilution })
+		this.State().Update(stateContent, func(v any) any { return v.(float64) * dilution })
 	}
 	this.State().Set(stateVolume, restored)
 }

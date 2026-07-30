@@ -47,6 +47,7 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 	}
 
 	// Do the wiring
+	//@TODO: repeating err check suggests we can have some helper func here
 	if err := wireBrain(components); err != nil {
 		return nil, fmt.Errorf("wireBrain: %w", err)
 	}
@@ -489,10 +490,20 @@ func wireDamage(components *component.Collection) error {
 	}
 
 	// Inhaled cigarette toxin damages both lungs directly.
-	toxin := components.ByName("boundary:ingestion").OutputByName("substance_load")
-	return toxin.PipeTo(
+	ingestion := components.ByName("boundary:ingestion")
+	if err := ingestion.OutputByName("substance_load").PipeTo(
 		organs["lung_left"].InputByName(damage.InputPort),
 		organs["lung_right"].InputByName(damage.InputPort),
+	); err != nil {
+		return err
+	}
+
+	// ...and the carbon monoxide in the same smoke goes to the blood, on the
+	// same substance bus every organ uses to put things into the circulation.
+	// Smoke needed no new machinery to reach the hemoglobin; it only needed to
+	// say what it was carrying.
+	return ingestion.OutputByName("carbon_monoxide").PipeTo(
+		blood.InputByName("secretions"),
 	)
 }
 
@@ -668,6 +679,16 @@ func wireBloodSystem(components *component.Collection) error {
 		// or an oxygen mask into the circulation without any of them being named.
 		if err := lung.OutputByName("alveolar_po2").PipeTo(
 			blood.InputByName("alveolar_po2"),
+		); err != nil {
+			return err
+		}
+
+		// Carbon monoxide in the air crosses into the blood here. Each lung
+		// contributes what its own share of the breathing took up, and the two
+		// sum on the substance bus, so a body with one working lung is poisoned
+		// at half the rate -- which is correct, and which nothing had to arrange.
+		if err := lung.OutputByName("carbon_monoxide").PipeTo(
+			blood.InputByName("secretions"),
 		); err != nil {
 			return err
 		}

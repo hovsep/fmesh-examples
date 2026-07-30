@@ -157,3 +157,26 @@ func distributionPrefix(s *signal.Signal, key string) string {
 	}
 	return ""
 }
+
+// ScalarCOppm is the carbon monoxide in the air, in parts per million.
+//
+// It is a scalar of its own rather than a member of the composition
+// distribution, and that is how carbon monoxide is actually quoted: it is a
+// trace gas, dangerous at concentrations far too small to matter to the
+// composition. A thousand ppm is a tenth of one percent of the air and will
+// take half a body's hemoglobin out of service inside two hours. Rounding it
+// into the nitrogen would be arithmetically fine and physiologically absurd.
+const ScalarCOppm = "carbon_monoxide_ppm"
+
+// WithCarbonMonoxide stamps a carbon monoxide concentration onto an air signal.
+func WithCarbonMonoxide(air *signal.Signal, ppm float64) *signal.Signal {
+	return air.WithScalar(ScalarCOppm, ppm)
+}
+
+// AirCarbonMonoxide reads it. Clean air has none.
+func AirCarbonMonoxide(air *signal.Signal) float64 {
+	if air == nil {
+		return 0
+	}
+	return air.Scalars().ValueOrDefault(ScalarCOppm, 0)
+}

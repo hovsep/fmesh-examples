@@ -1,5 +1,7 @@
 package unit
 
+// @TODO: check if my approach is even helpful (when I multiply a number by constant to get units)
+// maybe it is overkill. If we justify the approach - let's check is somewhere we are missing units and use them, if no - let's drop units and just use comments
 const (
 	Percent = 1
 

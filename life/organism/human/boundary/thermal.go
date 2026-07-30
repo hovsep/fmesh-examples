@@ -20,6 +20,7 @@ func GetThermal() (*component.Component, error) {
 			"cold_load", // to skin and shivering reflex
 		),
 		component.WithActivationFunc(func(this *component.Component) error {
+			//@TODO: implement this to get affected by env temperature
 			return nil
 		}),
 	)

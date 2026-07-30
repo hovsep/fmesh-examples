@@ -57,7 +57,10 @@ func GetLung(side common.Side) (*component.Component, error) {
 		component.WithDescription(string(side)+" lung"),
 		component.WithPlugins(damage.New(damage.Config{Organ: "lung_" + string(side)})),
 		component.WithInputs("time", "pleural_pressure", "inspired_gas", "venous_blood"),
-		component.WithOutputs("volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas", "alveolar_po2"),
+		component.WithOutputs(
+			"volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas", "alveolar_po2",
+			"carbon_monoxide", // whatever the air was carrying, handed to the blood
+		),
 		component.WithActivationFunc(damage.FlatlineWhenFailed(
 			handleMechanics,
 			handleGasExchange,
@@ -154,6 +157,19 @@ func handleGasExchange(this *component.Component) error {
 	if bloodSig := this.InputByName("venous_blood").Signals().First(); bloodSig != nil {
 		bloodCO2 = bloodSig.Scalars().ValueOrDefault("PaCO2", 0)
 		bloodO2 = bloodSig.Scalars().ValueOrDefault("PaO2", 0)
+	}
+
+	// Carbon monoxide crosses here like anything else, and the lung is the only
+	// place it can: it is in the air, and this is where air meets blood. How much
+	// crosses depends on how foul the air is and on how much of it is being moved,
+	// which is why exertion in a contaminated space is so much worse than rest.
+	if ppm := helper.AirCarbonMonoxide(gas); ppm > 0 {
+		if err := this.OutputByName("carbon_monoxide").PutSignals(
+			bloodstream.Secretion(bloodstream.SubstanceCOLoad,
+				bloodstream.COUptakePerPpmPerMl*ppm*tickVolume),
+		); err != nil {
+			return err
+		}
 	}
 
 	// What the alveoli are actually offering the blood.

@@ -15,7 +15,7 @@ import (
 func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
 	agg, err := component.New(name,
 		component.WithDescription("composes data from multiple sources into one (single source of true for UI)"),
-		component.WithLabel("role", "aggregator"), //@TODO: generalise and refactor components taxonomy (same as signals)
+		component.WithLabel("role", "aggregator"),
 		component.WithOutputs("aggregated_state"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			return this.Inputs().ForEach(func(in *port.Port) error {
@@ -36,6 +36,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 	if err != nil {
 		return nil, err
 	}
+	//@TODO: dynamic piping sounds like a good idea for extraction , maybe as fmesh-level plugin (when fmesh supports such)
 	// Dynamic piping
 	for _, inputPath := range inputPaths {
 		if inputPath == "" {

@@ -24,6 +24,11 @@ const (
 	stateSawBrain  common.State = "saw_brain_this_tick"
 )
 
+//@TODO: this component must not just aggregate all signals from humans
+// this is the place when we analyse signals from multiple sources and derive new ones
+// like cancer risk (0-100%), some interesting trends or predictions (expected lifespan in years)
+// This is one of the most powerful components in the sim - it creates new knowledge
+
 // GetObservableState returns the body's telemetry hub: everything the outside
 // world can observe about the human leaves through here.
 //

@@ -82,6 +82,7 @@ func validate() component.ActivationFunc {
 
 // Sense activation function
 // In this phase a human component receives inputs from the environment
+//@TODO: so we have sense-act-feedback stages on human level. Let's think if we can use the same staged-approach on organ level. E.g. in sense we read stuff from blood and handle ctl signals, then in act we do something (diafragm contracts, lungs are ventilating) and in feedback - we just output our updated state
 func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 	return func(this *component.Component) error {
 		// Fan the tick out to every component in the body that keeps time.

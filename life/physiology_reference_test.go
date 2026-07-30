@@ -1238,3 +1238,164 @@ func TestReference_ABarochamberIsADropInForTheAtmosphere(t *testing.T) {
 	assert.InDelta(t, thinAir, thinMixture, 6,
 		"and to nearly the same degree, because the body multiplies the two and cannot tell them apart")
 }
+
+// TestReference_CarbonMonoxideTakesTheCarrierNotTheTension is the poison that
+// this blood model was built to be able to express.
+//
+// Carbon monoxide binds hemoglobin some two hundred times more readily than
+// oxygen and does not let go, so a share of the carrier is simply withdrawn from
+// service. Nothing else moves. The oxygen dissolved in plasma is untouched, so
+// the arterial PO₂ is normal; the hemoglobin that is still working is as
+// saturated as ever, so the saturation is normal; and the patient is suffocating.
+//
+// A model that stored tension, or stored saturation, could not say this at all.
+// It is the whole reason the blood carries content.
+func TestReference_CarbonMonoxideTakesTheCarrierNotTheTension(t *testing.T) {
+	const hemoglobin = 15.0
+
+	healthy := bloodstream.OxygenContentAt(hemoglobin, bloodstream.NormalPaO2)
+	poisoned := bloodstream.OxygenContentAt(
+		bloodstream.EffectiveHemoglobin(hemoglobin, 0.50), bloodstream.NormalPaO2)
+
+	assert.InDelta(t, healthy/2, poisoned, 0.5,
+		"half the hemoglobin out of service should halve the oxygen carried")
+
+	// And the two readings a clinician has both say nothing is wrong. This is the
+	// entire clinical problem: 50% carboxyhemoglobin is a critical poisoning, and
+	// a blood gas machine reports a normal arterial oxygen tension.
+	assert.InDelta(t, bloodstream.NormalPaO2,
+		bloodstream.TensionForContent(bloodstream.EffectiveHemoglobin(hemoglobin, 0.50), poisoned),
+		0.5, "with a perfectly normal PaO₂")
+	assert.Greater(t, bloodstream.SaturationAt(bloodstream.NormalPaO2), 96.0,
+		"and a perfectly normal saturation of the hemoglobin that is left")
+
+	// Anaemia of the same severity carries the same oxygen. The comparison is
+	// worth making because it shows what the model is actually representing:
+	// carbon monoxide is an acute anaemia that a blood count cannot see.
+	anaemic := bloodstream.OxygenContentAt(hemoglobin/2, bloodstream.NormalPaO2)
+	assert.InDelta(t, anaemic, poisoned, 0.1,
+		"losing half the carrier is the same injury whichever way it is lost")
+}
+
+// TestReference_COClearanceIsDrivenByOxygen checks the three half-lives every
+// toxicology reference quotes, and the reason there are three.
+//
+// Carbon monoxide and oxygen compete for the same site, so the speed at which
+// the poison comes off is set by how hard the oxygen is pushing. That is why the
+// treatment for carbon monoxide is oxygen, and why a hyperbaric chamber is worth
+// wheeling a patient to.
+func TestReference_COClearanceIsDrivenByOxygen(t *testing.T) {
+	minutes := func(paO2 float64) float64 { return bloodstream.COHalfLifeAt(paO2) / 60 }
+
+	assert.InDelta(t, 300, minutes(bloodstream.NormalPaO2), 5,
+		"room air: about five hours")
+	assert.InDelta(t, 85, minutes(600), 15,
+		"a mask of pure oxygen at one atmosphere: a reported ~90 minutes")
+	assert.InDelta(t, 28, minutes(2100), 10,
+		"a hyperbaric chamber: a reported ~23 minutes")
+
+	// The ordering is the part that has to be right, whatever the calibration.
+	assert.Less(t, minutes(600), minutes(bloodstream.NormalPaO2), "oxygen speeds it up")
+	assert.Less(t, minutes(2100), minutes(600), "and pressure speeds it up further")
+}
+
+// TestReference_ABoilerPoisonsAndAChamberRescues runs the whole thing in a body.
+//
+// A sealed room with a faulty appliance in it fills with carbon monoxide. The
+// body breathes it, and the poisoning is invisible to everything that measures:
+// the arterial oxygen tension does not move, and the saturation a pulse oximeter
+// would report does not move either -- it drifts *up*, because the instrument
+// cannot tell carboxyhemoglobin from oxyhemoglobin and adds them together.
+// Meanwhile the oxygen actually delivered falls by a fifth.
+//
+// Then the room becomes a hyperbaric chamber, which is the treatment. Pure
+// oxygen at three atmospheres puts the arterial tension past two thousand mmHg,
+// and the oxygen merely dissolved in plasma -- a rounding error in a healthy
+// body -- carries enough by itself to bring total content back above normal
+// while the poison is still on most of the hemoglobin.
+//
+// Nothing in the body knows any of this. The lungs transfer what the air is
+// carrying, the blood counts millilitres, and the clearance reads a tension.
+func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newChamberSim(t)
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+
+	blood := func(name string) float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault(name, 0)
+		}
+		return 0
+	}
+	snapshot := func() map[string]float64 {
+		return map[string]float64{
+			"SpO2": blood("SpO2"), "PaO2": blood("PaO2"),
+			"CaO2": blood("CaO2"), "COHb": blood("COHb"),
+		}
+	}
+
+	var clean, poisoned, treated map[string]float64
+	elapsed := 0.0
+
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 20):
+				clean = snapshot()
+				sim.Do("air:co 1500")
+			case within(elapsed, 1200):
+				poisoned = snapshot()
+				// The room is cleared and pressurised on pure oxygen.
+				sim.Do("air:co 0")
+				sim.Do("chamber:pressure 2280")
+				sim.Do("chamber:oxygen 100")
+			case elapsed > 2300:
+				treated = snapshot()
+			}
+			return nil
+		})
+	})
+
+	helper.RunSimulationAndThen(sim, 2350*time.Second, func() {
+		require.NotNil(t, clean)
+		require.NotNil(t, poisoned)
+		require.NotNil(t, treated)
+
+		// Twenty minutes in a contaminated room.
+		assert.Greater(t, poisoned["COHb"], 12.0,
+			"1500 ppm for twenty minutes should bind a serious fraction of the hemoglobin")
+		assert.Less(t, poisoned["CaO2"], clean["CaO2"]*0.9,
+			"and take a tenth or more of the oxygen supply with it")
+
+		// And the instruments say nothing is wrong. This is the assertion the
+		// whole model exists for.
+		// The tension does drift down a little, and the reason is worth reading
+		// rather than tuning away: this model holds one pool of blood, so what it
+		// reports is nearer a mixed arterial-venous sample than a purely arterial
+		// one. Tissues go on extracting the same millilitres from a smaller
+		// carrier, so they take more tension with them. That is real -- venous
+		// oxygen genuinely does fall in carbon monoxide poisoning, and it is why
+		// the tissues are hypoxic -- but the clinically famous fact is about the
+		// arterial number, and the arterial number stays in the range a blood gas
+		// machine would call normal.
+		assert.Greater(t, poisoned["PaO2"], 80.0,
+			"while the arterial oxygen tension stays inside the normal range")
+		assert.Less(t, clean["PaO2"]-poisoned["PaO2"], 10.0,
+			"having barely moved, which is what makes the poisoning invisible")
+		assert.GreaterOrEqual(t, poisoned["SpO2"], clean["SpO2"]-0.5,
+			"and the pulse oximeter reads no lower -- it counts the poison as if it were oxygen")
+
+		// The chamber.
+		assert.Greater(t, treated["PaO2"], 1500.0,
+			"pure oxygen at three atmospheres should drive the arterial tension past anything a mask can reach")
+		// Eighteen minutes in the chamber against a half-life of about
+		// twenty-six: a bit under half of it should be gone.
+		assert.Less(t, treated["COHb"], poisoned["COHb"]*0.7,
+			"which should have stripped a good share of the poison off the hemoglobin")
+		assert.Greater(t, treated["CaO2"], clean["CaO2"],
+			"and carried more oxygen than a healthy body does, with plasma making up what the hemoglobin cannot")
+	})
+}
