@@ -478,21 +478,12 @@ func wireDamage(components *component.Collection) error {
 		}
 	}
 
-	// Inhaled cigarette toxin damages both lungs directly.
-	ingestion := components.ByName("boundary:ingestion")
-	if err := ingestion.OutputByName("substance_load").PipeTo(
+	// Whatever the air was carrying injures the lungs, which is where it
+	// arrived. Smoke is breathed rather than swallowed, so this comes from the
+	// airway and not from the mouth.
+	return components.ByName("boundary:respiratory").OutputByName("substance_load").PipeTo(
 		organs["lung_left"].InputByName(damage.InputPort),
 		organs["lung_right"].InputByName(damage.InputPort),
-	); err != nil {
-		return err
-	}
-
-	// ...and the carbon monoxide in the same smoke goes to the blood, on the
-	// same substance bus every organ uses to put things into the circulation.
-	// Smoke needed no new machinery to reach the hemoglobin; it only needed to
-	// say what it was carrying.
-	return ingestion.OutputByName("carbon_monoxide").PipeTo(
-		blood.InputByName("secretions"),
 	)
 }
 

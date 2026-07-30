@@ -21,9 +21,7 @@ const ControlPort = simulation.ControlPort
 // an organ directly, it states an intent ("intake:water") and the owning
 // controller decides what that means physiologically.
 var commandRoutes = map[string]string{
-	"intake": "controller:intake",
-	//@TODO: smoke is not intake, do not mix it, smoke must be implemented as a cmd that mixins some smoke substanses into gas factor liek "gas:mixin cigarrette_smoke 5m" and then "gas:remove_all_mixins" - so we can have gas preset + different mixins and combine them
-	"smoke":     "controller:intake", // smoking is oral intake of a toxin
+	"intake":    "controller:intake",
 	"activity":  "controller:physical_stress",
 	"emotion":   "controller:mental_stress",
 	"excretion": "controller:excretion",

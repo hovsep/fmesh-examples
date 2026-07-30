@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
+	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/simulation/simtest"
-	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,21 +38,27 @@ func Test_SmokingDamagesTheLungs(t *testing.T) {
 	})
 }
 
-// Test_ASingleCigaretteTakesMinutes checks the process is spanned, not instant:
-// one cigarette is still being smoked a minute in, and is done well before it
-// could take an implausibly long time.
+// Test_ASingleCigaretteTakesMinutes checks the smoke is spanned, not instant:
+// one cigarette is still in the air a minute in, and clears on its own.
+//
+// The cigarette used to be a process inside the intake controller, metering a
+// dose of toxin into the body. It is a mixin in the air now, which is where
+// smoke actually is -- so what is asserted is that the room is still smoky, not
+// that a controller is still busy.
 func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
 	sim := newCommandableSim(t)
 	sim.Do("smoke:cigarette")
 
-	intake := bodyComponent(t, sim, "controller:intake")
+	gas := simMesh(sim).ComponentByName("gas")
+	active := func() int {
+		return len(gas.State().Get(factor.StateMixins).(map[string]float64))
+	}
 
-	// One minute in, the cigarette (5-10 min) is still going.
 	simtest.RunFor(sim, time.Minute, func() {
-		set, _ := intake.State().Get(controller.StateProcesses).(*simtime.ProcessSet)
-		if set != nil {
-			assert.Positive(t, set.Active(), "a cigarette should still be burning after a minute")
-		}
+		assert.Positive(t, active(), "a cigarette should still be burning after a minute")
+	})
+	simtest.RunFor(sim, 10*time.Minute, func() {
+		assert.Zero(t, active(), "and it should have burned out without anyone clearing it")
 	})
 }
 
