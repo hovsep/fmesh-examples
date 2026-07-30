@@ -10,15 +10,14 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
-	minBPM float64 = 40 * PerMinute
-	maxBPM float64 = 200 * PerMinute
+	minBPM float64 = 40
+	maxBPM float64 = 200
 
 	// HeartO2PerMinute is the myocardium's resting oxygen demand in mL/min. The
 	// heart never rests and pays for it: it extracts far more of the oxygen

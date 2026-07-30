@@ -5,7 +5,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -71,12 +70,12 @@ func Pack(nitrogen, oxygen, argon, pollution, temperature, humidity float64) (*s
 		WithLabel("category", "gas").
 		WithLabel("type", "air").
 		WithLabel("distribution:composition", "true").
-		WithScalar("temperature", temperature*unit.Celsius).
-		WithScalar("humidity", humidity*unit.Percent).
-		WithScalar("composition:nitrogen", nitrogen*unit.Percent).
-		WithScalar("composition:oxygen", oxygen*unit.Percent).
-		WithScalar("composition:argon", argon*unit.Percent).
-		WithScalar("composition:pollution", pollution*unit.Percent), nil
+		WithScalar("temperature", temperature).
+		WithScalar("humidity", humidity).
+		WithScalar("composition:nitrogen", nitrogen).
+		WithScalar("composition:oxygen", oxygen).
+		WithScalar("composition:argon", argon).
+		WithScalar("composition:pollution", pollution), nil
 }
 
 // Unpack extracts all components from an air signal

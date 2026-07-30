@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
@@ -14,8 +13,8 @@ import (
 
 const (
 	LastBrainActivity                   common.State = "last_brain_activity"
-	defaultBrainActivitySmoothingFactor              = 0.1 * DNCS    // alpha in ema
-	defaultBrainActivityThreshold                    = 0.0001 * DNCS // epsilon in ema
+	defaultBrainActivitySmoothingFactor              = 0.1    // alpha in ema
+	defaultBrainActivityThreshold                    = 0.0001 // epsilon in ema
 
 	// Death is derived from the brain: once the body has been alive, a whole tick
 	// with no brain activity (the brain has failed and stopped emitting) means it
@@ -135,8 +134,8 @@ func forwardCatalogSignals(this *component.Component) error {
 	pairs := make([]port.Pair, 0, len(passThrough))
 	for _, m := range passThrough {
 		pairs = append(pairs, port.Pair{
-			this.InputByName(m.Source),
-			this.OutputByName(m.Port),
+			From: this.InputByName(m.Source),
+			To:   this.OutputByName(m.Port),
 		})
 	}
 	return port.MultiForward(pairs...)

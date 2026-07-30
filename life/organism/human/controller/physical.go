@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -35,7 +34,7 @@ const (
 )
 
 // Resting metabolic demand, the floor the body returns to when nothing is happening.
-const RestingIntensity = 1.0 * Proportion
+const RestingIntensity = 1.0
 
 // Indefinite marks an activity with no requested end.
 const Indefinite = -1.0

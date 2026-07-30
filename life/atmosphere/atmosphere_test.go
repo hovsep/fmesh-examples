@@ -5,7 +5,6 @@ package atmosphere
 import (
 	"testing"
 
-	"github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,12 +29,12 @@ func TestUnpackAir_RoundTrip(t *testing.T) {
 
 	rn, ro, ra, rp, rtemp, rhum, err := Unpack(s)
 	require.NoError(t, err)
-	assert.Equal(t, n*unit.Percent, rn)
-	assert.Equal(t, o*unit.Percent, ro)
-	assert.Equal(t, a*unit.Percent, ra)
-	assert.Equal(t, p*unit.Percent, rp)
-	assert.Equal(t, temp*unit.Celsius, rtemp)
-	assert.Equal(t, hum*unit.Percent, rhum)
+	assert.Equal(t, n, rn)
+	assert.Equal(t, o, ro)
+	assert.Equal(t, a, ra)
+	assert.Equal(t, p, rp)
+	assert.Equal(t, temp, rtemp)
+	assert.Equal(t, hum, rhum)
 }
 
 func TestUnpackAir_Nil(t *testing.T) {
@@ -55,7 +54,7 @@ func TestMapAirScalar_StandaloneScalar(t *testing.T) {
 	s = MapScalar(s, "temperature", func(old float64) float64 { return old + 1.0 })
 
 	v := s.Scalars().ValueOrDefault("temperature", 0)
-	assert.Equal(t, 26.0*unit.Celsius+1.0, v)
+	assert.Equal(t, 26.0+1.0, v)
 }
 
 func TestMapAirScalar_DistributionRebalances(t *testing.T) {
@@ -63,11 +62,11 @@ func TestMapAirScalar_DistributionRebalances(t *testing.T) {
 	require.NoError(t, err)
 
 	s = MapScalar(s, "composition:pollution", func(_ float64) float64 {
-		return float64(2 * unit.Percent)
+		return float64(2)
 	})
 
 	// Target gets exactly its mapped value
-	assert.Equal(t, float64(2*unit.Percent), s.Scalars().ValueOrDefault("composition:pollution", 0))
+	assert.Equal(t, float64(2), s.Scalars().ValueOrDefault("composition:pollution", 0))
 
 	// Distribution rebalanced to sum 100
 	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +
@@ -77,8 +76,8 @@ func TestMapAirScalar_DistributionRebalances(t *testing.T) {
 	assert.InDelta(t, 100.0, compSum, 1e-9)
 
 	// Standalone scalars unchanged
-	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().ValueOrDefault("temperature", 0))
-	assert.Equal(t, 58.8*unit.Percent, s.Scalars().ValueOrDefault("humidity", 0))
+	assert.Equal(t, 26.0, s.Scalars().ValueOrDefault("temperature", 0))
+	assert.Equal(t, 58.8, s.Scalars().ValueOrDefault("humidity", 0))
 }
 
 func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
@@ -101,10 +100,10 @@ func TestMapAirScalar_StandaloneNoRebalance(t *testing.T) {
 	s = MapScalar(s, "humidity", func(old float64) float64 { return old * 2 })
 
 	// Only humidity changed
-	assert.Equal(t, 58.8*unit.Percent*2, s.Scalars().ValueOrDefault("humidity", 0))
+	assert.Equal(t, 58.8*2, s.Scalars().ValueOrDefault("humidity", 0))
 
 	// Nothing else touched
-	assert.Equal(t, 26.0*unit.Celsius, s.Scalars().ValueOrDefault("temperature", 0))
+	assert.Equal(t, 26.0, s.Scalars().ValueOrDefault("temperature", 0))
 
 	// Composition still sums to 100
 	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +

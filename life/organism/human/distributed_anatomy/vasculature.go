@@ -7,7 +7,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -28,13 +27,13 @@ import (
 // exactly that fail is the point of modelling it.
 const (
 	// NormalStrokeVolume is what a well-filled adult heart ejects per beat, mL.
-	NormalStrokeVolume = 70.0 * Milliliter
+	NormalStrokeVolume = 70.0
 
 	// UnstressedVolume is the blood that fills the circulation without
 	// stretching it, in litres. Only what is above this stretches the ventricle
 	// and contributes to preload -- which is why the first litre lost costs
 	// little and the second costs everything.
-	UnstressedVolume = 2.0 * Liter
+	UnstressedVolume = 2.0
 
 	// NormalSVR is systemic vascular resistance in a resting adult, in
 	// mmHg·min/L (Wood units). Arterioles set it, and the sympathetic system
@@ -67,12 +66,12 @@ const (
 
 	// CentralVenousPressure is the pressure blood returns at, mmHg. It is small
 	// next to arterial pressure but is what the arithmetic sits on top of.
-	CentralVenousPressure = 5.0 * MmHg
+	CentralVenousPressure = 5.0
 
 	// NormalMAP is mean arterial pressure in a healthy adult: the set point the
 	// baroreflex defends, and roughly what 5 L/min through a normal resistance
 	// produces.
-	NormalMAP = 93.0 * MmHg
+	NormalMAP = 93.0
 
 	// vasoconstrictionGain is how hard sympathetic tone can squeeze the
 	// arterioles. At full tone resistance roughly doubles, which is the body's

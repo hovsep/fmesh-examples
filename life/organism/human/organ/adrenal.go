@@ -8,7 +8,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
@@ -31,12 +30,12 @@ const (
 	// Peak secretion rates, in circulating level per second. Adrenaline can
 	// take the blood from nothing to saturated in about ten seconds; cortisol
 	// takes several minutes.
-	maxAdrenalineRate = 0.10 * PerSecond
-	maxCortisolRate   = 0.004 * PerSecond
+	maxAdrenalineRate = 0.10
+	maxCortisolRate   = 0.004
 
 	// Sympathetic drive below this is ordinary living and provokes nothing.
 	// Above it, secretion rises with the drive.
-	secretionThreshold = 0.35 * DNCS
+	secretionThreshold = 0.35
 
 	stateSympathetic common.State = "sympathetic_tone"
 )

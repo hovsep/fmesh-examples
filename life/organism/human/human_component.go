@@ -120,17 +120,17 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		skin := mesh.ComponentByName("da:skin")
 		if err := port.MultiForward(
 			port.Pair{
-				this.InputByName("habitat_gas_environmental_gas"),
-				mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
+				From: this.InputByName("habitat_gas_environmental_gas"),
+				To:   mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
 			},
 			port.Pair{
-				this.InputByName("habitat_gas_environmental_gas"),
-				skin.InputByName("ambient_gas"),
+				From: this.InputByName("habitat_gas_environmental_gas"),
+				To:   skin.InputByName("ambient_gas"),
 			},
 			// Sunlight falls on the skin.
 			port.Pair{
-				this.InputByName("habitat_sun_uvi"),
-				skin.InputByName("radiation"),
+				From: this.InputByName("habitat_sun_uvi"),
+				To:   skin.InputByName("radiation"),
 			},
 		); err != nil {
 			return fmt.Errorf("failed to forward environment into human mesh: %w", err)
@@ -170,8 +170,8 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 		pairs := make([]port.Pair, 0, len(ports))
 		for _, name := range ports {
 			pairs = append(pairs, port.Pair{
-				observableState.OutputByName(name),
-				this.OutputByName(name),
+				From: observableState.OutputByName(name),
+				To:   this.OutputByName(name),
 			})
 		}
 

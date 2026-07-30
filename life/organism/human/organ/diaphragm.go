@@ -8,20 +8,19 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
-	TidalRespiratoryRate = 12 * PerMinute
+	TidalRespiratoryRate = 12
 
-	MinRespiratoryRate = 8 * PerMinute
-	MaxRespiratoryRate = 30 * PerMinute
+	MinRespiratoryRate = 8
+	MaxRespiratoryRate = 30
 
-	BasePleuralPressure          = -5 * CmH2O // resting pleural pressure at FRC
-	InspiratoryPressureAmplitude = 3 * CmH2O  // peak swing during quiet breathing (−5 → −8 cmH₂O)
+	BasePleuralPressure          = -5.0 // resting pleural pressure at FRC
+	InspiratoryPressureAmplitude = 3.0  // peak swing during quiet breathing (−5 → −8 cmH₂O)
 
 	inhaleFraction = 1.0 / 3.0 // I:E = 1:2
 	exhaleDecay    = 5.0       // exp(-5) ≈ 0.007 residual — negligible pressure step at cycle restart
