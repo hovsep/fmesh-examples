@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 // Muscle fatigue is a 0..100 scale: exertion builds it up, rest works it off.
@@ -65,7 +65,7 @@ func GetMuscularSystem() (*component.Component, error) {
 		),
 		component.WithInputs(common.TimePort, "physical_load"),
 		component.WithOutputs("fatigue"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			latchExertion,
 			integrateFatigue,
 		)),
@@ -83,7 +83,7 @@ func GetMuscularSystem() (*component.Component, error) {
 // latchExertion remembers the current exertion whenever it arrives.
 func latchExertion(this *component.Component) error {
 	if in := this.InputByName("physical_load"); in.HasSignals() {
-		this.State().Set(stateIntensity, helper.AsF64OrDefault(in.Signals().First(), 1.0))
+		this.State().Set(stateIntensity, signal.AsFloat64OrDefault(in.Signals().First(), 1.0))
 	}
 	return nil
 }

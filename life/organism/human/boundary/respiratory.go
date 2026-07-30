@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -21,7 +20,7 @@ func GetRespiratory() (*component.Component, error) {
 			"inspired_gas",
 		),
 		component.WithActivationFunc(
-			helper.PipelineActivationFunc([]string{"environmental_gas"}, "inspired_gas", filterInspiredGas, humidifyInspiredGas, warmUpInspiredGas)),
+			component.Pipeline([]string{"environmental_gas"}, "inspired_gas", filterInspiredGas, humidifyInspiredGas, warmUpInspiredGas)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("boundary:respiratory: %w", err)

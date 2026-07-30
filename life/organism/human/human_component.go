@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -24,6 +23,19 @@ func InnerMesh(c *component.Component) *fmesh.FMesh {
 	}
 	mesh, _ := c.State().Get(InnerMeshState).(*fmesh.FMesh)
 	return mesh
+}
+
+// Find returns the first human in a mesh, or nil if there is none.
+//
+// A human is recognised by what it is labelled rather than by its name, because
+// the name belongs to the person -- there is a Leon in the habitat, not a
+// "human" -- and anything looking for a body should not have to know who it is.
+func Find(fm *fmesh.FMesh) *component.Component {
+	return fm.Components().FindAny(func(c *component.Component) bool {
+		return c.Labels().ValueIs("role", "organism") &&
+			c.Labels().ValueIs("genus", "homo") &&
+			c.Labels().ValueIs("species", "sapiens")
+	})
 }
 
 // New returns a new human as a component (for simplicity we skip a clothing insulation factor, so the human being is naked)
@@ -52,7 +64,7 @@ func New(name string) (*component.Component, error) {
 		// Everything the body publishes, taken from the catalog so this list
 		// cannot drift from what observable_state actually produces.
 		component.WithOutputs(telemetry.Ports()...),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			validate(),
 			sense(mesh),
 			routeCommands(mesh),
@@ -82,7 +94,7 @@ func validate() component.ActivationFunc {
 
 // Sense activation function
 // In this phase a human component receives inputs from the environment
-//@TODO: so we have sense-act-feedback stages on human level. Let's think if we can use the same staged-approach on organ level. E.g. in sense we read stuff from blood and handle ctl signals, then in act we do something (diafragm contracts, lungs are ventilating) and in feedback - we just output our updated state
+// @TODO: so we have sense-act-feedback stages on human level. Let's think if we can use the same staged-approach on organ level. E.g. in sense we read stuff from blood and handle ctl signals, then in act we do something (diafragm contracts, lungs are ventilating) and in feedback - we just output our updated state
 func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 	return func(this *component.Component) error {
 		// Fan the tick out to every component in the body that keeps time.
@@ -106,17 +118,17 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		// Environmental air enters through the airway, and also reaches the skin,
 		// which feels the ambient temperature carried on it.
 		skin := mesh.ComponentByName("da:skin")
-		if err := helper.MultiForward(
-			helper.PortPair{
+		if err := port.MultiForward(
+			port.Pair{
 				this.InputByName("habitat_gas_environmental_gas"),
 				mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
 			},
-			helper.PortPair{
+			port.Pair{
 				this.InputByName("habitat_gas_environmental_gas"),
 				skin.InputByName("ambient_gas"),
 			},
 			// Sunlight falls on the skin.
-			helper.PortPair{
+			port.Pair{
 				this.InputByName("habitat_sun_uvi"),
 				skin.InputByName("radiation"),
 			},
@@ -155,15 +167,15 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 		// the matching output on the human component. Port names are identical
 		// on both sides, so the catalog drives the whole hand-off.
 		ports := telemetry.Ports()
-		pairs := make([]helper.PortPair, 0, len(ports))
-		for _, port := range ports {
-			pairs = append(pairs, helper.PortPair{
-				observableState.OutputByName(port),
-				this.OutputByName(port),
+		pairs := make([]port.Pair, 0, len(ports))
+		for _, name := range ports {
+			pairs = append(pairs, port.Pair{
+				observableState.OutputByName(name),
+				this.OutputByName(name),
 			})
 		}
 
-		if err := helper.MultiForward(pairs...); err != nil {
+		if err := port.MultiForward(pairs...); err != nil {
 			return fmt.Errorf("failed to forward signals from human mesh: %w", err)
 		}
 		return nil

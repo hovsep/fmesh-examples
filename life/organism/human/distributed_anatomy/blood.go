@@ -6,7 +6,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -105,7 +104,7 @@ func exchangeBloodGases(this *component.Component) error {
 	// Latch the blood sugar the reservoir reports, whenever it arrives (on its
 	// own mesh cycle), so the published venous blood always carries a value.
 	if in := this.InputByName("glucose"); in.HasSignals() {
-		this.State().Set(stateGlucoseLevel, helper.AsF64OrDefault(in.Signals().First(), bloodstream.DefaultGlucoseLevel))
+		this.State().Set(stateGlucoseLevel, signal.AsFloat64OrDefault(in.Signals().First(), bloodstream.DefaultGlucoseLevel))
 	}
 
 	// Blood leaving through a wound takes its hemoglobin with it, which is the
@@ -113,7 +112,7 @@ func exchangeBloodGases(this *component.Component) error {
 	if in := this.InputByName("blood_loss"); in.HasSignals() {
 		var lost float64
 		in.Signals().ForEach(func(sig *signal.Signal) error {
-			lost += helper.AsF64OrDefault(sig, 0)
+			lost += signal.AsFloat64OrDefault(sig, 0)
 			return nil
 		})
 		bleed(this, lost)
@@ -200,7 +199,7 @@ func updateBloodLevels(this *component.Component) {
 	// Net airflow across both lungs.
 	var netFlow float64
 	this.InputByName("airflow").Signals().ForEach(func(sig *signal.Signal) error {
-		netFlow += helper.AsF64OrDefault(sig, 0)
+		netFlow += signal.AsFloat64OrDefault(sig, 0)
 		return nil
 	})
 
@@ -258,7 +257,7 @@ func updateBloodLevels(this *component.Component) {
 	var o2DrawPerSec, co2LoadPerSec, coLoad float64
 	hormoneRates := map[string]float64{}
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
-		rate := helper.AsF64OrDefault(sig, 0)
+		rate := signal.AsFloat64OrDefault(sig, 0)
 		switch sig.Labels().ValueOrDefault(bloodstream.SubstanceLabel, "") {
 		case bloodstream.SubstanceO2Draw:
 			o2DrawPerSec += rate
@@ -443,7 +442,7 @@ func alveolarPO2(this *component.Component) float64 {
 	var sum float64
 	var n int
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		sum += helper.AsF64OrDefault(sig, bloodstream.SeaLevelAlveolarPO2)
+		sum += signal.AsFloat64OrDefault(sig, bloodstream.SeaLevelAlveolarPO2)
 		n++
 		return nil
 	})

@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,7 @@ func observedAliveness(t *testing.T, sim *session.Session) func() (everDead bool
 	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterRun(func(*fmesh.FMesh) error {
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
-				if v, ok := helper.NumericPayload(s); ok {
+				if v, ok := signal.AsNumber(s); ok {
 					final = v
 					if v == 0 {
 						everDead = true
@@ -42,7 +42,7 @@ func observedAliveness(t *testing.T, sim *session.Session) func() (everDead bool
 
 func organComp(t *testing.T, sim *session.Session, name string) *component.Component {
 	t.Helper()
-	inner := human.InnerMesh(helper.FindHumanComponent(simMesh(sim)))
+	inner := human.InnerMesh(human.Find(simMesh(sim)))
 	require.NotNil(t, inner)
 	c := inner.ComponentByName(name)
 	require.NotNil(t, c, "no %q in the human mesh", name)
@@ -95,7 +95,7 @@ func Test_DeathIsIrreversible(t *testing.T) {
 				injured = true
 			}
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
-				v, _ := helper.NumericPayload(s)
+				v, _ := signal.AsNumber(s)
 				if v == 0 {
 					seenDead = true
 				} else if seenDead {

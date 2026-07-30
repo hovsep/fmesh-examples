@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -122,7 +121,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 		component.WithOutputs("autonomic_tone"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			if in := this.InputByName("map"); in.HasSignals() {
-				this.State().Set(stateLastMAP, helper.AsF64OrDefault(in.Signals().First(), da.NormalMAP))
+				this.State().Set(stateLastMAP, signal.AsFloat64OrDefault(in.Signals().First(), da.NormalMAP))
 			}
 			if in := this.InputByName("venous_blood"); in.HasSignals() {
 				if sig := in.Signals().First(); sig != nil {
@@ -135,7 +134,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 				return nil
 			}
 
-			neuralDrive := helper.AsF64OrDefault(this.InputByName("neural_drive").Signals().First(), 0.0)
+			neuralDrive := signal.AsFloat64OrDefault(this.InputByName("neural_drive").Signals().First(), 0.0)
 
 			if neuralDrive <= criticalNeuralDrive {
 				this.Logger().Println("Neural drive too low")

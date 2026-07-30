@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -57,7 +56,7 @@ func GetGasComponent() (*component.Component, error) {
 		// For the sake of simplicity, we skip parameters like barometric pressure or wind
 		component.WithOutputs("environmental_gas"),
 		component.WithActivationFunc(
-			helper.SequentialActivationFunc(
+			component.Sequential(
 				handleControlSignals,
 				emitEnvironmentalGas,
 			),
@@ -87,24 +86,24 @@ func handleControlSignals(this *component.Component) error {
 		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
 		case "change_temperature":
 			this.State().Update("temperature", func(currentTemp any) any {
-				return currentTemp.(float64) + helper.AsF64OrDefault(ctlSig, 0.0)
+				return currentTemp.(float64) + signal.AsFloat64OrDefault(ctlSig, 0.0)
 			})
 			return nil
 		case cmdSetAltitude:
-			metres := helper.AsF64OrDefault(ctlSig, 0.0)
+			metres := signal.AsFloat64OrDefault(ctlSig, 0.0)
 			this.State().Set(StateAltitude, metres)
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
 				metres, atmosphere.PressureAtAltitude(metres))
 			return nil
 		case cmdSetCO:
-			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
+			ppm := max(signal.AsFloat64OrDefault(ctlSig, 0.0), 0)
 			this.State().Set(StateCOppm, ppm)
 			this.Logger().Printf("carbon monoxide in the air: %.0f ppm", ppm)
 			return nil
 		case "set_temperature":
-			this.Logger().Println("Setting temperature to ", helper.AsF64OrDefault(ctlSig, 0.0))
+			this.Logger().Println("Setting temperature to ", signal.AsFloat64OrDefault(ctlSig, 0.0))
 			this.State().Update("temperature", func(currentTemp any) any {
-				return helper.AsF64OrDefault(ctlSig, 0.0)
+				return signal.AsFloat64OrDefault(ctlSig, 0.0)
 			})
 			return nil
 		default:

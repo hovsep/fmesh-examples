@@ -15,7 +15,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/device"
 	"github.com/hovsep/fmesh-examples/life/env"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/simulation/command"
@@ -137,7 +136,7 @@ func bodyCommand(sim *session.Session, name, description string, parseArgs func(
 		Group:       "Body",
 		Description: description,
 		Run: func(_ io.Writer, args []string) error {
-			body := helper.FindHumanComponent(mesh)
+			body := human.Find(mesh)
 			if body == nil {
 				return errors.New("no human in the simulation")
 			}

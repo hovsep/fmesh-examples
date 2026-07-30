@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -165,7 +164,7 @@ func applyHepaticGlucose(this *component.Component) {
 	}
 
 	dt := this.State().Get(StateDt).(float64)
-	delta := helper.AsF64OrDefault(in.Signals().First(), 0) * dt
+	delta := signal.AsFloat64OrDefault(in.Signals().First(), 0) * dt
 	if delta == 0 {
 		return
 	}
@@ -199,7 +198,7 @@ func applyThermal(this *component.Component) {
 		return
 	}
 
-	rate := helper.AsF64OrDefault(in.Signals().First(), 0)
+	rate := signal.AsFloat64OrDefault(in.Signals().First(), 0)
 	dt := this.State().Get(StateDt).(float64)
 	this.State().Update(StateCoreTemperature, func(v any) any {
 		return mathx.Clamp(v.(float64)+rate*dt, MinCoreTemperature, MaxCoreTemperature)
@@ -288,7 +287,7 @@ func applyExertion(this *component.Component) {
 		return
 	}
 
-	intensity := helper.AsF64OrDefault(in.Signals().First(), 1.0)
+	intensity := signal.AsFloat64OrDefault(in.Signals().First(), 1.0)
 	dt := this.State().Get(StateDt).(float64)
 	burnt := RestingBurnKcalPerSec * intensity * dt
 

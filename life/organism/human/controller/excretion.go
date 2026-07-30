@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -39,7 +38,7 @@ func GetExcretion() (*component.Component, error) {
 		component.WithDescription("Turns voiding commands into excretion intent"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("urine_out", "feces_out"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptExcretionCommands,
 			emitExcretionIntent,
 		)),

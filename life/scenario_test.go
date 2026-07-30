@@ -6,7 +6,6 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/simulation/command"
@@ -69,7 +68,7 @@ func simMesh(sim *session.Session) *fmesh.FMesh {
 func bodyComponent(t *testing.T, sim *session.Session, name string) *component.Component {
 	t.Helper()
 
-	body := helper.FindHumanComponent(simMesh(sim))
+	body := human.Find(simMesh(sim))
 	require.NotNil(t, body, "no human in the simulation")
 
 	inner := human.InnerMesh(body)

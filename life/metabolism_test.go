@@ -6,7 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
@@ -230,7 +230,7 @@ func lastFeelings(t *testing.T, sim *session.Session) func() *signal.Signal {
 	aggregator := simMesh(sim).ComponentByName("aggregated_state")
 	require.NotNil(t, aggregator)
 
-	body := helper.FindHumanComponent(simMesh(sim))
+	body := human.Find(simMesh(sim))
 	require.NotNil(t, body)
 	key := body.Name() + telemetry.PathSeparator + "feelings"
 

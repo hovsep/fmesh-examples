@@ -45,3 +45,5 @@ require (
 replace github.com/hovsep/fmesh-examples => ./../
 
 replace github.com/hovsep/fmesh-examples/simulation => ./../simulation
+
+replace github.com/hovsep/fmesh => /Users/ovsep.avakian/repos/fmesh

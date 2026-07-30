@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -88,7 +88,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 // string type tag as their payload and keep every real measurement in scalars, so
 // without the scalar lines they would reach the UI carrying nothing at all.
 func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
-	if value, ok := helper.NumericPayload(sig); ok {
+	if value, ok := signal.AsNumber(sig); ok {
 		if err := stream.PutPayloads(fmt.Sprintf("%s %v \n", key, value)); err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 
 	// Everything the body publishes, addressed by the human's actual name rather
 	// than a hardcoded one, so renaming the subject does not silently empty the UI.
-	body := helper.FindHumanComponent(h.FM)
+	body := human.Find(h.FM)
 	if body == nil {
 		return nil, fmt.Errorf("no human in the habitat to aggregate state from")
 	}

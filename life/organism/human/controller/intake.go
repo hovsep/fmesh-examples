@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -66,7 +65,7 @@ func GetIntake() (*component.Component, error) {
 		component.WithDescription("Turns eating, drinking and smoking commands into ingestion metered over time"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("intake_intent"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptIntakeCommands,
 			meterIntake,
 		)),

@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -40,7 +41,7 @@ func GetObservableState() (*component.Component, error) {
 		component.WithDescription("Observable state of the human being (e.g., temperature, blood pressure etc)"),
 		component.WithInputs(append([]string{common.TimePort}, telemetry.SourcePorts()...)...),
 		component.WithOutputs(telemetry.Ports()...),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			handleBrainSignals,
 			forwardCatalogSignals,
 		)),
@@ -83,7 +84,7 @@ func handleBrainSignals(this *component.Component) error {
 	this.OutputByName("is_alive").PutPayloads(1.0)
 
 	// Calculate brain activity trend
-	currentBrainActivity, err := helper.AsF64(this.InputByName("brain_activity").Signals().First())
+	currentBrainActivity, err := signal.AsFloat64(this.InputByName("brain_activity").Signals().First())
 	if err != nil {
 		return err
 	}
@@ -131,12 +132,12 @@ func checkDeath(this *component.Component) error {
 func forwardCatalogSignals(this *component.Component) error {
 	passThrough := telemetry.PassThrough()
 
-	pairs := make([]helper.PortPair, 0, len(passThrough))
+	pairs := make([]port.Pair, 0, len(passThrough))
 	for _, m := range passThrough {
-		pairs = append(pairs, helper.PortPair{
+		pairs = append(pairs, port.Pair{
 			this.InputByName(m.Source),
 			this.OutputByName(m.Port),
 		})
 	}
-	return helper.MultiForward(pairs...)
+	return port.MultiForward(pairs...)
 }

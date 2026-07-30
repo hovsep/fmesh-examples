@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -80,7 +79,7 @@ func GetSkin() (*component.Component, error) {
 			"pain_signal",
 			"sweat_rate",
 		),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			rememberEnvironment,
 			regulateSkin,
 		)),
@@ -114,7 +113,7 @@ func rememberEnvironment(this *component.Component) error {
 		}
 	}
 	if sig := firstSignal(this, "radiation"); sig != nil {
-		this.State().Set(stateUVIndex, helper.AsF64OrDefault(sig, 0))
+		this.State().Set(stateUVIndex, signal.AsFloat64OrDefault(sig, 0))
 	}
 	return nil
 }

@@ -16,7 +16,6 @@ import (
 	"math"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
@@ -70,7 +69,7 @@ func GetVentilator() (*component.Component, error) {
 		component.WithDescription("Mechanical ventilator: positive pressure at a set rate, deaf to the blood"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("pleural_pressure"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptSettings,
 			deliverBreath,
 		)),

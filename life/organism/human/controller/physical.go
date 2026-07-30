@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -51,7 +50,7 @@ func GetPhysical() (*component.Component, error) {
 		component.WithDescription("Turns physical activity commands into a sustained metabolic load"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("physical_load"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptActivityCommands,
 			emitPhysicalLoad,
 		)),
