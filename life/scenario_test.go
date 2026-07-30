@@ -37,7 +37,7 @@ const testTick = 50 * time.Millisecond
 // test can set up a scenario and then let time pass.
 func newCommandableSim(t *testing.T) *session.Session {
 	t.Helper()
-	return newSimIn(t, factor.GetGasComponent)
+	return newSimIn(t, factor.GetAirComponent)
 }
 
 // newSimIn builds a test simulation in the given world, at the test step.

@@ -191,7 +191,7 @@ func Test_HumanLiveness(t *testing.T) {
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
-						envSig := aggState.OutputByName("gas::environmental_gas").Signals().First()
+						envSig := aggState.OutputByName("air::environmental_gas").Signals().First()
 						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
 						if envSig == nil || inspSig == nil {
 							return nil

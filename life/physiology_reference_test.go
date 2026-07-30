@@ -1318,7 +1318,7 @@ func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
 	}
 	sim := newCommandableSim(t)
 	agg := simMesh(sim).ComponentByName("aggregated_state")
-	gas := simMesh(sim).ComponentByName("gas")
+	gas := simMesh(sim).ComponentByName("air")
 
 	// A hot day rather than a mild one. In a temperate 26 degrees the body
 	// compensates the ambient completely -- which is correct, and which is why

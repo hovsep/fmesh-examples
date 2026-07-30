@@ -33,13 +33,13 @@ const cigaretteSeconds = 7.5 * 60
 // getSimulationMesh returns the main mesh of the simulation, in the world the
 // body normally lives in.
 func getSimulationMesh() (*fmesh.FMesh, error) {
-	return getSimulationMeshIn(factor.GetGasComponent, factor.DefaultTickDuration)
+	return getSimulationMeshIn(factor.GetAirComponent, factor.DefaultTickDuration)
 }
 
 // getSimulationMeshIn builds the same simulation inside a different environment.
 //
 // The parameter is the whole of the drop-in argument. Anything that publishes
-// environmental_gas under the name "gas" is a world this body can live in: the
+// environmental_gas under the name "air" is a world this body can live in: the
 // atmosphere, a barochamber, and whatever else is written later. Nothing inside
 // the organism is parameterised, because nothing inside it needs to be -- it
 // receives air on a port and has no way to ask where the air came from.
@@ -274,7 +274,7 @@ func setBodyCommands(sim *session.Session) {
 func setMeshCommands(sim *session.Session) {
 	mesh := sim.Engine.(*stepsim.Engine).Mesh()
 	timeComponent := mesh.ComponentByName("time")
-	gas := mesh.ComponentByName("gas")
+	gas := mesh.ComponentByName("air")
 	sun := mesh.ComponentByName("sun")
 
 	// setTemperature returns a handler steering the habitat's gas temperature.

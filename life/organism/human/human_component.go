@@ -52,7 +52,7 @@ func New(name string) (*component.Component, error) {
 		component.WithLabel("species", "sapiens"),
 		component.WithInputs(
 			"habitat_time_tick",
-			"habitat_gas_environmental_gas",
+			"habitat_air_environmental_gas",
 			// Sunlight reaches the skin. Named to match the habitat's auto-wiring
 			// convention habitat_<factor>_<output> (see env/habitat.go).
 			"habitat_sun_uvi",
@@ -85,7 +85,7 @@ func New(name string) (*component.Component, error) {
 // Check if all required inputs are received
 func validate() component.ActivationFunc {
 	return func(this *component.Component) error {
-		if !this.Inputs().ByNames("habitat_time_tick", "habitat_gas_environmental_gas").AllHaveSignals() {
+		if !this.Inputs().ByNames("habitat_time_tick", "habitat_air_environmental_gas").AllHaveSignals() {
 			return component.ErrWaitingForInputsKeep
 		}
 		return nil
@@ -120,11 +120,11 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		skin := mesh.ComponentByName("da:skin")
 		if err := port.MultiForward(
 			port.Pair{
-				From: this.InputByName("habitat_gas_environmental_gas"),
+				From: this.InputByName("habitat_air_environmental_gas"),
 				To:   mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
 			},
 			port.Pair{
-				From: this.InputByName("habitat_gas_environmental_gas"),
+				From: this.InputByName("habitat_air_environmental_gas"),
 				To:   skin.InputByName("ambient_gas"),
 			},
 			// Sunlight falls on the skin.

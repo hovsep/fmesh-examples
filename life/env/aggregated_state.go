@@ -110,7 +110,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 	// than its own wall clock.
 	paths := []string{
 		"time::tick",
-		"gas::environmental_gas",
+		"air::environmental_gas",
 		"sun::uvi",
 	}
 

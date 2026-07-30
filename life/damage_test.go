@@ -49,7 +49,7 @@ func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
 	sim := newCommandableSim(t)
 	sim.Do("smoke:cigarette")
 
-	gas := simMesh(sim).ComponentByName("gas")
+	gas := simMesh(sim).ComponentByName("air")
 	active := func() int {
 		return len(gas.State().Get(factor.StateMixins).(map[string]float64))
 	}
