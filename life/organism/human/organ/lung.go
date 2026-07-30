@@ -61,10 +61,11 @@ func GetLung(side string) (*component.Component, error) {
 			"volume", "flow", "alveolar_pressure", "exhaled_gas", "alveolar_gas", "alveolar_po2",
 			"carbon_monoxide", // whatever the air was carrying, handed to the blood
 		),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(
-			handleMechanics,
-			handleGasExchange,
-		)),
+		component.WithActivationFunc(component.When(damage.Working,
+			component.Sequential(
+				handleMechanics,
+				handleGasExchange,
+			))),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateVolume, mathx.Jitter(FRC, lungVolumeAsymmetry)) // start at equilibrium
 			state.Set(stateCompliance, mathx.Jitter(defaultLungCompliance, lungComplianceAsymmetry))

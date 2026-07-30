@@ -67,11 +67,12 @@ func GetHeart() (*component.Component, error) {
 		component.WithInputs("time", "autonomic_tone", "body_state"),
 		component.WithOutputs("cardiac_activation", "rate"),
 		component.WithActivationFunc(
-			damage.FlatlineWhenFailed(
-				rememberBodyTemperature,
-				oscillateHeart,
-				handleCardiacBias,
-			),
+			component.When(damage.Working,
+				component.Sequential(
+					rememberBodyTemperature,
+					oscillateHeart,
+					handleCardiacBias,
+				)),
 		),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateRate, 60) // Initial BPM

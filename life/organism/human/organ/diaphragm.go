@@ -53,7 +53,7 @@ func GetDiaphragm() (*component.Component, error) {
 		),
 		component.WithInputs("time", "autonomic_tone"),
 		component.WithOutputs("pleural_pressure", "respiratory_rate"),
-		// Not FlatlineWhenFailed: a dead diaphragm must still publish a (constant)
+		// Not gated on damage.Working: a dead diaphragm must still publish a (constant)
 		// pleural pressure, or the lungs wait forever for it and the mesh never
 		// converges. Breathing stops because the pressure no longer oscillates.
 		component.WithActivationFunc(

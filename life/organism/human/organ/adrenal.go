@@ -49,7 +49,7 @@ func GetAdrenal() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "adrenal", O2PerMinute: AdrenalO2PerMinute}),
 		),
 		component.WithInputs(simulation.TimePort, "autonomic_tone"),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(secreteStressHormones)),
+		component.WithActivationFunc(component.When(damage.Working, secreteStressHormones)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateSympathetic, 0.0)
 		}),

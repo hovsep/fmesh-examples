@@ -75,13 +75,11 @@ func GetLiver() (*component.Component, error) {
 		),
 		component.WithInputs(simulation.TimePort),
 		component.WithOutputs("glucose_flux"),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(
-			// Glucose only, deliberately. A liver also clears drugs, hormones and
-			// ammonia, but nothing in this body produces any of them in a form
-			// that would accumulate, so filtering would be a component with
-			// nothing to filter -- and the glucose story is the one a reader
-			// came here to see.
-			regulateGlucose)),
+		// Glucose only, deliberately. A liver also clears drugs, hormones and
+		// ammonia, but nothing in this body produces any of them in a form that
+		// would accumulate, so filtering would be a component with nothing to
+		// filter -- and the glucose story is the one a reader came here to see.
+		component.WithActivationFunc(component.When(damage.Working, regulateGlucose)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateGlucoseFlux, BasalHepaticGlucoseOutput)
 		}),

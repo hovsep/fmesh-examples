@@ -64,14 +64,12 @@ func GetKidney() (*component.Component, error) {
 			"urine_rate",
 		),
 		component.WithActivationFunc(
-			//@TODO: I do not like how we call FlatlineWhenFailed from some plugin
-			// let's maybe make FlatlineWhenFailed more general and have it as a separate plugin or find a better solution. Plugins must be only plugged in, we should not call any code from plugin package.
-			// Maybe damage plugin must register pre-activation hook and do the check there?
-			damage.FlatlineWhenFailed(
-				readHydration,
-				voidBladder,
-				produceUrine,
-			)),
+			component.When(damage.Working,
+				component.Sequential(
+					readHydration,
+					voidBladder,
+					produceUrine,
+				))),
 		component.WithInitialState(func(state component.State) {
 			state.Set(StateBladderMl, 0.0)
 			state.Set(StateHydrationPct, 100.0)

@@ -94,7 +94,16 @@ func validate() component.ActivationFunc {
 
 // Sense activation function
 // In this phase a human component receives inputs from the environment
-// @TODO: so we have sense-act-feedback stages on human level. Let's think if we can use the same staged-approach on organ level. E.g. in sense we read stuff from blood and handle ctl signals, then in act we do something (diafragm contracts, lungs are ventilating) and in feedback - we just output our updated state
+//
+// The three stages exist here because this component wraps a mesh: sense carries
+// signals in across the boundary, act runs the body, feedback carries the
+// results back out. Organs already stage themselves the same way -- the heart
+// remembers, oscillates and then answers the nerves, the skin remembers and then
+// regulates -- through the same Sequential combinator, and that is as far as the
+// pattern usefully goes. An organ has no inner mesh, so it has no boundary to
+// cross twice: publishing is not a separate phase from acting, it is what acting
+// produced. Naming three buckets for every organ would be renaming rather than
+// structure.
 func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 	return func(this *component.Component) error {
 		// Fan the tick out to every component in the body that keeps time.
