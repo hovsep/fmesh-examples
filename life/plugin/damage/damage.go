@@ -169,21 +169,11 @@ func Failed(c *component.Component) bool {
 // FailureOutput returns the name of the failure output port for an organ, for wiring.
 func FailureOutput(organ string) string { return organ + "_failure" }
 
-// FlatlineWhenFailed composes an organ's activation phases so that, once the
-// organ has failed, it produces nothing at all -- the mechanism by which a
-// collapsed organ stops driving the body. The damage plugin's own hook keeps
-// running (aging and telemetry continue), so this only silences the organ's
-// output, not its bookkeeping.
-func FlatlineWhenFailed(funcs ...component.ActivationFunc) component.ActivationFunc {
-	return func(this *component.Component) error {
-		if Failed(this) {
-			return nil
-		}
-		for _, f := range funcs {
-			if err := f(this); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
+// Working reports whether the organ is still doing its job.
+//
+// It is a predicate rather than a wrapper on purpose. A plugin is something a
+// component is built with, not something it calls: handing over a condition lets
+// the component compose its own activation with component.When, and keeps the
+// arrangement visible where the organ is declared rather than buried in a
+// helper the organ has to remember to use.
+func Working(c *component.Component) bool { return !Failed(c) }

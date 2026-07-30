@@ -73,7 +73,7 @@ func GetPancreas() (*component.Component, error) {
 			perfusion.New(perfusion.Config{Organ: "pancreas", O2PerMinute: PancreasO2PerMinute}),
 		),
 		component.WithInputs(simulation.TimePort),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(secretePancreaticHormones)),
+		component.WithActivationFunc(component.When(damage.Working, secretePancreaticHormones)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("organ:pancreas: %w", err)

@@ -67,9 +67,10 @@ func GetBrain() (*component.Component, error) {
 		component.WithOutputs("neural_drive"),
 		// When the brain fails it emits nothing; the body then reads no brain
 		// activity and is declared dead.
-		component.WithActivationFunc(damage.FlatlineWhenFailed(
-			oscillateNeuralDrive,
-		)),
+		component.WithActivationFunc(component.When(damage.Working,
+			component.Sequential(
+				oscillateNeuralDrive,
+			))),
 		component.WithInitialState(func(state component.State) {
 			state.Set(NeuralDrive, defaultNeuralDrive)
 		}),
