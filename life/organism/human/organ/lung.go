@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
@@ -130,7 +131,7 @@ func handleGasExchange(this *component.Component) error {
 	}
 
 	gas := this.InputByName("inspired_gas").Signals().First()
-	n, o, a, _, _, _, err := helper.UnpackAir(gas)
+	n, o, a, _, _, _, err := atmosphere.Unpack(gas)
 	if err != nil {
 		return err
 	}
@@ -164,7 +165,7 @@ func handleGasExchange(this *component.Component) error {
 	// place it can: it is in the air, and this is where air meets blood. How much
 	// crosses depends on how foul the air is and on how much of it is being moved,
 	// which is why exertion in a contaminated space is so much worse than rest.
-	if ppm := helper.AirCarbonMonoxide(gas); ppm > 0 {
+	if ppm := atmosphere.CarbonMonoxide(gas); ppm > 0 {
 		if err := this.OutputByName("carbon_monoxide").PutSignals(
 			bloodstream.Secretion(bloodstream.SubstanceCOLoad,
 				bloodstream.COUptakePerPpmPerMl*ppm*tickVolume),
@@ -280,7 +281,7 @@ func publishAlveolarPO2(this *component.Component, gas *signal.Signal, oxygenPct
 	}
 
 	pAO2 := bloodstream.AlveolarPO2At(
-		helper.AirPressure(gas), oxygenPct/100.0, bloodCO2)
+		atmosphere.Pressure(gas), oxygenPct/100.0, bloodCO2)
 
 	// The sum can come out negative, and that is not an error to be hidden: it is
 	// the arithmetic saying this air cannot sustain a body at this PaCO₂. Held at

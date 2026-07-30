@@ -1,4 +1,4 @@
-package helper
+package autonomic
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// PackAutonomicTone builds a signal that represents autonomic tone with scalars
-func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) *signal.Signal {
+// Pack builds a signal that represents autonomic tone with scalars
+func Pack(sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64) *signal.Signal {
 	return signal.New("autonomic_tone").
 		WithScalar(common.Sympathetic, sym).
 		WithScalar(common.Parasympathetic, paraSym).
@@ -20,8 +20,8 @@ func PackAutonomicTone(sym, paraSym, noise, gain, cardiacBias, vascularBias, res
 		WithScalar(common.GI, giBias)
 }
 
-// UnpackAutonomicTone unpacks a signal that represents autonomic tone
-func UnpackAutonomicTone(tone *signal.Signal) (sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64, err error) {
+// Unpack unpacks a signal that represents autonomic tone
+func Unpack(tone *signal.Signal) (sym, paraSym, noise, gain, cardiacBias, vascularBias, respiratoryBias, giBias float64, err error) {
 	if tone == nil {
 		return 0, 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("autonomic tone signal is nil")
 	}
@@ -38,8 +38,8 @@ func UnpackAutonomicTone(tone *signal.Signal) (sym, paraSym, noise, gain, cardia
 	return
 }
 
-// GetBias retrieves a regional bias from an autonomic tone signal
-func GetBias(tone *signal.Signal, region string) (float64, error) {
+// Bias retrieves a regional bias from an autonomic tone signal
+func Bias(tone *signal.Signal, region string) (float64, error) {
 	if tone == nil {
 		return 0, fmt.Errorf("tone is nil")
 	}

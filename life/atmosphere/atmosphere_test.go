@@ -1,4 +1,4 @@
-package helper
+package atmosphere
 
 //@TODO: go antipattern, to vague package name, check if better to distribute the code to specific packages
 
@@ -12,23 +12,23 @@ import (
 )
 
 func TestPackAir_ValidComposition(t *testing.T) {
-	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
+	s, err := Pack(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 }
 
 func TestPackAir_InvalidComposition(t *testing.T) {
-	_, err := PackAir(50, 20, 10, 5, 26.0, 58.8)
+	_, err := Pack(50, 20, 10, 5, 26.0, 58.8)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not equal to 100")
 }
 
 func TestUnpackAir_RoundTrip(t *testing.T) {
 	n, o, a, p, temp, hum := 78.0, 21.0, 1.0, 0.0, 26.0, 58.8
-	s, err := PackAir(n, o, a, p, temp, hum)
+	s, err := Pack(n, o, a, p, temp, hum)
 	require.NoError(t, err)
 
-	rn, ro, ra, rp, rtemp, rhum, err := UnpackAir(s)
+	rn, ro, ra, rp, rtemp, rhum, err := Unpack(s)
 	require.NoError(t, err)
 	assert.Equal(t, n*unit.Percent, rn)
 	assert.Equal(t, o*unit.Percent, ro)
@@ -39,30 +39,30 @@ func TestUnpackAir_RoundTrip(t *testing.T) {
 }
 
 func TestUnpackAir_Nil(t *testing.T) {
-	_, _, _, _, _, _, err := UnpackAir(nil)
+	_, _, _, _, _, _, err := Unpack(nil)
 	require.Error(t, err)
 }
 
 func TestUnpackAir_NonAir(t *testing.T) {
-	_, _, _, _, _, _, err := UnpackAir(signal.New("not_air"))
+	_, _, _, _, _, _, err := Unpack(signal.New("not_air"))
 	require.Error(t, err)
 }
 
 func TestMapAirScalar_StandaloneScalar(t *testing.T) {
-	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
+	s, err := Pack(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s = MapAirScalar(s, "temperature", func(old float64) float64 { return old + 1.0 })
+	s = MapScalar(s, "temperature", func(old float64) float64 { return old + 1.0 })
 
 	v := s.Scalars().ValueOrDefault("temperature", 0)
 	assert.Equal(t, 26.0*unit.Celsius+1.0, v)
 }
 
 func TestMapAirScalar_DistributionRebalances(t *testing.T) {
-	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
+	s, err := Pack(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s = MapAirScalar(s, "composition:pollution", func(_ float64) float64 {
+	s = MapScalar(s, "composition:pollution", func(_ float64) float64 {
 		return float64(2 * unit.Percent)
 	})
 
@@ -82,10 +82,10 @@ func TestMapAirScalar_DistributionRebalances(t *testing.T) {
 }
 
 func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
-	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
+	s, err := Pack(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s = MapAirScalar(s, "composition:nitrogen", func(old float64) float64 { return old })
+	s = MapScalar(s, "composition:nitrogen", func(old float64) float64 { return old })
 
 	compSum := s.Scalars().ValueOrDefault("composition:nitrogen", 0) +
 		s.Scalars().ValueOrDefault("composition:oxygen", 0) +
@@ -95,10 +95,10 @@ func TestMapAirScalar_DistributionNoRebalanceNeeded(t *testing.T) {
 }
 
 func TestMapAirScalar_StandaloneNoRebalance(t *testing.T) {
-	s, err := PackAir(78, 21, 1, 0, 26.0, 58.8)
+	s, err := Pack(78, 21, 1, 0, 26.0, 58.8)
 	require.NoError(t, err)
 
-	s = MapAirScalar(s, "humidity", func(old float64) float64 { return old * 2 })
+	s = MapScalar(s, "humidity", func(old float64) float64 { return old * 2 })
 
 	// Only humidity changed
 	assert.Equal(t, 58.8*unit.Percent*2, s.Scalars().ValueOrDefault("humidity", 0))

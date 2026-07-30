@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
@@ -114,7 +114,7 @@ func handleCardiacBias(this *component.Component) error {
 		return nil
 	}
 
-	bias, err := helper.GetBias(this.InputByName("autonomic_tone").Signals().First(), common.Cardiac)
+	bias, err := autonomic.Bias(this.InputByName("autonomic_tone").Signals().First(), common.Cardiac)
 	if err != nil {
 		return err
 	}
