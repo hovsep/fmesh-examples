@@ -1,9 +1,5 @@
 package factor
 
-//@TODO: shall we rename gas to atmosphere or air ?
-//First I called it gas with idea to experiment with different surrounding gases, but let's stick with normal atmosphere or air for simplicity
-// If we call it atmosphere we can also simulate rain\snow\clouds
-
 import (
 	"errors"
 	"fmt"
@@ -128,10 +124,10 @@ func PresetNames() []string {
 	return slices.Sorted(maps.Keys(presets))
 }
 
-// GetGasComponent returns the gas component of the habitat
-func GetGasComponent() (*component.Component, error) {
-	c, err := component.New("gas",
-		component.WithDescription("Gas factor"),
+// GetAirComponent returns the air of the habitat.
+func GetAirComponent() (*component.Component, error) {
+	c, err := component.New("air",
+		component.WithDescription("The air: a pressure, a mixture, a temperature, and whatever has got into it"),
 		component.WithInputs(
 			"time", "ctl",
 			// The sun, by the habitat's naming convention (see env/habitat.go).
@@ -161,7 +157,7 @@ func GetGasComponent() (*component.Component, error) {
 		}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("gas component: %w", err)
+		return nil, fmt.Errorf("air component: %w", err)
 	}
 	return c, nil
 }
@@ -265,7 +261,7 @@ const (
 	StateSunUVI = "sun_uvi"
 
 	// StateShadeTemperature is the air's temperature out of the sun -- the
-	// weather, as opposed to the day. It is what "gas:temperature" sets, because
+	// weather, as opposed to the day. It is what "temp:hot" and friends set, because
 	// that is what a person means when they say how warm it is somewhere.
 	StateShadeTemperature = "shade_temperature"
 
@@ -315,7 +311,7 @@ func warmInTheSun(this *component.Component) error {
 	}
 	dt, err := simtime.TickDurationInSec(tick)
 	if err != nil {
-		return fmt.Errorf("gas tick: %w", err)
+		return fmt.Errorf("air tick: %w", err)
 	}
 
 	expireMixins(this, dt)
