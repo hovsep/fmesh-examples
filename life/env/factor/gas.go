@@ -92,11 +92,6 @@ func PresetNames() []string {
 	return slices.Sorted(maps.Keys(presets))
 }
 
-//@TODO: let's add a feature called "modes or profiles or presets":
-// - the idea: the same factor (gas or sun or other env factors in future like noise) can operate in different modes, example: for gas: sea level atmosphere\ everest peak atmosphere, for sun: mode:Valencia and mode:Oslo will have different UV and other params
-// - let's implement it as a plugin which just stores presets in state instead of constants and allows switching them via command sent to ctl port
-// - let's add this capability (via plugin) to gas and sun, for time it is questionable
-
 // GetGasComponent returns the gas component of the habitat
 func GetGasComponent() (*component.Component, error) {
 	c, err := component.New("gas",
