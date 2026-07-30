@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -68,8 +69,8 @@ func GetMental() (*component.Component, error) {
 }
 
 func acceptStimulusCommands(this *component.Component) error {
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
-		if helper.CommandVerb(name) != VerbStimulus {
+	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		if command.Verb(name) != VerbStimulus {
 			this.Logger().Printf("unknown emotion command %q\n", name)
 			return nil
 		}

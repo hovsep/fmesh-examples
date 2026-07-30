@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -65,8 +66,8 @@ func GetPhysical() (*component.Component, error) {
 }
 
 func acceptActivityCommands(this *component.Component) error {
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
-		switch helper.CommandVerb(name) {
+	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		switch command.Verb(name) {
 		case VerbStart:
 			intensity := args.ValueOrDefault(ScalarIntensity, RestingIntensity)
 			if intensity < RestingIntensity {
