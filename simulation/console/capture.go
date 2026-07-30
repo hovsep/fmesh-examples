@@ -1,7 +1,5 @@
 package console
 
-//@TODO: check if we better move the whole package to simulation package , check if this package can be reused to create other simulations
-
 import (
 	"bufio"
 	"os"
