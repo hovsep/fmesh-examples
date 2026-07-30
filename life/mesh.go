@@ -409,6 +409,11 @@ func setMeshCommands(sim *session.Session) {
 			Run:         gasSetting("set_pressure", helper.SeaLevelPressure),
 		},
 		command.Command{
+			Name: "air:co", Group: "Environment",
+			Description: "put carbon monoxide in the air, in ppm, e.g. `air:co 800` (0 to clear it)",
+			Run:         gasSetting("set_co", 0),
+		},
+		command.Command{
 			Name: "chamber:oxygen", Group: "Environment",
 			Description: "set the chamber oxygen percentage, e.g. `chamber:oxygen 100`",
 			Run:         gasSetting("set_oxygen", 21),

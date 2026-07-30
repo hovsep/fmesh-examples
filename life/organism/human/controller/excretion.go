@@ -25,6 +25,9 @@ const (
 	TotalDefecations  common.State = "total_defecations"
 )
 
+//@TODO: check if this component is only cmd executor or it also manages feelings\intentions over time (e.g. human must want to urinate after certain time)
+//if this is not the best place to generate intentions\feeling on excretion topic - let's implement it in proper component - some regulation
+
 // GetExcretion returns the excretion controller.
 //
 // It expresses only the intent to void. How much actually leaves the body

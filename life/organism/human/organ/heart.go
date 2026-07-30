@@ -39,6 +39,7 @@ const (
 )
 
 // cardiacActivationWave returns ECG-style contraction amplitude for a given phase
+// @TODO: check what is going on with ECG diagram, it looks like we fake it in tui, so maybe it makes no sense to generate it there
 func cardiacActivationWave(phase float64) float64 {
 	if phase < 0.05 {
 		return math.Exp(-30 * phase) // R-Peak (Spike)
@@ -61,7 +62,7 @@ func GetHeart() (*component.Component, error) {
 			// the moment that caused it.
 			receptor.For(bloodstream.HormoneAdrenaline),
 		),
-		component.WithInputs("time", "autonomic_tone"),
+		component.WithInputs("time", "autonomic_tone"), // @TODO: now it looks like heart can only beat, let's make it more interesting and connect to other components and add more effects that can increase\decrease heartbeat or damage
 		component.WithOutputs("cardiac_activation", "rate"),
 		component.WithActivationFunc(
 			damage.FlatlineWhenFailed(

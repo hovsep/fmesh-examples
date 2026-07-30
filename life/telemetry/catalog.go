@@ -289,6 +289,13 @@ var Catalog = []Metric{
 			{Name: "pH", Display: Display{Label: "Blood pH", Unit: "", Min: 7.0, Max: 7.8, HealthMin: 7.35, HealthMax: 7.45, Decimals: 2, View: ViewCardiovascular}},
 			{Name: "CaO2", Display: Display{Label: "O₂ Content", Unit: "mL/dL", Min: 0, Max: 25, HealthMin: 16, HealthMax: 22, Decimals: 1, View: ViewCardiovascular}},
 			{Name: "hemoglobin", Display: Display{Label: "Hemoglobin", Unit: "g/dL", Min: 0, Max: 20, HealthMin: 12, HealthMax: 17, Decimals: 1, View: ViewCardiovascular}},
+
+			// Carboxyhemoglobin belongs next to the saturation rather than off on
+			// its own, because the pair is the lesson: when this rises the
+			// saturation does not fall, and reading one without the other is how
+			// the poisoning gets missed. A non-smoker sits near zero and a smoker
+			// near 5%; above 10% is a poisoning.
+			{Name: "COHb", Display: Display{Label: "Carboxyhemoglobin", Unit: "%", Min: 0, Max: 60, HealthMin: 0, HealthMax: 5, Decimals: 1, View: ViewCardiovascular}},
 			{Name: "volume_l", Display: Display{Label: "Blood Volume", Unit: "L", Min: 0, Max: 6, HealthMin: 4.5, HealthMax: 5.5, Decimals: 2, View: ViewCardiovascular}},
 
 			// The endocrine answer, on its two clocks. Adrenaline arrives in

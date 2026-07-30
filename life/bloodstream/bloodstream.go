@@ -27,6 +27,7 @@ import (
 //
 // Reference values for a resting adult breathing room air at sea level.
 const (
+	//@TODO: make sure all constants are actually constants and should not be dynamic and depend on other parts of simulation (like env factors or organs)
 	NormalPaO2  = 95.0 * MmHg
 	NormalPaCO2 = 40.0 * MmHg
 	NormalPH    = 7.40
@@ -382,3 +383,153 @@ const RoomAirO2Fraction = 0.21
 // room air at sea level: about 100 mmHg, which is where the textbook figure
 // comes from.
 var SeaLevelAlveolarPO2 = AlveolarPO2At(760.0, RoomAirO2Fraction, NormalPaCO2)
+
+// TensionForContent is the oxygen content equation solved backwards: the
+// arterial tension at which blood of a given carrying capacity would hold a
+// given amount of oxygen.
+//
+// It exists because content is the quantity worth storing and tension is the
+// quantity worth reporting. Organs consume millilitres of oxygen, so millilitres
+// are what the blood must keep track of; a clinician reads a partial pressure and
+// a saturation, so those are what it must publish. One of the two has to be
+// derived from the other, and deriving in this direction is the one that stays
+// honest when the carrier is damaged.
+//
+// The blood used to store saturation and derive tension, which worked until
+// something needed oxygen that hemoglobin was not carrying. Saturation cannot go
+// past 100, so neither could the tension derived from it, and pure oxygen at
+// three atmospheres -- whose entire therapeutic point is the oxygen dissolved in
+// plasma at a tension hemoglobin has nothing to do with -- came out at a PaO₂ of
+// 145 instead of 2180.
+//
+// There is no closed form: the Hill equation is not invertible in company with
+// the linear dissolved term. Content rises strictly with tension, though, so
+// bisection finds it in a fixed number of steps and cannot fail to converge.
+func TensionForContent(hemoglobin, content float64) float64 {
+	if content <= 0 {
+		return MinPaO2
+	}
+
+	low, high := MinPaO2, MaxPaO2
+	if OxygenContentAt(hemoglobin, high) <= content {
+		return high
+	}
+
+	// Fifty halvings of the range resolve it far below the precision anything
+	// downstream reports.
+	for range 50 {
+		mid := (low + high) / 2
+		if OxygenContentAt(hemoglobin, mid) < content {
+			low = mid
+		} else {
+			high = mid
+		}
+	}
+	return (low + high) / 2
+}
+
+// OxygenContentAt is the content of blood in equilibrium at a given tension:
+// what hemoglobin holds at the saturation that tension produces, plus what is
+// dissolved.
+func OxygenContentAt(hemoglobin, paO2 float64) float64 {
+	return OxygenContent(hemoglobin, SaturationAt(paO2), paO2)
+}
+
+// Carbon monoxide.
+//
+// It is the most instructive poison a blood model can carry, because everything
+// that makes it dangerous is invisible to everything that normally measures
+// danger. It binds hemoglobin some two hundred times more readily than oxygen
+// does and does not let go, so a fraction of the carrier is simply withdrawn from
+// service -- while the oxygen that is still dissolved, and therefore the arterial
+// PO₂, is untouched. A blood gas reads normal. A pulse oximeter reads normal, and
+// worse than normal: it cannot tell oxyhemoglobin from carboxyhemoglobin and
+// reports the sum of the two, so it reads *high* in a patient who is suffocating.
+//
+// The body has no receptor for it either. The chemoreceptors watch carbon
+// dioxide and, faintly, oxygen tension; both are normal, so there is no
+// breathlessness, which is why carbon monoxide kills people in their sleep and
+// why its victims so often do not get up and leave.
+const (
+	// COHalfLifeSec is how long the body takes to clear half its
+	// carboxyhemoglobin while breathing room air: about five hours.
+	//
+	// The clearance is the treatment, and the treatment is oxygen, because carbon
+	// monoxide and oxygen compete for the same site. Raise the oxygen tension and
+	// the competition shifts, which is why the half-life is not one number:
+	//
+	//	room air              ~300 min
+	//	100% oxygen at 1 atm   ~90 min
+	//	100% oxygen at 3 atm   ~23 min
+	//
+	// COClearanceOxygenFactor turns those into one rule, below.
+	COHalfLifeSec = 300.0 * 60.0
+
+	// COClearanceOxygenFactor is how much faster clearance runs per mmHg of
+	// arterial oxygen tension above normal.
+	//
+	// Real clearance is not linear in tension, and one straight line cannot hit
+	// all three clinical figures exactly. This one gets 300 minutes on room air,
+	// 85 against a reported ~90 on a mask, and 28 against a reported ~23 in a
+	// chamber -- the right order, the right magnitudes, and the hyperbaric end
+	// about a fifth slower than life. That is close enough to make the point and
+	// not close enough to quote.
+	//
+	// Nothing about the chamber is special in the model, and nothing is in the
+	// clinic either: it simply puts arterial oxygen at a tension a mask cannot
+	// reach, and the competition for the binding site shifts accordingly.
+	COClearanceOxygenFactor = 0.0050
+
+	// COFractionPerCigarette is how much of the hemoglobin one cigarette takes
+	// out of service, as a fraction.
+	//
+	// A smoker runs at 4-8% carboxyhemoglobin against a non-smoker's 1-2%, and
+	// reaches it a few percent at a time. It is a small number that never quite
+	// clears between cigarettes, which is the point: the harm is the standing
+	// level, not any single one.
+	COFractionPerCigarette = 0.015
+
+	// MaxCarboxyhemoglobin is the ceiling on the arithmetic. Above about 60% the
+	// question stops being physiological.
+	MaxCarboxyhemoglobin = 0.75
+
+	// COUptakePerPpmPerMl is how much hemoglobin one millilitre of air carrying
+	// one part per million of carbon monoxide takes out of service.
+	//
+	// Uptake scales with how much air is moved as well as how foul it is, which
+	// is not a detail: it is why someone working in a contaminated space is
+	// poisoned far faster than someone asleep in it, and why the advice is to
+	// leave rather than to hurry.
+	//
+	// Calibrated between the two ends of the clinical range and exactly at
+	// neither. Real uptake follows the Coburn-Forster-Kane equation, which is not
+	// a straight line, and clearance is not a single exponential; one constant
+	// cannot honour both. This one settles near 9% at the 35 ppm of an
+	// occupational exposure limit, against a reported 5%, and takes about 1.4
+	// hours to reach 50% at 1000 ppm, against a reported 1. The right magnitudes
+	// and the right ordering, and not a number to quote.
+	COUptakePerPpmPerMl = 4.5e-10
+)
+
+// SubstanceCOLoad is a signal putting carbon monoxide onto the blood bus: the
+// payload is the fraction of hemoglobin taken out of service.
+const SubstanceCOLoad = "co_load"
+
+// EffectiveHemoglobin is the hemoglobin still available to carry oxygen, once
+// carbon monoxide has taken its share out of service.
+//
+// This one line is the whole of what carbon monoxide does here, and it is enough,
+// because the rest of the model was already built to care about the difference
+// between how much carrier there is and how saturated it looks. Every consequence
+// -- the normal blood gas, the falling delivery, the oximeter reading high --
+// follows from the carrier shrinking while the tension stays put.
+func EffectiveHemoglobin(hemoglobin, carboxyFraction float64) float64 {
+	return hemoglobin * (1 - mathx.Clamp(carboxyFraction, 0, MaxCarboxyhemoglobin))
+}
+
+// COHalfLifeAt is how fast carbon monoxide is cleared at a given arterial oxygen
+// tension, in seconds.
+func COHalfLifeAt(paO2 float64) float64 {
+	speedup := 1 + COClearanceOxygenFactor*max(paO2-NormalPaO2, 0)
+	return COHalfLifeSec / speedup
+}

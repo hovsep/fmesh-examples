@@ -12,6 +12,7 @@ func GetNervousSystem() (*component.Component, error) {
 		component.WithDescription("Nervous system"),
 		component.WithInputs("time"),
 		component.WithActivationFunc(func(this *component.Component) error {
+			//@TODO: implement or drop it completely
 			return nil
 		}),
 	)

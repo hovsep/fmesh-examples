@@ -1,5 +1,7 @@
 package common
 
+//@TODO: common package is antipattern, let's refactor and distribute code to domain specific packages, avoid common\helper\util packages
+
 // ControlPort is the input port through which a component receives commands
 // from outside the simulation. The habitat factors established the convention
 // (see env/factor/gas.go) and the body follows it.

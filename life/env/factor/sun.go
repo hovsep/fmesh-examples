@@ -21,6 +21,8 @@ const (
 	sunsetHour  = 20.0
 )
 
+// @TODO: make sun to affect air temp
+// @TODO:
 // GetSunComponent returns the sun radiation exposure factor of the habitat.
 func GetSunComponent() (*component.Component, error) {
 	c, err := component.New("sun",
@@ -56,6 +58,7 @@ func emitSunlight(this *component.Component) error {
 // daylight returns the UV index and illuminance for the time of day, peaking at
 // solar noon and zero at night.
 func daylight(elapsed time.Duration) (uvi, lux float64) {
+	//@TODO: shall we add some random clouds effects? If so let's have a weather widjet in TUI
 	hour := math.Mod(elapsed.Hours(), 24)
 	if hour < sunriseHour || hour > sunsetHour {
 		return 0, 0

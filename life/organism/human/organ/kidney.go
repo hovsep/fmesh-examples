@@ -38,12 +38,12 @@ const (
 	minAntidiuresisFactor = 0.15
 )
 
+const KidneyO2PerMinute = 18.0
+
 // GetKidney returns the kidney and its bladder.
 //
 // It decides how much water to shed based on how hydrated the body is, fills the
 // bladder with it, and empties on command.
-const KidneyO2PerMinute = 18.0
-
 func GetKidney() (*component.Component, error) {
 	c, err := component.New("organ:kidney",
 		component.WithDescription("Kidney: sheds or conserves water according to hydration, and fills the bladder"),
@@ -63,11 +63,15 @@ func GetKidney() (*component.Component, error) {
 			"bladder_fill",
 			"urine_rate",
 		),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(
-			readHydration,
-			voidBladder,
-			produceUrine,
-		)),
+		component.WithActivationFunc(
+			//@TODO: I do not like how we call FlatlineWhenFailed from some plugin
+			// let's maybe make FlatlineWhenFailed more general and have it as a separate plugin or find a better solution. Plugins must be only plugged in, we should not call any code from plugin package.
+			// Maybe damage plugin must register pre-activation hook and do the check there?
+			damage.FlatlineWhenFailed(
+				readHydration,
+				voidBladder,
+				produceUrine,
+			)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(StateBladderMl, 0.0)
 			state.Set(StateHydrationPct, 100.0)

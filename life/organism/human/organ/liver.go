@@ -75,7 +75,9 @@ func GetLiver() (*component.Component, error) {
 		),
 		component.WithInputs(common.TimePort),
 		component.WithOutputs("glucose_flux"),
-		component.WithActivationFunc(damage.FlatlineWhenFailed(regulateGlucose)),
+		component.WithActivationFunc(damage.FlatlineWhenFailed(
+			//@TODO: looks like liver only does regulate glucose, should it also filter the blood?
+			regulateGlucose)),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateGlucoseFlux, BasalHepaticGlucoseOutput)
 		}),

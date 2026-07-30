@@ -9,6 +9,8 @@
 // the other needs no change anywhere else in the body.
 package device
 
+//@TODO: let's drop the whole package for sake of simplicity
+
 import (
 	"fmt"
 	"math"

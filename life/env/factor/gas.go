@@ -1,5 +1,9 @@
 package factor
 
+//@TODO: shall we rename gas to atmosphere or air ?
+//First I called it gas with idea to experiment with different surrounding gases, but let's stick with normal atmosphere or air for simplicity
+// If we call it atmosphere we can also simulate rain\snow\clouds
+
 import (
 	"errors"
 	"fmt"
@@ -29,9 +33,20 @@ const (
 	// than one component with a flag.
 	StateAltitude = "altitude_m"
 
-	// Command verb: altitude <metres>.
+	// StateCOppm is carbon monoxide in the air, parts per million. It is a
+	// property of a place -- a fire, a faulty boiler, a running engine in a closed
+	// garage -- rather than of a body, which is why it lives out here.
+	StateCOppm = "co_ppm"
+
+	// Command verbs.
 	cmdSetAltitude = "set_altitude"
+	cmdSetCO       = "set_co"
 )
+
+//@TODO: let's add a feature called "modes or profiles or presets":
+// - the idea: the same factor (gas or sun or other env factors in future like noise) can operate in different modes, example: for gas: sea level atmosphere\ everest peak atmosphere, for sun: mode:Valencia and mode:Oslo will have different UV and other params
+// - let's implement it as a plugin which just stores presets in state instead of constants and allows switching them via command sent to ctl port
+// - let's add this capability (via plugin) to gas and sun, for time it is questionable
 
 // GetGasComponent returns the gas component of the habitat
 func GetGasComponent() (*component.Component, error) {
@@ -51,6 +66,7 @@ func GetGasComponent() (*component.Component, error) {
 			state.Set("temperature", +26.0)
 			state.Set("humidity", 58.8)
 			state.Set(StateAltitude, 0.0)
+			state.Set(StateCOppm, 0.0)
 		}),
 	)
 	if err != nil {
@@ -78,6 +94,11 @@ func handleControlSignals(this *component.Component) error {
 			this.State().Set(StateAltitude, metres)
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
 				metres, helper.PressureAtAltitude(metres))
+			return nil
+		case cmdSetCO:
+			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
+			this.State().Set(StateCOppm, ppm)
+			this.Logger().Printf("carbon monoxide in the air: %.0f ppm", ppm)
 			return nil
 		case "set_temperature":
 			this.Logger().Println("Setting temperature to ", helper.AsF64OrDefault(ctlSig, 0.0))
@@ -118,5 +139,7 @@ func emitEnvironmentalGas(this *component.Component) error {
 	altitude := this.State().Get(StateAltitude).(float64)
 
 	return this.OutputByName("environmental_gas").PutSignals(
-		helper.WithPressure(air, helper.PressureAtAltitude(altitude)))
+		helper.WithCarbonMonoxide(
+			helper.WithPressure(air, helper.PressureAtAltitude(altitude)),
+			this.State().Get(StateCOppm).(float64)))
 }

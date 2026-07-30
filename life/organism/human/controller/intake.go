@@ -50,7 +50,7 @@ const (
 	// long habit, not instantly fatal.
 	cigaretteMeanDurationSec = 7.5 * 60.0
 	cigaretteDurationJitter  = 33.0   // percent, giving roughly 5-10 minutes
-	toxinPerCigarette        = 0.0015 // ~650 cigarettes to fail a lung
+	ToxinPerCigarette        = 0.0015 // ~650 cigarettes to fail a lung
 )
 
 // GetIntake returns the intake controller.
@@ -103,8 +103,8 @@ func acceptIntakeCommands(this *component.Component) error {
 			durationSec := mathx.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
 			processes.Start(&helper.Process{
 				Kind:       KindToxin,
-				Remaining:  count * toxinPerCigarette,
-				RatePerSec: toxinPerCigarette / durationSec,
+				Remaining:  count * ToxinPerCigarette,
+				RatePerSec: ToxinPerCigarette / durationSec,
 			})
 			addTotal(this, TotalCigarettes, count)
 		default:

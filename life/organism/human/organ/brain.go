@@ -40,6 +40,7 @@ const (
 	glucoseComfort   = 55.0
 )
 
+// @TODO: make brain to reduce\increase activity depending on inputs from other components (daylight, tireness, energy level, critical hungry etc)
 func GetBrain() (*component.Component, error) {
 	c, err := component.New("organ:brain",
 		component.WithDescription("The Brain"),
@@ -54,8 +55,8 @@ func GetBrain() (*component.Component, error) {
 				ContentFail:  brainContentFail,
 			}),
 		),
-		component.WithInputs("time"),
-		component.WithOutputs("neural_drive"),
+		component.WithInputs("time"),          //@TODO while we strive to keep brain simple (brain must not directly command organs or say heart to beat, it only emits some driver signal), there must be many inputs from almost all organs and systems, right?
+		component.WithOutputs("neural_drive"), // @TODO: let's think, maybe brain should emit more outputs (still keeping the golden rule: never directly command organs (double check if it is phisiologically correct))
 		// When the brain fails it emits nothing; the body then reads no brain
 		// activity and is declared dead.
 		component.WithActivationFunc(damage.FlatlineWhenFailed(

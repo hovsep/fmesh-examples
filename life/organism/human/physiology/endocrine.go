@@ -12,6 +12,7 @@ func GetEndocrineAxis() (*component.Component, error) {
 		component.WithDescription("Endocrine system"),
 		component.WithInputs("time"),
 		component.WithActivationFunc(func(this *component.Component) error {
+			//@TODO: implement + add basic endocrine reactions
 			return nil
 		}),
 	)

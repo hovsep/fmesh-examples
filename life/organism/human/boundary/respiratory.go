@@ -8,10 +8,10 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// @TODO: emit inspired gas only in inhale phase (derive from diaphragm)
+// @TODO: maybe we should imbibe some toxins from inspired air in this component (smoking, smelling toxins or pollen\allergens)
 func GetRespiratory() (*component.Component, error) {
 	c, err := component.New("boundary:respiratory",
-		component.WithDescription("Transforms environmental gas signals into chemical levels and lung input for circulation"),
+		component.WithDescription("Represents path from nose to trachea.Transforms environmental gas signals into chemical levels and lung input for circulation"),
 		component.WithInputs(
 			"time",
 			"environmental_gas",
