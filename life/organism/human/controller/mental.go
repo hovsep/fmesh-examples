@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -39,9 +38,9 @@ const (
 	arousalHalfLifeSec = 120.0
 	valenceHalfLifeSec = 300.0
 
-	maxArousal = 1.0 * Proportion
-	minValence = -1.0 * Proportion
-	maxValence = 1.0 * Proportion
+	maxArousal = 1.0
+	minValence = -1.0
+	maxValence = 1.0
 )
 
 // GetMental returns the mental stress controller.

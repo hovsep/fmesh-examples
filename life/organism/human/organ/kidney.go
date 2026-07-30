@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -24,10 +23,10 @@ const (
 
 const (
 	// BladderCapacityMl is where the urge becomes impossible to ignore.
-	BladderCapacityMl = 500.0 * Milliliter
+	BladderCapacityMl = 500.0
 
 	// BaseUrineMlPerSec is a normal output: about 1.5 L a day.
-	BaseUrineMlPerSec = 1500.0 / 86400.0 * Milliliter
+	BaseUrineMlPerSec = 1500.0 / 86400.0
 
 	// Urine production tracks hydration. Well-hydrated bodies pass more; a dry
 	// one concentrates and passes far less, which is what makes dehydration

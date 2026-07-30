@@ -7,16 +7,15 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
 
 const (
-	criticalNeuralDrive               = organ.MaxNeuralDrive * 0.01 * DNCS
-	defaultAutonomicCoordinationNoise = 0.05 * DNCS
-	defaultRegionalBiasJitter         = 0.05 * Proportion
+	criticalNeuralDrive               = organ.MaxNeuralDrive * 0.01
+	defaultAutonomicCoordinationNoise = 0.05
+	defaultRegionalBiasJitter         = 0.05
 )
 
 // The baroreflex: the fastest control loop in the body.

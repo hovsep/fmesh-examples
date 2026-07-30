@@ -6,21 +6,20 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 )
 
 const (
 	NeuralDrive       common.State = "neural_drive"
-	NeuralDriveJitter              = 0.02 * DNCS
-	MinNeuralDrive                 = 0.0 * DNCS
-	MaxNeuralDrive                 = 1.0 * DNCS
+	NeuralDriveJitter              = 0.02
+	MinNeuralDrive                 = 0.0
+	MaxNeuralDrive                 = 1.0
 
 	// 0.0 - 0.2 Sleep
 	// 0.3 - 0.6 Baseline activity
 	// 0.7 - 1.0 Stress, exercise, threat
-	defaultNeuralDrive = 0.3 * DNCS
+	defaultNeuralDrive = 0.3
 
 	// BrainO2PerMinute is the brain's resting oxygen demand in mL/min. It is a
 	// fiftieth of the body by weight and takes a fifth of its oxygen, and it

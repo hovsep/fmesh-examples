@@ -8,7 +8,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -16,28 +15,28 @@ import (
 )
 
 const (
-	restingLungVolume = 700.0 * Milliliter
+	restingLungVolume = 700.0
 
-	ResidualLungVolume = 600.0 * Milliliter
-	TotalLungCapacity  = 3000.0 * Milliliter
+	ResidualLungVolume = 600.0
+	TotalLungCapacity  = 3000.0
 
-	defaultLungCompliance   = 100.0 * MlPerCmH2O
-	defaultAirwayResistance = 0.002 * CmH2OPerMlPerSecond
+	defaultLungCompliance   = 100.0
+	defaultAirwayResistance = 0.002
 
-	lungVolumeAsymmetry     = 5 * Percent
-	lungComplianceAsymmetry = 5 * Percent
-	lungResistanceAsymmetry = 5 * Percent
+	lungVolumeAsymmetry     = 5
+	lungComplianceAsymmetry = 5
+	lungResistanceAsymmetry = 5
 
-	pleuralPressureAsymmetryBase = 0.3 * CmH2O
-	pleuralPressureAsymmetry     = 30 * Percent
+	pleuralPressureAsymmetryBase = 0.3
+	pleuralPressureAsymmetry     = 30
 
-	baseO2Consumption     = 7 * Percent // fraction of inspired O2 consumed at rest
-	o2ConsumptionMaxDelta = 5 * Percent // additional O2 consumption when blood is O2-depleted
+	baseO2Consumption     = 7 // fraction of inspired O2 consumed at rest
+	o2ConsumptionMaxDelta = 5 // additional O2 consumption when blood is O2-depleted
 
 	// ExhaledCO2AtNormalPaCO2 is the carbon dioxide fraction of exhaled air when
 	// the blood is at a normal PaCO₂ -- room air carries almost none, breath
 	// carries about a twentieth.
-	ExhaledCO2AtNormalPaCO2 = 5.0 * Percent
+	ExhaledCO2AtNormalPaCO2 = 5.0
 
 	// Below are per-instance lung params that makes left and
 	// right lungs slightly different (anatomically, the left one has less space due to the heart).
@@ -50,7 +49,7 @@ const (
 var (
 	// FRC is Functional Residual Capacity (equilibrium volume at the end of passive expiration).
 	// FRC = V₀ + C·|BasePleuralPressure| = 700 + 100·5 = 1200 mL.
-	FRC = restingLungVolume + defaultLungCompliance*math.Abs(BasePleuralPressure)*Milliliter
+	FRC = restingLungVolume + defaultLungCompliance*math.Abs(BasePleuralPressure)
 )
 
 func GetLung(side common.Side) (*component.Component, error) {
@@ -203,13 +202,13 @@ func handleGasExchange(this *component.Component) error {
 		co2Frac = 0
 	}
 	pollNew := 0.0
-	tempNew := 37.0 * Celsius // @TODO: get current temp instead of hardcoding
-	humidNew := 100.0 * Percent
+	tempNew := 37.0 // @TODO: get current temp instead of hardcoding
+	humidNew := 100.0
 
 	// Normalize composition to sum to 100%
 	compSum := n + o2New + a + pollNew + co2Frac
 	if compSum > 0 {
-		scale := (100.0 * Percent) / compSum
+		scale := (100.0) / compSum
 		n = n * scale
 		o2New = o2New * scale
 		a = a * scale

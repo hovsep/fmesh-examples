@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -22,7 +21,7 @@ const (
 
 const (
 	// StomachCapacityMl is a comfortably full stomach.
-	StomachCapacityMl = 1000.0 * Milliliter
+	StomachCapacityMl = 1000.0
 
 	// Half-lives for gastric emptying. Water leaves quickly, a meal takes hours.
 	// That delay is the point: eating should not top the body up instantly, it

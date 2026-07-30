@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -37,7 +36,7 @@ const (
 // Injuries are not instantaneous, and the difference matters: a body that loses
 // a litre over a minute has time to answer, and a body that loses it in one tick
 // does not. Roughly a brisk arterial bleed.
-const BleedRateMlPerSec = 25.0 * Milliliter
+const BleedRateMlPerSec = 25.0
 
 // GetTrauma returns the controller that turns injuries into physiology.
 //

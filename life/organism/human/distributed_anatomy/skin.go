@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
@@ -15,26 +14,26 @@ import (
 const (
 	// NormalSkinCoreTemperature is what the skin assumes before it has been told
 	// otherwise.
-	NormalSkinCoreTemperature = 37.0 * Celsius
+	NormalSkinCoreTemperature = 37.0
 
 	// InsensibleLossMlPerSec is the water a resting body loses through skin and
 	// breath without noticing: roughly 700 mL a day.
-	InsensibleLossMlPerSec = 700.0 / 86400.0 * Milliliter
+	InsensibleLossMlPerSec = 700.0 / 86400.0
 
 	// sweatOnsetTemperature is the core temperature at which sweating begins.
-	sweatOnsetTemperature = 37.2 * Celsius
+	sweatOnsetTemperature = 37.2
 
 	// sweatMlPerDegreePerSec is how hard the body sweats per degree above onset.
 	// Two degrees over comes out near 1.5 L an hour, which is about the most a
 	// person can actually sustain.
-	sweatMlPerDegreePerSec = 750.0 / 3600.0 * Milliliter
+	sweatMlPerDegreePerSec = 750.0 / 3600.0
 
 	// The body defends a thermoneutral zone: within roughly thermoneutralTemp ±
-	// comfortRange the ambient temperature is fully compensated and the core does
-	// not drift. Only the part of the ambient beyond that band becomes a thermal
+	// comfortRange degrees Celsius the ambient temperature is fully compensated
+	// and the core does not drift. Only the part of the ambient beyond that band becomes a thermal
 	// load, so an ordinary room is harmless while a freezing or blazing one is not.
-	thermoneutralTemp = 28.0 * Celsius
-	comfortRange      = 12.0 * Celsius
+	thermoneutralTemp = 28.0
+	comfortRange      = 12.0
 
 	// ambientCouplingPerSec sets how fast the uncompensated part of the ambient
 	// pulls the core. The body's own thermoregulation
@@ -45,7 +44,7 @@ const (
 
 	// solarHeatingPerUVIPerSec is how much direct sun warms the body per unit of
 	// UV index.
-	solarHeatingPerUVIPerSec = 0.00002 * Celsius
+	solarHeatingPerUVIPerSec = 0.00002
 )
 
 // GetSkin returns the skin.
@@ -168,7 +167,7 @@ func regulateSkin(this *component.Component) error {
 // sweatCoolingPerMlPerSec is how much each mL/s of sweat cools the core. Chosen
 // so that maximal sweating offsets a warm environment rather than freezing the
 // body.
-const sweatCoolingPerMlPerSec = 0.006 * Celsius
+const sweatCoolingPerMlPerSec = 0.006
 
 // ambientLoad returns the part of the ambient temperature the body cannot fully
 // compensate: zero within the thermoneutral band, and the excess beyond it

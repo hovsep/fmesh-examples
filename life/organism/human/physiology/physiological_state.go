@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -26,7 +25,7 @@ const (
 	// TotalBodyWaterMl is the water a fully hydrated body holds. Hydration is
 	// reported as a percentage of it, which keeps "thirsty" meaningful without
 	// anyone having to know the absolute figure.
-	TotalBodyWaterMl = 42000.0 * Milliliter
+	TotalBodyWaterMl = 42000.0
 
 	NormalGlycemia = 90.0  // mg/dL, fasting
 	MaxGlycemia    = 300.0 // well into hyperglycaemia
@@ -42,9 +41,9 @@ const (
 	StartingEnergyKcal = 2000.0
 	MaxEnergyKcal      = 4000.0
 
-	NormalCoreTemperature = 37.0 * Celsius
-	MinCoreTemperature    = 30.0 * Celsius
-	MaxCoreTemperature    = 43.0 * Celsius
+	NormalCoreTemperature = 37.0
+	MinCoreTemperature    = 30.0
+	MaxCoreTemperature    = 43.0
 )
 
 const (
@@ -68,7 +67,7 @@ const (
 	// normal. At intensity 8 that is about +2.4 C, so hard exercise reaches ~39.4
 	// C and stays there. Getting this wrong is not subtle -- an earlier value ten
 	// times larger cooked the body to 43 C during a twenty-minute run.
-	heatPerIntensityUnitPerSec = 0.0004 * Celsius
+	heatPerIntensityUnitPerSec = 0.0004
 	temperatureHalfLifeSec     = 600.0
 )
 

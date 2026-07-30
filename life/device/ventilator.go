@@ -17,7 +17,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -33,7 +32,7 @@ const (
 	StatePhase common.State = "phase"
 
 	// DefaultRate is what the machine delivers when switched on without a rate.
-	DefaultRate = 14 * PerMinute
+	DefaultRate = 14
 
 	// PeakInspiratoryPressure is how hard the machine pushes, expressed as the
 	// equivalent pleural pressure so that it drives the same lungs the diaphragm
@@ -44,7 +43,7 @@ const (
 	// the difference rather than the sign keeps one port contract instead of
 	// two. It is a simplification, and it is the only one: everything else about
 	// the machine is unlike a diaphragm.
-	PeakInspiratoryPressure = 4.5 * CmH2O
+	PeakInspiratoryPressure = 4.5
 
 	// inspiratoryTime is the fraction of each cycle spent pushing. Machines
 	// commonly use 1:2, the same as quiet breathing.

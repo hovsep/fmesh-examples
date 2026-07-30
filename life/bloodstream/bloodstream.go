@@ -14,7 +14,6 @@ import (
 
 	"github.com/hovsep/fmesh/component"
 
-	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -25,11 +24,13 @@ import (
 // every organ draws oxygen out and returns carbon dioxide, so the values
 // oscillate with the breath and drift away when breathing stops.
 //
-// Reference values for a resting adult breathing room air at sea level.
+// Reference values for a resting adult breathing room air at sea level. Partial
+// pressures are in mmHg throughout, which is the unit blood gases are read in
+// clinically.
 const (
 	//@TODO: make sure all constants are actually constants and should not be dynamic and depend on other parts of simulation (like env factors or organs)
-	NormalPaO2  = 95.0 * MmHg
-	NormalPaCO2 = 40.0 * MmHg
+	NormalPaO2  = 95.0
+	NormalPaCO2 = 40.0
 	NormalPH    = 7.40
 
 	// WaterVaporPressure is what the airway's own moisture contributes, in mmHg.
@@ -40,7 +41,7 @@ const (
 	// sea level it costs 6% of the available pressure; on the summit of Everest,
 	// where the barometer reads 253, it costs nearly a fifth of it before a
 	// single molecule of oxygen is accounted for.
-	WaterVaporPressure = 47.0 * MmHg
+	WaterVaporPressure = 47.0
 
 	// RespiratoryQuotient is carbon dioxide produced per oxygen consumed. About
 	// 0.8 on a mixed diet: eight molecules out for every ten in.
@@ -61,11 +62,11 @@ const (
 	// Taken with the alveolar gas equation it puts a resting arterial PaO₂ at
 	// 99.7 − 5 ≈ 95, which is NormalPaO2. The two are meant to agree, and if one
 	// is changed the other has to be.
-	AaGradient = 5.0 * MmHg
+	AaGradient = 5.0
 
 	// VentilatedPaCO2 is what ventilation pulls carbon dioxide down towards;
 	// metabolism pushes it back up and the two settle near 40.
-	VentilatedPaCO2 = 38.0 * MmHg
+	VentilatedPaCO2 = 38.0
 
 	// Survivable bounds.
 	//
@@ -76,13 +77,13 @@ const (
 	// itself supply a resting body. That is why a hyperbaric chamber can keep
 	// someone alive whose hemoglobin has been taken out of service by carbon
 	// monoxide. The ceiling used to be 600, which quietly made that impossible.
-	MinPaO2  = 5.0 * MmHg
-	MaxPaO2  = 2200.0 * MmHg
-	MinPaCO2 = 10.0 * MmHg
-	MaxPaCO2 = 150.0 * MmHg
+	MinPaO2  = 5.0
+	MaxPaO2  = 2200.0
+	MinPaCO2 = 10.0
+	MaxPaCO2 = 150.0
 
 	// CO2ExcretionFraction is kept for the lung component, which references it.
-	CO2ExcretionFraction = 0.15 * Proportion
+	CO2ExcretionFraction = 0.15
 
 	// Saturation bounds. The floor is above zero because the arithmetic that
 	// recovers tension from saturation cannot divide by a full or empty
@@ -141,7 +142,7 @@ const (
 	NormalHemoglobin = 15.0
 
 	// NormalBloodVolume is total blood volume for a 70 kg adult, in litres.
-	NormalBloodVolume = 5.0 * Liter
+	NormalBloodVolume = 5.0
 
 	// HufnerConstant is how much oxygen a gram of fully saturated hemoglobin
 	// carries, in mL. Hüfner's number.
@@ -180,7 +181,7 @@ func OxygenDelivery(cardiacOutputLPerMin, contentMlPerDl float64) float64 {
 // The oxyhemoglobin dissociation curve.
 const (
 	// P50 is the oxygen tension at which hemoglobin is half saturated.
-	P50 = 26.6 * MmHg
+	P50 = 26.6
 
 	// hillCoefficient is the curve's cooperativity: binding one oxygen molecule
 	// makes hemoglobin readier to bind the next, which is what gives the curve
