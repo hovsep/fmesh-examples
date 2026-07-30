@@ -8,7 +8,6 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
@@ -21,6 +20,7 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -205,7 +205,7 @@ func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
 // and the change should have to be acknowledged rather than absorbed silently.
 func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 	sim := newCommandableSim(t)
-	body := helper.FindHumanComponent(simMesh(sim))
+	body := human.Find(simMesh(sim))
 	require.NotNil(t, body)
 
 	inner := human.InnerMesh(body)
@@ -299,7 +299,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 		hooks.AfterRun(func(*fmesh.FMesh) error {
 			for _, p := range ports {
 				if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
-					if v, ok := helper.NumericPayload(sig); ok {
+					if v, ok := signal.AsNumber(sig); ok {
 						series[p] = append(series[p], v)
 					}
 				}
@@ -353,7 +353,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 		if sig == nil {
 			return 0
 		}
-		v, _ := helper.NumericPayload(sig)
+		v, _ := signal.AsNumber(sig)
 		return v
 	}
 
@@ -528,7 +528,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 
 	read := func(p string) float64 {
 		if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
-			v, _ := helper.NumericPayload(sig)
+			v, _ := signal.AsNumber(sig)
 			return v
 		}
 		return 0
@@ -692,7 +692,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 
 	rate := func() float64 {
 		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
-			v, _ := helper.NumericPayload(sig)
+			v, _ := signal.AsNumber(sig)
 			return v
 		}
 		return 0
@@ -1114,7 +1114,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 	}
 	rate := func() float64 {
 		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
-			v, _ := helper.NumericPayload(sig)
+			v, _ := signal.AsNumber(sig)
 			return v
 		}
 		return 0

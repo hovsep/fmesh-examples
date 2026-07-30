@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func Test_AppChecks(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sim)
 
-	assert.NotNil(t, helper.FindHumanComponent(simMesh(sim)), "no human in the simulation")
+	assert.NotNil(t, human.Find(simMesh(sim)), "no human in the simulation")
 
 	// The world's own commands are registered alongside the session's built-ins,
 	// so a front end completing names sees both.

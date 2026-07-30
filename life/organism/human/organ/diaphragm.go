@@ -6,7 +6,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
@@ -60,7 +59,7 @@ func GetDiaphragm() (*component.Component, error) {
 		// pleural pressure, or the lungs wait forever for it and the mesh never
 		// converges. Breathing stops because the pressure no longer oscillates.
 		component.WithActivationFunc(
-			helper.SequentialActivationFunc(
+			component.Sequential(
 				handleRespiratoryBias,
 				oscillateBreathing,
 			),

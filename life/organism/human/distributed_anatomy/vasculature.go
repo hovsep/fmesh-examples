@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -165,7 +164,7 @@ func circulate(this *component.Component) error {
 
 	// Phase B: fold in whatever has arrived.
 	if in := this.InputByName("heart_rate"); in.HasSignals() {
-		if rate, err := helper.AsInt(in.Signals().First()); err == nil {
+		if rate, err := signal.AsInt(in.Signals().First()); err == nil {
 			this.State().Set(stateHeartRate, float64(rate))
 		}
 	}

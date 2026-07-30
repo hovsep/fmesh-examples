@@ -7,7 +7,6 @@ import (
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -140,7 +139,7 @@ func handleGasExchange(this *component.Component) error {
 	if flowSig == nil {
 		return nil
 	}
-	flow, err := helper.AsF64(flowSig)
+	flow, err := signal.AsFloat64(flowSig)
 	if err != nil {
 		return err
 	}
@@ -252,7 +251,7 @@ func handleGasExchange(this *component.Component) error {
 func strongestInspiratoryEffort(signals *signal.Group) (float64, error) {
 	strongest := math.Inf(1)
 	err := signals.ForEach(func(sig *signal.Signal) error {
-		p, err := helper.AsF64(sig)
+		p, err := signal.AsFloat64(sig)
 		if err != nil {
 			return err
 		}

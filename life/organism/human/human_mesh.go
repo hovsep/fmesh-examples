@@ -9,15 +9,15 @@ import (
 	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/device"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/boundary"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
-	"github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
+	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 )
 
 const (
@@ -154,24 +154,24 @@ func wireVasculature(components *component.Collection) error {
 	vasculature := components.ByName("da:vasculature")
 	obs := components.ByName("physiology:observable_state")
 
-	if err := helper.MultiPipe(
+	if err := port.MultiPipe(
 		// What the circulation needs to know.
-		helper.PipeSpec{From: components.ByName("organ:heart").OutputByName("rate"), To: vasculature.InputByName("heart_rate")},
-		helper.PipeSpec{From: components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone"), To: vasculature.InputByName("autonomic_tone")},
-		helper.PipeSpec{From: components.ByName("da:blood_system").OutputByName("venous_blood"), To: vasculature.InputByName("venous_blood")},
+		port.Pipe{From: components.ByName("organ:heart").OutputByName("rate"), To: vasculature.InputByName("heart_rate")},
+		port.Pipe{From: components.ByName("physiology:autonomic_coordination").OutputByName("autonomic_tone"), To: vasculature.InputByName("autonomic_tone")},
+		port.Pipe{From: components.ByName("da:blood_system").OutputByName("venous_blood"), To: vasculature.InputByName("venous_blood")},
 	); err != nil {
 		return err
 	}
 
 	// Pressure drives the reflex, and is worth watching.
-	return helper.MultiPipe(
-		helper.PipeSpec{From: vasculature.OutputByName("map"), To: components.ByName("physiology:autonomic_coordination").InputByName("map")},
-		helper.PipeSpec{From: vasculature.OutputByName("map"), To: obs.InputByName("mean_arterial_pressure")},
+	return port.MultiPipe(
+		port.Pipe{From: vasculature.OutputByName("map"), To: components.ByName("physiology:autonomic_coordination").InputByName("map")},
+		port.Pipe{From: vasculature.OutputByName("map"), To: obs.InputByName("mean_arterial_pressure")},
 		// A pressure too low to perfuse with is itself an injury.
-		helper.PipeSpec{From: vasculature.OutputByName("map"), To: components.ByName("physiology:physiological_load").InputByName("map")},
-		helper.PipeSpec{From: vasculature.OutputByName("cardiac_output"), To: obs.InputByName("cardiac_output")},
-		helper.PipeSpec{From: vasculature.OutputByName("svr"), To: obs.InputByName("vascular_resistance")},
-		helper.PipeSpec{From: vasculature.OutputByName("stroke_volume"), To: obs.InputByName("stroke_volume")},
+		port.Pipe{From: vasculature.OutputByName("map"), To: components.ByName("physiology:physiological_load").InputByName("map")},
+		port.Pipe{From: vasculature.OutputByName("cardiac_output"), To: obs.InputByName("cardiac_output")},
+		port.Pipe{From: vasculature.OutputByName("svr"), To: obs.InputByName("vascular_resistance")},
+		port.Pipe{From: vasculature.OutputByName("stroke_volume"), To: obs.InputByName("stroke_volume")},
 	)
 }
 
@@ -394,14 +394,14 @@ func wireMetabolism(components *component.Collection) error {
 	}
 
 	// Observation.
-	return helper.MultiPipe(
-		helper.PipeSpec{From: bodyState.OutputByName("hydration"), To: obs.InputByName("hydration")},
-		helper.PipeSpec{From: bodyState.OutputByName("glycemia"), To: obs.InputByName("glycemia")},
-		helper.PipeSpec{From: bodyState.OutputByName("energy"), To: obs.InputByName("energy")},
-		helper.PipeSpec{From: bodyState.OutputByName("body_temperature"), To: obs.InputByName("body_temperature")},
-		helper.PipeSpec{From: gi.OutputByName("stomach_fill"), To: obs.InputByName("stomach_fill")},
-		helper.PipeSpec{From: skin.OutputByName("sweat_rate"), To: obs.InputByName("sweat_rate")},
-		helper.PipeSpec{From: muscular.OutputByName("fatigue"), To: obs.InputByName("fatigue")},
+	return port.MultiPipe(
+		port.Pipe{From: bodyState.OutputByName("hydration"), To: obs.InputByName("hydration")},
+		port.Pipe{From: bodyState.OutputByName("glycemia"), To: obs.InputByName("glycemia")},
+		port.Pipe{From: bodyState.OutputByName("energy"), To: obs.InputByName("energy")},
+		port.Pipe{From: bodyState.OutputByName("body_temperature"), To: obs.InputByName("body_temperature")},
+		port.Pipe{From: gi.OutputByName("stomach_fill"), To: obs.InputByName("stomach_fill")},
+		port.Pipe{From: skin.OutputByName("sweat_rate"), To: obs.InputByName("sweat_rate")},
+		port.Pipe{From: muscular.OutputByName("fatigue"), To: obs.InputByName("fatigue")},
 	)
 }
 
@@ -704,11 +704,11 @@ func wireBloodSystem(components *component.Collection) error {
 	// The blood gases are observable, both as the composite the organs read and
 	// as the individual readings a clinician would look at -- and they are what
 	// the chemoreceptors are reading when they decide how hard to breathe.
-	return helper.MultiPipe(
-		helper.PipeSpec{From: blood.OutputByName("venous_blood"), To: obsState.InputByName("venous_blood")},
-		helper.PipeSpec{From: blood.OutputByName("venous_blood"), To: components.ByName("physiology:autonomic_coordination").InputByName("venous_blood")},
-		helper.PipeSpec{From: blood.OutputByName("spo2"), To: obsState.InputByName("blood_spo2")},
-		helper.PipeSpec{From: blood.OutputByName("pao2"), To: obsState.InputByName("blood_pao2")},
-		helper.PipeSpec{From: blood.OutputByName("paco2"), To: obsState.InputByName("blood_paco2")},
+	return port.MultiPipe(
+		port.Pipe{From: blood.OutputByName("venous_blood"), To: obsState.InputByName("venous_blood")},
+		port.Pipe{From: blood.OutputByName("venous_blood"), To: components.ByName("physiology:autonomic_coordination").InputByName("venous_blood")},
+		port.Pipe{From: blood.OutputByName("spo2"), To: obsState.InputByName("blood_spo2")},
+		port.Pipe{From: blood.OutputByName("pao2"), To: obsState.InputByName("blood_pao2")},
+		port.Pipe{From: blood.OutputByName("paco2"), To: obsState.InputByName("blood_paco2")},
 	)
 }

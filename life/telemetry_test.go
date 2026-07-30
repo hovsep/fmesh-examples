@@ -3,7 +3,6 @@ package main
 import (
 	"testing"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ func Test_CatalogMatchesObservableStatePorts(t *testing.T) {
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
-	body := helper.FindHumanComponent(fm)
+	body := human.Find(fm)
 	require.NotNil(t, body)
 
 	inner := human.InnerMesh(body)
@@ -45,7 +44,7 @@ func Test_CatalogMatchesAggregatorPaths(t *testing.T) {
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
-	body := helper.FindHumanComponent(fm)
+	body := human.Find(fm)
 	require.NotNil(t, body)
 
 	aggregator := fm.ComponentByName("aggregated_state")
@@ -61,7 +60,7 @@ func Test_UISubjectMatchesTheSimulatedHuman(t *testing.T) {
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
-	body := helper.FindHumanComponent(fm)
+	body := human.Find(fm)
 	require.NotNil(t, body)
 
 	// The mesh addresses telemetry by the human's real name while the UI assumes

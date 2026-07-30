@@ -8,11 +8,11 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh-examples/simulation/simtest"
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ func Test_HumanLiveness(t *testing.T) {
 							return nil
 						}
 						// Liveness travels as 1/0 so it survives the numeric telemetry wire.
-						alive, ok := helper.NumericPayload(sig)
+						alive, ok := signal.AsNumber(sig)
 						if !ok {
 							return fmt.Errorf("is_alive is not numeric: %v", sig.PayloadOrNil())
 						}
@@ -68,7 +68,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigAct == nil {
 							return nil
 						}
-						v, err := helper.AsF64(sigAct)
+						v, err := signal.AsFloat64(sigAct)
 						if err != nil {
 							return err
 						}
@@ -78,7 +78,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRate == nil {
 							return nil
 						}
-						vRate, err := helper.AsInt(sigRate)
+						vRate, err := signal.AsInt(sigRate)
 						if err != nil {
 							return err
 						}
@@ -109,7 +109,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigPressure == nil {
 							return nil
 						}
-						v, err := helper.AsF64(sigPressure)
+						v, err := signal.AsFloat64(sigPressure)
 						if err != nil {
 							return err
 						}
@@ -119,7 +119,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRate == nil {
 							return nil
 						}
-						vRate, err := helper.AsInt(sigRate)
+						vRate, err := signal.AsInt(sigRate)
 						if err != nil {
 							return err
 						}
@@ -153,7 +153,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigLeft == nil {
 							return nil
 						}
-						vLeft, err := helper.AsF64(sigLeft)
+						vLeft, err := signal.AsFloat64(sigLeft)
 						if err != nil {
 							return err
 						}
@@ -163,7 +163,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRight == nil {
 							return nil
 						}
-						vRight, err := helper.AsF64(sigRight)
+						vRight, err := signal.AsFloat64(sigRight)
 						if err != nil {
 							return err
 						}

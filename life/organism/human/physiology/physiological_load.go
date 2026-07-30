@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -69,7 +68,7 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 		component.WithDescription("Turns out-of-range reservoirs into organ damage (the death cascade)"),
 		component.WithInputs(common.TimePort, "body_state", "venous_blood", "map"),
 		component.WithOutputs(damageOutputs()...),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			latchVitals,
 			inflictDamage,
 		)),
@@ -113,7 +112,7 @@ func latchVitals(this *component.Component) error {
 		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", bloodstream.NormalPaO2))
 	}
 	if sig := firstSignal(this, "map"); sig != nil {
-		this.State().Set(loadMAP, helper.AsF64OrDefault(sig, da.NormalMAP))
+		this.State().Set(loadMAP, signal.AsFloat64OrDefault(sig, da.NormalMAP))
 	}
 	return nil
 }

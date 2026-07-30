@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -77,7 +76,7 @@ func GetBarochamberComponent() (*component.Component, error) {
 		component.WithInputs("time", "ctl"),
 		component.WithOutputs("environmental_gas"),
 		component.WithActivationFunc(
-			helper.SequentialActivationFunc(
+			component.Sequential(
 				handleChamberControls,
 				emitChamberGas,
 			),
@@ -106,16 +105,16 @@ func handleChamberControls(this *component.Component) error {
 			// safety feature: below the vapour pressure of water at body
 			// temperature the alveolar gas equation has no positive term left,
 			// and a body would not be short of oxygen so much as boiling.
-			pressure := max(helper.AsF64OrDefault(ctlSig, defaultChamberPressure), 50.0)
+			pressure := max(signal.AsFloat64OrDefault(ctlSig, defaultChamberPressure), 50.0)
 			this.State().Set(StateChamberPressure, pressure)
 			this.Logger().Printf("chamber at %.0f mmHg (%.2f atmospheres)",
 				pressure, pressure/atmosphere.SeaLevelPressure)
 		case cmdSetCO:
-			ppm := max(helper.AsF64OrDefault(ctlSig, 0.0), 0)
+			ppm := max(signal.AsFloat64OrDefault(ctlSig, 0.0), 0)
 			this.State().Set(StateChamberCOppm, ppm)
 			this.Logger().Printf("chamber air carrying %.0f ppm carbon monoxide", ppm)
 		case cmdSetOxygen:
-			oxygen := min(max(helper.AsF64OrDefault(ctlSig, defaultChamberOxygen), 1.0), 100.0)
+			oxygen := min(max(signal.AsFloat64OrDefault(ctlSig, defaultChamberOxygen), 1.0), 100.0)
 			this.State().Set(StateChamberOxygen, oxygen)
 			this.Logger().Printf("chamber mixture now %.0f%% oxygen", oxygen)
 		}

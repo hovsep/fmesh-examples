@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -52,7 +51,7 @@ func GetTrauma() (*component.Component, error) {
 		component.WithDescription("Turns injuries into blood loss"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("blood_loss"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptTraumaCommands,
 			emitBloodLoss,
 		)),

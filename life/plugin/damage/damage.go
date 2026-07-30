@@ -11,7 +11,6 @@ package damage
 
 import (
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
@@ -97,7 +96,7 @@ func (d *Damage) onActivation(this *component.Component) error {
 	var insult float64
 	if in := this.InputByName(InputPort); in != nil && in.HasSignals() {
 		_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-			insult += helper.AsF64OrDefault(sig, 0)
+			insult += signal.AsFloat64OrDefault(sig, 0)
 			return nil
 		})
 		in.Clear()

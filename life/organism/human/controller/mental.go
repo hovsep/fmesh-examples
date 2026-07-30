@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -54,7 +53,7 @@ func GetMental() (*component.Component, error) {
 		component.WithDescription("Turns emotional stimuli into a decaying mental load"),
 		component.WithInputs(common.TimePort, common.ControlPort),
 		component.WithOutputs("mental_load"),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptStimulusCommands,
 			emitMentalLoad,
 		)),

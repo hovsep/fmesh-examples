@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -70,7 +69,7 @@ func GetGITract() (*component.Component, error) {
 			"stomach_fill",
 			"bowel_fill",
 		),
-		component.WithActivationFunc(helper.SequentialActivationFunc(
+		component.WithActivationFunc(component.Sequential(
 			acceptSwallowed,
 			voidBowel,
 			digest,
