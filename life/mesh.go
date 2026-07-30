@@ -25,6 +25,11 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+// cigaretteSeconds is how long one takes to smoke. Randomising it was a nicety
+// that no longer has anywhere to live now that the smoke is in the air rather
+// than metered out by a controller.
+const cigaretteSeconds = 7.5 * 60
+
 // getSimulationMesh returns the main mesh of the simulation, in the world the
 // body normally lives in.
 func getSimulationMesh() (*fmesh.FMesh, error) {
@@ -191,22 +196,6 @@ func setBodyCommands(sim *session.Session) {
 				return nil, err
 			}
 			return map[string]float64{controller.KindFoodKcal: kcal}, nil
-		})
-
-	bodyCommand(sim, "smoke:cigarette",
-		"smoke a cigarette (takes 5-10 min), e.g. 'smoke:cigarette' or 'smoke:cigarette 2'",
-		func(args []string) (map[string]float64, error) {
-			count := 1.0
-			if len(args) == 1 {
-				n, err := strconv.ParseFloat(args[0], 64)
-				if err != nil || n <= 0 {
-					return nil, fmt.Errorf("invalid cigarette count %q", args[0])
-				}
-				count = n
-			} else if len(args) > 1 {
-				return nil, fmt.Errorf("expects an optional count, e.g. '2'")
-			}
-			return map[string]float64{"count": count}, nil
 		})
 
 	bodyCommand(sim, "activity:start",
@@ -440,6 +429,28 @@ func setMeshCommands(sim *session.Session) {
 					signal.New(d.Seconds()).
 						WithLabel(command.Label, "add_mixin").
 						WithLabel("mixin", args[0]))
+			},
+		},
+		command.Command{
+			Name: "smoke:cigarette", Group: "Environment",
+			Description: "light a cigarette, e.g. `smoke:cigarette` or `smoke:cigarette 3`",
+			Run: func(_ io.Writer, args []string) error {
+				count := 1.0
+				if len(args) == 1 {
+					n, err := strconv.ParseFloat(args[0], 64)
+					if err != nil || n <= 0 {
+						return fmt.Errorf("invalid cigarette count %q", args[0])
+					}
+					count = n
+				} else if len(args) > 1 {
+					return errors.New("expects an optional count, e.g. '3'")
+				}
+				// Smoking is something that happens to the air, not something the
+				// body swallows: the smoke fills the room and the body breathes it.
+				return gas.InputByName("ctl").PutSignals(
+					signal.New(count*cigaretteSeconds).
+						WithLabel(command.Label, "add_mixin").
+						WithLabel("mixin", "cigarette_smoke"))
 			},
 		},
 		command.Command{

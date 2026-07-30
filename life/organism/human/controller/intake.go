@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/command"
-	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -14,9 +13,8 @@ import (
 
 // Intake command verbs. The namespace is fixed; the verb names the category.
 const (
-	VerbWater     = "water"
-	VerbFood      = "food"
-	VerbCigarette = "cigarette" // reached via the "smoke" namespace
+	VerbWater = "water"
+	VerbFood  = "food"
 )
 
 // Intake controller state.
@@ -27,16 +25,14 @@ const (
 
 	// Lifetime totals of what was commanded (not yet what was delivered), useful
 	// for observing and for tests.
-	TotalWaterMl    string = "total_water_ml"
-	TotalFoodKcal   string = "total_food_kcal"
-	TotalCigarettes string = "total_cigarettes"
+	TotalWaterMl  string = "total_water_ml"
+	TotalFoodKcal string = "total_food_kcal"
 )
 
 // Kinds delivered by intake processes; also the scalar names on intake_intent.
 const (
 	KindWaterMl  = "water_ml"
 	KindFoodKcal = "food_kcal"
-	KindToxin    = "toxin"
 )
 
 // Delivery rates. Because a process delivers at a fixed rate, a larger amount
@@ -45,19 +41,12 @@ const (
 	DrinkRateMlPerSec = 15.0 // a 500 mL glass takes ~33 s
 	EatRateKcalPerSec = 3.0  // a 600 kcal meal takes ~3.5 min
 
-	// A cigarette delivers its toxin over a randomised 5-10 minutes. The toxin is
-	// measured in lung-damage units (0..1 to fail an organ): one cigarette does a
-	// small fraction, so it takes many hundreds to wreck a lung -- harmful over a
-	// long habit, not instantly fatal.
-	cigaretteMeanDurationSec = 7.5 * 60.0
-	cigaretteDurationJitter  = 33.0   // percent, giving roughly 5-10 minutes
-	ToxinPerCigarette        = 0.0015 // ~650 cigarettes to fail a lung
 )
 
 // GetIntake returns the intake controller.
 //
 // It is the body's mouth: it turns commands like "intake:water 500ml",
-// "intake:food 200kcal" and "smoke:cigarette 1" into ingestion that plays out
+// "intake:food 200kcal" into ingestion that plays out
 // over time. It knows nothing about digestion -- boundary:ingestion and
 // da:gi_tract decide what swallowing something actually does.
 func GetIntake() (*component.Component, error) {
@@ -73,7 +62,6 @@ func GetIntake() (*component.Component, error) {
 			state.Set(StateProcesses, &simtime.ProcessSet{})
 			state.Set(TotalWaterMl, 0.0)
 			state.Set(TotalFoodKcal, 0.0)
-			state.Set(TotalCigarettes, 0.0)
 		}),
 	)
 	if err != nil {
@@ -96,18 +84,6 @@ func acceptIntakeCommands(this *component.Component) error {
 			kcal := args.ValueOrDefault(KindFoodKcal, 0)
 			processes.Start(&simtime.Process{Kind: KindFoodKcal, Remaining: kcal, RatePerSec: EatRateKcalPerSec})
 			addTotal(this, TotalFoodKcal, kcal)
-		case VerbCigarette:
-			count := args.ValueOrDefault("count", 1)
-			// One puff-stream: `count` cigarettes' worth of toxin metered at the
-			// pace of a single cigarette, so more cigarettes simply take longer.
-			// The duration is randomised so no two are identical.
-			durationSec := mathx.Jitter(cigaretteMeanDurationSec, cigaretteDurationJitter)
-			processes.Start(&simtime.Process{
-				Kind:       KindToxin,
-				Remaining:  count * ToxinPerCigarette,
-				RatePerSec: ToxinPerCigarette / durationSec,
-			})
-			addTotal(this, TotalCigarettes, count)
 		default:
 			this.Logger().Printf("intake category %q is not modelled yet, ignoring\n", command.Verb(name))
 		}
@@ -145,7 +121,6 @@ func meterIntake(this *component.Component) error {
 		signal.New("intake_intent").
 			WithLabel("category", "intake").
 			WithScalar(KindWaterMl, delivered[KindWaterMl]).
-			WithScalar(KindFoodKcal, delivered[KindFoodKcal]).
-			WithScalar(KindToxin, delivered[KindToxin]),
+			WithScalar(KindFoodKcal, delivered[KindFoodKcal]),
 	)
 }
