@@ -6,6 +6,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -66,8 +67,8 @@ func GetTrauma() (*component.Component, error) {
 }
 
 func acceptTraumaCommands(this *component.Component) error {
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
-		switch helper.CommandVerb(name) {
+	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		switch command.Verb(name) {
 		case VerbBleed:
 			volume := args.ValueOrDefault(ScalarVolumeMl, 0)
 			if volume <= 0 {

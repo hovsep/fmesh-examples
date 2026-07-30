@@ -19,6 +19,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 )
@@ -84,8 +85,8 @@ func GetVentilator() (*component.Component, error) {
 }
 
 func acceptSettings(this *component.Component) error {
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
-		if helper.CommandVerb(name) != VerbVentilate {
+	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		if command.Verb(name) != VerbVentilate {
 			return nil
 		}
 

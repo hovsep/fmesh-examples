@@ -166,7 +166,7 @@ func setBodyCommands(sim *session.Session) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("expects one volume, e.g. '500ml' or '0.5l'")
 			}
-			quantity, err := helper.ParseQuantity(args[0])
+			quantity, err := command.ParseQuantity(args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -182,7 +182,7 @@ func setBodyCommands(sim *session.Session) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("expects one energy, e.g. '200kcal'")
 			}
-			quantity, err := helper.ParseQuantity(args[0])
+			quantity, err := command.ParseQuantity(args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -242,7 +242,7 @@ func setBodyCommands(sim *session.Session) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("expects one volume, e.g. '1500ml' or '1.5l'")
 			}
-			quantity, err := helper.ParseQuantity(args[0])
+			quantity, err := command.ParseQuantity(args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -308,7 +308,7 @@ func setMeshCommands(sim *session.Session) {
 	setTemperature := func(cmd string, degrees float64) command.Handler {
 		return func(_ io.Writer, _ []string) error {
 			return gas.InputByName("ctl").PutSignals(
-				signal.New(degrees).WithLabel(helper.CommandLabel, cmd))
+				signal.New(degrees).WithLabel(command.Label, cmd))
 		}
 	}
 
@@ -325,7 +325,7 @@ func setMeshCommands(sim *session.Session) {
 				value = parsed
 			}
 			return gas.InputByName("ctl").PutSignals(
-				signal.New(value).WithLabel(helper.CommandLabel, cmd))
+				signal.New(value).WithLabel(command.Label, cmd))
 		}
 	}
 

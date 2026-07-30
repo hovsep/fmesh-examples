@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
@@ -85,8 +86,8 @@ func GetIntake() (*component.Component, error) {
 func acceptIntakeCommands(this *component.Component) error {
 	processes := this.State().Get(StateProcesses).(*helper.ProcessSet)
 
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, args *meta.Scalars) error {
-		switch helper.CommandVerb(name) {
+	return command.ForEach(this, common.ControlPort, func(name string, args *meta.Scalars) error {
+		switch command.Verb(name) {
 		case VerbWater:
 			ml := args.ValueOrDefault(KindWaterMl, 0)
 			processes.Start(&helper.Process{Kind: KindWaterMl, Remaining: ml, RatePerSec: DrinkRateMlPerSec})
@@ -108,7 +109,7 @@ func acceptIntakeCommands(this *component.Component) error {
 			})
 			addTotal(this, TotalCigarettes, count)
 		default:
-			this.Logger().Printf("intake category %q is not modelled yet, ignoring\n", helper.CommandVerb(name))
+			this.Logger().Printf("intake category %q is not modelled yet, ignoring\n", command.Verb(name))
 		}
 		return nil
 	})

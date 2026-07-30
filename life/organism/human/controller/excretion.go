@@ -5,6 +5,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/meta"
 	"github.com/hovsep/fmesh/signal"
@@ -56,8 +57,8 @@ func GetExcretion() (*component.Component, error) {
 }
 
 func acceptExcretionCommands(this *component.Component) error {
-	return helper.ForEachCommand(this, common.ControlPort, func(name string, _ *meta.Scalars) error {
-		switch helper.CommandVerb(name) {
+	return command.ForEach(this, common.ControlPort, func(name string, _ *meta.Scalars) error {
+		switch command.Verb(name) {
 		case VerbUrinate:
 			// A flag rather than a counter: asking twice in one tick still means
 			// one voiding, since you cannot empty an empty bladder again.

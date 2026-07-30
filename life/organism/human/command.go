@@ -7,7 +7,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/life/common"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -21,7 +21,7 @@ const ControlPort = common.ControlPort
 // an organ directly, it states an intent ("intake:water") and the owning
 // controller decides what that means physiologically.
 var commandRoutes = map[string]string{
-	"intake":    "controller:intake",
+	"intake": "controller:intake",
 	//@TODO: smoke is not intake, do not mix it, smoke must be implemented as a cmd that mixins some smoke substanses into gas factor liek "gas:mixin cigarrette_smoke 5m" and then "gas:remove_all_mixins" - so we can have gas preset + different mixins and combine them
 	"smoke":     "controller:intake", // smoking is oral intake of a toxin
 	"activity":  "controller:physical_stress",
@@ -41,13 +41,13 @@ func CommandNamespaces() []string {
 
 // AcceptsCommand reports whether a command name routes to a known controller.
 func AcceptsCommand(name string) bool {
-	_, ok := commandRoutes[helper.CommandNamespace(name)]
+	_, ok := commandRoutes[command.Namespace(name)]
 	return ok
 }
 
 // Command builds a control signal for the human's ctl port.
 func Command(name string, args map[string]float64) *signal.Signal {
-	return helper.PackCommand(name, args)
+	return command.Pack(name, args)
 }
 
 // routeCommands delivers control signals from the human's ctl port to the
@@ -63,7 +63,7 @@ func routeCommands(mesh *fmesh.FMesh) component.ActivationFunc {
 		}
 
 		return ctl.Signals().ForEach(func(sig *signal.Signal) error {
-			name, _, err := helper.UnpackCommand(sig)
+			name, _, err := command.Unpack(sig)
 			if err != nil {
 				// Not addressed to us. Ignore rather than fail: an activation
 				// error stops the whole mesh run, and a stray signal should
@@ -72,7 +72,7 @@ func routeCommands(mesh *fmesh.FMesh) component.ActivationFunc {
 				return nil
 			}
 
-			componentName, ok := commandRoutes[helper.CommandNamespace(name)]
+			componentName, ok := commandRoutes[command.Namespace(name)]
 			if !ok {
 				this.Logger().Printf("no controller owns command %q (known namespaces: %v)\n", name, CommandNamespaces())
 				return nil
