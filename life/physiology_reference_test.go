@@ -1373,3 +1373,51 @@ func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
 			"and having got warm, it should sweat -- which is the whole point")
 	})
 }
+
+// TestReference_AFireInTheRoomPoisonsAndThenClears is what a mixin is for.
+//
+// A preset says where the body is; a mixin says what has got into the air where
+// it is. They compose, and a mixin runs out, which is most of what separates
+// smoke from weather.
+//
+// The poisoning itself is the carbon monoxide story told elsewhere in this file.
+// What this checks is that the air is a place things can happen in: the fire
+// puts carbon monoxide into a room, the body picks it up by breathing, and when
+// the fire burns out the body clears it without anybody intervening.
+func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+	sim := newCommandableSim(t)
+	sim.Do("air:mixin wood_fire 10m")
+
+	agg := simMesh(sim).ComponentByName("aggregated_state")
+	carboxy := func() float64 {
+		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
+			return sig.Scalars().ValueOrDefault("COHb", 0)
+		}
+		return 0
+	}
+
+	var whileBurning, afterItWentOut float64
+	elapsed := 0.0
+	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.AfterRun(func(*fmesh.FMesh) error {
+			elapsed += tickSeconds
+			switch {
+			case within(elapsed, 590):
+				whileBurning = carboxy()
+			case elapsed > 1750:
+				afterItWentOut = carboxy()
+			}
+			return nil
+		})
+	})
+
+	simtest.RunFor(sim, 1800*time.Second, func() {
+		assert.Greater(t, whileBurning, 1.0,
+			"ten minutes of an unventilated fire should show on the hemoglobin")
+		assert.Less(t, afterItWentOut, whileBurning,
+			"and once it burns out the body should be clearing it, with nothing done about it")
+	})
+}

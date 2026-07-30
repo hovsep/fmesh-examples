@@ -424,6 +424,33 @@ func setMeshCommands(sim *session.Session) {
 			},
 		},
 		command.Command{
+			Name: "air:mixin", Group: "Environment",
+			Description: "put something in the air for a while, e.g. `air:mixin wood_fire 30m` (" +
+				strings.Join(factor.MixinNames(), ", ") + ")",
+			Run: func(_ io.Writer, args []string) error {
+				if len(args) != 2 {
+					return fmt.Errorf("expects a mixin and a duration, e.g. 'wood_fire 30m' (%v)",
+						factor.MixinNames())
+				}
+				d, err := simtime.ParseDuration(args[1])
+				if err != nil {
+					return fmt.Errorf("invalid duration %q: %w", args[1], err)
+				}
+				return gas.InputByName("ctl").PutSignals(
+					signal.New(d.Seconds()).
+						WithLabel(command.Label, "add_mixin").
+						WithLabel("mixin", args[0]))
+			},
+		},
+		command.Command{
+			Name: "air:clear", Group: "Environment",
+			Description: "clear everything mixed into the air",
+			Run: func(_ io.Writer, _ []string) error {
+				return gas.InputByName("ctl").PutSignals(
+					signal.New(0.0).WithLabel(command.Label, "clear_mixins"))
+			},
+		},
+		command.Command{
 			Name: "air:co", Group: "Environment",
 			Description: "put carbon monoxide in the air, in ppm, e.g. `air:co 800` (0 to clear it)",
 			Run:         gasSetting("set_co", 0),
