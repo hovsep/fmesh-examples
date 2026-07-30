@@ -44,46 +44,33 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("failed to add components to human mesh: %w", err)
 	}
 
-	// Do the wiring
-	//@TODO: repeating err check suggests we can have some helper func here
-	if err := wireBrain(components); err != nil {
-		return nil, fmt.Errorf("wireBrain: %w", err)
-	}
-	if err := wireCirculation(components); err != nil {
-		return nil, fmt.Errorf("wireCirculation: %w", err)
-	}
-	if err := wireVasculature(components); err != nil {
-		return nil, fmt.Errorf("wireVasculature: %w", err)
-	}
-	if err := wireTrauma(components); err != nil {
-		return nil, fmt.Errorf("wireTrauma: %w", err)
-	}
-	if err := wireHeart(components); err != nil {
-		return nil, fmt.Errorf("wireHeart: %w", err)
-	}
-	if err := wireAutotomicCoordination(components); err != nil {
-		return nil, fmt.Errorf("wireAutotomicCoordination: %w", err)
-	}
-	if err := wireDiaphragm(components); err != nil {
-		return nil, fmt.Errorf("wireDiaphragm: %w", err)
-	}
-	if err := wireRespiratoryBoundary(components); err != nil {
-		return nil, fmt.Errorf("wireRespiratoryBoundary: %w", err)
-	}
-	if err := wireLungs(components); err != nil {
-		return nil, fmt.Errorf("wireLungs: %w", err)
-	}
-	if err := wireBloodSystem(components); err != nil {
-		return nil, fmt.Errorf("wireBloodSystem: %w", err)
-	}
-	if err := wireMetabolism(components); err != nil {
-		return nil, fmt.Errorf("wireMetabolism: %w", err)
-	}
-	if err := wireAffect(components); err != nil {
-		return nil, fmt.Errorf("wireAffect: %w", err)
-	}
-	if err := wireDamage(components); err != nil {
-		return nil, fmt.Errorf("wireDamage: %w", err)
+	// Do the wiring.
+	//
+	// Each of these is a named piece of anatomy rather than a step in a
+	// sequence: the order they run in does not matter, only that all of them do.
+	// Listing them says that much more plainly than a column of identical error
+	// checks, and adding one is now a line rather than four.
+	for _, wire := range []struct {
+		name string
+		wire func(*component.Collection) error
+	}{
+		{"wireBrain", wireBrain},
+		{"wireCirculation", wireCirculation},
+		{"wireVasculature", wireVasculature},
+		{"wireTrauma", wireTrauma},
+		{"wireHeart", wireHeart},
+		{"wireAutotomicCoordination", wireAutotomicCoordination},
+		{"wireDiaphragm", wireDiaphragm},
+		{"wireRespiratoryBoundary", wireRespiratoryBoundary},
+		{"wireLungs", wireLungs},
+		{"wireBloodSystem", wireBloodSystem},
+		{"wireMetabolism", wireMetabolism},
+		{"wireAffect", wireAffect},
+		{"wireDamage", wireDamage},
+	} {
+		if err := wire.wire(components); err != nil {
+			return nil, fmt.Errorf("%s: %w", wire.name, err)
+		}
 	}
 
 	err = internal.HandleGraphFlag(mesh, false)
