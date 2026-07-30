@@ -1,6 +1,5 @@
 package atmosphere
 
-//@TODO: go antipattern, to vague package name, check if better to distribute the code to specific packages
 
 import (
 	"testing"
