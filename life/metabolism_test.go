@@ -14,6 +14,8 @@ import (
 	"github.com/hovsep/fmesh-examples/life/telemetry"
 	"github.com/hovsep/fmesh-examples/simulation/command"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +34,7 @@ func Test_DrinkingReachesTheBody(t *testing.T) {
 
 	hydrationBefore := body.State().Get(physiology.StateHydrationMl).(float64)
 
-	helper.RunSimulationAndThen(sim, 2*time.Minute, func() {
+	simtest.RunFor(sim, 2*time.Minute, func() {
 		// Some of the glass has left the stomach...
 		stomach := gi.State().Get(da.StateStomachMl).(float64)
 		assert.Less(t, stomach, 500.0, "the stomach should have started emptying")
@@ -64,7 +66,7 @@ func Test_EatingRaisesBloodGlucoseAndTheLiverStartsStoringIt(t *testing.T) {
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 	liver := bodyComponent(t, sim, "organ:liver")
 
-	helper.RunSimulationAndThen(sim, 5*time.Minute, func() {
+	simtest.RunFor(sim, 5*time.Minute, func() {
 		assert.Greater(t, body.State().Get(physiology.StateGlycemia).(float64), physiology.NormalGlycemia,
 			"a meal should raise blood glucose above fasting level")
 		assert.Less(t, organ.GlucoseFlux(liver), organ.BasalHepaticGlucoseOutput,
@@ -82,7 +84,7 @@ func Test_DigestionIsNotInstant(t *testing.T) {
 
 	// The delay is the point: food should linger in the stomach and be released
 	// into the body slowly, not appear the instant it is swallowed.
-	helper.RunSimulationAndThen(sim, 90*time.Second, func() {
+	simtest.RunFor(sim, 90*time.Second, func() {
 		stomach := gi.State().Get(da.StateStomachKcal).(float64)
 		assert.Greater(t, stomach, 60.0,
 			"most of a small meal should still be in the stomach a minute after eating it")
@@ -98,7 +100,7 @@ func Test_EatingSpansTime(t *testing.T) {
 	gi := bodyComponent(t, sim, "da:gi_tract")
 	intake := bodyComponent(t, sim, "controller:intake")
 
-	helper.RunSimulationAndThen(sim, time.Minute, func() {
+	simtest.RunFor(sim, time.Minute, func() {
 		// At ~3 kcal/s only ~180 kcal is eaten in a minute; the stomach holds no
 		// more than what has been swallowed so far.
 		assert.Less(t, gi.State().Get(da.StateStomachKcal).(float64), 250.0,
@@ -119,14 +121,14 @@ func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
 		var remaining float64
 		simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
 			hooks.AfterRun(func(*fmesh.FMesh) error {
-				processes, _ := intake.State().Get(controller.StateProcesses).(*helper.ProcessSet)
+				processes, _ := intake.State().Get(controller.StateProcesses).(*simtime.ProcessSet)
 				if processes != nil {
 					remaining = processes.RemainingOf(controller.KindWaterMl)
 				}
 				return nil
 			})
 		})
-		helper.RunSimulationAndThen(sim, d, func() {})
+		simtest.RunFor(sim, d, func() {})
 		return remaining
 	}
 
@@ -145,7 +147,7 @@ func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {
 
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 
-	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+	simtest.RunFor(sim, 3*time.Minute, func() {
 		assert.Less(t, body.State().Get(physiology.StateEnergyKcal).(float64), physiology.StartingEnergyKcal,
 			"running should burn into the reserve")
 		assert.Greater(t, body.State().Get(physiology.StateCoreTemperature).(float64), physiology.NormalCoreTemperature,
@@ -164,7 +166,7 @@ func Test_HardExertionDoesNotCookTheBody(t *testing.T) {
 	// effort settles. An earlier heating constant ten times too large took the
 	// body to 43 C during a twenty-minute run, and drove sweat to 8 L an hour --
 	// both of which looked plausible tick by tick and only showed up on screen.
-	helper.RunSimulationAndThen(sim, 20*time.Minute, func() {
+	simtest.RunFor(sim, 20*time.Minute, func() {
 		temperature := body.State().Get(physiology.StateCoreTemperature).(float64)
 		assert.Greater(t, temperature, physiology.NormalCoreTemperature,
 			"hard exercise should warm the body")
@@ -185,7 +187,7 @@ func Test_RestingBodyStaysNearNormal(t *testing.T) {
 
 	// Left alone the body should drift slowly, not run away. This is the guard
 	// against a rate constant being wrong by orders of magnitude.
-	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+	simtest.RunFor(sim, 3*time.Minute, func() {
 		assert.InDelta(t, physiology.NormalCoreTemperature,
 			body.State().Get(physiology.StateCoreTemperature).(float64), 0.2,
 			"a resting body should hold its temperature")
@@ -202,7 +204,7 @@ func Test_BladderFillsAndVoids(t *testing.T) {
 	sim := newCommandableSim(t)
 	kidney := bodyComponent(t, sim, "organ:kidney")
 
-	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+	simtest.RunFor(sim, 3*time.Minute, func() {
 		assert.Greater(t, kidney.State().Get(organ.StateBladderMl).(float64), 0.0,
 			"the kidneys should have produced urine")
 	})
@@ -212,7 +214,7 @@ func Test_BladderFillsAndVoids(t *testing.T) {
 	sim.Do("after 2m excretion:urinate")
 	kidney = bodyComponent(t, sim, "organ:kidney")
 
-	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+	simtest.RunFor(sim, 3*time.Minute, func() {
 		assert.Less(t, kidney.State().Get(organ.StateBladderMl).(float64), 10.0,
 			"urinating should have emptied the bladder")
 	})
@@ -307,7 +309,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 			}
 
 			feelings := lastFeelings(t, sim)
-			helper.RunSimulationAndThen(sim, tt.duration, func() {
+			simtest.RunFor(sim, tt.duration, func() {
 				sig := feelings()
 				require.NotNil(t, sig, "the body published no feelings")
 				tt.assert(t, sig.Scalars().ValueOrDefault(tt.feeling, -1))
@@ -320,7 +322,7 @@ func Test_EveryFeelingIsPublished(t *testing.T) {
 	sim := newCommandableSim(t)
 	feelings := lastFeelings(t, sim)
 
-	helper.RunSimulationAndThen(sim, time.Second, func() {
+	simtest.RunFor(sim, time.Second, func() {
 		sig := feelings()
 		require.NotNil(t, sig)
 

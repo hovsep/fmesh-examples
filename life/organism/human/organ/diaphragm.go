@@ -10,6 +10,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -89,7 +90,7 @@ func oscillateBreathing(this *component.Component) error {
 		return this.OutputByName("respiratory_rate").PutPayloads(0)
 	}
 
-	dt, err := helper.TickDurationInSec(this.InputByName("time").Signals().First())
+	dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
 	if err != nil {
 		return err
 	}

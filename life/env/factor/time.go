@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/life/helper"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 )
 
@@ -78,7 +78,7 @@ func GetTimeComponent(tick time.Duration) (*component.Component, error) {
 				return simStartTime.Add(simDuration)
 			})
 
-			nextTick := helper.PackTick(
+			nextTick := simtime.PackTick(
 				this.State().Get("tick_count").(uint64),
 				this.State().Get("sim_duration").(time.Duration),
 				this.State().Get("sim_wall_time").(time.Time),

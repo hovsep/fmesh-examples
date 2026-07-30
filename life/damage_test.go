@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +25,7 @@ func Test_SmokingDamagesTheLungs(t *testing.T) {
 	lungRight := organComp(t, sim, "organ:lung_right")
 	kidney := organComp(t, sim, "organ:kidney")
 
-	helper.RunSimulationAndThen(sim, 2*time.Minute, func() {
+	simtest.RunFor(sim, 2*time.Minute, func() {
 		leftDamage := damage.Level(lungLeft)
 		rightDamage := damage.Level(lungRight)
 
@@ -48,8 +49,8 @@ func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
 	intake := bodyComponent(t, sim, "controller:intake")
 
 	// One minute in, the cigarette (5-10 min) is still going.
-	helper.RunSimulationAndThen(sim, time.Minute, func() {
-		set, _ := intake.State().Get(controller.StateProcesses).(*helper.ProcessSet)
+	simtest.RunFor(sim, time.Minute, func() {
+		set, _ := intake.State().Get(controller.StateProcesses).(*simtime.ProcessSet)
 		if set != nil {
 			assert.Positive(t, set.Active(), "a cigarette should still be burning after a minute")
 		}

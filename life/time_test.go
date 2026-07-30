@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ func Test_Time(t *testing.T) {
 						tickSig := timeComponent.OutputByName("tick").Signals().First()
 						require.NotNil(t, tickSig)
 
-						_, _, simWallTime, _, err := helper.UnpackTick(tickSig)
+						_, _, simWallTime, _, err := simtime.UnpackTick(tickSig)
 						require.NoError(t, err)
 
 						// Observe and collect sim wall time after every iteration
@@ -38,7 +39,7 @@ func Test_Time(t *testing.T) {
 					})
 				})
 
-				helper.RunSimulationAndThen(sim, time.Millisecond*100, func() {
+				simtest.RunFor(sim, time.Millisecond*100, func() {
 					assert.NotEmpty(t, observedSimWallTime)
 					assert.IsIncreasing(t, observedSimWallTime)
 				})

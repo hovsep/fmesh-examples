@@ -13,6 +13,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/common"
 	"github.com/hovsep/fmesh-examples/life/helper"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -105,7 +106,7 @@ func (d *Damage) onActivation(this *component.Component) error {
 	// Aging accrues once per tick, scaled by the tick's real duration.
 	var aging float64
 	if tick := this.InputByName(common.TimePort); tick != nil && tick.HasSignals() {
-		if dt, err := helper.TickDurationInSec(tick.Signals().First()); err == nil {
+		if dt, err := simtime.TickDurationInSec(tick.Signals().First()); err == nil {
 			aging = d.agingRatePerSec * dt
 		}
 	}

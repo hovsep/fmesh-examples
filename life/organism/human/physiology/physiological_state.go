@@ -8,6 +8,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	. "github.com/hovsep/fmesh-examples/life/unit"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
+	"github.com/hovsep/fmesh-examples/simulation/simtime"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/signal"
 )
@@ -129,7 +130,7 @@ func updatePhysiologicalState(this *component.Component) error {
 	// Phase A: the tick publishes current levels straight away, so organs reading
 	// body_state are never a run behind.
 	if this.InputByName(common.TimePort).HasSignals() {
-		dt, err := helper.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
+		dt, err := simtime.TickDurationInSec(this.InputByName(common.TimePort).Signals().First())
 		if err != nil {
 			return err
 		}

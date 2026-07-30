@@ -9,6 +9,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/simulation/session"
+	"github.com/hovsep/fmesh-examples/simulation/simtest"
 	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,7 +69,7 @@ func Test_BrainFailureKillsTheBody(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 2*time.Second, func() {
+	simtest.RunFor(sim, 2*time.Second, func() {
 		assert.True(t, damage.Failed(brain), "the brain should have failed")
 		everDead, final := aliveness()
 		assert.True(t, everDead, "the body should be observed dead")
@@ -106,7 +107,7 @@ func Test_DeathIsIrreversible(t *testing.T) {
 		})
 	})
 
-	helper.RunSimulationAndThen(sim, 3*time.Second, func() {
+	simtest.RunFor(sim, 3*time.Second, func() {
 		assert.True(t, seenDead, "the body should have died")
 		assert.Zero(t, aliveAfterDeath, "a dead body must not come back to life")
 	})
@@ -127,7 +128,7 @@ func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
 	brain := organComp(t, sim, "organ:brain")
 	kidney := organComp(t, sim, "organ:kidney")
 
-	helper.RunSimulationAndThen(sim, 3*time.Minute, func() {
+	simtest.RunFor(sim, 3*time.Minute, func() {
 		brainDamage := damage.Level(brain)
 		kidneyDamage := damage.Level(kidney)
 		assert.Greater(t, brainDamage, 0.0, "cold should injure the brain")
@@ -142,7 +143,7 @@ func Test_HealthyBodyNeverDies(t *testing.T) {
 	sim := newCommandableSim(t)
 	aliveness := observedAliveness(t, sim)
 
-	helper.RunSimulationAndThen(sim, 30*time.Second, func() {
+	simtest.RunFor(sim, 30*time.Second, func() {
 		everDead, final := aliveness()
 		assert.False(t, everDead, "a healthy body must not be reported dead")
 		assert.Equal(t, 1.0, final)
