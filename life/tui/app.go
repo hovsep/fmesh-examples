@@ -189,7 +189,7 @@ func newModel(state *models.AppState, pane *console.Pane) Model {
 	// catalog, so a new metric appears without any code here changing.
 	subject := telemetry.DefaultSubject
 	metricViews := make(map[models.ViewType]*views.MetricsView)
-	for _, view := range models.Views {
+	for _, view := range models.Views() {
 		metricViews[view] = views.NewMetricsView(state, strings.ToUpper(models.ViewName(view)), view, subject)
 	}
 
@@ -263,8 +263,8 @@ func (m *Model) handleNav(msg tea.KeyMsg) bool {
 
 	// alt+1..alt+7 jump straight to a view.
 	if strings.HasPrefix(s, "alt+") && len(s) == 5 && s[4] >= '1' && s[4] <= '9' {
-		if idx := int(s[4] - '1'); idx < len(models.Views) {
-			m.state.SetView(models.Views[idx])
+		if idx := int(s[4] - '1'); idx < len(models.Views()) {
+			m.state.SetView(models.Views()[idx])
 			return true
 		}
 	}
@@ -295,7 +295,7 @@ func (m Model) tabAtMouse(msg tea.MouseMsg) (models.ViewType, bool) {
 
 	x := 0
 	current := m.state.GetView()
-	for _, view := range models.Views {
+	for _, view := range models.Views() {
 		style := styles.TabInactiveStyle
 		if view == current {
 			style = styles.TabActiveStyle
@@ -325,23 +325,7 @@ func (m Model) View() string {
 	// header(2) + tabs(1) + help(1) + content + divider(1) + pane(paneHeight).
 	contentHeight := max(m.height-5-paneHeight, 3)
 
-	var content string
-	switch view := m.state.GetView(); view {
-	case models.ViewOverview:
-		content = m.overviewView.Render(m.width, contentHeight)
-	case models.ViewCardiovascular:
-		// Bespoke: a heartbeat reads as a waveform, not a row of numbers.
-		content = m.cardiacView.Render(m.width, contentHeight)
-	case models.ViewRespiratory:
-		// Kept bespoke: breathing is best understood as waveforms over time.
-		content = m.respiratoryView.Render(m.width, contentHeight, m.lungsSplit)
-	case models.ViewAffect:
-		content = m.feelingsView.Render(m.width, contentHeight)
-	case models.ViewBody:
-		content = m.bodyView.Render(m.width, contentHeight)
-	default:
-		content = m.metricViews[view].Render(m.width, contentHeight)
-	}
+	content := m.renderView(m.state.GetView(), contentHeight)
 
 	divider := lipgloss.NewStyle().Foreground(styles.ColorBorder).Render(strings.Repeat("─", m.width))
 
@@ -353,6 +337,30 @@ func (m Model) View() string {
 		divider,
 		m.pane.View(paneHeight),
 	)
+}
+
+// renderView draws one screen.
+//
+// Most screens are a list of readings and are drawn from the telemetry catalog
+// with no code of their own -- adding a metric to the catalog puts it on a
+// screen. The ones named here earn their bespoke renderer: a heartbeat reads as
+// a waveform rather than a row of numbers, breathing as two traces over time, a
+// body as a diagram, and feelings as words.
+func (m Model) renderView(view models.ViewType, height int) string {
+	switch view {
+	case models.ViewOverview:
+		return m.overviewView.Render(m.width, height)
+	case models.ViewCardiovascular:
+		return m.cardiacView.Render(m.width, height)
+	case models.ViewRespiratory:
+		return m.respiratoryView.Render(m.width, height, m.lungsSplit)
+	case models.ViewAffect:
+		return m.feelingsView.Render(m.width, height)
+	case models.ViewBody:
+		return m.bodyView.Render(m.width, height)
+	default:
+		return m.metricViews[view].Render(m.width, height)
+	}
 }
 
 func (m Model) renderHeader() string {
@@ -394,7 +402,7 @@ func (m Model) renderTabs() string {
 	currentView := m.state.GetView()
 
 	var tabs []string
-	for _, view := range models.Views {
+	for _, view := range models.Views() {
 		if view == currentView {
 			tabs = append(tabs, styles.TabActiveStyle.Render(models.ViewName(view)))
 		} else {
