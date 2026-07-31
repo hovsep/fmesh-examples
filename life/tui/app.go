@@ -36,8 +36,16 @@ const (
 // Layout constants. The command pane gets a fixed slice of the height; the
 // dashboard takes the rest.
 const (
-	paneHeight = 8 // transcript rows + input line + hint line
-	tabRowY    = 2 // the tab bar sits just under the two-line header
+	// paneHeightSmall/Large are the two sizes the console toggles between.
+	//
+	// Eight rows leaves about six for the transcript, which a talkative
+	// simulation fills in seconds -- long enough to lose whatever you were
+	// reading, short enough that you cannot scroll back to it comfortably. The
+	// large size is for when the log is what you are actually watching.
+	paneHeightSmall = 8
+	paneHeightLarge = 20
+
+	tabRowY = 2 // the tab bar sits just under the two-line header
 )
 
 // App is the integrated front end as a command.Source. It owns the
@@ -177,6 +185,7 @@ type Model struct {
 	feelingsView    *views.FeelingsView
 	bodyView        *views.BodyView
 	metricViews     map[models.ViewType]*views.MetricsView
+	paneHeight      int
 
 	width          int
 	height         int
@@ -202,6 +211,7 @@ func newModel(state *models.AppState, pane *console.Pane) Model {
 		feelingsView:    views.NewFeelingsView(state, subject),
 		bodyView:        views.NewBodyView(state, subject),
 		metricViews:     metricViews,
+		paneHeight:      paneHeightSmall,
 		width:           120,
 		height:          40,
 		renderInterval:  defaultRenderInterval,
@@ -277,6 +287,14 @@ func (m *Model) handleNav(msg tea.KeyMsg) bool {
 	case "alt+s":
 		// Toggle the respiratory view between split and overlaid lungs.
 		m.lungsSplit = !m.lungsSplit
+	case "alt+c":
+		// Grow the console when the log is what you are watching, and shrink it
+		// again when the dashboard is.
+		if m.paneHeight == paneHeightSmall {
+			m.paneHeight = paneHeightLarge
+		} else {
+			m.paneHeight = paneHeightSmall
+		}
 	case "ctrl+up":
 		m.renderInterval = max(m.renderInterval/2, minRenderInterval)
 	case "ctrl+down":
@@ -322,7 +340,8 @@ func (m Model) View() string {
 	tabs := m.renderTabs()
 	help := m.renderHelp()
 
-	// header(2) + tabs(1) + help(1) + content + divider(1) + pane(paneHeight).
+	// header(2) + tabs(1) + help(1) + content + divider(1) + pane.
+	paneHeight := min(m.paneHeight, max(m.height-8, 4))
 	contentHeight := max(m.height-5-paneHeight, 3)
 
 	content := m.renderView(m.state.GetView(), contentHeight)
@@ -415,6 +434,6 @@ func (m Model) renderTabs() string {
 
 func (m Model) renderHelp() string {
 	fps := int(time.Second / m.renderInterval)
-	helpText := fmt.Sprintf("ctrl+←/→ or alt+1-7 or click: tabs | alt+s: split lungs | ctrl+↑/↓: FPS (%d) | exit/ctrl+c: quit", fps)
+	helpText := fmt.Sprintf("ctrl+←/→ or alt+1-7 or click: tabs | alt+s: split lungs | alt+c: console size | ctrl+↑/↓: FPS (%d) | clear | exit/ctrl+c: quit", fps)
 	return styles.HelpStyle.Render(helpText)
 }

@@ -130,6 +130,15 @@ func (p *Pane) submit() tea.Cmd {
 	}
 
 	p.history.Add(line)
+
+	// "clear" is the console's own, the way it is in any shell: it is about the
+	// window rather than the simulation, and sending it down to a mesh that has
+	// never heard of a transcript would only earn an "unknown command".
+	if line == clearCommand {
+		p.Clear()
+		return nil
+	}
+
 	p.Append("› " + line)
 
 	// Non-blocking: the channel is buffered, and a full one means the simulation
@@ -140,6 +149,21 @@ func (p *Pane) submit() tea.Cmd {
 		p.Append("! simulation is not accepting commands right now")
 	}
 	return nil
+}
+
+// clearCommand empties the transcript. Named so the pane can offer it in
+// completion alongside the simulation's own commands.
+const clearCommand = "clear"
+
+// Clear empties the transcript and returns to following the newest line.
+//
+// A simulation talks: components log what they are doing, and a few minutes of
+// that buries whatever you were reading. Clearing is the same gesture as in any
+// other shell, and it is why the pane keeps its own transcript rather than
+// drawing straight from a stream.
+func (p *Pane) Clear() {
+	p.transcript = nil
+	p.scroll = 0
 }
 
 // SaveHistory persists the command history; call it as the program exits.
@@ -210,7 +234,9 @@ func (p *Pane) complete() {
 	}
 
 	var matches []string
-	for _, name := range p.commands() {
+	// The console's own builtin completes alongside the simulation's commands,
+	// since from the prompt there is no difference between them.
+	for _, name := range append(p.commands(), clearCommand) {
 		if strings.HasPrefix(name, prefix) {
 			matches = append(matches, name)
 		}
