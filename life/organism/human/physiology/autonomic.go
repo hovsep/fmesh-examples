@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
+	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	da "github.com/hovsep/fmesh-examples/life/organism/human/distributed_anatomy"
 	"github.com/hovsep/fmesh-examples/life/organism/human/organ"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -45,6 +46,23 @@ const (
 	vascularWeight    = 1.0
 	respiratoryWeight = 0.4
 	giWeight          = -0.8
+
+	// MaxExertion is the intensity a body at full effort is working at, as a
+	// multiple of rest. Anything harder is asking for the same everything.
+	MaxExertion = 10.0
+
+	// demandCardiacWeight is how much of a full effort reaches the heart.
+	//
+	// Chosen so that eightfold exertion asks for about 150 beats, which is what
+	// hard work costs a healthy adult. Before this the heart heard nothing about
+	// exertion at all: its bias came from the brain's drive and the baroreflex,
+	// and a body sprinting had the pulse of a body reading a book.
+	demandCardiacWeight = 0.7
+
+	// arousalIsMilderThanEffort scales fright against exercise. A fright empties
+	// the same glands, but a frightened body is not doing the work a running one
+	// is, and its pulse should not read as though it were.
+	arousalIsMilderThanEffort = 0.6
 )
 
 // baroreflexResponse returns the sympathetic drive called for by the difference
@@ -97,9 +115,11 @@ func chemoreflexResponse(paCO2, paO2 float64) float64 {
 // stateLastMAP latches the arterial pressure the reflex is answering, and the
 // blood gases the chemoreflex is answering.
 const (
-	stateLastMAP   string = "last_map"
-	stateLastPaCO2 string = "last_paco2"
-	stateLastPaO2  string = "last_pao2"
+	stateLastMAP      string = "last_map"
+	stateLastPaCO2    string = "last_paco2"
+	stateLastPaO2     string = "last_pao2"
+	stateLastExertion string = "last_exertion"
+	stateLastArousal  string = "last_arousal"
 )
 
 // GetAutonomicCoordination ...
@@ -115,11 +135,29 @@ func GetAutonomicCoordination() (*component.Component, error) {
 		// Pressure is the exception: it arrives from the circulation on its own
 		// cycle and is latched, so a reflex answering last tick's pressure is
 		// still answering a pressure that was real.
-		component.WithInputs("neural_drive", "map", "venous_blood"),
+		component.WithInputs(
+			"neural_drive", "map", "venous_blood",
+			// What the body is being asked to do, and how alarmed it is about it.
+			"physical_load", "mental_load",
+		),
 		component.WithOutputs("autonomic_tone"),
 		component.WithActivationFunc(func(this *component.Component) error {
 			if in := this.InputByName("map"); in.HasSignals() {
 				this.State().Set(stateLastMAP, signal.AsFloat64OrDefault(in.Signals().First(), da.NormalMAP))
+			}
+			// Latched on arrival: neither load comes in on the tick, and a port
+			// is drained before the next one arrives.
+			if in := this.InputByName("physical_load"); in.HasSignals() {
+				if sig := in.Signals().First(); sig != nil {
+					this.State().Set(stateLastExertion,
+						sig.Scalars().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
+				}
+			}
+			if in := this.InputByName("mental_load"); in.HasSignals() {
+				if sig := in.Signals().First(); sig != nil {
+					this.State().Set(stateLastArousal,
+						sig.Scalars().ValueOrDefault(controller.ScalarArousal, 0))
+				}
 			}
 			if in := this.InputByName("venous_blood"); in.HasSignals() {
 				if sig := in.Signals().First(); sig != nil {
@@ -142,14 +180,19 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			pressure, _ := this.State().Get(stateLastMAP).(float64)
 			paCO2, _ := this.State().Get(stateLastPaCO2).(float64)
 			paO2, _ := this.State().Get(stateLastPaO2).(float64)
+			exertion, _ := this.State().Get(stateLastExertion).(float64)
+			arousal, _ := this.State().Get(stateLastArousal).(float64)
 			this.OutputByName("autonomic_tone").PutSignals(
-				getAutonomicToneSignal(neuralDrive, pressure, paCO2, paO2))
+				getAutonomicToneSignal(neuralDrive, pressure, paCO2, paO2,
+					sympatheticDemand(exertion, arousal)))
 			return nil
 		}),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateLastMAP, da.NormalMAP)
 			state.Set(stateLastPaCO2, da.NormalPaCO2Reference)
 			state.Set(stateLastPaO2, da.NormalPaO2Reference)
+			state.Set(stateLastExertion, controller.RestingIntensity)
+			state.Set(stateLastArousal, 0.0)
 		}),
 	)
 	if err != nil {
@@ -165,13 +208,26 @@ func GetAutonomicCoordination() (*component.Component, error) {
 // which meant they could never express anything: the heart, the vessels, the
 // airway and the gut all did the same thing at once. Under a pressure error they
 // now diverge, which is what the autonomic system is for.
-func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float64) *signal.Signal {
+// sympatheticDemand is how hard the body is being asked to work, from nought at
+// rest to one at full effort.
+//
+// Exercise and fright are one number here because the body answers them the same
+// way -- the same nerves, the same glands -- and takes whichever is asking for
+// more rather than adding them, so a frightened runner is not asked for twice
+// what either alone would cost.
+func sympatheticDemand(exertion, arousal float64) float64 {
+	effort := mathx.Clamp(
+		(exertion-controller.RestingIntensity)/(MaxExertion-controller.RestingIntensity), 0, 1)
+	return max(effort, mathx.Clamp(arousal, 0, 1)*arousalIsMilderThanEffort)
+}
+
+func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2, demand float64) *signal.Signal {
 	reflex := baroreflexResponse(meanArterialPressure)
 	chemo := chemoreflexResponse(paCO2, paO2)
 
 	// Sympathetic level rises with drive, and with a pressure that needs
 	// defending.
-	sym := mathx.Clamp(neuralDrive+reflex, 0, 1)
+	sym := mathx.Clamp(neuralDrive+reflex+demand, 0, 1)
 	paraSym := mathx.Clamp(1.0-sym, 0.0, 1.0)
 	gain := sym
 
@@ -182,6 +238,12 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float
 		return mathx.Clamp(mathx.Jitter(base+reflex*weight, defaultRegionalBiasJitter), 0, 1)
 	}
 
+	// The heart hears the demand directly, which is the whole point of this
+	// number reaching here: a running or frightened body needs its pulse to
+	// answer, and the baroreflex alone was never going to say so.
+	cardiac := mathx.Clamp(
+		mathx.Jitter(base+reflex+demand*demandCardiacWeight, defaultRegionalBiasJitter), 0, 1)
+
 	// Breathing answers to the blood far more than to anything else, so the
 	// respiratory bias takes whichever of its two callers is asking for more.
 	respiratory := mathx.Clamp(
@@ -189,7 +251,7 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2 float
 
 	return autonomic.Pack(
 		sym, paraSym, defaultAutonomicCoordinationNoise, gain,
-		bias(1.0),            // cardiac: beat faster
+		cardiac,              // cardiac: beat faster
 		bias(vascularWeight), // vascular: squeeze
 		respiratory,          // respiratory: breathe harder, mostly for the CO₂
 		bias(giWeight),       // gut: give up its share
