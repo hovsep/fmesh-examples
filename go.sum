@@ -30,12 +30,10 @@ github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
 github.com/guptarohit/asciigraph v0.8.1 h1:JBeHTGj2ntBODnZxLQhp+GQZdlZ/48S/m7J1i1+KqFw=
 github.com/guptarohit/asciigraph v0.8.1/go.mod h1:dYl5wwK4gNsnFf9Zp+l06rFiDZ5YtXM6x7SRWZ3KGag=
-github.com/hovsep/fmesh v1.11.1-Shirak h1:arpG4UQKDtXN/wKK4xzpXhdEBW/eflVE+DyoZO//aPc=
-github.com/hovsep/fmesh v1.11.1-Shirak/go.mod h1:YdaP7A0d7HV9ZlYyOADpvmVpooJSaE05SSPdIsxLEyU=
-github.com/hovsep/fmesh v1.12.0 h1:9ucvxYNmHfk5PZ6RyyCTiZ4SBxaQB0tnbkmUY2PIDS4=
-github.com/hovsep/fmesh v1.12.0/go.mod h1:YdaP7A0d7HV9ZlYyOADpvmVpooJSaE05SSPdIsxLEyU=
-github.com/hovsep/fmesh-graphviz v1.3.3 h1:3xBEPA54zAu26GMS8q7z8vTpDR+KwIiQ2fo+OOo75fs=
-github.com/hovsep/fmesh-graphviz v1.3.3/go.mod h1:Q7A9wqUTpL04eKFRPafSvK15ZaeCifEqC4fLyuCvT38=
+github.com/hovsep/fmesh v1.12.1 h1:kMMoSwFzbSCxksReHsXGb8h4o+PMMZRy/TgvilRiREo=
+github.com/hovsep/fmesh v1.12.1/go.mod h1:YdaP7A0d7HV9ZlYyOADpvmVpooJSaE05SSPdIsxLEyU=
+github.com/hovsep/fmesh-graphviz v1.4.0 h1:Qz5H80dauYiPCG/flX0m84eCujxaTtqQXg0XVlEaTRU=
+github.com/hovsep/fmesh-graphviz v1.4.0/go.mod h1:DCUabfg0r/TQCQffdzBZPYHXSWlVA6Caq1h72sn06eg=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=
 github.com/lucasb-eyer/go-colorful v1.3.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
