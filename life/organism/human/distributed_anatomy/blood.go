@@ -72,6 +72,7 @@ func GetBloodSystem() (*component.Component, error) {
 			state.Set(stateCarboxy, 0.0)
 			state.Set(stateHemoglobin, bloodstream.NormalHemoglobin)
 			state.Set(stateVolume, bloodstream.NormalBloodVolume)
+			state.Set(stateAutotransfused, 0.0)
 			state.Set(statePaCO2, bloodstream.NormalPaCO2)
 			state.Set(stateGlucoseLevel, bloodstream.DefaultGlucoseLevel)
 			state.Set(stateVentilation, 1.0)
@@ -403,7 +404,25 @@ func bleed(this *component.Component, lostMl float64) {
 // pressure has to be defended by the heart and the vessels because the volume is
 // not coming back yet. When it does come back it arrives as fluid without cells,
 // which is why the haemoglobin falls *after* the bleeding has stopped.
-const transcapillaryRefillHalfLifeSec = 20 * 60.0
+// Ninety minutes, which is what "hours-long" above actually means. It was
+// twenty, and twenty is fast enough to undo a haemorrhage while you watch: a
+// body that had lost half its blood had most of the volume back inside a
+// quarter of an hour and never decompensated at all.
+const transcapillaryRefillHalfLifeSec = 90 * 60.0
+
+// MaxAutotransfusionL is the most a body can lend itself, in litres.
+//
+// The interstitium is a reservoir, not a transfusion service: about a litre can
+// be pulled across the capillary wall and no more. Without that cap the body
+// refilled whatever it had lost, so a patient who had bled two and a half litres
+// clawed the volume back from their own tissues, watched their oxygen delivery
+// climb back over the injury threshold, and survived an exsanguination with
+// nothing but a dead kidney to show for it. A litre is the difference between a
+// bleed you compensate and one you need someone else's blood for.
+const MaxAutotransfusionL = 1.0
+
+// stateAutotransfused is how much has been borrowed so far.
+const stateAutotransfused string = "autotransfused_l"
 
 // refill moves interstitial fluid into the circulation, toward the volume the
 // body wants. It buys back pressure at the cost of concentration.
@@ -413,7 +432,16 @@ func refill(this *component.Component, dt float64) {
 		return
 	}
 
+	borrowed, _ := this.State().Get(stateAutotransfused).(float64)
+	if borrowed >= MaxAutotransfusionL {
+		return
+	}
+
 	restored := mathx.DecayToward(volume, bloodstream.NormalBloodVolume, dt, transcapillaryRefillHalfLifeSec)
+	if gain := restored - volume; borrowed+gain > MaxAutotransfusionL {
+		restored = volume + (MaxAutotransfusionL - borrowed)
+	}
+	this.State().Set(stateAutotransfused, borrowed+(restored-volume))
 
 	// The red cells are however many there were; they are now spread through a
 	// larger volume, and so is the oxygen they are carrying. Diluting one without

@@ -128,7 +128,10 @@ func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
 	brain := organComp(t, sim, "organ:brain")
 	kidney := organComp(t, sim, "organ:kidney")
 
-	simtest.RunFor(sim, 3*time.Minute, func() {
+	// Eight minutes: long enough for the core to reach the temperature at which
+	// injury starts, now that a freezing body cools at a watchable pace rather
+	// than losing seven degrees in two minutes.
+	simtest.RunFor(sim, 8*time.Minute, func() {
 		brainDamage := damage.Level(brain)
 		kidneyDamage := damage.Level(kidney)
 		assert.Greater(t, brainDamage, 0.0, "cold should injure the brain")
