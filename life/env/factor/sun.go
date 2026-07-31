@@ -1,6 +1,7 @@
 package factor
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -63,7 +64,7 @@ func GetSunComponent() (*component.Component, error) {
 }
 
 // setTimeOfDay records an hour the sky has been asked to show.
-func setTimeOfDay(this *component.Component) error {
+func setTimeOfDay(_ context.Context, this *component.Component) error {
 	return command.ForEach(this, "ctl", func(name string, args *meta.Scalars) error {
 		if command.Verb(name) != cmdSetHour {
 			return nil
@@ -73,7 +74,7 @@ func setTimeOfDay(this *component.Component) error {
 	})
 }
 
-func emitSunlight(this *component.Component) error {
+func emitSunlight(_ context.Context, this *component.Component) error {
 	tick := this.InputByName("time").Signals().First()
 	if tick == nil {
 		return nil

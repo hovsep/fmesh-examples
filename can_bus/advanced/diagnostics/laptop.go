@@ -1,6 +1,7 @@
 package diagnostics
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can"
@@ -25,7 +26,7 @@ func NewLaptop(name string) (*Laptop, error) {
 	laptopComponent, err := component.New(name,
 		component.WithInputs(portUSBIn, portProgrammaticIn),
 		component.WithOutputs(portUSBOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 
 			// Process programmatic commands
 			this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
@@ -37,7 +38,7 @@ func NewLaptop(name string) (*Laptop, error) {
 			// Process incoming usb data
 			this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
 				// Just print everything to STDOUT
-				this.Logger().Printf("Got data on USB port: %v", sig.PayloadOrNil())
+				this.Logger().Printf("Got data on USB port: %v", sig.Payload())
 				return nil
 			})
 

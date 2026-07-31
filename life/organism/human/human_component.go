@@ -1,6 +1,7 @@
 package human
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh"
@@ -84,9 +85,9 @@ func New(name string) (*component.Component, error) {
 // validate activation function
 // Check if all required inputs are received
 func validate() component.ActivationFunc {
-	return func(this *component.Component) error {
+	return func(_ context.Context, this *component.Component) error {
 		if !this.Inputs().ByNames("habitat_time_tick", "habitat_air_environmental_gas").AllHaveSignals() {
-			return component.ErrWaitingForInputsKeep
+			return component.ErrWaitKeepingInputs
 		}
 		return nil
 	}
@@ -105,7 +106,7 @@ func validate() component.ActivationFunc {
 // produced. Naming three buckets for every organ would be renaming rather than
 // structure.
 func sense(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
+	return func(ctx context.Context, this *component.Component) error {
 		// Fan the tick out to every component in the body that keeps time.
 		//
 		// This used to be a hand-written list, which is a standing invitation to
@@ -119,7 +120,7 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 			if timePort == nil {
 				return nil
 			}
-			return port.ForwardSignals(tick, timePort)
+			return port.ForwardSignals(ctx, tick, timePort)
 		}); err != nil {
 			return fmt.Errorf("failed to distribute time in human mesh: %w", err)
 		}
@@ -127,7 +128,7 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		// Environmental air enters through the airway, and also reaches the skin,
 		// which feels the ambient temperature carried on it.
 		skin := mesh.ComponentByName("da:skin")
-		if err := port.MultiForward(
+		if err := port.MultiForward(ctx,
 			port.Pair{
 				From: this.InputByName("habitat_air_environmental_gas"),
 				To:   mesh.ComponentByName("boundary:respiratory").InputByName("environmental_gas"),
@@ -157,8 +158,8 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 // still converges because a failed organ that others depend on -- the diaphragm --
 // holds a terminal output rather than going silent.
 func act(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
-		_, err := mesh.Run()
+	return func(ctx context.Context, this *component.Component) error {
+		_, err := mesh.Run(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to run human mesh: %w", err)
 		}
@@ -169,7 +170,7 @@ func act(mesh *fmesh.FMesh) component.ActivationFunc {
 // Feedback activation function
 // In this phase a human component propagates outputs from the inner mesh to the human component
 func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
+	return func(ctx context.Context, this *component.Component) error {
 		observableState := mesh.ComponentByName("physiology:observable_state")
 
 		// Every published value is forwarded from the body's telemetry hub to
@@ -184,7 +185,7 @@ func feedback(mesh *fmesh.FMesh) component.ActivationFunc {
 			})
 		}
 
-		if err := port.MultiForward(pairs...); err != nil {
+		if err := port.MultiForward(ctx, pairs...); err != nil {
 			return fmt.Errorf("failed to forward signals from human mesh: %w", err)
 		}
 		return nil

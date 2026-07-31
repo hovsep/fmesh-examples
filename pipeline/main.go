@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -44,7 +45,7 @@ func main() {
 		return c.Labels().ValueIs("stage", "1")
 	}).InputByName(portIn).PutSignals(signal.New("start"))
 
-	_, err = fm.Run()
+	_, err = fm.Run(context.Background())
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
 		os.Exit(1)
@@ -108,7 +109,7 @@ func getMesh() (*fmesh.FMesh, error) {
 func getFileReader(name string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("read file"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if fileName == "" {
 				return errors.New("no input filename")
@@ -145,7 +146,7 @@ func getFileReader(name string) (*component.Component, error) {
 func getFileWriter(name string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("write to file"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			root, err := os.OpenRoot(".")
 			if err != nil {
 				return err
@@ -161,7 +162,7 @@ func getFileWriter(name string) (*component.Component, error) {
 			defer file.Close()
 
 			writeErr := this.InputByName(portIn).Signals().ForEach(func(s *signal.Signal) error {
-				_, err = file.WriteString(s.PayloadOrDefault("").(string) + "\n")
+				_, err = file.WriteString(s.Payload().(string) + "\n")
 				return err
 			})
 			if writeErr != nil {
@@ -186,7 +187,7 @@ func getFileWriter(name string) (*component.Component, error) {
 func getStdInReader(name, prompt string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("read a line from stdin"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			scanner := bufio.NewScanner(os.Stdin)
 			fmt.Println(prompt)
 			if !scanner.Scan() {
@@ -208,7 +209,7 @@ func getStdInReader(name, prompt string) (*component.Component, error) {
 func getTokenizer(name, delimiter string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("tokenize text"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
 			if text == "" {
 				this.Logger().Println("got empty text. Aborting activation")
@@ -238,12 +239,12 @@ func getTokenizer(name, delimiter string) (*component.Component, error) {
 func getFilter(name string, blockList map[string]bool) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("filter-tokens"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			allSignals := this.InputByName(portIn).Signals()
 
 			filtered := signal.NewGroup()
 			allSignals.ForEach(func(sig *signal.Signal) error {
-				word := sig.PayloadOrDefault("").(string)
+				word := sig.Payload().(string)
 				if !blockList[word] {
 					filtered = filtered.With(sig)
 				}
@@ -262,10 +263,10 @@ func getFilter(name string, blockList map[string]bool) (*component.Component, er
 func getTokenCounter(name string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("count tokens"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			counters := make(map[string]int)
 			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-				counters[sig.PayloadOrDefault("").(string)]++
+				counters[sig.Payload().(string)]++
 				return nil
 			})
 			for t, count := range counters {
@@ -283,7 +284,7 @@ func getTokenCounter(name string) (*component.Component, error) {
 func buildPipeline(name string, components ...*component.Component) (*fmesh.FMesh, error) {
 	stageIndex := 1
 	for _, c := range components {
-		c.AddLabel("stage", strconv.Itoa(stageIndex))
+		c.Labels().Set("stage", strconv.Itoa(stageIndex))
 		if err := c.AddInputs(portIn); err != nil {
 			return nil, fmt.Errorf("add input to %s: %w", c.Name(), err)
 		}

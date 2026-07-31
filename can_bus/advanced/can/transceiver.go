@@ -1,6 +1,7 @@
 package can
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,13 +19,13 @@ func NewTransceiver(unitName string) (*component.Component, error) {
 		component.WithInputs(common.PortCANTx, common.PortCANH, common.PortCANL),  // Bits in (write to bus), voltage in (read from bus)
 		component.WithOutputs(common.PortCANRx, common.PortCANH, common.PortCANL), // Bits out (read from bus), voltage out (write to bus)
 		component.WithLogger(common.NewNoopLogger()),
-		component.WithActivationFunc(func(this *component.Component) error {
-			err := handleTxPath(this)
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			err := handleTxPath(ctx, this)
 			if err != nil {
 				return fmt.Errorf("failed to handle tx path: %w", err)
 			}
 
-			err = handleRxPath(this)
+			err = handleRxPath(ctx, this)
 			if err != nil {
 				return fmt.Errorf("failed to handle rx path: %w", err)
 			}
@@ -38,9 +39,9 @@ func NewTransceiver(unitName string) (*component.Component, error) {
 }
 
 // Write path: transceiver -> bus
-func handleTxPath(this *component.Component) error {
+func handleTxPath(_ context.Context, this *component.Component) error {
 	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
-		bit, ok := sig.PayloadOrNil().(codec.Bit)
+		bit, ok := sig.Payload().(codec.Bit)
 		if !ok {
 			this.Logger().Println("received corrupted bit")
 		}
@@ -62,7 +63,7 @@ func handleTxPath(this *component.Component) error {
 }
 
 // Read path: transceiver <- bus (exactly one bit)
-func handleRxPath(this *component.Component) error {
+func handleRxPath(_ context.Context, this *component.Component) error {
 	if this.InputByName(common.PortCANL).HasSignals() && this.InputByName(common.PortCANH).HasSignals() {
 		vLow, err := this.InputByName(common.PortCANL).Signals().FirstPayload()
 		if err != nil {

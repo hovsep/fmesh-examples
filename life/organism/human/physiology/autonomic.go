@@ -1,6 +1,7 @@
 package physiology
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
@@ -141,7 +142,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			"physical_load", "mental_load",
 		),
 		component.WithOutputs("autonomic_tone"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			if in := this.InputByName("map"); in.HasSignals() {
 				this.State().Set(stateLastMAP, signal.AsFloat64OrDefault(in.Signals().First(), da.NormalMAP))
 			}

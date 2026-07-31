@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation"
@@ -67,7 +68,7 @@ func GetMental() (*component.Component, error) {
 	return c, nil
 }
 
-func acceptStimulusCommands(this *component.Component) error {
+func acceptStimulusCommands(_ context.Context, this *component.Component) error {
 	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		if command.Verb(name) != VerbStimulus {
 			this.Logger().Printf("unknown emotion command %q\n", name)
@@ -86,7 +87,7 @@ func acceptStimulusCommands(this *component.Component) error {
 	})
 }
 
-func emitMentalLoad(this *component.Component) error {
+func emitMentalLoad(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

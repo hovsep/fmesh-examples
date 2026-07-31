@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -33,7 +34,7 @@ func main() {
 	fmt.Println("Starting engine...")
 	fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch"))
 
-	runtimeInfo, err := fm.Run()
+	runtimeInfo, err := fm.Run(context.Background())
 	fmt.Printf("Simulation completed — %d activation cycle(s) executed\n", runtimeInfo.Cycles.Len())
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
@@ -94,7 +95,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Sends out rotation signal once started"),
 		component.WithInputs("start"),
 		component.WithOutputs("rotation"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			revolution := signal.New(10).WithLabel("direction", "clockwise")
 			this.OutputByName("rotation").PutSignals(revolution)
 			return nil
@@ -108,8 +109,8 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Simple clutch"),
 		component.WithInputs("rotation"),
 		component.WithOutputs("rotation"),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			return port.ForwardSignals(ctx, this.InputByName("rotation"), this.OutputByName("rotation"))
 		}),
 	)
 	if err != nil {
@@ -120,7 +121,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("⚙️"),
 		component.WithInputs("rotation"),
 		component.WithOutputs("rotation"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName("rotation").Signals().ForEach(func(s *signal.Signal) error {
 				rotationAfter := s.MapPayload(func(payload any) any {
 					return payload.(int) / 2
@@ -137,8 +138,8 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("🚗"),
 		component.WithInputs("rotation"),
 		component.WithOutputs("rotation"),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName("rotation"), this.OutputByName("rotation"))
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			return port.ForwardSignals(ctx, this.InputByName("rotation"), this.OutputByName("rotation"))
 		}),
 	)
 	if err != nil {

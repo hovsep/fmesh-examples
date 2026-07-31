@@ -4,6 +4,8 @@
 package imaging
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -16,7 +18,7 @@ func GetDownsampler() *component.Component {
 		component.WithDescription("Averages color samples down to one color per pixel"),
 		component.WithInputs(common.PortIn),
 		component.WithOutputs(common.PortOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.OutputByName(common.PortOut).PutSignalGroups(
 				this.InputByName(common.PortIn).Signals().MapPayloads(func(p any) any {
 					return render.AveragePixels(p.([]render.Vec3))

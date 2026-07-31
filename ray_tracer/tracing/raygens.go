@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -16,7 +18,7 @@ func GetRayGenerators() *component.Collection {
 			component.WithDescription("Generates the primary rays for one tile"),
 			component.WithInputs(common.PortIn),
 			component.WithOutputs(common.PortOut),
-			component.WithActivationFunc(func(this *component.Component) error {
+			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 				return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
 					yFrom := common.ScalarInt(sig, common.ScalarYFrom)
 					yTo := common.ScalarInt(sig, common.ScalarYTo)

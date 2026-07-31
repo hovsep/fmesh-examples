@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -94,7 +95,7 @@ func GetHeart() (*component.Component, error) {
 	return c, nil
 }
 
-func oscillateHeart(this *component.Component) error {
+func oscillateHeart(_ context.Context, this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
@@ -131,7 +132,7 @@ const stateCoreTemperature = "core_temperature"
 const feverBpmPerDegree = 9.0
 
 // rememberBodyTemperature latches the core temperature whenever it arrives.
-func rememberBodyTemperature(this *component.Component) error {
+func rememberBodyTemperature(_ context.Context, this *component.Component) error {
 	in := this.InputByName("body_state")
 	if in == nil || !in.HasSignals() {
 		return nil
@@ -141,7 +142,7 @@ func rememberBodyTemperature(this *component.Component) error {
 	return nil
 }
 
-func handleCardiacBias(this *component.Component) error {
+func handleCardiacBias(_ context.Context, this *component.Component) error {
 	if !this.InputByName("autonomic_tone").HasSignals() {
 		return nil
 	}

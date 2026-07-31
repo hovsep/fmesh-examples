@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -100,7 +101,7 @@ func main() {
 	fmt.Println("Running simulation...")
 	fmt.Println()
 
-	runResult, err := fm.Run()
+	runResult, err := fm.Run(context.Background())
 	if err != nil {
 		fmt.Println("The mesh finished with error:", err)
 		os.Exit(1)

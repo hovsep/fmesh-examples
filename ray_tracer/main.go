@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -83,7 +84,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, err := fm.Run(); err != nil {
+	if _, err := fm.Run(context.Background()); err != nil {
 		fmt.Println("Rendering finished with error:", err)
 		os.Exit(1)
 	}

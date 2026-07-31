@@ -1,6 +1,7 @@
 package boundary
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/body"
@@ -41,7 +42,7 @@ func GetIngestion() (*component.Component, error) {
 	return c, nil
 }
 
-func handleIngestion(this *component.Component) error {
+func handleIngestion(_ context.Context, this *component.Component) error {
 	in := this.InputByName("intake_intent")
 	if !in.HasSignals() {
 		return nil

@@ -1,6 +1,7 @@
 package factor
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -44,7 +45,7 @@ const tickScalar = "tick_duration_ns"
 
 // RecordTick notes on the mesh how much simulated time one run of it represents.
 func RecordTick(fm *fmesh.FMesh, tick time.Duration) {
-	fm.AddScalar(tickScalar, float64(tick))
+	fm.Scalars().Set(tickScalar, float64(tick))
 }
 
 // TickOf reports the step a mesh was built with.
@@ -59,7 +60,7 @@ func GetTimeComponent(tick time.Duration) (*component.Component, error) {
 		component.WithDescription("Time management for the simulation"),
 		component.WithInputs("ctl"),
 		component.WithOutputs("tick"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			// No need to check for inputs, just tick on every activation
 
 			step := this.State().Get(stateTickDuration).(time.Duration)

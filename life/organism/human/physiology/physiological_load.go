@@ -1,6 +1,7 @@
 package physiology
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
@@ -136,7 +137,7 @@ func damageOutputs() []string {
 
 // latchVitals remembers the latest reservoir and blood values, since each arrives
 // on its own mesh cycle.
-func latchVitals(this *component.Component) error {
+func latchVitals(_ context.Context, this *component.Component) error {
 	if sig := firstSignal(this, "cardiac_output"); sig != nil {
 		this.State().Set(loadOutput, signal.AsFloat64OrDefault(sig, da.RestingCardiacOutput))
 	}
@@ -160,7 +161,7 @@ func latchVitals(this *component.Component) error {
 	return nil
 }
 
-func inflictDamage(this *component.Component) error {
+func inflictDamage(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

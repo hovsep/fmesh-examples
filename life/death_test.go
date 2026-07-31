@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ func observedAliveness(t *testing.T, sim *session.Session) func() (everDead bool
 	everDead := false
 	final := 1.0
 	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
-		h.AfterRun(func(*fmesh.FMesh) error {
+		h.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
 				if v, ok := signal.AsNumber(s); ok {
 					final = v
@@ -60,7 +61,7 @@ func Test_BrainFailureKillsTheBody(t *testing.T) {
 	// Injure the brain to failure after the body has been alive a moment.
 	injured := false
 	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
-		h.AfterRun(func(*fmesh.FMesh) error {
+		h.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			if !injured {
 				damage.Inflict(brain, 2*damage.CriticalLevel)
 				injured = true
@@ -89,7 +90,7 @@ func Test_DeathIsIrreversible(t *testing.T) {
 	seenDead := false
 	agg := simMesh(sim).ComponentByName("aggregated_state")
 	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
-		h.AfterRun(func(*fmesh.FMesh) error {
+		h.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			if !injured {
 				damage.Inflict(brain, 2*damage.CriticalLevel)
 				injured = true

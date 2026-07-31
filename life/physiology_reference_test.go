@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -112,7 +113,7 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 
 	var paO2, paCO2, spO2, pH []float64
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
 			if sig == nil {
 				return nil
@@ -251,7 +252,7 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 	var lastPaO2, lastPaCO2, lastSpO2 float64
 	destroyed := false
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			// Destroy both lungs on the first run: ventilation stops from here
 			// on while metabolism carries on drawing oxygen out of the blood.
 			if !destroyed {
@@ -296,7 +297,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 	ports := []string{"mean_arterial_pressure", "cardiac_output", "stroke_volume", "vascular_resistance", "heart_rate"}
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			for _, p := range ports {
 				if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
 					if v, ok := signal.AsNumber(sig); ok {
@@ -370,7 +371,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 
 	elapsed, bled := 0.0, false
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			if elapsed > 9.9 && !bled {
 				before = snapshot()
@@ -445,7 +446,7 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 5):
@@ -543,7 +544,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 	worstMAP = 1000
 	settled := false
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			// Ignore the first moments, before the circulation has published
 			// anything, or the "worst" pressure would be a zero that never was.
 			if p := read("mean_arterial_pressure"); p > 0 {
@@ -668,7 +669,7 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 	var duringBleed, afterRefill float64
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			// Halfway through the bleeding (2 L at 25 mL/s takes 80 s).
 			if within(elapsed, 40) {
@@ -718,7 +719,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 	var atRest, hypercapnic float64
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 15):
@@ -797,7 +798,7 @@ func TestReference_TheLiverDefendsBloodSugarDuringExercise(t *testing.T) {
 	elapsed := 0.0
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 30):
@@ -849,7 +850,7 @@ func TestReference_WithoutThePancreasBloodSugarIsUndefended(t *testing.T) {
 	elapsed := 0.0
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 30):
@@ -900,7 +901,7 @@ func TestReference_AMealIsClearedByInsulin(t *testing.T) {
 	elapsed := 0.0
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			if within(elapsed, 30) {
 				sim.Do("intake:food 400kcal")
@@ -1042,7 +1043,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 25):
@@ -1118,7 +1119,7 @@ func TestReference_PressureAndMixtureAreInterchangeable(t *testing.T) {
 		var final float64
 		elapsed := 0.0
 		simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-			hooks.AfterRun(func(*fmesh.FMesh) error {
+			hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 				elapsed += tickSeconds
 				if within(elapsed, 20) {
 					setup(sim)
@@ -1254,7 +1255,7 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 	elapsed := 0.0
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 20):
@@ -1358,7 +1359,7 @@ func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
 	elapsed := 0.0
 
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 30):
@@ -1419,7 +1420,7 @@ func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
 	var whileBurning, afterItWentOut float64
 	elapsed := 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			switch {
 			case within(elapsed, 590):

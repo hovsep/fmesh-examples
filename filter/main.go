@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -35,7 +36,7 @@ func main() {
 	signalsToFilter := getSignals()
 	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignalGroups(signalsToFilter)
 
-	_, err = fm.Run()
+	_, err = fm.Run(context.Background())
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
 		os.Exit(1)
@@ -84,9 +85,9 @@ func getPrinter(name string) (*component.Component, error) {
 	return component.New(name,
 		component.WithDescription("Simple stdout printer"),
 		component.WithInputs(portIn),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-				fmt.Printf("  [%s] %v\n", this.Name(), sig.PayloadOrDefault("no payload"))
+				fmt.Printf("  [%s] %v\n", this.Name(), sig.Payload())
 				return nil
 			})
 		}),
@@ -98,7 +99,7 @@ func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component
 		component.WithDescription("Simple filter"),
 		component.WithInputs(portIn),
 		component.WithOutputs("dropped", "passed"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				var why string
 				disallowedLabels.ForEach(func(k, v string) error {

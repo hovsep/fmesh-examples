@@ -1,6 +1,7 @@
 package factor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -163,7 +164,7 @@ func GetAirComponent() (*component.Component, error) {
 }
 
 // The component can receive control signals and change internal state
-func handleControlSignals(this *component.Component) error {
+func handleControlSignals(_ context.Context, this *component.Component) error {
 	// Handle commands
 	this.InputByName("ctl").
 		Signals().
@@ -299,7 +300,7 @@ func setShade(this *component.Component, shade float64) {
 // the sun warms the air, the air warms the body through the skin, and a warm
 // enough body sweats. Every step after this one was already built; the sun
 // simply never reached the air, so the chain began in the middle.
-func warmInTheSun(this *component.Component) error {
+func warmInTheSun(_ context.Context, this *component.Component) error {
 	// Latch the sun whenever it speaks, whichever cycle that is.
 	if sun := this.InputByName("habitat_sun_uvi"); sun != nil && sun.HasSignals() {
 		this.State().Set(StateSunUVI, signal.AsFloat64OrDefault(sun.Signals().First(), 0))
@@ -353,7 +354,7 @@ func inTheAir(this *component.Component) mixin {
 	return total
 }
 
-func emitEnvironmentalGas(this *component.Component) error {
+func emitEnvironmentalGas(_ context.Context, this *component.Component) error {
 	// Only emit on a time tick. A control signal (e.g. a temperature change) can
 	// activate this component out of band; without this guard it would emit an
 	// extra, unpaired environmental_gas signal that the human component holds

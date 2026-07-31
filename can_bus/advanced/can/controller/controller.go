@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -38,7 +39,7 @@ func New(unitName string) (*component.Component, error) {
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 			state.Set(stateKeyBitsExpected, 0)
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			defer func() {
 				// Report current state to bus watchdog
 				ctlState := this.State().Get(stateKeyControllerState).(State)
@@ -49,7 +50,7 @@ func New(unitName string) (*component.Component, error) {
 
 			refreshLoggerPrefix(this)
 
-			err := handleIncomingFrames(this)
+			err := handleIncomingFrames(ctx, this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
 			}
@@ -74,14 +75,14 @@ func New(unitName string) (*component.Component, error) {
 }
 
 // Enqueue new frames coming from MCU
-func handleIncomingFrames(this *component.Component) error {
+func handleIncomingFrames(_ context.Context, this *component.Component) error {
 	txQueue := this.State().Get(stateKeyTxQueue).(TxQueue)
 	defer func() {
 		this.State().Set(stateKeyTxQueue, txQueue)
 	}()
 
 	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
-		frame, ok := sig.PayloadOrNil().(*codec.Frame)
+		frame, ok := sig.Payload().(*codec.Frame)
 		if !ok || !frame.IsValid() {
 			return errors.New("received corrupted frame")
 		}

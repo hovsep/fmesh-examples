@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation"
@@ -58,7 +59,7 @@ func GetExcretion() (*component.Component, error) {
 	return c, nil
 }
 
-func acceptExcretionCommands(this *component.Component) error {
+func acceptExcretionCommands(_ context.Context, this *component.Component) error {
 	return command.ForEach(this, simulation.ControlPort, func(name string, _ *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbUrinate:
@@ -76,7 +77,7 @@ func acceptExcretionCommands(this *component.Component) error {
 	})
 }
 
-func emitExcretionIntent(this *component.Component) error {
+func emitExcretionIntent(_ context.Context, this *component.Component) error {
 	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}

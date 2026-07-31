@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/can_bus/advanced/can/common"
@@ -37,14 +38,14 @@ func newWatchdog(name string) (*component.Component, error) {
 			// Tracking consecutive cycles in which the bus is silent allows us to stop the bus and whole simulation
 			state.Set(stateKeyObservedIdleCycles, 0)
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			ctlStates := this.State().Get(stateKeyControllerStates).(controller.StateMap)
 			idleCycleCount := this.State().Get(stateKeyObservedIdleCycles).(int)
 
 			if this.InputByName(common.PortControllerState).HasSignals() {
 
 				this.InputByName(common.PortControllerState).Signals().ForEach(func(sig *signal.Signal) error {
-					ctlStateMap := sig.PayloadOrNil().(controller.StateMap)
+					ctlStateMap := sig.Payload().(controller.StateMap)
 					ctlStates = ctlStates.MergeFrom(ctlStateMap)
 					return nil
 				})

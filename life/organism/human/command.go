@@ -1,6 +1,7 @@
 package human
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"slices"
@@ -51,7 +52,7 @@ func Command(name string, args map[string]float64) *signal.Signal {
 // It runs before act(), so a command lands on its controller's input in the same
 // mesh run as the tick that carries it, and the controller sees both together.
 func routeCommands(mesh *fmesh.FMesh) component.ActivationFunc {
-	return func(this *component.Component) error {
+	return func(_ context.Context, this *component.Component) error {
 		ctl := this.InputByName(ControlPort)
 		if !ctl.HasSignals() {
 			return nil

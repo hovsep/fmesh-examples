@@ -1,6 +1,7 @@
 package physiology
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/body"
@@ -125,7 +126,7 @@ func GetPhysiologicalState() (*component.Component, error) {
 	return c, nil
 }
 
-func updatePhysiologicalState(this *component.Component) error {
+func updatePhysiologicalState(ctx context.Context, this *component.Component) error {
 	// Phase A: the tick publishes current levels straight away, so organs reading
 	// body_state are never a run behind.
 	if this.InputByName(simulation.TimePort).HasSignals() {
@@ -134,7 +135,7 @@ func updatePhysiologicalState(this *component.Component) error {
 			return err
 		}
 		this.State().Set(StateDt, dt)
-		return publishBodyState(this)
+		return publishBodyState(ctx, this)
 	}
 
 	// Phase B: fold in whatever has arrived. Contributions reach this component
@@ -205,7 +206,7 @@ func applyThermal(this *component.Component) {
 	})
 }
 
-func publishBodyState(this *component.Component) error {
+func publishBodyState(_ context.Context, this *component.Component) error {
 	hydrationPct := mathx.Clamp(this.State().Get(StateHydrationMl).(float64)/TotalBodyWaterMl*100, 0, 100)
 	glycemia := this.State().Get(StateGlycemia).(float64)
 	energy := this.State().Get(StateEnergyKcal).(float64)

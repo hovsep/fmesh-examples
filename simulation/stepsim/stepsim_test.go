@@ -1,6 +1,7 @@
 package stepsim
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ func tickingMesh(t *testing.T, ticking bool) (*fmesh.FMesh, *int) {
 	ticker, err := component.New("ticker",
 		component.WithInputs("ctl"),
 		component.WithOutputs("stream"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			runs++
 			return this.OutputByName("stream").PutPayloads(fmt.Sprintf("runs %d", runs))
 		}),
@@ -46,7 +47,7 @@ func tickingMesh(t *testing.T, ticking bool) (*fmesh.FMesh, *int) {
 
 	if ticking {
 		fm.SetupHooks(func(hooks *fmesh.Hooks) {
-			hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
+			hooks.BeforeRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 				return mesh.ComponentByName("ticker").InputByName("ctl").PutSignals(signal.New("tick"))
 			})
 		})
@@ -59,7 +60,7 @@ func TestEngine_AdvanceRunsTheMeshAndMovesTheClock(t *testing.T) {
 	e := New(fm, step)
 
 	for i := 1; i <= 3; i++ {
-		result, err := e.Advance()
+		result, err := e.Advance(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,7 +86,7 @@ func TestEngine_ReportsIdleWhenNothingActivates(t *testing.T) {
 	fm, _ := tickingMesh(t, false)
 	e := New(fm, step)
 
-	result, err := e.Advance()
+	result, err := e.Advance(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +109,7 @@ func TestEngine_WithClockDefersToTheMesh(t *testing.T) {
 	if got := e.Now(); got != meshTime {
 		t.Fatalf("Now() = %v, want the mesh's own time %v", got, meshTime)
 	}
-	if _, err := e.Advance(); err != nil {
+	if _, err := e.Advance(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if got := e.Now(); got != meshTime {
@@ -128,7 +129,7 @@ func TestPortLines_ReadsWhatTheMeshPublished(t *testing.T) {
 		t.Fatalf("before any run the port should be empty, got %v", got)
 	}
 
-	if _, err := e.Advance(); err != nil {
+	if _, err := e.Advance(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if got := lines(); len(got) != 1 || got[0] != "runs 1" {
@@ -136,7 +137,7 @@ func TestPortLines_ReadsWhatTheMeshPublished(t *testing.T) {
 	}
 
 	// Each run replaces the last snapshot rather than accumulating.
-	if _, err := e.Advance(); err != nil {
+	if _, err := e.Advance(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if got := lines(); len(got) != 1 || got[0] != "runs 2" {

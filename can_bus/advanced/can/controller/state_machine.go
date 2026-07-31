@@ -1,8 +1,9 @@
 package controller
 
-import "maps"
-
-import "fmt"
+import (
+	"fmt"
+	"maps"
+)
 
 // State is the main DFSM of CAN-controller
 type State byte

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -25,13 +26,13 @@ func main() {
 
 	outerMesh.Components().ByName("starter").InputByName("in").PutSignals(signal.New(315))
 
-	if _, err := outerMesh.Run(); err != nil {
+	if _, err := outerMesh.Run(context.Background()); err != nil {
 		fmt.Println("outer mesh failed with error:", err)
 		os.Exit(1)
 	}
 
 	outerMesh.Components().ByName("factorizer").OutputByName("out").Signals().ForEach(func(sig *signal.Signal) error {
-		result := sig.PayloadOrNil().(factorizedNumber)
+		result := sig.Payload().(factorizedNumber)
 		fmt.Printf("Factors of number %d : %v \n", result.Num, result.Factors)
 		return nil
 	})
@@ -42,8 +43,8 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("This component just holds numbers we want to factorize"),
 		component.WithInputs("in"),
 		component.WithOutputs("out"),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName("in"), this.OutputByName("out"))
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			return port.ForwardSignals(ctx, this.InputByName("in"), this.OutputByName("out"))
 		}),
 	)
 	if err != nil {
@@ -54,10 +55,10 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("In this component we can do some optional filtering"),
 		component.WithInputs("in"),
 		component.WithOutputs("out", "log"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			isValid := func(num int) bool { return num < 1000 }
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
-				if isValid(sig.PayloadOrNil().(int)) {
+				if isValid(sig.Payload().(int)) {
 					return this.OutputByName("out").PutSignals(sig)
 				}
 				return this.OutputByName("log").PutSignals(sig)
@@ -71,9 +72,9 @@ func getMesh() (*fmesh.FMesh, error) {
 	logger, err := component.New("logger",
 		component.WithDescription("Simple logger"),
 		component.WithInputs("in"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
-				this.Logger().Println(sig.PayloadOrNil())
+				this.Logger().Println(sig.Payload())
 				return nil
 			})
 		}),
@@ -86,7 +87,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Prime factorization implemented as separate f-mesh"),
 		component.WithInputs("in"),
 		component.WithOutputs("out"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			factorization, err := getPrimeFactorizationMesh()
 			if err != nil {
 				return fmt.Errorf("build sub-mesh: %w", err)
@@ -94,15 +95,12 @@ func getMesh() (*fmesh.FMesh, error) {
 
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				factorization.Components().ByName("starter").InputByName("in").PutSignals(sig)
-				_, err := factorization.Run()
+				_, err := factorization.Run(context.Background())
 				if err != nil {
 					return fmt.Errorf("inner mesh failed: %w", err)
 				}
-				factors, err := factorization.Components().ByName("results").OutputByName("factors").Signals().AllPayloads()
-				if err != nil {
-					return fmt.Errorf("failed to get factors: %w", err)
-				}
-				number := sig.PayloadOrNil().(int)
+				factors := factorization.Components().ByName("results").OutputByName("factors").Signals().AllPayloads()
+				number := sig.Payload().(int)
 				return this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
 					Num:     number,
 					Factors: factors,
@@ -146,7 +144,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Load the number to be factorized"),
 		component.WithInputs("in"),
 		component.WithOutputs("out"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.OutputByName("out").PutSignals(this.InputByName("in").Signals().First())
 		}),
 	)
@@ -158,7 +156,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Divide by smallest prime (2) to handle even factors"),
 		component.WithInputs("in"),
 		component.WithOutputs("out", "factor"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			for number%2 == 0 {
 				this.OutputByName("factor").PutSignals(signal.New(2))
@@ -175,7 +173,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Divide by odd primes starting from 3"),
 		component.WithInputs("in"),
 		component.WithOutputs("out", "factor"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			divisor := 3
 			for number > 1 && divisor*divisor <= number {
@@ -196,7 +194,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Store the last remaining prime factor, if any"),
 		component.WithInputs("in"),
 		component.WithOutputs("factor"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			if number > 1 {
 				return this.OutputByName("factor").PutSignals(signal.New(number))
@@ -212,8 +210,8 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("factors holder"),
 		component.WithInputs("factor"),
 		component.WithOutputs("factors"),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName("factor"), this.OutputByName("factors"))
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			return port.ForwardSignals(ctx, this.InputByName("factor"), this.OutputByName("factors"))
 		}),
 	)
 	if err != nil {

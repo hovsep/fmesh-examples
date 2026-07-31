@@ -1,6 +1,7 @@
 package da
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
@@ -149,7 +150,7 @@ func GetVasculature() (*component.Component, error) {
 	return c, nil
 }
 
-func circulate(this *component.Component) error {
+func circulate(_ context.Context, this *component.Component) error {
 	// Phase A: the tick publishes what the circulation was doing, so the
 	// baroreflex has a pressure to react to without waiting on this tick's
 	// heart rate -- which is the thing its own reaction will change.

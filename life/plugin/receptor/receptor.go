@@ -15,6 +15,8 @@
 package receptor
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh/component"
 )
@@ -57,7 +59,7 @@ func (r *Receptors) Init(c *component.Component) error {
 }
 
 // latch reads the hormones this organ can feel out of the passing blood.
-func (r *Receptors) latch(this *component.Component) error {
+func (r *Receptors) latch(_ context.Context, this *component.Component) error {
 	in := this.InputByName(bloodstream.SupplyPort)
 	if in == nil || !in.HasSignals() {
 		return nil

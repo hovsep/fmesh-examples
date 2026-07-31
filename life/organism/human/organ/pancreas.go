@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -88,7 +89,7 @@ func GetPancreas() (*component.Component, error) {
 // question about receptors, somewhere else. Cutting that thread -- by destroying
 // either end -- is how the two halves of diabetes differ: no signal sent, or a
 // signal sent and not heard.
-func secretePancreaticHormones(this *component.Component) error {
+func secretePancreaticHormones(_ context.Context, this *component.Component) error {
 	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}

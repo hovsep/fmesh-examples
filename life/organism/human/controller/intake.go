@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation"
@@ -71,7 +72,7 @@ func GetIntake() (*component.Component, error) {
 }
 
 // acceptIntakeCommands starts a metered process for each arriving command.
-func acceptIntakeCommands(this *component.Component) error {
+func acceptIntakeCommands(_ context.Context, this *component.Component) error {
 	processes := this.State().Get(StateProcesses).(*simtime.ProcessSet)
 
 	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
@@ -101,7 +102,7 @@ func addTotal(this *component.Component, key string, amount float64) {
 
 // meterIntake delivers each in-progress process's portion for this tick and
 // emits it as a single ingestion intent.
-func meterIntake(this *component.Component) error {
+func meterIntake(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

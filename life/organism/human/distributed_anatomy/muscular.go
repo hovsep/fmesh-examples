@@ -1,6 +1,7 @@
 package da
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
@@ -81,14 +82,14 @@ func GetMuscularSystem() (*component.Component, error) {
 }
 
 // latchExertion remembers the current exertion whenever it arrives.
-func latchExertion(this *component.Component) error {
+func latchExertion(_ context.Context, this *component.Component) error {
 	if in := this.InputByName("physical_load"); in.HasSignals() {
 		this.State().Set(stateIntensity, signal.AsFloat64OrDefault(in.Signals().First(), 1.0))
 	}
 	return nil
 }
 
-func integrateFatigue(this *component.Component) error {
+func integrateFatigue(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

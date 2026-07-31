@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
@@ -81,7 +82,7 @@ func GetBrain() (*component.Component, error) {
 	return c, nil
 }
 
-func oscillateNeuralDrive(this *component.Component) error {
+func oscillateNeuralDrive(_ context.Context, this *component.Component) error {
 	// Only advance on a time tick; blood-only activations (from the shared bus) are ignored.
 	if !this.InputByName("time").HasSignals() {
 		return nil

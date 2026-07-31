@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -72,7 +73,7 @@ func main() {
 		fm.Logger().Printf("Run #%d", runCycle)
 		fm.Logger().Println("======================")
 
-		if _, err := fm.Run(); err != nil {
+		if _, err := fm.Run(context.Background()); err != nil {
 			fmt.Println("Error running mesh:", err)
 			os.Exit(1)
 		}
@@ -137,8 +138,8 @@ func getBus() (*component.Component, error) {
 	return component.New(componentBus,
 		component.WithInputs(portIn),
 		component.WithOutputs(portOut),
-		component.WithActivationFunc(func(this *component.Component) error {
-			return port.ForwardSignals(this.InputByName(portIn), this.OutputByName(portOut))
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+			return port.ForwardSignals(ctx, this.InputByName(portIn), this.OutputByName(portOut))
 		}),
 	)
 }
@@ -150,19 +151,19 @@ func getNode(name string, id int) (*component.Component, error) {
 		}),
 		component.WithInputs(portIn),
 		component.WithOutputs(portOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			myId := this.State().Get(stateNodeId).(int)
 			validFrames := make([]CanFrame, 0)
 
 			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-				canFrame, ok := sig.PayloadOrNil().(CanFrame)
+				canFrame, ok := sig.Payload().(CanFrame)
 				if !ok {
-					this.Logger().Printf("Invalid frame received, skipping: %v", sig.PayloadOrNil())
+					this.Logger().Printf("Invalid frame received, skipping: %v", sig.Payload())
 					this.OutputByName(portOut).PutSignals(
 						signal.New(
 							CanFrame{
 								Id:   4,
-								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.PayloadOrNil()),
+								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.Payload()),
 							}).WithLabels(
 							map[string]string{
 								"from":       this.Name(),

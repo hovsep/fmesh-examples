@@ -1,6 +1,7 @@
 package da
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/body"
@@ -87,7 +88,7 @@ func GetGITract() (*component.Component, error) {
 }
 
 // acceptSwallowed adds anything ingested this tick to the stomach.
-func acceptSwallowed(this *component.Component) error {
+func acceptSwallowed(_ context.Context, this *component.Component) error {
 	for _, portName := range []string{"nutrient_load", "hydration_load"} {
 		in := this.InputByName(portName)
 		if !in.HasSignals() {
@@ -109,7 +110,7 @@ func acceptSwallowed(this *component.Component) error {
 	return nil
 }
 
-func voidBowel(this *component.Component) error {
+func voidBowel(_ context.Context, this *component.Component) error {
 	if this.InputByName("void").HasSignals() {
 		this.State().Set(StateBowelPct, 0.0)
 	}
@@ -118,7 +119,7 @@ func voidBowel(this *component.Component) error {
 
 // digest moves a share of the stomach's contents into the body each tick, and
 // leaves residue behind.
-func digest(this *component.Component) error {
+func digest(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

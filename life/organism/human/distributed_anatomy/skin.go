@@ -1,6 +1,7 @@
 package da
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
@@ -107,7 +108,7 @@ const (
 
 // rememberEnvironment latches the latest core temperature, ambient temperature
 // and sun, since each arrives on its own mesh cycle.
-func rememberEnvironment(this *component.Component) error {
+func rememberEnvironment(_ context.Context, this *component.Component) error {
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		this.State().Set(body.CoreTemperature,
 			sig.Scalars().ValueOrDefault(body.CoreTemperature, NormalSkinCoreTemperature))
@@ -131,7 +132,7 @@ func firstSignal(this *component.Component, portName string) *signal.Signal {
 	return in.Signals().First()
 }
 
-func regulateSkin(this *component.Component) error {
+func regulateSkin(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
@@ -67,7 +68,7 @@ func GetAdrenal() (*component.Component, error) {
 // balance between this and the blood's clearance, so a gland that stops
 // secreting does not have to cancel anything. That is why adrenaline fades on
 // its own within minutes while cortisol is still there an hour later.
-func secreteStressHormones(this *component.Component) error {
+func secreteStressHormones(_ context.Context, this *component.Component) error {
 	if in := this.InputByName("autonomic_tone"); in.HasSignals() {
 		if tone, err := autonomic.Bias(in.Signals().First(), autonomic.Sympathetic); err == nil {
 			this.State().Set(stateSympathetic, tone)

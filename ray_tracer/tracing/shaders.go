@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -22,13 +24,13 @@ func GetShaders() *component.Collection {
 			component.WithDescription("Shades hits and spawns the reflected wave"),
 			component.WithInputs(common.PortIn, common.PortLightIn),
 			component.WithOutputs(common.PortContribsOut, common.PortSecondaryOut),
-			component.WithActivationFunc(func(this *component.Component) error {
+			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 				adoptLight(this)
 				light := lightFromState(this)
 
 				return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
 					bounce := common.ScalarInt(sig, common.ScalarBounce)
-					contribs, secondaries := render.Shade(light, sig.PayloadOrNil().([]render.HitResult), bounce)
+					contribs, secondaries := render.Shade(light, sig.Payload().([]render.HitResult), bounce)
 
 					err := this.OutputByName(common.PortContribsOut).PutSignals(
 						sig.MapPayload(func(any) any { return contribs }))
