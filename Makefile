@@ -24,8 +24,6 @@ clean: ## Clean build artifacts
 	@for ex in $(EXAMPLES); do (cd $$ex && go clean) || true; done
 	@echo "✓ Clean complete"
 
-test: ## Run tests (all three modules)
+test: ## Run tests
 	go test ./...
-	cd ./simulation && go test ./...
-	cd ./life && go test ./...
 	@echo "✓ Tests finished"

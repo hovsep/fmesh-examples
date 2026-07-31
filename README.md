@@ -63,9 +63,7 @@ go mod tidy
 # Run any example
 go run ./fibonacci
 go run ./electric_circuit
-
-# The ray tracer is a standalone module (uses the latest fmesh release)
-cd ray_tracer && go run .
+go run ./ray_tracer
 
 # Build all examples
 make build
