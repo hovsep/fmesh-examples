@@ -35,6 +35,13 @@ const (
 	ecgUpper = 1.15
 )
 
+// samplesPerColumn is how finely each drawn column is searched for its extreme.
+//
+// Sixteen puts a sample within about a fifth of the R peak's width whatever the
+// phase, so the height it reports varies by a couple of percent -- comfortably
+// less than one character row, which is the resolution anybody is looking at.
+const samplesPerColumn = 16
+
 func NewECG(title string, bpm, elapsedSeconds float64) *ECG {
 	return &ECG{Title: title, BeatsPerMinute: bpm, ElapsedSeconds: elapsedSeconds, WindowSeconds: 5}
 }
@@ -46,23 +53,7 @@ func (e *ECG) Render(width, height int) string {
 	plotWidth := max(width-12, 10) // leave room for the y-axis labels
 	plotHeight := max(height-2, 3)
 
-	// One amplitude sample per plot column: because we generate exactly the
-	// columns asciigraph draws, there is no resampling and nothing aliases.
-	data := make([]float64, plotWidth)
-	if e.BeatsPerMinute > 0 && e.WindowSeconds > 0 {
-		period := 60.0 / e.BeatsPerMinute
-		for i := range data {
-			// Column 0 is the oldest edge, the last column is "now".
-			t := e.ElapsedSeconds - e.WindowSeconds + (float64(i)/float64(plotWidth-1))*e.WindowSeconds
-			phase := math.Mod(t/period, 1)
-			if phase < 0 {
-				phase++
-			}
-			data[i] = ecgAmplitude(phase)
-		}
-	}
-
-	plot := asciigraph.Plot(data,
+	plot := asciigraph.Plot(e.columns(plotWidth),
 		asciigraph.Width(plotWidth),
 		asciigraph.Height(plotHeight),
 		asciigraph.LowerBound(ecgLower),
@@ -71,6 +62,48 @@ func (e *ECG) Render(width, height int) string {
 		asciigraph.SeriesColors(asciigraph.Red),
 	)
 	return title + "\n" + plot
+}
+
+// columns builds one value per drawn column -- but not one *sample* per column.
+//
+// Sampling once per column looks like it cannot alias, since it produces exactly
+// the columns asciigraph draws. It aliases badly. The R peak is a spike about
+// 0.009 of a cycle wide while a column spans nearer 0.06 of one, so the peak is
+// several times narrower than the gap between samples: whether a sample lands on
+// it is luck, and as the trace scrolls that luck changes every frame. The peaks
+// flickered, each redraw catching the spike at a different height on its way
+// past.
+//
+// So each column is sampled across the slice of time it covers and keeps the
+// largest excursion it found. That is how any waveform display downsamples: draw
+// the extreme within each column, not whatever happened to sit at its left edge.
+func (e *ECG) columns(plotWidth int) []float64 {
+	data := make([]float64, plotWidth)
+	if e.BeatsPerMinute <= 0 || e.WindowSeconds <= 0 || plotWidth < 2 {
+		return data
+	}
+
+	period := 60.0 / e.BeatsPerMinute
+	columnSeconds := e.WindowSeconds / float64(plotWidth-1)
+
+	for i := range data {
+		// Column 0 is the oldest edge, the last column is "now".
+		start := e.ElapsedSeconds - e.WindowSeconds + float64(i)*columnSeconds
+
+		var peak float64
+		for k := range samplesPerColumn {
+			t := start + (float64(k)/samplesPerColumn)*columnSeconds
+			phase := math.Mod(t/period, 1)
+			if phase < 0 {
+				phase++
+			}
+			if v := ecgAmplitude(phase); math.Abs(v) > math.Abs(peak) {
+				peak = v
+			}
+		}
+		data[i] = peak
+	}
+	return data
 }
 
 // ecgAmplitude returns the idealised ECG amplitude at a phase in [0,1) of one
