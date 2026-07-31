@@ -24,10 +24,16 @@ const (
 	stateSawBrain  string = "saw_brain_this_tick"
 )
 
-//@TODO: this component must not just aggregate all signals from humans
-// this is the place when we analyse signals from multiple sources and derive new ones
-// like cancer risk (0-100%), some interesting trends or predictions (expected lifespan in years)
-// This is one of the most powerful components in the sim - it creates new knowledge
+// It does derive as well as forward, and the catalog marks which: liveness is
+// concluded from brain activity rather than reported by anything, and the brain
+// activity trend is smoothed here rather than at the source.
+//
+// It stops short of indices like cancer risk or expected lifespan on purpose.
+// Every other number on these screens is produced by something in the body --
+// an organ measured it, or the blood carries it -- and a percentage invented
+// here would be the one figure on screen with nothing behind it. This
+// simulation shows mechanisms; a risk score is a guess wearing a mechanism's
+// clothes.
 
 // GetObservableState returns the body's telemetry hub: everything the outside
 // world can observe about the human leaves through here.
