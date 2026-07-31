@@ -23,14 +23,44 @@ var DamageTargets = []string{
 // the injury is at full force. Between the two the severity ramps 0..1. These are
 // game-level, not clinical, and match this sim's scales.
 const (
-	// Dehydration (percent of total body water).
-	dehydrationOnset = 97.0
-	dehydrationFull  = 90.0
+	// Dehydration (percent of total body water remaining).
+	//
+	// Read these against body weight, which is how dehydration is actually
+	// graded: total body water is about 60% of a person, so losing a tenth of
+	// the water is roughly 6% of body weight -- the point at which it stops
+	// being thirst and starts being an illness. Full severity is a quarter of
+	// the water gone, near 15% of body weight, which is fatal territory.
+	//
+	// They used to be 97 and 90, which put the onset of organ injury at 3% of
+	// body water -- under 2% of body weight, or a hard session in the gym. A
+	// body that exercised for two hours without a drink died of it, with every
+	// other reading in this table perfectly normal.
+	dehydrationOnset = 90.0
+	dehydrationFull  = 75.0
 
-	// Hypoxia (arterial oxygen tension, mmHg). Tissue injury begins where the
-	// dissociation curve turns steep and is severe once saturation collapses.
-	hypoxiaOnset = 55.0
-	hypoxiaFull  = 25.0
+	// Oxygen delivery (mL per minute): the content the blood carries times the
+	// flow that carries it. A resting adult delivers about 1000 and consumes
+	// about 250, so injury begins where the reserve is gone rather than where
+	// any one reading looks alarming.
+	//
+	// This used to be arterial oxygen tension, and tension is a reading rather
+	// than a supply -- which is the same mistake the blood itself was corrected
+	// for. A body that has lost half its volume has a textbook-normal PaO2 and
+	// is dying; so does one whose haemoglobin is bound up with carbon monoxide.
+	// Neither registered here at all, so neither could kill anybody: the model
+	// watched the gauge instead of the delivery.
+	// Calibrated against the haemorrhage classes, which is what makes the ATLS
+	// teaching survive contact with this model: a class III bleed bottoms out
+	// near 520 mL/min and must leave no injury behind, while half the blood
+	// volume bottoms near 360 and must be lethal. The threshold sits between
+	// them rather than at a round number.
+	deliveryOnset = 500.0
+	deliveryFull  = 220.0
+
+	// normalOxygenDelivery is what a resting adult delivers, in mL per minute:
+	// about twenty mL per dL carried at five litres a minute.
+	normalOxygenDelivery = bloodstream.NormalHemoglobin * bloodstream.HufnerConstant *
+		(bloodstream.NormalSaO2 / 100) * 10 * da.RestingCardiacOutput
 
 	// Hypoperfusion (mean arterial pressure, mmHg). Below about 60 the organs
 	// that autoregulate can no longer hold their own blood supply, and below 40
@@ -67,7 +97,7 @@ const (
 func GetPhysiologicalLoad() (*component.Component, error) {
 	c, err := component.New("physiology:physiological_load",
 		component.WithDescription("Turns out-of-range reservoirs into organ damage (the death cascade)"),
-		component.WithInputs(simulation.TimePort, "body_state", "venous_blood", "map"),
+		component.WithInputs(simulation.TimePort, "body_state", "venous_blood", "map", "cardiac_output"),
 		component.WithOutputs(damageOutputs()...),
 		component.WithActivationFunc(component.Sequential(
 			latchVitals,
@@ -78,7 +108,9 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 			state.Set(body.Glycemia, NormalGlycemia)
 			state.Set(loadMAP, da.NormalMAP)
 			state.Set(body.CoreTemperature, NormalCoreTemperature)
-			state.Set(loadO2, 100.0)
+			state.Set(loadDelivery, normalOxygenDelivery)
+			state.Set(loadContent, bloodstream.NormalOxygenContent)
+			state.Set(loadOutput, da.RestingCardiacOutput)
 		}),
 	)
 	if err != nil {
@@ -88,7 +120,9 @@ func GetPhysiologicalLoad() (*component.Component, error) {
 }
 
 const (
-	loadO2  string = "load_o2"
+	loadDelivery string = "load_delivery"
+	loadContent  string = "load_content"
+	loadOutput   string = "load_cardiac_output"
 	loadMAP string = "load_map"
 )
 
@@ -103,6 +137,9 @@ func damageOutputs() []string {
 // latchVitals remembers the latest reservoir and blood values, since each arrives
 // on its own mesh cycle.
 func latchVitals(this *component.Component) error {
+	if sig := firstSignal(this, "cardiac_output"); sig != nil {
+		this.State().Set(loadOutput, signal.AsFloat64OrDefault(sig, da.RestingCardiacOutput))
+	}
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		s := sig.Scalars()
 		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100))
@@ -110,7 +147,12 @@ func latchVitals(this *component.Component) error {
 		this.State().Set(body.CoreTemperature, s.ValueOrDefault(body.CoreTemperature, NormalCoreTemperature))
 	}
 	if sig := firstSignal(this, "venous_blood"); sig != nil {
-		this.State().Set(loadO2, sig.Scalars().ValueOrDefault("PaO2", bloodstream.NormalPaO2))
+		// Delivery, not tension: what the blood is carrying times what is
+		// carrying it. CaO2 is mL per dL and cardiac output is L per min, so ten
+		// decilitres to the litre turns the pair into mL per minute.
+		content := sig.Scalars().ValueOrDefault("CaO2", bloodstream.NormalOxygenContent)
+		this.State().Set(loadContent, content)
+		this.State().Set(loadDelivery, content*10*this.State().Get(loadOutput).(float64))
 	}
 	if sig := firstSignal(this, "map"); sig != nil {
 		this.State().Set(loadMAP, signal.AsFloat64OrDefault(sig, da.NormalMAP))
@@ -132,7 +174,7 @@ func inflictDamage(this *component.Component) error {
 
 	// Severity of each stressor, 0..1.
 	dehydration := rampUpAsFalls(get(body.HydrationPct), dehydrationOnset, dehydrationFull)
-	hypoxia := rampUpAsFalls(get(loadO2), hypoxiaOnset, hypoxiaFull)
+	hypoxia := rampUpAsFalls(get(loadDelivery), deliveryOnset, deliveryFull)
 	hypoglycemia := rampUpAsFalls(get(body.Glycemia), hypoglycemiaOnset, hypoglycemiaFull)
 	hypoperfusion := rampUpAsFalls(get(loadMAP), hypoperfusionOnset, hypoperfusionFull)
 	hyperthermia := rampUpAsRises(get(body.CoreTemperature), hyperthermiaOnset, hyperthermiaFull)
@@ -148,7 +190,13 @@ func inflictDamage(this *component.Component) error {
 	// injury is the classic survivor's complication of a shock that was itself
 	// survived.
 	damage := map[string]float64{
-		"kidney":     2.0*dehydration + 0.3*temperature + 2.0*hypoperfusion,
+		// The kidney is hurt by a failing supply harder than anything else,
+		// which is the same reason it is hurt by a failing pressure harder: it
+		// is given a fifth of the cardiac output to filter with, and it is the
+		// first bed the body gives up. It had no sensitivity to delivery at all
+		// until delivery was something this model measured, which quietly made
+		// it the organ that survived a haemorrhage best.
+		"kidney":     2.0*dehydration + 0.3*temperature + 2.0*hypoperfusion + 1.8*hypoxia,
 		"brain":      0.8*dehydration + 1.0*hypoxia + 1.0*hypoglycemia + 0.6*temperature + 1.2*hypoperfusion,
 		"heart":      0.2*dehydration + 0.8*hypoxia + 0.6*temperature + 1.0*hypoperfusion,
 		"diaphragm":  0.5*hypoxia + 0.4*temperature + 0.4*hypoperfusion,

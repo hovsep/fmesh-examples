@@ -46,10 +46,10 @@ const (
 	// correct. Get this wrong and the reflex spends its life fighting the body's
 	// own resting state -- which is exactly what a first cut of this did, settling
 	// the poor man at a pressure of 198.
-	NormalSVR = (NormalMAP - CentralVenousPressure) / restingCardiacOutput
+	NormalSVR = (NormalMAP - CentralVenousPressure) / RestingCardiacOutput
 
-	// restingCardiacOutput is what the heart produces at resting tone, in L/min.
-	restingCardiacOutput = restingHeartRate * NormalStrokeVolume / 1000.0
+	// RestingCardiacOutput is what the heart produces at resting tone, in L/min.
+	RestingCardiacOutput = restingHeartRate * NormalStrokeVolume / 1000.0
 
 	// restingHeartRate is what the cardiac bias asks for when nothing is wrong.
 	// It follows from the heart's own rate mapping at restingVascularTone.

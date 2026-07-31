@@ -452,6 +452,13 @@ func wireDamage(components *component.Collection) error {
 		return err
 	}
 
+	// Tissue injury is judged on oxygen delivery, which needs the flow as well
+	// as what the blood is carrying.
+	if err := components.ByName("da:vasculature").OutputByName("cardiac_output").PipeTo(
+		load.InputByName("cardiac_output")); err != nil {
+		return err
+	}
+
 	// The damage engine reads the reservoirs and the blood.
 	if err := bodyState.OutputByName("body_state").PipeTo(load.InputByName("body_state")); err != nil {
 		return err
