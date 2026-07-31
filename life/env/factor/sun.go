@@ -102,7 +102,11 @@ func emitSunlight(this *component.Component) error {
 // daylight returns the UV index and illuminance for the time of day, peaking at
 // solar noon and zero at night.
 func daylight(elapsed time.Duration, hourOffset float64) (uvi, lux float64) {
-	//@TODO: shall we add some random clouds effects? If so let's have a weather widjet in TUI
+	// No clouds. The air already varies through presets and mixins, and the sky
+	// varies through the hour; a cloud would be a third source of the same
+	// variation, and a random one, which makes a demonstration harder to read
+	// rather than richer. If it is ever wanted it belongs on the sun as a factor
+	// scaling both returns, not as weather sprinkled through the model.
 	hour := math.Mod(math.Mod(elapsed.Hours()+hourOffset, 24)+24, 24)
 	if hour < sunriseHour || hour > sunsetHour {
 		return 0, 0

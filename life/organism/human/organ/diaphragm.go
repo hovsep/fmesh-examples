@@ -21,6 +21,10 @@ const (
 	BasePleuralPressure          = -5.0 // resting pleural pressure at FRC
 	InspiratoryPressureAmplitude = 3.0  // peak swing during quiet breathing (−5 → −8 cmH₂O)
 
+	// respiratoryRateJitter is how much breath-to-breath variation there is, as
+	// a percentage. Real breathing is never metronomic.
+	respiratoryRateJitter = 2.0
+
 	inhaleFraction = 1.0 / 3.0 // I:E = 1:2
 	exhaleDecay    = 5.0       // exp(-5) ≈ 0.007 residual — negligible pressure step at cycle restart
 )
@@ -109,7 +113,6 @@ func handleRespiratoryBias(this *component.Component) error {
 		return nil
 	}
 
-	// @TODO: mixin noise
 	bias, err := autonomic.Bias(
 		this.InputByName("autonomic_tone").Signals().First(),
 		autonomic.Respiratory,
@@ -118,8 +121,13 @@ func handleRespiratoryBias(this *component.Component) error {
 		return err
 	}
 
+	// Nobody breathes at exactly twelve. A percent or two of jitter is the
+	// difference between a body and a metronome, and it is small enough that
+	// nothing downstream has to allow for it.
 	this.State().Update(stateRate, func(v any) any {
-		return int(mathx.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias))
+		demanded := mathx.Lerp(MinRespiratoryRate, MaxRespiratoryRate, bias)
+		return int(mathx.Clamp(mathx.Jitter(demanded, respiratoryRateJitter),
+			MinRespiratoryRate, MaxRespiratoryRate))
 	})
 
 	return nil

@@ -28,7 +28,12 @@ import (
 // pressures are in mmHg throughout, which is the unit blood gases are read in
 // clinically.
 const (
-	//@TODO: make sure all constants are actually constants and should not be dynamic and depend on other parts of simulation (like env factors or organs)
+	// These are reference values, not settings: what a healthy resting adult
+	// reads at sea level. Nothing here should become dynamic, because the whole
+	// point of them is to be the fixed thing a changing body is compared against
+	// -- the alveolar gas equation already takes pressure and mixture from the
+	// air, so altitude and a chamber move the body's numbers without moving what
+	// normal means.
 	NormalPaO2  = 95.0
 	NormalPaCO2 = 40.0
 	NormalPH    = 7.40

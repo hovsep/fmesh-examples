@@ -36,8 +36,12 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 	if err != nil {
 		return nil, err
 	}
-	//@TODO: dynamic piping sounds like a good idea for extraction , maybe as fmesh-level plugin (when fmesh supports such)
-	// Dynamic piping
+	// This could be an autowire plugin -- a rule naming an input "<component>::<port>"
+	// would connect all of these with no loop at all. It stays explicit because of
+	// what the loop does when it cannot find something: it fails, naming the
+	// component. Renaming the gas factor to air broke exactly these paths, and
+	// this error is what said so. Autowire declines to wire silently, by design,
+	// and the same rename would have produced a UI that was simply empty.
 	for _, inputPath := range inputPaths {
 		if inputPath == "" {
 			return nil, fmt.Errorf("empty input path")

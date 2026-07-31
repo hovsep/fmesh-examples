@@ -38,8 +38,15 @@ const (
 	stateRateExact string = "rate_exact"
 )
 
-// cardiacActivationWave returns ECG-style contraction amplitude for a given phase
-// @TODO: check what is going on with ECG diagram, it looks like we fake it in tui, so maybe it makes no sense to generate it there
+// cardiacActivationWave returns ECG-style contraction amplitude for a given phase.
+//
+// The TUI draws its own idealised trace rather than plotting this one, and both
+// are right. This is a physiological signal sampled once per tick: a one-tick
+// R-peak spike, which the reference tests detect to prove the heart is actually
+// beating at the rate it claims. Plotting it would alias -- peaks landing at
+// random heights and jumping as the window scrolls -- so the display synthesises
+// a clean waveform at the real rate, exactly as a patient monitor does. The rate
+// is real; only the shape on screen is drawn for legibility.
 func cardiacActivationWave(phase float64) float64 {
 	if phase < 0.05 {
 		return math.Exp(-30 * phase) // R-Peak (Spike)
