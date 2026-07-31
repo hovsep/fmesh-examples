@@ -14,13 +14,14 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hovsep/fmesh-examples/simulation/console"
 	"github.com/hovsep/fmesh-examples/life/telemetry"
+	"github.com/hovsep/fmesh-examples/life/tui/dash"
 	"github.com/hovsep/fmesh-examples/life/tui/models"
 	"github.com/hovsep/fmesh-examples/life/tui/protocol"
 	"github.com/hovsep/fmesh-examples/life/tui/styles"
 	"github.com/hovsep/fmesh-examples/life/tui/views"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/console"
 	"github.com/hovsep/fmesh-examples/simulation/sink"
 )
 
@@ -179,13 +180,9 @@ type Model struct {
 	state *models.AppState
 	pane  *console.Pane
 
-	overviewView    *views.OverviewView
-	respiratoryView *views.RespiratoryView
-	cardiacView     *views.CardiacView
-	feelingsView    *views.FeelingsView
-	bodyView        *views.BodyView
-	metricViews     map[models.ViewType]*views.MetricsView
-	paneHeight      int
+	screens    []dash.Screen
+	source     *dash.State
+	paneHeight int
 
 	width          int
 	height         int
@@ -197,26 +194,27 @@ func newModel(state *models.AppState, pane *console.Pane) Model {
 	// Screens that need bespoke rendering; everything else is generated from the
 	// catalog, so a new metric appears without any code here changing.
 	subject := telemetry.DefaultSubject
-	metricViews := make(map[models.ViewType]*views.MetricsView)
-	for _, view := range models.Views() {
-		metricViews[view] = views.NewMetricsView(state, strings.ToUpper(models.ViewName(view)), view, subject)
+	legacy := &legacyViews{
+		overview:    views.NewOverviewView(state),
+		cardiac:     views.NewCardiacView(state),
+		respiratory: views.NewRespiratoryView(state),
+		feelings:    views.NewFeelingsView(state, subject),
+		body:        views.NewBodyView(state, subject),
 	}
 
-	return Model{
-		state:           state,
-		pane:            pane,
-		overviewView:    views.NewOverviewView(state),
-		respiratoryView: views.NewRespiratoryView(state),
-		cardiacView:     views.NewCardiacView(state),
-		feelingsView:    views.NewFeelingsView(state, subject),
-		bodyView:        views.NewBodyView(state, subject),
-		metricViews:     metricViews,
-		paneHeight:      paneHeightSmall,
-		width:           120,
-		height:          40,
-		renderInterval:  defaultRenderInterval,
-		lungsSplit:      true,
+	model := Model{
+		state:          state,
+		pane:           pane,
+		screens:        screens(legacy),
+		source:         dash.NewState(state, subject),
+		paneHeight:     paneHeightSmall,
+		width:          120,
+		height:         40,
+		renderInterval: defaultRenderInterval,
+		lungsSplit:     true,
 	}
+	legacy.lungsSplit = func() bool { return model.lungsSplit }
+	return model
 }
 
 func (m Model) Init() tea.Cmd {
@@ -358,28 +356,14 @@ func (m Model) View() string {
 	)
 }
 
-// renderView draws one screen.
-//
-// Most screens are a list of readings and are drawn from the telemetry catalog
-// with no code of their own -- adding a metric to the catalog puts it on a
-// screen. The ones named here earn their bespoke renderer: a heartbeat reads as
-// a waveform rather than a row of numbers, breathing as two traces over time, a
-// body as a diagram, and feelings as words.
+// renderView draws one screen from the table.
 func (m Model) renderView(view models.ViewType, height int) string {
-	switch view {
-	case models.ViewOverview:
-		return m.overviewView.Render(m.width, height)
-	case models.ViewCardiovascular:
-		return m.cardiacView.Render(m.width, height)
-	case models.ViewRespiratory:
-		return m.respiratoryView.Render(m.width, height, m.lungsSplit)
-	case models.ViewAffect:
-		return m.feelingsView.Render(m.width, height)
-	case models.ViewBody:
-		return m.bodyView.Render(m.width, height)
-	default:
-		return m.metricViews[view].Render(m.width, height)
+	for _, screen := range m.screens {
+		if screen.View == view {
+			return dash.Render(screen, m.source, m.width, height)
+		}
 	}
+	return ""
 }
 
 func (m Model) renderHeader() string {

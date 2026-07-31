@@ -1,6 +1,5 @@
 package atmosphere
 
-
 import (
 	"testing"
 

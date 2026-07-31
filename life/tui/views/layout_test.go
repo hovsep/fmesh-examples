@@ -128,19 +128,6 @@ func panelColumns(rendered string) int {
 	return most
 }
 
-func TestMetricViewBarsAgree(t *testing.T) {
-	state := stateWithReadings()
-
-	// The metabolic tab is the one with the most rows, and the one where a
-	// value's digit count used to shove its neighbours' bars out of line.
-	for _, view := range []telemetry.View{
-		telemetry.ViewMetabolic, telemetry.ViewNervous, telemetry.ViewRespiratory,
-	} {
-		v := NewMetricsView(state, "TEST", view, telemetry.DefaultSubject)
-		assertBarsAgree(t, string(rune('0'+view))+" metrics view", v.Render(testWidth, 40))
-	}
-}
-
 func TestFeelingsViewBarsAgree(t *testing.T) {
 	state := stateWithReadings()
 
@@ -156,19 +143,6 @@ func TestBodyViewBarsAgree(t *testing.T) {
 
 	v := NewBodyView(state, telemetry.DefaultSubject)
 	assertBarsAgree(t, "body view", v.Render(testWidth, 40))
-}
-
-func TestBarsAgreeAcrossViewsOfTheSameWidth(t *testing.T) {
-	state := stateWithReadings()
-
-	// A tab switch should not move the bars. Panels of equal width put them in
-	// the same place whatever kind of bar they are.
-	metabolic := NewMetricsView(state, "TEST", telemetry.ViewMetabolic, telemetry.DefaultSubject).Render(testWidth, 40)
-	body := NewBodyView(state, telemetry.DefaultSubject).Render(testWidth, 40)
-
-	if got, want := firstBar(t, body), firstBar(t, metabolic); got != want {
-		t.Errorf("bars move between tabs: metabolic is %+v, body is %+v", want, got)
-	}
 }
 
 func firstBar(t *testing.T, rendered string) bar {
