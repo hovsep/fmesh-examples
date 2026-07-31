@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -16,7 +18,7 @@ func GetIntersectors() *component.Collection {
 			component.WithDescription("Intersects a wave of rays with the geometry"),
 			component.WithInputs(common.PortIn, common.PortGeometryIn),
 			component.WithOutputs(common.PortOut),
-			component.WithActivationFunc(func(this *component.Component) error {
+			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 				adoptGeometry(this)
 				geometry := geometryFromState(this)
 

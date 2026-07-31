@@ -1,6 +1,9 @@
 package simulation
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // Engine advances a simulation.
 //
@@ -14,9 +17,13 @@ import "time"
 type Engine interface {
 	// Advance performs one unit of simulation work and reports what came of it.
 	//
+	// The context bounds this one advance: cancelling it stops the work in
+	// progress, so a session that is being torn down does not have to wait for
+	// the advance it happens to be in the middle of.
+	//
 	// An error means this advance failed, not that the simulation is over; the
 	// caller decides what to do (a session pauses and reports it).
-	Advance() (Result, error)
+	Advance(ctx context.Context) (Result, error)
 
 	// Now reports how much simulated time has elapsed since the run began.
 	// It is the simulation's only notion of time: scheduling, pacing and

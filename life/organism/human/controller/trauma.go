@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation"
@@ -65,7 +66,7 @@ func GetTrauma() (*component.Component, error) {
 	return c, nil
 }
 
-func acceptTraumaCommands(this *component.Component) error {
+func acceptTraumaCommands(_ context.Context, this *component.Component) error {
 	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbBleed:
@@ -83,7 +84,7 @@ func acceptTraumaCommands(this *component.Component) error {
 }
 
 // emitBloodLoss lets out this tick's share of whatever is still bleeding.
-func emitBloodLoss(this *component.Component) error {
+func emitBloodLoss(_ context.Context, this *component.Component) error {
 	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}

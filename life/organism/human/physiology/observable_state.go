@@ -1,6 +1,7 @@
 package physiology
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/body"
@@ -72,14 +73,14 @@ func GetObservableState() (*component.Component, error) {
 // checks whether the brain produced anything during the previous tick: once the
 // body has been alive, a whole tick of silence means the brain has failed and the
 // body is dead.
-func handleBrainSignals(this *component.Component) error {
+func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	if this.State().Get(stateDead).(bool) {
 		this.OutputByName("is_alive").PutPayloads(0.0)
 		return nil
 	}
 
 	if !this.InputByName("brain_activity").HasSignals() {
-		return checkDeath(this)
+		return checkDeath(ctx, this)
 	}
 
 	this.State().Set(stateEverAlive, true)
@@ -112,7 +113,7 @@ func handleBrainSignals(this *component.Component) error {
 // checkDeath runs on a bare tick (no brain activity this cycle). If the body has
 // been alive and the brain produced nothing during the whole previous tick, the
 // brain has failed and death latches. Otherwise it keeps the alive flag steady.
-func checkDeath(this *component.Component) error {
+func checkDeath(_ context.Context, this *component.Component) error {
 	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil // not a tick cycle, nothing to decide
 	}
@@ -134,7 +135,7 @@ func checkDeath(this *component.Component) error {
 }
 
 // forwardCatalogSignals passes every non-derived reading straight through.
-func forwardCatalogSignals(this *component.Component) error {
+func forwardCatalogSignals(ctx context.Context, this *component.Component) error {
 	passThrough := telemetry.PassThrough()
 
 	pairs := make([]port.Pair, 0, len(passThrough))
@@ -144,5 +145,5 @@ func forwardCatalogSignals(this *component.Component) error {
 			To:   this.OutputByName(m.Port),
 		})
 	}
-	return port.MultiForward(pairs...)
+	return port.MultiForward(ctx, pairs...)
 }

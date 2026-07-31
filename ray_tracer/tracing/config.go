@@ -26,7 +26,7 @@ const (
 // adoption the component owns its geometry outright, nothing is shared
 func adoptGeometry(this *component.Component) {
 	if sig := this.InputByName(common.PortGeometryIn).Signals().First(); sig != nil {
-		this.State().Set(stateGeometry, sig.PayloadOrNil().(render.Geometry).Clone())
+		this.State().Set(stateGeometry, sig.Payload().(render.Geometry).Clone())
 	}
 }
 
@@ -40,7 +40,7 @@ func geometryFromState(this *component.Component) render.Geometry {
 // The light is a plain value, so reading it from the signal already copies it
 func adoptLight(this *component.Component) {
 	if sig := this.InputByName(common.PortLightIn).Signals().First(); sig != nil {
-		this.State().Set(stateLight, sig.PayloadOrNil())
+		this.State().Set(stateLight, sig.Payload())
 	}
 }
 

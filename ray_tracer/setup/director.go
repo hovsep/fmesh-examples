@@ -1,6 +1,8 @@
 package setup
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -14,9 +16,9 @@ func GetDirector() *component.Component {
 		component.WithDescription("Splits each frame into tiles and distributes them to the chains"),
 		component.WithInputs(common.PortIn),
 		component.WithIndexedOutputs(common.PortTileOut, 0, common.NumChains-1),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
-				cam := sig.PayloadOrNil().(render.Camera)
+				cam := sig.Payload().(render.Camera)
 
 				rowsPerTile := common.FrameHeight / common.NumChains
 				for i := range common.NumChains {

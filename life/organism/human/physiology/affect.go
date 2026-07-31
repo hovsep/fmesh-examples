@@ -1,6 +1,7 @@
 package physiology
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
@@ -113,7 +114,7 @@ const (
 	stateDt       string = "dt"
 )
 
-func deriveFeelings(this *component.Component) error {
+func deriveFeelings(_ context.Context, this *component.Component) error {
 	// The tick arrives on its own cycle, and smoothing needs to know how much
 	// time it represents, so record it before anything is folded in.
 	if tick := firstSignal(this, simulation.TimePort); tick != nil {

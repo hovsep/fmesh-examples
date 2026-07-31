@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -38,7 +39,7 @@ func main() {
 
 	fm.ComponentByName("lightbulb").InputByName("start_power_demand").PutSignals(signal.New("start"))
 
-	runResult, err := fm.Run()
+	runResult, err := fm.Run(context.Background())
 	if err != nil {
 		fmt.Println("Simulation failed with error:", err)
 		return
@@ -67,7 +68,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set("level", 1000)
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			level := this.State().Get("level").(int)
 			defer func() { this.State().Set("level", level) }()
 
@@ -98,7 +99,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set("temperature", 26.0)
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			temperature := this.State().Get("temperature").(float64)
 			defer func() { this.State().Set("temperature", temperature) }()
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -32,9 +33,9 @@ func main() {
 	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0)
 	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_cur").PutSignals(f1)
 
-	fmt.Printf("Seeds: F(0) = %v, F(1) = %v\n", f0.PayloadOrNil(), f1.PayloadOrNil())
+	fmt.Printf("Seeds: F(0) = %v, F(1) = %v\n", f0.Payload(), f1.Payload())
 
-	_, err = fm.Run()
+	_, err = fm.Run(context.Background())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -45,7 +46,7 @@ func getMesh() (*fmesh.FMesh, error) {
 	c1, err := component.New("fibonacci number generator",
 		component.WithInputs("i_cur", "i_prev"),
 		component.WithOutputs("o_cur", "o_prev"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			cur := this.InputByName("i_cur").Signals().FirstPayloadOrDefault(0).(int)
 			prev := this.InputByName("i_prev").Signals().FirstPayloadOrDefault(0).(int)
 

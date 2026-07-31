@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -31,7 +32,7 @@ func main() {
 	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
 	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
 
-	_, err = fm.Run()
+	_, err = fm.Run(context.Background())
 	if err != nil {
 		fmt.Println("F-Mesh returned an error")
 		os.Exit(1)
@@ -46,7 +47,7 @@ func getMesh() (*fmesh.FMesh, error) {
 	concat, err := component.New("concat",
 		component.WithInputs("i1", "i2"),
 		component.WithOutputs("res"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
 			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
 			concatenated := word1 + word2
@@ -62,7 +63,7 @@ func getMesh() (*fmesh.FMesh, error) {
 	caseComp, err := component.New("case",
 		component.WithInputs("i1"),
 		component.WithOutputs("res"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
 			result := strings.ToTitle(inputString)
 			fmt.Printf("  Component 'case': %q => %q (title case)\n", inputString, result)

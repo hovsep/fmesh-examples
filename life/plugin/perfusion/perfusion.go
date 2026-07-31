@@ -17,6 +17,8 @@
 package perfusion
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -141,7 +143,7 @@ func (p *Perfusion) Init(c *component.Component) error {
 
 // onActivation latches whatever the blood has delivered and, once per tick,
 // puts the organ's demand back onto the shared bus.
-func (p *Perfusion) onActivation(this *component.Component) error {
+func (p *Perfusion) onActivation(_ context.Context, this *component.Component) error {
 	p.latchSupply(this)
 
 	// The draw is emitted on the tick alone, so an organ that activates several

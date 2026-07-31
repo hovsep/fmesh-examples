@@ -1,6 +1,7 @@
 package obd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -22,12 +23,12 @@ const (
 func NewNode() (*can.Node, error) {
 	obdDevice, err := can.NewNode(OBDUnitName, func(state component.State) {
 	},
-		func(this *component.Component) error {
+		func(ctx context.Context, this *component.Component) error {
 
-			errRx := port.ForwardSignals(this.InputByName(common.PortCANRx), this.OutputByName(PortOBDOut))
+			errRx := port.ForwardSignals(ctx, this.InputByName(common.PortCANRx), this.OutputByName(PortOBDOut))
 
 			// Everything received by OBD interface goes to can bus (todo: make it realistic, process only first signal, as OBD can not receive multiple frames at the same time)
-			errTx := port.ForwardSignals(this.InputByName(PortOBDIn), this.OutputByName(common.PortCANTx))
+			errTx := port.ForwardSignals(ctx, this.InputByName(PortOBDIn), this.OutputByName(common.PortCANTx))
 
 			return errors.Join(errRx, errTx)
 		})

@@ -284,7 +284,7 @@ func (s *Session) advance() (stop bool, err error) {
 	}
 
 	before := s.Now()
-	result, err := s.Engine.Advance()
+	result, err := s.Engine.Advance(s.ctx)
 	s.Pacer.Advanced(s.Now() - before)
 	if err != nil {
 		// A failed advance must not end the session: nothing would then drain

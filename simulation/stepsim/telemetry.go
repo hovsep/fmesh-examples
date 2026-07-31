@@ -37,7 +37,7 @@ func PortLines(fm *fmesh.FMesh, componentName, portName string) (func() []string
 
 		lines := make([]string, 0, signals.Len())
 		_ = signals.ForEach(func(sig *signal.Signal) error {
-			lines = append(lines, fmt.Sprint(sig.PayloadOrNil()))
+			lines = append(lines, fmt.Sprint(sig.Payload()))
 			return nil
 		})
 		return lines

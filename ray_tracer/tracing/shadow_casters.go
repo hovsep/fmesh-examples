@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -15,7 +17,7 @@ func GetShadowCasters() *component.Collection {
 			component.WithDescription("Casts shadow rays towards the light"),
 			component.WithInputs(common.PortIn, common.PortGeometryIn, common.PortLightIn),
 			component.WithOutputs(common.PortOut),
-			component.WithActivationFunc(func(this *component.Component) error {
+			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 				adoptGeometry(this)
 				adoptLight(this)
 				geometry, light := geometryFromState(this), lightFromState(this)

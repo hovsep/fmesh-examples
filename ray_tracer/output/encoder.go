@@ -1,6 +1,7 @@
 package output
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/gif"
@@ -21,11 +22,11 @@ func GetEncoder() *component.Component {
 		component.WithInitialState(func(state component.State) {
 			state.Set("animation", &gif.GIF{})
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			anim := this.State().Get("animation").(*gif.GIF)
 
 			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
-				anim.Image = append(anim.Image, sig.PayloadOrNil().(*image.Paletted))
+				anim.Image = append(anim.Image, sig.Payload().(*image.Paletted))
 				anim.Delay = append(anim.Delay, common.GifDelay)
 
 				if common.ScalarInt(sig, common.ScalarFrame) < common.TotalFrames-1 {

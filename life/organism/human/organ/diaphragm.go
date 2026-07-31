@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -77,7 +78,7 @@ func GetDiaphragm() (*component.Component, error) {
 	return c, nil
 }
 
-func oscillateBreathing(this *component.Component) error {
+func oscillateBreathing(_ context.Context, this *component.Component) error {
 	if !this.InputByName("time").HasSignals() {
 		return nil
 	}
@@ -108,7 +109,7 @@ func oscillateBreathing(this *component.Component) error {
 	return nil
 }
 
-func handleRespiratoryBias(this *component.Component) error {
+func handleRespiratoryBias(_ context.Context, this *component.Component) error {
 	if !this.InputByName("autonomic_tone").HasSignals() {
 		return nil
 	}

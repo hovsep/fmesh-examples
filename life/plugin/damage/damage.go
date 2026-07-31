@@ -10,6 +10,8 @@
 package damage
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/simtime"
@@ -89,7 +91,7 @@ func (d *Damage) failureOutput() string { return d.organ + "_failure" }
 
 // onActivation folds in this cycle's insults and the tick's aging, then
 // publishes the level and, once critical, latches failure and announces it.
-func (d *Damage) onActivation(this *component.Component) error {
+func (d *Damage) onActivation(ctx context.Context, this *component.Component) error {
 	// External insults arrive as discrete amounts on their own mesh cycle. Read
 	// and clear them so they are counted exactly once, even when the host keeps
 	// its inputs waiting for others (e.g. the lungs).
@@ -99,7 +101,7 @@ func (d *Damage) onActivation(this *component.Component) error {
 			insult += signal.AsFloat64OrDefault(sig, 0)
 			return nil
 		})
-		in.Clear()
+		in.Clear(ctx)
 	}
 
 	// Aging accrues once per tick, scaled by the tick's real duration.

@@ -4,6 +4,8 @@
 package setup
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -22,7 +24,7 @@ func GetSceneSource() *component.Component {
 		component.WithDescription("Builds the scene and emits its geometry and light"),
 		component.WithInputs(common.PortIn),
 		component.WithOutputs(common.PortGeometryOut, common.PortLightOut, common.PortStartOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			scene := render.NewScene()
 
 			if err := this.OutputByName(common.PortGeometryOut).PutSignals(signal.New(scene.Geometry)); err != nil {
@@ -31,7 +33,7 @@ func GetSceneSource() *component.Component {
 			if err := this.OutputByName(common.PortLightOut).PutSignals(signal.New(scene.Light)); err != nil {
 				return err
 			}
-			return port.ForwardSignals(this.InputByName(common.PortIn), this.OutputByName(common.PortStartOut))
+			return port.ForwardSignals(ctx, this.InputByName(common.PortIn), this.OutputByName(common.PortStartOut))
 		}),
 	))
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -42,7 +43,7 @@ func timeToDeath(t *testing.T, setup func(*session.Session), limit time.Duration
 
 	died, elapsed := time.Duration(-1), 0.0
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			elapsed += tickSeconds
 			if died < 0 && alive(sim) == 0 {
 				died = time.Duration(elapsed * float64(time.Second))

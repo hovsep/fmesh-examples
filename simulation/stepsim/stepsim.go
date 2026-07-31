@@ -9,7 +9,7 @@
 // injects a tick signal before it:
 //
 //	fm.SetupHooks(func(hooks *fmesh.Hooks) {
-//		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
+//		hooks.BeforeRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 //			return mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 //		})
 //	})
@@ -19,6 +19,7 @@
 package stepsim
 
 import (
+	"context"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -81,8 +82,8 @@ func (e *Engine) Now() time.Duration {
 // A run in which no component activated is reported as idle: the mesh has
 // settled and running it again would change nothing until something new arrives
 // from outside.
-func (e *Engine) Advance() (simulation.Result, error) {
-	info, err := e.fm.Run()
+func (e *Engine) Advance(ctx context.Context) (simulation.Result, error) {
+	info, err := e.fm.Run(ctx)
 	if err != nil {
 		return simulation.Result{}, err
 	}

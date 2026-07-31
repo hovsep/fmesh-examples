@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -79,7 +80,7 @@ func GetLung(side string) (*component.Component, error) {
 	return c, nil
 }
 
-func handleMechanics(this *component.Component) error {
+func handleMechanics(_ context.Context, this *component.Component) error {
 	// A breathing cycle is driven by the tick. If there is no tick, this activation
 	// came from some other input arriving out of phase (e.g. an inhaled toxin on
 	// the damage port); do nothing rather than keep waiting for a tick that has
@@ -88,7 +89,7 @@ func handleMechanics(this *component.Component) error {
 		return nil
 	}
 	if !this.Inputs().ByNames("time", "pleural_pressure", "inspired_gas").AllHaveSignals() {
-		return component.ErrWaitingForInputsKeep
+		return component.ErrWaitKeepingInputs
 	}
 
 	dt, err := simtime.TickDurationInSec(this.InputByName("time").Signals().First())
@@ -124,7 +125,7 @@ func handleMechanics(this *component.Component) error {
 	return nil
 }
 
-func handleGasExchange(this *component.Component) error {
+func handleGasExchange(_ context.Context, this *component.Component) error {
 	if !this.Inputs().ByNames("inspired_gas").AllHaveSignals() {
 		return nil
 	}

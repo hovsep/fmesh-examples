@@ -1,6 +1,7 @@
 package microcontroller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -29,10 +30,10 @@ type LogicDescriptor struct {
 }
 
 func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
-	af := func(this *component.Component) error {
+	af := func(_ context.Context, this *component.Component) error {
 		return this.InputByName(common.PortCANRx).Signals().ForEach(func(sig *signal.Signal) error {
 			// Validate CAN frame
-			frame, ok := sig.PayloadOrNil().(*codec.Frame)
+			frame, ok := sig.Payload().(*codec.Frame)
 			if !ok {
 				return errors.New("failed to cast payload to CAN frame")
 			}

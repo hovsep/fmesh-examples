@@ -1,6 +1,7 @@
 package boundary
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/atmosphere"
@@ -53,7 +54,7 @@ func GetRespiratory() (*component.Component, error) {
 }
 
 // inhaleToxins turns the dirt in the inspired air into a dose of harm.
-func inhaleToxins(this *component.Component) error {
+func inhaleToxins(_ context.Context, this *component.Component) error {
 	tick := this.InputByName("time").Signals().First()
 	if tick == nil {
 		return nil

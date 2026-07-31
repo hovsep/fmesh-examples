@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
@@ -20,13 +21,13 @@ func GetAccumulator() *component.Component {
 		component.WithInitialState(func(state component.State) {
 			state.Set("buffers", map[string][]render.Vec3{})
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			buffers := this.State().Get("buffers").(map[string][]render.Vec3)
 
 			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
 				key := fmt.Sprintf("%d/%d",
 					common.ScalarInt(sig, common.ScalarFrame), common.ScalarInt(sig, common.ScalarYFrom))
-				buffers[key] = render.Accumulate(buffers[key], sig.PayloadOrNil().([]render.Contribution))
+				buffers[key] = render.Accumulate(buffers[key], sig.Payload().([]render.Contribution))
 
 				if common.ScalarInt(sig, common.ScalarBounce) < render.MaxBounces {
 					return nil

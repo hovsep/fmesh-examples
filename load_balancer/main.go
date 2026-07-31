@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -44,7 +45,7 @@ func main() {
 		}
 		fm.ComponentByName("lb").InputByName(portIn).PutSignalGroups(requests)
 
-		_, err := fm.Run()
+		_, err := fm.Run(context.Background())
 		if err != nil {
 			fmt.Println("Load balancing finished with error:", err)
 			os.Exit(1)
@@ -58,7 +59,7 @@ func main() {
 
 		fmt.Println("Responses:")
 		results.ForEach(func(sig *signal.Signal) error {
-			fmt.Println(sig.PayloadOrDefault("").(string))
+			fmt.Println(sig.Payload().(string))
 			return nil
 		})
 	}
@@ -98,9 +99,9 @@ func getWorkers(namePrefix string, number int) ([]*component.Component, error) {
 		worker, err := component.New(fmt.Sprintf("%s-%d", namePrefix, i),
 			component.WithInputs(portIn),
 			component.WithOutputs(portOut),
-			component.WithActivationFunc(func(this *component.Component) error {
+			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 				return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
-					request := sig.PayloadOrDefault("").(string)
+					request := sig.Payload().(string)
 					response := fmt.Sprintf("Request: %s processed by %s", request, this.Name())
 					return this.OutputByName(portOut).PutSignals(signal.New(response))
 				})
@@ -129,7 +130,7 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 		component.WithInitialState(func(state component.State) {
 			state.Set("workers_number", numWorkers)
 		}),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			ingressPort := this.InputByName(portIn)
 			egressPort := this.OutputByName(portOut)
 
@@ -138,7 +139,7 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 
 			ingressPort.Signals().ForEach(func(sig *signal.Signal) error {
 				lastWorkerIndex %= workersNum
-				this.Logger().Printf("Routing %q -> worker-%d (%s)\n", sig.PayloadOrDefault(""), lastWorkerIndex, indexedPortName("downstream", lastWorkerIndex))
+				this.Logger().Printf("Routing %q -> worker-%d (%s)\n", sig.Payload(), lastWorkerIndex, indexedPortName("downstream", lastWorkerIndex))
 				this.OutputByName(indexedPortName("downstream", lastWorkerIndex)).PutSignals(sig)
 				lastWorkerIndex++
 				return nil
@@ -147,7 +148,7 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 			this.State().Set("last_worker_index", lastWorkerIndex)
 
 			for i := range workersNum {
-				if err := port.ForwardSignals(this.InputByName(indexedPortName("upstream", i)), egressPort); err != nil {
+				if err := port.ForwardSignals(ctx, this.InputByName(indexedPortName("upstream", i)), egressPort); err != nil {
 					return err
 				}
 			}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,17 +58,14 @@ func main() {
 			urls = urls[1:]
 
 			fm.Components().ByName("web crawler").InputByName("url").PutSignals(signal.New(url))
-			_, err := fm.Run()
+			_, err := fm.Run(context.Background())
 			if err != nil {
 				fmt.Println("fmesh returned error ", err)
 			}
 
 			if fm.Components().ByName("web crawler").OutputByName("headers").HasSignals() {
-				results, err := fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
-				if err != nil {
-					fmt.Println("Failed to get results ", err)
-				}
-				fm.Components().ByName("web crawler").OutputByName("headers").Clear()
+				results := fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
+				fm.Components().ByName("web crawler").OutputByName("headers").Clear(context.Background())
 				resultsChan <- results
 			}
 		}
@@ -96,15 +94,12 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("gets http headers from given url"),
 		component.WithInputs("url"),
 		component.WithOutputs("errors", "headers"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			if !this.InputByName("url").HasSignals() {
-				return component.ErrWaitingForInputs
+				return component.ErrWaitDroppingInputs
 			}
 
-			allUrls, err := this.InputByName("url").Signals().AllPayloads()
-			if err != nil {
-				return err
-			}
+			allUrls := this.InputByName("url").Signals().AllPayloads()
 
 			for _, urlVal := range allUrls {
 				url := urlVal.(string)
@@ -134,15 +129,12 @@ func getMesh() (*fmesh.FMesh, error) {
 	logger, err := component.New("error logger",
 		component.WithDescription("logs http errors"),
 		component.WithInputs("error"),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			if !this.InputByName("error").HasSignals() {
-				return component.ErrWaitingForInputs
+				return component.ErrWaitDroppingInputs
 			}
 
-			allErrors, err := this.InputByName("error").Signals().AllPayloads()
-			if err != nil {
-				return err
-			}
+			allErrors := this.InputByName("error").Signals().AllPayloads()
 
 			for _, errVal := range allErrors {
 				e := errVal.(error)

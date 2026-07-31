@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
@@ -99,7 +100,7 @@ func GetLiver() (*component.Component, error) {
 // instructions until they wash out, then falls back to its basal rate and stops
 // responding to anything. Destroy the liver and the pancreas goes on shouting
 // into a blood supply where nothing is listening.
-func regulateGlucose(this *component.Component) error {
+func regulateGlucose(_ context.Context, this *component.Component) error {
 	if !this.InputByName(simulation.TimePort).HasSignals() {
 		return nil
 	}

@@ -1,6 +1,7 @@
 package organ
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/life/body"
@@ -81,7 +82,7 @@ func GetKidney() (*component.Component, error) {
 	return c, nil
 }
 
-func readHydration(this *component.Component) error {
+func readHydration(_ context.Context, this *component.Component) error {
 	in := this.InputByName("body_state")
 	if !in.HasSignals() {
 		return nil
@@ -92,14 +93,14 @@ func readHydration(this *component.Component) error {
 	return nil
 }
 
-func voidBladder(this *component.Component) error {
+func voidBladder(_ context.Context, this *component.Component) error {
 	if this.InputByName("void").HasSignals() {
 		this.State().Set(StateBladderMl, 0.0)
 	}
 	return nil
 }
 
-func produceUrine(this *component.Component) error {
+func produceUrine(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

@@ -36,7 +36,7 @@ type fakeEngine struct {
 	fail error // fail every advance
 }
 
-func (e *fakeEngine) Advance() (simulation.Result, error) {
+func (e *fakeEngine) Advance(_ context.Context) (simulation.Result, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

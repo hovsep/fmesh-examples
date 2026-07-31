@@ -1,6 +1,7 @@
 package imaging
 
 import (
+	"context"
 	"image"
 
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
@@ -15,7 +16,7 @@ func GetAssembler() *component.Component {
 		component.WithDescription("Merges tiles into a frame and requests the next one"),
 		component.WithInputs(common.PortIn),
 		component.WithOutputs(common.PortFrameOut, common.PortNextOut, common.PortProgressOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			img := image.NewRGBA(image.Rect(0, 0, common.FrameWidth, common.FrameHeight))
 			frame := -1
 
@@ -23,7 +24,7 @@ func GetAssembler() *component.Component {
 			// each tile knows its own place in the frame
 			err := this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
 				frame = common.ScalarInt(sig, common.ScalarFrame)
-				copy(img.Pix[common.ScalarInt(sig, common.ScalarYFrom)*img.Stride:], sig.PayloadOrNil().([]byte))
+				copy(img.Pix[common.ScalarInt(sig, common.ScalarYFrom)*img.Stride:], sig.Payload().([]byte))
 				return nil
 			})
 			if err != nil {

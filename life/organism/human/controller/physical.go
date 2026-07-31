@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation"
@@ -64,7 +65,7 @@ func GetPhysical() (*component.Component, error) {
 	return c, nil
 }
 
-func acceptActivityCommands(this *component.Component) error {
+func acceptActivityCommands(_ context.Context, this *component.Component) error {
 	return command.ForEach(this, simulation.ControlPort, func(name string, args *meta.Scalars) error {
 		switch command.Verb(name) {
 		case VerbStart:
@@ -86,7 +87,7 @@ func acceptActivityCommands(this *component.Component) error {
 }
 
 // emitPhysicalLoad publishes the current demand and ages the activity out.
-func emitPhysicalLoad(this *component.Component) error {
+func emitPhysicalLoad(_ context.Context, this *component.Component) error {
 	tick := this.InputByName(simulation.TimePort).Signals().First()
 	if tick == nil {
 		return nil

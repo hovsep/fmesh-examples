@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func Test_HumanLiveness(t *testing.T) {
 				require.NotNil(t, aggState)
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::is_alive").Signals().First()
 						if sig == nil {
 							return nil
@@ -39,7 +40,7 @@ func Test_HumanLiveness(t *testing.T) {
 						// Liveness travels as 1/0 so it survives the numeric telemetry wire.
 						alive, ok := signal.AsNumber(sig)
 						if !ok {
-							return fmt.Errorf("is_alive is not numeric: %v", sig.PayloadOrNil())
+							return fmt.Errorf("is_alive is not numeric: %v", sig.Payload())
 						}
 						observedIsAlive = append(observedIsAlive, alive > 0)
 						return nil
@@ -63,7 +64,7 @@ func Test_HumanLiveness(t *testing.T) {
 				require.NotNil(t, aggState)
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sigAct := aggState.OutputByName("human-Leon::heart_cardiac_activation").Signals().First()
 						if sigAct == nil {
 							return nil
@@ -104,7 +105,7 @@ func Test_HumanLiveness(t *testing.T) {
 				require.NotNil(t, aggState)
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sigPressure := aggState.OutputByName("human-Leon::pleural_pressure").Signals().First()
 						if sigPressure == nil {
 							return nil
@@ -148,7 +149,7 @@ func Test_HumanLiveness(t *testing.T) {
 				require.NotNil(t, aggState)
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sigLeft := aggState.OutputByName("human-Leon::lung_left_flow").Signals().First()
 						if sigLeft == nil {
 							return nil
@@ -190,7 +191,7 @@ func Test_HumanLiveness(t *testing.T) {
 				var inspN, inspO, inspA, inspP, inspTemp, inspHum float64
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						envSig := aggState.OutputByName("air::environmental_gas").Signals().First()
 						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
 						if envSig == nil || inspSig == nil {
@@ -231,7 +232,7 @@ func Test_HumanLiveness(t *testing.T) {
 				var observedO2, observedCO2 []float64
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
 						if sig == nil {
 							return nil
@@ -309,7 +310,7 @@ func Test_HumanLiveness(t *testing.T) {
 				var inspO, inspTemp, inspHum float64
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						leftSig := aggState.OutputByName("human-Leon::lung_left_exhaled_gas").Signals().First()
 						rightSig := aggState.OutputByName("human-Leon::lung_right_exhaled_gas").Signals().First()
 						inspSig := aggState.OutputByName("human-Leon::inspired_gas").Signals().First()
@@ -369,7 +370,7 @@ func Test_HumanLiveness(t *testing.T) {
 				var o2, co2 []float64
 
 				simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-					hooks.AfterRun(func(mesh *fmesh.FMesh) error {
+					hooks.AfterRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 						sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First()
 						if sig == nil {
 							return nil

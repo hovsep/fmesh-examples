@@ -1,6 +1,8 @@
 package setup
 
 import (
+	"context"
+
 	"github.com/hovsep/fmesh-examples/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
@@ -15,9 +17,9 @@ func GetOrbit() *component.Component {
 		component.WithDescription("Moves the camera along its orbit, one step per frame"),
 		component.WithInputs(common.PortNextFrame),
 		component.WithOutputs(common.PortOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(common.PortNextFrame).Signals().ForEach(func(sig *signal.Signal) error {
-				frame := sig.PayloadOrDefault(0).(int)
+				frame := sig.Payload().(int)
 				if frame >= common.TotalFrames {
 					// Animation finished: no output means no further activations,
 					// so the mesh naturally comes to a halt

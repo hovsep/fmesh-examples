@@ -1,6 +1,7 @@
 package da
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -100,7 +101,7 @@ func GetBloodSystem() (*component.Component, error) {
 //
 // While only partial inputs have arrived (e.g. organ metabolism but not yet airflow) the
 // component keeps them and waits, so nothing is dropped.
-func exchangeBloodGases(this *component.Component) error {
+func exchangeBloodGases(_ context.Context, this *component.Component) error {
 	// Latch the blood sugar the reservoir reports, whenever it arrives (on its
 	// own mesh cycle), so the published venous blood always carries a value.
 	if in := this.InputByName("glucose"); in.HasSignals() {

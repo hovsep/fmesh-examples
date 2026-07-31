@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -120,7 +121,7 @@ func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
 
 		var remaining float64
 		simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-			hooks.AfterRun(func(*fmesh.FMesh) error {
+			hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 				processes, _ := intake.State().Get(controller.StateProcesses).(*simtime.ProcessSet)
 				if processes != nil {
 					remaining = processes.RemainingOf(controller.KindWaterMl)
@@ -236,7 +237,7 @@ func lastFeelings(t *testing.T, sim *session.Session) func() *signal.Signal {
 
 	var latest *signal.Signal
 	simMesh(sim).SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.AfterRun(func(*fmesh.FMesh) error {
+		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			if sig := aggregator.OutputByName(key).Signals().First(); sig != nil {
 				latest = sig
 			}

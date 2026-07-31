@@ -3,6 +3,7 @@
 package output
 
 import (
+	"context"
 	"image"
 	"image/color/palette"
 	"image/draw"
@@ -19,7 +20,7 @@ func GetPalettizer() *component.Component {
 		component.WithDescription("Converts frames to paletted colors with dithering"),
 		component.WithInputs(common.PortIn),
 		component.WithOutputs(common.PortOut),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.OutputByName(common.PortOut).PutSignalGroups(
 				this.InputByName(common.PortIn).Signals().MapPayloads(func(p any) any {
 					img := p.(*image.RGBA)

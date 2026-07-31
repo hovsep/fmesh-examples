@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -23,7 +24,7 @@ func newWires(name string) (*component.Component, error) {
 		component.WithInputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest),
 		component.WithOutputs(common.PortCANL, common.PortCANH, portRecessiveBitRequest),
 		component.WithLogger(common.NewNoopLogger()),
-		component.WithActivationFunc(func(this *component.Component) error {
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			allLow, allHigh, err := processRecessiveBitRequest(this)
 			if err != nil {
 				return fmt.Errorf("failed to process recessive bits request: %w", err)
@@ -83,7 +84,7 @@ func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, 
 // Collect CAN_L voltages
 func collectLow(this *component.Component, allLow []physical.Voltage) ([]physical.Voltage, error) {
 	this.InputByName(common.PortCANL).Signals().ForEach(func(sig *signal.Signal) error {
-		v, ok := sig.PayloadOrNil().(physical.Voltage)
+		v, ok := sig.Payload().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_L wire")
 		}
@@ -98,7 +99,7 @@ func collectLow(this *component.Component, allLow []physical.Voltage) ([]physica
 // Collect CAN_H voltages
 func collectHigh(this *component.Component, allHigh []physical.Voltage) ([]physical.Voltage, error) {
 	this.InputByName(common.PortCANH).Signals().ForEach(func(sig *signal.Signal) error {
-		v, ok := sig.PayloadOrNil().(physical.Voltage)
+		v, ok := sig.Payload().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_H wire")
 		}

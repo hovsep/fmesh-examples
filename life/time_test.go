@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func Test_Time(t *testing.T) {
 				require.NotNil(t, timeComponent)
 
 				timeComponent.SetupHooks(func(hooks *component.Hooks) {
-					hooks.AfterActivation(func(activationContext *component.ActivationContext) error {
+					hooks.AfterActivation(func(_ context.Context, activationContext *component.ActivationContext) error {
 						tickSig := timeComponent.OutputByName("tick").Signals().First()
 						require.NotNil(t, tickSig)
 

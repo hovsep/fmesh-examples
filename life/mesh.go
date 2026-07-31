@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -76,7 +77,7 @@ func getSimulationMeshIn(environment func() (*component.Component, error), tick 
 
 	// Generate a tick signal before each run (time step simulation)
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
-		hooks.BeforeRun(func(mesh *fmesh.FMesh) error {
+		hooks.BeforeRun(func(_ context.Context, mesh *fmesh.FMesh) error {
 			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 			return nil
 		})
