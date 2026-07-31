@@ -1421,3 +1421,53 @@ func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
 			"and once it burns out the body should be clearing it, with nothing done about it")
 	})
 }
+
+// TestReference_ExertionAndFrightReachTheHeart is the tachycardia every reader
+// expects and this body did not have.
+//
+// A heart is driven by the autonomic system, and the autonomic system was told
+// what the blood pressure was and what the brain was doing but never what the
+// body had been asked to do. So its cardiac bias came from the baroreflex alone,
+// and a sprinting body had the pulse of a reading one: eightfold exertion moved
+// it about a beat.
+//
+// Breathing had hidden this. It answered exercise correctly all along, but
+// through the chemoreflex -- work makes carbon dioxide, and the airway responds
+// to carbon dioxide -- so the body looked as though exertion was reaching it.
+// The heart has no such second path, which is why it stayed still.
+//
+// Reference figures: a healthy adult rests near 60-70, reaches roughly 150 at
+// hard effort, and 100-130 on a fright. The come-down is slow because the nerves
+// let go at once while the adrenaline they called for clears over minutes.
+func TestReference_ExertionAndFrightReachTheHeart(t *testing.T) {
+	if testing.Short() {
+		t.Skip("multi-minute physiological run")
+	}
+
+	rateAfter := func(t *testing.T, setup func(*session.Session), d time.Duration) float64 {
+		t.Helper()
+		sim := newCommandableSim(t)
+		setup(sim)
+
+		agg := simMesh(sim).ComponentByName("aggregated_state")
+		var rate float64
+		simtest.RunFor(sim, d, func() {
+			if sig := agg.OutputByName("human-Leon::heart_rate").Signals().First(); sig != nil {
+				rate, _ = signal.AsNumber(sig)
+			}
+		})
+		return rate
+	}
+
+	resting := rateAfter(t, func(*session.Session) {}, 20*time.Second)
+	assert.InDelta(t, 65, resting, 12, "a body at rest should sit in the sixties")
+
+	working := rateAfter(t, func(sim *session.Session) { sim.Do("activity:start 8") }, 40*time.Second)
+	assert.InDelta(t, 150, working, 25, "hard work should ask for about 150")
+	assert.Greater(t, working, resting+50, "and that is nothing like a resting pulse")
+
+	frightened := rateAfter(t, func(sim *session.Session) { sim.Do("emotion:stimulus 1.0 -1.0") }, 15*time.Second)
+	assert.InDelta(t, 115, frightened, 25, "a fright should be felt, and felt less than a sprint")
+	assert.Greater(t, frightened, resting+20, "a fright is not a resting pulse either")
+	assert.Less(t, frightened, working, "but being frightened is not the same as running")
+}

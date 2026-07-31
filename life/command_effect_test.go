@@ -185,24 +185,26 @@ func Test_EveryCommandMovesSomething(t *testing.T) {
 			probe: bodyValue("stomach_fill"), check: rose,
 		},
 		{
-			// Fatigue rather than heart rate, and that is a finding rather than a
-			// convenience: eightfold exertion moves this body's pulse by about one
-			// beat, and a maximal fright by less than half of one. Breathing,
-			// fatigue and temperature all answer exertion properly, so the command
-			// plainly arrives; it is the autonomic-to-cardiac gain that is nearly
-			// flat. Worth fixing, and not by loosening this test until it passes.
-			name: "activity:start", cmd: "activity:start 8", settle: 20 * time.Second,
-			probe: bodyValue("muscle_fatigue"), check: rose,
+			name: "activity:start", cmd: "activity:start 8", settle: 40 * time.Second,
+			probe: bodyValue("heart_rate"), check: rose,
 		},
 		{
 			// Against a body already exerting, so there is something to stop.
+			//
+			// The come-down is slow on purpose and the settle has to allow for it:
+			// the nerves let go at once, but the adrenaline they called for clears
+			// with a two-minute half-life, so a pulse is still up long after the
+			// running stopped. That is why anyone who has sprinted for a bus
+			// stands there afterwards feeling it.
 			name: "activity:stop", setup: []command.Line{"activity:start 8"},
-			warm: 60 * time.Second, cmd: "activity:stop", settle: 60 * time.Second,
-			probe: bodyValue("muscle_fatigue"), check: fell,
+			warm: 40 * time.Second, cmd: "activity:stop", settle: 4 * time.Minute,
+			probe: bodyValue("heart_rate"), check: fell,
 		},
 		{
-			name: "emotion:stimulus", cmd: "emotion:stimulus 0.9 -0.8", settle: 5 * time.Second,
-			probe: bodyScalar("feelings", "anxious"), check: rose,
+			// A fright reaches the pulse now, which it did not before the
+			// autonomic system was told what the body had been asked to do.
+			name: "emotion:stimulus", cmd: "emotion:stimulus 0.9 -0.8", settle: 15 * time.Second,
+			probe: bodyValue("heart_rate"), check: rose,
 		},
 		{
 			name: "trauma:bleed", cmd: "trauma:bleed 500ml", settle: 10 * time.Second,

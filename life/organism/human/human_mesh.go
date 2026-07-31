@@ -401,13 +401,19 @@ func wireAffect(components *component.Collection) error {
 	); err != nil {
 		return err
 	}
+	// Both loads also reach the autonomic system, which is what makes a running
+	// or frightened body's pulse answer. Feeling tired and being tachycardic are
+	// two readings of one stressor, so they come off the same signal.
+	autonomicTone := components.ByName("physiology:autonomic_coordination")
 	if err := components.ByName("controller:physical_stress").OutputByName("physical_load").PipeTo(
 		affect.InputByName("physical_load"),
+		autonomicTone.InputByName("physical_load"),
 	); err != nil {
 		return err
 	}
 	if err := components.ByName("controller:mental_stress").OutputByName("mental_load").PipeTo(
 		affect.InputByName("mental_load"),
+		autonomicTone.InputByName("mental_load"),
 	); err != nil {
 		return err
 	}
