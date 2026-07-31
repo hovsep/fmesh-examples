@@ -33,14 +33,34 @@ type AppState struct {
 type ViewType = telemetry.View
 
 // Views are the screens, in tab order.
-var Views = []ViewType{
-	telemetry.ViewOverview,
-	telemetry.ViewCardiovascular,
-	telemetry.ViewRespiratory,
-	telemetry.ViewNervous,
-	telemetry.ViewMetabolic,
-	telemetry.ViewAffect,
-	telemetry.ViewBody,
+// Screens is the tab bar, in order: what each screen is and what it is called.
+//
+// One list rather than three. The order of the tabs, the label on each and the
+// set that exists were previously a slice, a switch and a second switch in the
+// app, which is three places to add a screen and two places to forget.
+var Screens = []Screen{
+	{telemetry.ViewOverview, "Overview"},
+	{telemetry.ViewCardiovascular, "Cardiovascular"},
+	{telemetry.ViewRespiratory, "Respiratory"},
+	{telemetry.ViewNervous, "Nervous"},
+	{telemetry.ViewMetabolic, "Metabolic"},
+	{telemetry.ViewAffect, "Feelings"},
+	{telemetry.ViewBody, "Body"},
+}
+
+// Screen is one tab: the view it shows and the label on it.
+type Screen struct {
+	View  ViewType
+	Title string
+}
+
+// Views lists the screens in tab order.
+func Views() []ViewType {
+	out := make([]ViewType, 0, len(Screens))
+	for _, s := range Screens {
+		out = append(out, s.View)
+	}
+	return out
 }
 
 const (
@@ -55,24 +75,12 @@ const (
 
 // ViewName is the tab label for a screen.
 func ViewName(v ViewType) string {
-	switch v {
-	case telemetry.ViewOverview:
-		return "Overview"
-	case telemetry.ViewCardiovascular:
-		return "Cardiovascular"
-	case telemetry.ViewRespiratory:
-		return "Respiratory"
-	case telemetry.ViewNervous:
-		return "Nervous"
-	case telemetry.ViewMetabolic:
-		return "Metabolic"
-	case telemetry.ViewAffect:
-		return "Feelings"
-	case telemetry.ViewBody:
-		return "Body"
-	default:
-		return "Unknown"
+	for _, s := range Screens {
+		if s.View == v {
+			return s.Title
+		}
 	}
+	return "Unknown"
 }
 
 // NewAppState creates a new application state
@@ -191,13 +199,13 @@ func (s *AppState) GetView() ViewType {
 func (s *AppState) NextView() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.CurrentView = (s.CurrentView + 1) % ViewType(len(Views))
+	s.CurrentView = (s.CurrentView + 1) % ViewType(len(Screens))
 }
 
 // PrevView cycles to the previous view
 func (s *AppState) PrevView() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	count := ViewType(len(Views))
+	count := ViewType(len(Screens))
 	s.CurrentView = (s.CurrentView - 1 + count) % count
 }
