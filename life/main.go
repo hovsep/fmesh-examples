@@ -8,10 +8,10 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh-examples/simulation/console"
 	"github.com/hovsep/fmesh-examples/life/env/factor"
 	"github.com/hovsep/fmesh-examples/life/tui"
 	"github.com/hovsep/fmesh-examples/simulation/command"
+	"github.com/hovsep/fmesh-examples/simulation/console"
 	"github.com/hovsep/fmesh-examples/simulation/session"
 	"github.com/hovsep/fmesh-examples/simulation/stepsim"
 )

@@ -123,7 +123,7 @@ const (
 	loadDelivery string = "load_delivery"
 	loadContent  string = "load_content"
 	loadOutput   string = "load_cardiac_output"
-	loadMAP string = "load_map"
+	loadMAP      string = "load_map"
 )
 
 func damageOutputs() []string {
