@@ -6,6 +6,7 @@ import (
 
 	"github.com/hovsep/fmesh-examples/life/autonomic"
 	"github.com/hovsep/fmesh-examples/life/bloodstream"
+	"github.com/hovsep/fmesh-examples/life/organism/human/controller"
 	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	"github.com/hovsep/fmesh-examples/simulation"
 	"github.com/hovsep/fmesh-examples/simulation/mathx"
@@ -63,7 +64,15 @@ const (
 
 	// adrenalineVasoconstriction is how much fully saturated adrenaline adds to
 	// vascular tone, on top of what the nerves are asking for.
-	adrenalineVasoconstriction = 0.15
+	//
+	// It is small, and smaller than it looks like it should be, because
+	// circulating adrenaline is a poor vasoconstrictor: it tightens skin and gut
+	// but opens working muscle, and the two nearly cancel. Constriction is the
+	// nerves' job, and it arrives here as tone. This term was 0.15 for as long as
+	// nothing was piped into the receptor that fed it -- it read 0.0 for the
+	// component's whole life -- so the first run that actually used it put a
+	// frightened body at a mean pressure of 150.
+	adrenalineVasoconstriction = 0.05
 
 	// CentralVenousPressure is the pressure blood returns at, mmHg. It is small
 	// next to arterial pressure but is what the arithmetic sits on top of.
@@ -82,6 +91,33 @@ const (
 	// MaxStrokeVolumeFactor caps how much a very full heart can compensate.
 	// Starling's law flattens: a ventricle can only stretch so far.
 	MaxStrokeVolumeFactor = 1.2
+
+	// inotropyGain is how much fully saturated adrenaline adds to the force of
+	// each contraction.
+	//
+	// Preload is not the only thing that sets stroke volume, and while it was the
+	// only thing modelled here the number could not move: through a three-minute
+	// effort that took the heart from 64 to 155 beats, stroke volume sat at
+	// exactly 70.00 mL and every extra litre of output came from rate alone. A
+	// working heart does not merely beat faster, it beats harder, and about a
+	// third of the rise in cardiac output is this.
+	inotropyGain = 0.35
+
+	// maxMetabolicVasodilation is how far working muscle can open the
+	// circulation, as a fraction of the resistance the nerves are asking for.
+	//
+	// This is not a reflex. Muscle that is working produces the metabolites that
+	// relax the arterioles feeding it, and it does so regardless of what the
+	// sympathetic system wants -- which is why the same sympathetic outflow that
+	// makes a frightened body pale leaves a running one flushed.
+	//
+	// The value comes from the operating point rather than from taste. Hard work
+	// at intensity 8 asks for something near 16 L/min, and a healthy adult
+	// carries that at a mean pressure around 110-120 mmHg, so the circulation has
+	// to be open to roughly (115-5)/16 ≈ 7 Wood units. Without this the vessels
+	// bottomed out at ResistanceAt(0) = 13.75 and the same effort produced a mean
+	// pressure of 154, which is not a hard workout but a hypertensive crisis.
+	maxMetabolicVasodilation = 0.8
 )
 
 const (
@@ -93,6 +129,12 @@ const (
 	stateVascularTone  string = "vascular_tone"
 	stateBloodVolume   string = "blood_volume"
 	stateVascDt        string = "dt"
+
+	// stateExertion latches the most recent physical load. Like every other
+	// non-tick input here it arrives on its own mesh cycle, and recomputeCirculation
+	// runs once per arrival rather than once per tick, so it has to be read back
+	// out of state rather than folded in where it lands.
+	stateExertion string = "exertion"
 )
 
 // The set points the reflexes defend, re-exported here so the physiology package
@@ -119,6 +161,7 @@ func GetVasculature() (*component.Component, error) {
 			"heart_rate",     // beats per minute, from the heart
 			"autonomic_tone", // vascular bias sets the resistance
 			"venous_blood",   // for the volume that fills the heart
+			"physical_load",  // working muscle opens its own supply
 		),
 		component.WithOutputs(
 			"map",            // mean arterial pressure, mmHg
@@ -142,6 +185,7 @@ func GetVasculature() (*component.Component, error) {
 			state.Set(stateVascularTone, restingVascularTone)
 			state.Set(stateBloodVolume, bloodstream.NormalBloodVolume)
 			state.Set(stateVascDt, defaultDt)
+			state.Set(stateExertion, controller.RestingIntensity)
 		}),
 	)
 	if err != nil {
@@ -183,6 +227,12 @@ func circulate(_ context.Context, this *component.Component) error {
 				sig.Scalars().ValueOrDefault("volume_l", bloodstream.NormalBloodVolume))
 		}
 	}
+	if in := this.InputByName("physical_load"); in.HasSignals() {
+		if sig := in.Signals().First(); sig != nil {
+			this.State().Set(stateExertion,
+				sig.Scalars().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
+		}
+	}
 
 	recomputeCirculation(this)
 	return nil
@@ -193,10 +243,15 @@ func recomputeCirculation(this *component.Component) {
 	volume := this.State().Get(stateBloodVolume).(float64)
 	rate := this.State().Get(stateHeartRate).(float64)
 	tone := this.State().Get(stateVascularTone).(float64)
+	exertion := this.State().Get(stateExertion).(float64)
+	adrenaline := receptor.Level(this, bloodstream.HormoneAdrenaline)
 
-	strokeVolume := StrokeVolumeAt(volume)
+	strokeVolume := StrokeVolumeAt(volume, adrenaline)
 	cardiacOutput := rate * strokeVolume / 1000.0 // mL/beat × beats/min → L/min
-	svr := ResistanceAt(tone + receptor.Level(this, bloodstream.HormoneAdrenaline)*adrenalineVasoconstriction)
+
+	// What the nerves are asking for, and what the working muscle does about it.
+	svr := ResistanceAt(tone+adrenaline*adrenalineVasoconstriction) *
+		MetabolicVasodilation(exertion)
 
 	this.State().Set(stateStrokeVolume, strokeVolume)
 	this.State().Set(stateCardiacOutput, cardiacOutput)
@@ -204,12 +259,40 @@ func recomputeCirculation(this *component.Component) {
 	this.State().Set(stateMAP, cardiacOutput*svr+CentralVenousPressure)
 }
 
-// StrokeVolumeAt returns how much the heart ejects per beat at a given blood
-// volume, by Starling's law: the fuller the ventricle, the harder it contracts,
-// until it cannot stretch further.
-func StrokeVolumeAt(volumeL float64) float64 {
-	filling := (volumeL - UnstressedVolume) / (bloodstream.NormalBloodVolume - UnstressedVolume)
-	return NormalStrokeVolume * mathx.Clamp(filling, 0, MaxStrokeVolumeFactor)
+// StrokeVolumeAt returns how much the heart ejects per beat: what preload has
+// put in the ventricle, and how hard the adrenaline in the blood makes it
+// squeeze.
+//
+// Preload comes first, by Starling's law -- the fuller the ventricle, the harder
+// it contracts, until it cannot stretch further. Contractility is a second,
+// independent axis, and multiplies what preload delivered, which is why it is
+// applied outside the MaxStrokeVolumeFactor clamp: that clamp is how far the
+// muscle can be stretched, and it has nothing to say about how hard it then pulls.
+//
+// The inotropic effect is scaled by how full the ventricle is, because an empty
+// one cannot be squeezed into ejecting what it does not contain. That is not a
+// convenience: it is why a haemorrhaging patient with every gland wide open
+// still loses stroke volume, and why adrenaline is not a treatment for
+// hypovolaemia.
+func StrokeVolumeAt(volumeL, adrenaline float64) float64 {
+	filling := mathx.Clamp(
+		(volumeL-UnstressedVolume)/(bloodstream.NormalBloodVolume-UnstressedVolume),
+		0, MaxStrokeVolumeFactor)
+	return NormalStrokeVolume * filling * Contractility(filling, adrenaline)
+}
+
+// Contractility is how much harder than baseline the ventricle is pulling, from
+// 1.0 in a calm body upward.
+func Contractility(filling, adrenaline float64) float64 {
+	return 1 + inotropyGain*mathx.Clamp(adrenaline, 0, 1)*min(filling, 1)
+}
+
+// MetabolicVasodilation returns the fraction of the asked-for resistance that
+// working muscle leaves standing: 1.0 at rest, falling as effort rises.
+func MetabolicVasodilation(exertion float64) float64 {
+	effort := mathx.Clamp(
+		(exertion-controller.RestingIntensity)/(controller.MaxIntensity-controller.RestingIntensity), 0, 1)
+	return 1 - maxMetabolicVasodilation*effort
 }
 
 // ResistanceAt returns systemic vascular resistance at a given sympathetic tone.

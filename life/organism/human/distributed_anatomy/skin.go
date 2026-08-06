@@ -30,12 +30,41 @@ const (
 	// person can actually sustain.
 	sweatMlPerDegreePerSec = 750.0 / 3600.0
 
-	// The body defends a thermoneutral zone: within roughly thermoneutralTemp ±
-	// comfortRange degrees Celsius the ambient temperature is fully compensated
-	// and the core does not drift. Only the part of the ambient beyond that band becomes a thermal
-	// load, so an ordinary room is harmless while a freezing or blazing one is not.
+	// MaxSweatMlPerSec is the ceiling on that: about two litres an hour. Sweat
+	// glands saturate, and a body that could sweat without limit could survive
+	// any oven, because the cooling term would simply grow to match. It is the
+	// saturation that makes heatstroke possible.
+	MaxSweatMlPerSec = 2000.0 / 3600.0
+
+	// shiverOnsetTemperature is the core temperature at which shivering starts.
+	// It is close to normal: shivering is an early defence, well before anything
+	// a person would call hypothermia.
+	shiverOnsetTemperature = 36.6
+
+	// shiverWarmingPerDegreePerSec is how hard the body shivers per degree below
+	// onset, and MaxShiverWarmingPerSec is where it saturates -- roughly the
+	// point at which involuntary muscle work has doubled resting heat
+	// production, which is about all shivering can do.
+	shiverWarmingPerDegreePerSec = 0.004 / 1.5
+	MaxShiverWarmingPerSec       = 0.004
+
+	// The body defends a thermoneutral zone: within it the ambient temperature
+	// is fully compensated and the core does not drift. Only the part of the
+	// ambient beyond the band becomes a thermal load.
+	//
+	// The band is not symmetric, because the two defences are not. Cold is met
+	// with insulation and vasoconstriction, which are free and are not modelled
+	// separately, so the band absorbs them and reaches down to about 16 C. Heat
+	// has one real answer, and this component already models it explicitly a few
+	// lines below: sweating. Letting the band absorb hot ambient counted that
+	// answer a second time, and the visible result was a body that ignored heat
+	// altogether -- fifty simulated minutes at 38 C left the core at exactly
+	// 37.000 and the sweat rate at exactly 0.000, so `temp:hot` was a command
+	// that provably moved nothing. The hot edge now stops near skin temperature,
+	// where passive loss stops, and everything above it is the sweat's problem.
 	thermoneutralTemp = 28.0
-	comfortRange      = 12.0
+	comfortRangeCold  = 12.0 // down to 16 C
+	comfortRangeHot   = 4.0  // up to 32 C
 
 	// ambientCouplingPerSec sets how fast the uncompensated part of the ambient
 	// pulls the core. The body's own thermoregulation
@@ -84,6 +113,7 @@ func GetSkin() (*component.Component, error) {
 			"temperature_change", // heating/cooling rate for the core reservoir
 			"pain_signal",
 			"sweat_rate",
+			"shiver_rate",
 		),
 		component.WithActivationFunc(component.Sequential(
 			rememberEnvironment,
@@ -148,17 +178,23 @@ func regulateSkin(_ context.Context, this *component.Component) error {
 	uvi := this.State().Get(stateUVIndex).(float64)
 
 	// Water: steady insensible loss plus sweat once hot.
-	sweatRate := max(core-sweatOnsetTemperature, 0) * sweatMlPerDegreePerSec
+	sweatRate := SweatRateAt(core)
 	lostMl := (InsensibleLossMlPerSec + sweatRate) * dt
 
 	// Heat: only the part of the ambient beyond the thermoneutral band is a load;
-	// the sun adds warmth; sweat cools. The result is a rate the core reservoir
-	// integrates. Sweating hard in the heat is what keeps the core from running away.
+	// the sun adds warmth; sweat cools and shivering warms. The result is a rate
+	// the core reservoir integrates, and the two effectors are what keep it from
+	// running away in either direction.
+	shiverRate := ShiverWarmingAt(core)
 	thermalRate := ambientLoad(ambient)*ambientCouplingPerSec +
 		uvi*solarHeatingPerUVIPerSec -
-		sweatRate*sweatCoolingPerMlPerSec
+		sweatRate*sweatCoolingPerMlPerSec +
+		shiverRate
 
 	if err := this.OutputByName("sweat_rate").PutPayloads(sweatRate); err != nil {
+		return err
+	}
+	if err := this.OutputByName("shiver_rate").PutPayloads(shiverRate); err != nil {
 		return err
 	}
 	if err := this.OutputByName("temperature_change").PutPayloads(thermalRate); err != nil {
@@ -181,11 +217,24 @@ const sweatCoolingPerMlPerSec = 0.006
 // (signed) outside it.
 func ambientLoad(ambient float64) float64 {
 	switch delta := ambient - thermoneutralTemp; {
-	case delta > comfortRange:
-		return delta - comfortRange
-	case delta < -comfortRange:
-		return delta + comfortRange
+	case delta > comfortRangeHot:
+		return delta - comfortRangeHot
+	case delta < -comfortRangeCold:
+		return delta + comfortRangeCold
 	default:
 		return 0
 	}
+}
+
+// SweatRateAt returns how fast a body at this core temperature sweats, in mL/s.
+func SweatRateAt(core float64) float64 {
+	return min(max(core-sweatOnsetTemperature, 0)*sweatMlPerDegreePerSec, MaxSweatMlPerSec)
+}
+
+// ShiverWarmingAt returns the heating rate shivering contributes at this core
+// temperature, in degrees per second. It is the cold-side mirror of the sweat
+// rate: an effector that answers the disturbance rather than a constant that
+// hides it.
+func ShiverWarmingAt(core float64) float64 {
+	return min(max(shiverOnsetTemperature-core, 0)*shiverWarmingPerDegreePerSec, MaxShiverWarmingPerSec)
 }

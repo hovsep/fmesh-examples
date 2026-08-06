@@ -14,6 +14,7 @@ import (
 	"github.com/hovsep/fmesh-examples/life/organism/human/physiology"
 	"github.com/hovsep/fmesh-examples/life/plugin/damage"
 	"github.com/hovsep/fmesh-examples/life/plugin/perfusion"
+	"github.com/hovsep/fmesh-examples/life/plugin/receptor"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 )
@@ -94,26 +95,37 @@ func wireBrain(components *component.Collection) error {
 		)
 }
 
-// wireCirculation connects every perfused tissue to the bloodstream.
+// wireCirculation connects every tissue that needs the blood to the bloodstream.
 //
 // The list is derived from the components themselves rather than written out:
 // anything carrying the perfusion plugin gets the blood, and gives back what it
 // has taken. Adding an organ to the circulation is therefore a matter of saying
 // how much oxygen it needs, and nothing here changes -- the same principle the
 // tick fan-out and the habitat's factor wiring already follow.
+//
+// Two reasons to want the blood, not one. A tissue may consume it, and a tissue
+// may only listen to it, and a tissue may do both. Supplying only the consumers
+// left the listeners holding a port that nothing was ever piped into:
+// da:vasculature declared adrenaline receptors and read 0.0 from them forever, so
+// the hormonal half of its vasoconstriction never happened. Only the consumers
+// drain back, because only they take anything out.
 func wireCirculation(components *component.Collection) error {
 	blood := components.ByName("da:blood_system")
 
 	return components.ForEach(func(c *component.Component) error {
-		if c == blood || !perfusion.IsPerfused(c) {
+		perfused := perfusion.IsPerfused(c)
+		if c == blood || !(perfused || receptor.Listens(c)) {
 			return nil
 		}
 
-		// The organ reads what is being delivered...
+		// The tissue reads what is being delivered...
 		if err := blood.OutputByName("venous_blood").PipeTo(c.InputByName(perfusion.SupplyPort)); err != nil {
 			return fmt.Errorf("supplying %s: %w", c.Name(), err)
 		}
-		// ...and returns what it has consumed and produced.
+		if !perfused {
+			return nil
+		}
+		// ...and, if it consumes any of it, returns what it has used and produced.
 		if err := c.OutputByName(perfusion.ReturnPort).PipeTo(blood.InputByName("secretions")); err != nil {
 			return fmt.Errorf("draining %s: %w", c.Name(), err)
 		}
@@ -370,6 +382,7 @@ func wireMetabolism(components *component.Collection) error {
 		port.Pipe{From: bodyState.OutputByName("body_temperature"), To: obs.InputByName("body_temperature")},
 		port.Pipe{From: gi.OutputByName("stomach_fill"), To: obs.InputByName("stomach_fill")},
 		port.Pipe{From: skin.OutputByName("sweat_rate"), To: obs.InputByName("sweat_rate")},
+		port.Pipe{From: skin.OutputByName("shiver_rate"), To: obs.InputByName("shiver_rate")},
 		port.Pipe{From: muscular.OutputByName("fatigue"), To: obs.InputByName("fatigue")},
 	)
 }
@@ -404,10 +417,16 @@ func wireAffect(components *component.Collection) error {
 	// Both loads also reach the autonomic system, which is what makes a running
 	// or frightened body's pulse answer. Feeling tired and being tachycardic are
 	// two readings of one stressor, so they come off the same signal.
+	//
+	// The physical load goes to the circulation as well, and not through the
+	// autonomic system: working muscle opens its own arterioles by chemistry
+	// rather than by nerve, and keeping the two paths separate is what lets the
+	// vessels answer exercise and fright differently.
 	autonomicTone := components.ByName("physiology:autonomic_coordination")
 	if err := components.ByName("controller:physical_stress").OutputByName("physical_load").PipeTo(
 		affect.InputByName("physical_load"),
 		autonomicTone.InputByName("physical_load"),
+		components.ByName("da:vasculature").InputByName("physical_load"),
 	); err != nil {
 		return err
 	}

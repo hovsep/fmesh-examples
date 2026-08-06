@@ -182,6 +182,16 @@ var Catalog = []Metric{
 		},
 	},
 	{
+		// Shown next to the sweat rate, because the pair is the lesson: they are
+		// the two effectors defending the same set point, and at any moment at
+		// most one of them is working.
+		Port: "shiver_rate", Source: "shiver_rate",
+		Display: &Display{
+			Label: "Shivering", Unit: "°C/s", Min: 0, Max: 0.004,
+			HealthMin: 0, HealthMax: 0.001, Decimals: 4, View: ViewMetabolic,
+		},
+	},
+	{
 		Port: "muscle_fatigue", Source: "fatigue",
 		Display: &Display{
 			Label: "Muscle Fatigue", Unit: "%", Min: 0, Max: 100,
@@ -245,8 +255,11 @@ var Catalog = []Metric{
 	},
 	{
 		Port: "stroke_volume", Source: "stroke_volume",
+		// The scale runs past the healthy band on purpose: a working heart
+		// ejects well over 90 mL a beat, and a gauge that pinned at 100 would
+		// hide the half of the rise in cardiac output that is not rate.
 		Display: &Display{
-			Label: "Stroke Volume", Unit: "mL", Min: 0, Max: 100,
+			Label: "Stroke Volume", Unit: "mL", Min: 0, Max: 130,
 			HealthMin: 55, HealthMax: 90, Decimals: 0, View: ViewCardiovascular,
 		},
 	},

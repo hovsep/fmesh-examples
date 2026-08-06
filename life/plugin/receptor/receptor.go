@@ -25,6 +25,12 @@ import (
 // same organ cannot tread on each other's state.
 const statePrefix = "receptor_"
 
+// stateListens marks a component as carrying receptors, so the circulation can
+// find the tissues that need blood delivered to them in order to hear it. It is
+// the counterpart of perfusion.IsPerfused, and it exists because a tissue may
+// listen without consuming.
+const stateListens = statePrefix + "listening"
+
 // Receptors is the plugin instance: the set of hormones an organ can feel.
 type Receptors struct {
 	hormones []string
@@ -45,6 +51,7 @@ func (r *Receptors) Init(c *component.Component) error {
 	for _, hormone := range r.hormones {
 		c.State().Set(stateKey(hormone), 0.0)
 	}
+	c.State().Set(stateListens, true)
 
 	// An organ that is perfused already has the port; one that only listens
 	// gets it here.
@@ -77,6 +84,23 @@ func (r *Receptors) latch(_ context.Context, this *component.Component) error {
 }
 
 func stateKey(hormone string) string { return string(statePrefix + hormone) }
+
+// Listens reports whether a component carries receptors, and therefore needs
+// blood delivered to it even if it consumes nothing from it.
+//
+// The circulation used to look only for perfusion.IsPerfused, which meant a
+// listen-only tissue was given the port and then never piped anything: da:vasculature
+// declared adrenaline receptors, read 0.0 from them for its whole life, and its
+// adrenalineVasoconstriction term was arithmetic nobody was doing. A hormone
+// that reaches no target is not a subtle bug -- it is a whole endocrine axis that
+// silently does nothing.
+func Listens(c *component.Component) bool {
+	if c == nil {
+		return false
+	}
+	listening, ok := c.State().Get(stateListens).(bool)
+	return ok && listening
+}
 
 // Level returns how much of a hormone an organ is currently feeling, 0..1.
 // An organ without the receptor reads zero, whatever is circulating.
