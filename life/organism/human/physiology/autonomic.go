@@ -48,10 +48,6 @@ const (
 	respiratoryWeight = 0.4
 	giWeight          = -0.8
 
-	// MaxExertion is the intensity a body at full effort is working at, as a
-	// multiple of rest. Anything harder is asking for the same everything.
-	MaxExertion = 10.0
-
 	// demandCardiacWeight is how much of a full effort reaches the heart.
 	//
 	// Chosen so that eightfold exertion asks for about 150 beats, which is what
@@ -64,6 +60,21 @@ const (
 	// the same glands, but a frightened body is not doing the work a running one
 	// is, and its pulse should not read as though it were.
 	arousalIsMilderThanEffort = 0.6
+
+	// demandVascularWeight is how much of a full effort reaches the arterioles.
+	//
+	// The vessels used to hear nothing about demand at all, and the result was
+	// backwards: a fright dropped systemic resistance from 19.6 to 13.8, because
+	// the only thing the vascular bias could hear was a baroreflex withdrawing
+	// tone from a pressure that had already risen. Sympathetic outflow constricts;
+	// that it does so is the whole reason a frightened body goes pale.
+	//
+	// It is smaller than the cardiac weight because the answer to effort is
+	// mostly flow rather than pressure, and because working muscle is dilating at
+	// the same time (see da.MetabolicVasodilation). The two are deliberately in
+	// different components: this one is the nerves, that one is the muscle's own
+	// chemistry, and which of them wins is what tells exercise apart from fright.
+	demandVascularWeight = 0.3
 )
 
 // baroreflexResponse returns the sympathetic drive called for by the difference
@@ -121,7 +132,39 @@ const (
 	stateLastPaO2     string = "last_pao2"
 	stateLastExertion string = "last_exertion"
 	stateLastArousal  string = "last_arousal"
+
+	// stateCollapsed remembers whether the drive was already gone last time, so
+	// the collapse is reported when it happens rather than for as long as it
+	// lasts. Without it this component logged on every activation: an altitude
+	// run produced thousands of identical lines a second, and the console's ring
+	// buffer quietly evicted everything else in it.
+	stateCollapsed string = "drive_collapsed"
 )
+
+// collapseTone is what the body is told when the brain has stopped telling it
+// anything: no sympathetic drive, and every region at its unstimulated floor.
+//
+// The alternative -- publishing nothing at all, which is what this used to do --
+// is worse than it sounds. Downstream effectors are not waiting for an
+// instruction, they are holding the last one they were given, and several of
+// them publish it again on every tick regardless of whether anything is still
+// driving them. A body whose neural drive collapsed at 8848 m went on breathing
+// at 27 a minute and circulating 4.27 L/min at a mean pressure of 86 mmHg for
+// five simulated minutes, because those were the numbers in flight when the
+// brain went quiet. Nothing was wrong with the arithmetic; there was simply
+// nobody left to change it.
+//
+// So the collapse is an instruction like any other, and the body answers it: the
+// heart falls toward its floor, the vessels relax, breathing slows and CO₂
+// climbs. What kills the body is then a mechanism the simulation can show,
+// rather than a screen that stops updating.
+func collapseTone() *signal.Signal {
+	return autonomic.Pack(
+		0, 1, // no sympathetic drive; parasympathetic is what is left
+		defaultAutonomicCoordinationNoise, 0, // no gain
+		0, 0, 0, 0, // cardiac, vascular, respiratory, gi
+	)
+}
 
 // GetAutonomicCoordination ...
 func GetAutonomicCoordination() (*component.Component, error) {
@@ -173,9 +216,19 @@ func GetAutonomicCoordination() (*component.Component, error) {
 
 			neuralDrive := signal.AsFloat64OrDefault(this.InputByName("neural_drive").Signals().First(), 0.0)
 
-			if neuralDrive <= criticalNeuralDrive {
-				this.Logger().Println("Neural drive too low")
-				return nil
+			// The collapse is a state, so it is reported on the two edges rather
+			// than for every cycle it lasts.
+			collapsed := neuralDrive <= criticalNeuralDrive
+			if was, _ := this.State().Get(stateCollapsed).(bool); collapsed != was {
+				this.State().Set(stateCollapsed, collapsed)
+				if collapsed {
+					this.Logger().Println("neural drive has collapsed; the body is no longer being driven")
+				} else {
+					this.Logger().Println("neural drive has recovered")
+				}
+			}
+			if collapsed {
+				return this.OutputByName("autonomic_tone").PutSignals(collapseTone())
 			}
 
 			pressure, _ := this.State().Get(stateLastMAP).(float64)
@@ -194,6 +247,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			state.Set(stateLastPaO2, da.NormalPaO2Reference)
 			state.Set(stateLastExertion, controller.RestingIntensity)
 			state.Set(stateLastArousal, 0.0)
+			state.Set(stateCollapsed, false)
 		}),
 	)
 	if err != nil {
@@ -218,7 +272,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 // what either alone would cost.
 func sympatheticDemand(exertion, arousal float64) float64 {
 	effort := mathx.Clamp(
-		(exertion-controller.RestingIntensity)/(MaxExertion-controller.RestingIntensity), 0, 1)
+		(exertion-controller.RestingIntensity)/(controller.MaxIntensity-controller.RestingIntensity), 0, 1)
 	return max(effort, mathx.Clamp(arousal, 0, 1)*arousalIsMilderThanEffort)
 }
 
@@ -250,11 +304,17 @@ func getAutonomicToneSignal(neuralDrive, meanArterialPressure, paCO2, paO2, dema
 	respiratory := mathx.Clamp(
 		mathx.Jitter(max(base+reflex*respiratoryWeight, base+chemo), defaultRegionalBiasJitter), 0, 1)
 
+	// The vessels hear the demand too, and squeeze. What the working muscle does
+	// about that is the muscle's business, not the nerves' -- see
+	// da.MetabolicVasodilation.
+	vascular := mathx.Clamp(
+		mathx.Jitter(base+reflex*vascularWeight+demand*demandVascularWeight, defaultRegionalBiasJitter), 0, 1)
+
 	return autonomic.Pack(
 		sym, paraSym, defaultAutonomicCoordinationNoise, gain,
-		cardiac,              // cardiac: beat faster
-		bias(vascularWeight), // vascular: squeeze
-		respiratory,          // respiratory: breathe harder, mostly for the CO₂
-		bias(giWeight),       // gut: give up its share
+		cardiac,        // cardiac: beat faster
+		vascular,       // vascular: squeeze
+		respiratory,    // respiratory: breathe harder, mostly for the CO₂
+		bias(giWeight), // gut: give up its share
 	)
 }

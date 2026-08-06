@@ -37,6 +37,15 @@ const (
 // Resting metabolic demand, the floor the body returns to when nothing is happening.
 const RestingIntensity = 1.0
 
+// MaxIntensity is the intensity a body at full effort is working at, as a
+// multiple of rest. Anything harder is asking for the same everything.
+//
+// It lives here, beside the floor, because everything that reads the load has to
+// normalise against the same scale -- the autonomic system, and the circulation
+// that has to widen to carry it. Two copies of this number would drift apart and
+// the two answers to one effort would stop agreeing.
+const MaxIntensity = 10.0
+
 // Indefinite marks an activity with no requested end.
 const Indefinite = -1.0
 
