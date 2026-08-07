@@ -15,6 +15,7 @@ import (
 // build time rather than by squinting at a dashboard.
 
 func Test_CatalogMatchesObservableStatePorts(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
@@ -41,6 +42,7 @@ func Test_CatalogMatchesObservableStatePorts(t *testing.T) {
 }
 
 func Test_CatalogMatchesAggregatorPaths(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 
@@ -57,6 +59,7 @@ func Test_CatalogMatchesAggregatorPaths(t *testing.T) {
 }
 
 func Test_UISubjectMatchesTheSimulatedHuman(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	fm, err := getSimulationMesh()
 	require.NoError(t, err)
 

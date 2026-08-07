@@ -27,6 +27,7 @@ import (
 // milliseconds of wall clock because the loop is unpaced.
 
 func Test_DrinkingReachesTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	sim.Do("intake:water 500ml")
 
@@ -61,6 +62,7 @@ func Test_DrinkingReachesTheBody(t *testing.T) {
 // Reaching the reserve takes longer than five minutes and is checked in
 // TestReference_AMealIsClearedByInsulin.
 func Test_EatingRaisesBloodGlucoseAndTheLiverStartsStoringIt(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	sim.Do("intake:food 800kcal")
 
@@ -76,6 +78,7 @@ func Test_EatingRaisesBloodGlucoseAndTheLiverStartsStoringIt(t *testing.T) {
 }
 
 func Test_DigestionIsNotInstant(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	// A small meal, fully eaten in ~30 s at the eating rate, so this test is
 	// about slow digestion rather than slow eating.
@@ -93,6 +96,7 @@ func Test_DigestionIsNotInstant(t *testing.T) {
 }
 
 func Test_EatingSpansTime(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	// A large meal cannot be eaten in a minute; most of it is still on the plate
 	// (not yet swallowed) rather than already in the stomach.
@@ -112,6 +116,7 @@ func Test_EatingSpansTime(t *testing.T) {
 }
 
 func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	// A big glass takes proportionally longer than a small one. Sampled through
 	// the process runner's remaining volume, which is the mechanism under test.
 	remainingAfter := func(line command.Line, d time.Duration) float64 {
@@ -143,6 +148,7 @@ func Test_DrinkingSpansProportionallyToVolume(t *testing.T) {
 }
 
 func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	sim.Do("activity:start 8")
 
@@ -157,6 +163,7 @@ func Test_ExertionBurnsEnergyAndWarmsTheBody(t *testing.T) {
 }
 
 func Test_HardExertionDoesNotCookTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	sim.Do("activity:start 8")
 
@@ -183,6 +190,7 @@ func Test_HardExertionDoesNotCookTheBody(t *testing.T) {
 }
 
 func Test_RestingBodyStaysNearNormal(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	body := bodyComponent(t, sim, "physiology:physiological_state")
 
@@ -202,6 +210,7 @@ func Test_RestingBodyStaysNearNormal(t *testing.T) {
 }
 
 func Test_BladderFillsAndVoids(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	kidney := bodyComponent(t, sim, "organ:kidney")
 
@@ -248,6 +257,7 @@ func lastFeelings(t *testing.T, sim *session.Session) func() *signal.Signal {
 }
 
 func Test_FeelingsRespondToTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	tests := []struct {
 		name     string
 		commands []command.Line
@@ -320,6 +330,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 }
 
 func Test_EveryFeelingIsPublished(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	feelings := lastFeelings(t, sim)
 

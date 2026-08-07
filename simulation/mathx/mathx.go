@@ -88,3 +88,92 @@ func Mean[T Number](slice []T) float64 {
 
 	return sum / float64(len(slice))
 }
+
+// Variance is the sample variance (Bessel-corrected), the spread a Welch test
+// needs. Fewer than two values have no spread to speak of and give 0.
+func Variance[T Number](slice []T) float64 {
+	if len(slice) < 2 {
+		return 0
+	}
+
+	mean := Mean(slice)
+	var sum float64
+	for _, v := range slice {
+		d := float64(v) - mean
+		sum += d * d
+	}
+
+	return sum / float64(len(slice)-1)
+}
+
+// StdDev is the square root of Variance.
+func StdDev[T Number](slice []T) float64 {
+	return math.Sqrt(Variance(slice))
+}
+
+// Welch compares two samples that need not share a variance or a size, and
+// returns the t statistic and the Welch-Satterthwaite degrees of freedom.
+//
+// It answers "are these two sets of readings different by more than their own
+// scatter", which is the question a simulation test is really asking: a mesh
+// that jitters its regional biases and adds noise to its tone will never produce
+// two identical readings, so comparing single values before and after is a coin
+// toss dressed as an assertion.
+//
+// It is worth being blunt about what this does NOT license. A t statistic
+// assumes independent samples, and consecutive samples of a simulation
+// trajectory are nothing of the kind -- they are the same state one tick apart,
+// and a body's temperature this tick is very nearly its temperature last tick.
+// Feed it six thousand tick samples and it will report overwhelming significance
+// for a difference of no consequence, because the effective sample size is a
+// small fraction of the nominal one. Callers must thin their series toward
+// independence first (see simtest.Series.Thin) and should require an effect size
+// as well as a t, because the effect size is the part that survives the
+// assumption being wrong.
+//
+// Returns t = 0, df = 0 when either sample is too small or neither varies.
+func Welch[T Number](a, b []T) (t, df float64) {
+	if len(a) < 2 || len(b) < 2 {
+		return 0, 0
+	}
+
+	na, nb := float64(len(a)), float64(len(b))
+	va, vb := Variance(a)/na, Variance(b)/nb
+
+	if va+vb == 0 {
+		return 0, 0
+	}
+
+	t = (Mean(a) - Mean(b)) / math.Sqrt(va+vb)
+	df = (va + vb) * (va + vb) / (va*va/(na-1) + vb*vb/(nb-1))
+	return t, df
+}
+
+// CohensD is the difference between two means measured in pooled standard
+// deviations: how far apart they are in units of how noisy they are.
+//
+// Unlike Welch it does not grow with the sample size, which is exactly why it is
+// the companion an autocorrelated trajectory needs. Two samples that differ by
+// one pooled standard deviation are as far apart whether they were sampled a
+// hundred times or a million.
+//
+// Returns 0 when neither sample varies and their means agree, and +Inf when
+// they do not vary but differ -- a difference with no scatter at all is as
+// significant as a difference gets.
+func CohensD[T Number](a, b []T) float64 {
+	if len(a) < 2 || len(b) < 2 {
+		return 0
+	}
+
+	na, nb := float64(len(a)), float64(len(b))
+	pooled := math.Sqrt(((na-1)*Variance(a) + (nb-1)*Variance(b)) / (na + nb - 2))
+	diff := Mean(a) - Mean(b)
+
+	if pooled == 0 {
+		if diff == 0 {
+			return 0
+		}
+		return math.Inf(int(math.Copysign(1, diff)))
+	}
+	return diff / pooled
+}

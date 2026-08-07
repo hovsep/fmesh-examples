@@ -13,6 +13,7 @@ import (
 // Test_SmokingDamagesTheLungs is the headline what-if: smoking injures the lungs
 // and little else. The toxin from a cigarette flows to both lungs' damage input.
 func Test_SmokingDamagesTheLungs(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -46,6 +47,7 @@ func Test_SmokingDamagesTheLungs(t *testing.T) {
 // smoke actually is -- so what is asserted is that the room is still smoky, not
 // that a controller is still busy.
 func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	sim.Do("smoke:cigarette")
 
@@ -66,6 +68,7 @@ func Test_ASingleCigaretteTakesMinutes(t *testing.T) {
 // carry the damage plugin exposes a damage level, so the Body view and the death
 // cascade have something to read for each.
 func Test_DamagePluginAgesEveryOrgan(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	for _, name := range []string{

@@ -56,6 +56,7 @@ func timeToDeath(t *testing.T, setup func(*session.Session), limit time.Duration
 }
 
 func Test_WaysToDie(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("runs several scenarios to their end")
 	}
@@ -122,6 +123,11 @@ func Test_WaysToDie(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Each way of dying is its own simulation and shares nothing with
+			// the others. Run sequentially they are the single longest thing in
+			// the package, and the slowest of them is most of that.
+			t.Parallel()
+
 			died := timeToDeath(t, tt.setup, tt.limit)
 
 			if tt.wantAtMost == 0 {
