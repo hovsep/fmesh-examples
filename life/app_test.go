@@ -11,6 +11,7 @@ import (
 // Test_AppChecks is the wiring check: the mesh builds, the session is set up
 // over it, and the body everything else is about is actually in there.
 func Test_AppChecks(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	mesh, err := getSimulationMesh()
 	require.NoError(t, err)
 

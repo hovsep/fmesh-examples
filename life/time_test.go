@@ -14,6 +14,7 @@ import (
 )
 
 func Test_Time(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	tests := []struct {
 		name       string
 		assertions func(t *testing.T, sim *session.Session)

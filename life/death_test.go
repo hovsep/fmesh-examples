@@ -54,6 +54,7 @@ func organComp(t *testing.T, sim *session.Session, name string) *component.Compo
 // injury flatlines the brain, the body reads no brain activity and dies, and the
 // mesh keeps running (a corpse is frozen, not left to stall).
 func Test_BrainFailureKillsTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	brain := organComp(t, sim, "organ:brain")
 	aliveness := observedAliveness(t, sim)
@@ -81,6 +82,7 @@ func Test_BrainFailureKillsTheBody(t *testing.T) {
 // Test_DeathIsIrreversible checks the death latch does not flicker back to alive
 // once the body has died.
 func Test_DeathIsIrreversible(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	heart := organComp(t, sim, "organ:heart")
 	brain := organComp(t, sim, "organ:brain")
@@ -120,6 +122,7 @@ func Test_DeathIsIrreversible(t *testing.T) {
 // a short exposure keeps the test fast; the full march to death is the same
 // mechanism, only slower.
 func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -144,6 +147,7 @@ func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
 // Test_HealthyBodyNeverDies is the guard that the death machinery does not fire
 // spuriously: a well-kept body stays alive throughout.
 func Test_HealthyBodyNeverDies(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	aliveness := observedAliveness(t, sim)
 

@@ -25,9 +25,26 @@ import (
 // so a suite that watches hours of chemistry is a suite that spends most of its
 // life integrating a waveform nobody is looking at.
 //
+// The whole repository's tests have a budget of twenty minutes, and this package
+// is nearly all of it -- about sixteen at the time of writing, most of that in
+// Test_CommandEffects and Test_WaysToDie. Anything added here is spending
+// against that, so a new test that wants hours of simulated time should say why
+// it is worth the minutes it costs.
+//
 // Fifty milliseconds is still twenty samples a second -- far finer than
 // breathing, circulation, or anything chemical the reference tests assert on --
 // and it takes the suite from thirteen minutes to under three.
+//
+// It is tempting to coarsen it further, since the step is the whole cost of the
+// suite and doubling it halves everything. Do not: the step is not only a
+// sampling rate here, it is a loop delay. The circulation and the blood publish
+// what they achieved *before* folding in the current cycle, which is how the
+// baroreflex and the reservoirs resolve their cycles, and the delay that
+// resolves them is exactly one tick. Double the tick and every feedback loop in
+// the body gets twice the lag. Measured: at a hundred milliseconds a fright
+// settled the pulse at 82 rather than 115, which is not a slower test but a
+// different physiology. A test that wants a coarser step has to own the
+// consequences of one.
 const testTick = 50 * time.Millisecond
 
 // newCommandableSim builds the simulation with every command registered, ready
@@ -73,6 +90,7 @@ func bodyComponent(t *testing.T, sim *session.Session, name string) *component.C
 }
 
 func Test_BodyCommands(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	tests := []struct {
 		name       string
 		commands   []command.Line
@@ -194,14 +212,21 @@ func Test_BodyCommands(t *testing.T) {
 // the scheduler's own unit tests against a fake clock.
 
 func Test_ScheduledCommandsReachTheBody(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// Six intervals fit in the run, and the first fires one interval in rather
 	// than immediately, so five to six swallows are expected.
-	sim.Do("every 50ms intake:water 250ml")
+	//
+	// The interval is a multiple of the step rather than a fixed 50ms, because a
+	// job cannot fire more often than the simulation advances: written as a bare
+	// duration this quietly counted half as many swallows the moment the step
+	// was made coarser than the interval.
+	interval := 5 * testTick
+	sim.Do(command.Line("every " + interval.String() + " intake:water 250ml"))
 
 	intake := bodyComponent(t, sim, "controller:intake")
-	simtest.RunFor(sim, 300*time.Millisecond, func() {
+	simtest.RunFor(sim, 6*interval, func() {
 		total := intake.State().Get(controller.TotalWaterMl).(float64)
 		assert.GreaterOrEqual(t, total, 4*250.0, "repeating job fired too few times")
 		assert.LessOrEqual(t, total, 6*250.0, "repeating job fired too many times")
@@ -209,6 +234,7 @@ func Test_ScheduledCommandsReachTheBody(t *testing.T) {
 }
 
 func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// Due well after the run ends, so it must never fire.
@@ -223,6 +249,7 @@ func Test_ScheduledCommandRespectsItsDelay(t *testing.T) {
 }
 
 func Test_CancelledJobNeverFires(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	sim.Do("every 50ms intake:water 250ml")
@@ -236,6 +263,7 @@ func Test_CancelledJobNeverFires(t *testing.T) {
 }
 
 func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// The shape the northstar asked for: eat, let time pass, then exert.
@@ -254,6 +282,7 @@ func Test_ScenarioRunsItsStepsInOrder(t *testing.T) {
 }
 
 func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// The wait outlasts the run, so only the first step should ever happen.
@@ -272,6 +301,7 @@ func Test_ScenarioWaitsBeforeItsLaterSteps(t *testing.T) {
 }
 
 func Test_NamedScenarioIsReusable(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	sim.Do("script hydrate intake:water 250ml; wait 50ms; intake:water 250ml")
@@ -289,6 +319,7 @@ func Test_NamedScenarioIsReusable(t *testing.T) {
 }
 
 func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// The definition contains step separators; treating it as a scenario to run
@@ -303,6 +334,7 @@ func Test_DefiningAScenarioDoesNotRunIt(t *testing.T) {
 }
 
 func Test_UnknownBodyCommandDoesNotStopTheSimulation(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	// A command addressed to a namespace no controller owns must be reported and

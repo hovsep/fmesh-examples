@@ -44,6 +44,7 @@ import (
 // (the threshold at which supplemental oxygen is given), ~75% at 40 mmHg (mixed
 // venous blood) and 50% at P50 = 26.6 mmHg.
 func TestReference_OxyhemoglobinDissociationCurve(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	tests := []struct {
 		paO2, wantSpO2, tolerance float64
 		note                      string
@@ -68,6 +69,7 @@ func TestReference_OxyhemoglobinDissociationCurve(t *testing.T) {
 // precipitously once past the shoulder -- the single most clinically important
 // fact about the curve.
 func TestReference_CurveIsSigmoid(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	// Upper plateau: 100 -> 80 mmHg costs only a couple of points.
 	plateauLoss := bloodstream.SaturationAt(100) - bloodstream.SaturationAt(80)
 	assert.Less(t, plateauLoss, 3.0, "the plateau should be flat: 20 mmHg costs almost no saturation")
@@ -85,6 +87,7 @@ func TestReference_CurveIsSigmoid(t *testing.T) {
 // The simulation models only the respiratory arm; metabolic disturbance and
 // renal compensation are out of scope, so these are acute values.
 func TestReference_VentilationSetsPH(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	assert.InDelta(t, 7.40, bloodstream.PHAt(40), 0.005, "normal PaCO₂ gives a normal pH")
 
 	// Acute respiratory acidosis: hypoventilation at 50 mmHg.
@@ -106,6 +109,7 @@ func TestReference_VentilationSetsPH(t *testing.T) {
 // isolation, but what the breathing, circulation and metabolism actually settle
 // on when left alone.
 func TestReference_RestingArterialBloodGas(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 
 	aggState := simMesh(sim).ComponentByName("aggregated_state")
@@ -151,6 +155,7 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 // -- and the supply halves while PaO₂ and SpO₂ stay exactly where they were.
 // That is why a patient can be dying with a normal blood gas.
 func TestReference_OxygenContentIsWhatTissuesGet(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	healthy := bloodstream.OxygenContent(15, 97, 95)
 	assert.InDelta(t, 19.8, healthy, 0.5, "normal arterial oxygen content is ~20 mL/dL")
 
@@ -172,6 +177,7 @@ func TestReference_OxygenContentIsWhatTissuesGet(t *testing.T) {
 // roughly 60% before they must respire anaerobically, which is the line between
 // compensated and decompensated shock.
 func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
+	t.Parallel()              // each test builds its own simulation and shares nothing
 	const consumption = 250.0 // mL/min at rest
 
 	healthy := bloodstream.OxygenDelivery(5.0, bloodstream.OxygenContent(15, 97, 95))
@@ -205,6 +211,7 @@ func TestReference_OxygenDeliveryAndExtraction(t *testing.T) {
 // fails it. That is not a nuisance: adding a tissue changes what the body burns,
 // and the change should have to be acknowledged rather than absorbed silently.
 func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	body := human.Find(simMesh(sim))
 	require.NotNil(t, body)
@@ -236,6 +243,7 @@ func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 // seconds and then falls away as PaO₂ crosses the shoulder of the curve, while
 // CO₂ climbs a few mmHg per minute.
 func TestReference_ApneaDesaturates(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -289,6 +297,7 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 // product of the other two plus venous pressure, so getting all four right at
 // once is the check.
 func TestReference_RestingCirculation(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	agg := simMesh(sim).ComponentByName("aggregated_state")
 	require.NotNil(t, agg)
@@ -342,6 +351,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 // does. This is why a bleeding patient can look deceptively well, and why a
 // falling blood pressure is a late sign rather than an early one.
 func TestReference_BaroreflexDefendsPressure(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-second physiological run")
 	}
@@ -426,6 +436,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 // The body is bled, held there, and then given its volume back, so both the
 // rise and the fall can be compared.
 func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -580,6 +591,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 // trap the ATLS classification exists to teach: a normal blood pressure does not
 // mean a stable patient.
 func TestReference_ClassIIIHemorrhageIsCompensated(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -613,6 +625,7 @@ func TestReference_ClassIIIHemorrhageIsCompensated(t *testing.T) {
 // filter with and is the first bed sacrificed -- which is why acute kidney injury
 // is the classic complication of a shock the patient survived.
 func TestReference_ClassIVHemorrhageDecompensates(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -651,6 +664,7 @@ func TestReference_ClassIVHemorrhageDecompensates(t *testing.T) {
 // afterwards, as the body pulls fluid in from its tissues to replace the volume
 // and dilutes the red cells that are left.
 func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -704,6 +718,7 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 // dangerous: it removes the signal that would have made you surface without
 // adding oxygen worth having.
 func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	agg := simMesh(sim).ComponentByName("aggregated_state")
 	blood := bodyComponent(t, sim, "da:blood_system")
@@ -754,6 +769,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 // the level and had no flux at all. Nothing could disturb it and nothing could
 // break it.
 func TestReference_FastingBloodSugarIsAnEquilibrium(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	sim := newCommandableSim(t)
 	body := organComp(t, sim, "physiology:physiological_state")
 	liver := organComp(t, sim, "organ:liver")
@@ -784,6 +800,7 @@ func TestReference_FastingBloodSugarIsAnEquilibrium(t *testing.T) {
 // sympathetic signal the moment it starts running, rather than waiting to be
 // told that sugar has already fallen.
 func TestReference_TheLiverDefendsBloodSugarDuringExercise(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -838,6 +855,7 @@ func TestReference_TheLiverDefendsBloodSugarDuringExercise(t *testing.T) {
 // it is worth doing in front of an audience: one component removed, no other
 // change anywhere, and a body that cannot look after itself.
 func TestReference_WithoutThePancreasBloodSugarIsUndefended(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -889,6 +907,7 @@ func TestReference_WithoutThePancreasBloodSugarIsUndefended(t *testing.T) {
 // clinic would see, because this body treats a meal as pure rapidly-absorbed
 // carbohydrate, which is the worst case rather than the usual one.
 func TestReference_AMealIsClearedByInsulin(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -946,6 +965,7 @@ func TestReference_AMealIsClearedByInsulin(t *testing.T) {
 // of 10 arrives at something survivable. Nobody climbs Everest without oxygen by
 // finding more air. They do it by breathing off carbon dioxide.
 func TestReference_AlveolarGasEquation(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	const roomAir = bloodstream.RoomAirO2Fraction
 
 	tests := []struct {
@@ -977,6 +997,7 @@ func TestReference_AlveolarGasEquation(t *testing.T) {
 // TestReference_PressureFallsWithAltitude checks the barometric formula against
 // heights people actually go to.
 func TestReference_PressureFallsWithAltitude(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	tests := []struct{ metres, want, tolerance float64 }{
 		{0, 760, 1},
 		{2400, 549, 15}, // a high city; mild hypoxia, no acclimatisation needed
@@ -1013,6 +1034,7 @@ func TestReference_PressureFallsWithAltitude(t *testing.T) {
 // acclimatise, injures its brain and dies, which is a fair description of what
 // happens to someone helicoptered there and left.
 func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1097,6 +1119,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 // is sold on, and it is not obvious until you see a body fail to notice the
 // difference.
 func TestReference_PressureAndMixtureAreInterchangeable(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1166,6 +1189,7 @@ func TestReference_PressureAndMixtureAreInterchangeable(t *testing.T) {
 // A model that stored tension, or stored saturation, could not say this at all.
 // It is the whole reason the blood carries content.
 func TestReference_CarbonMonoxideTakesTheCarrierNotTheTension(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	const hemoglobin = 15.0
 
 	healthy := bloodstream.OxygenContentAt(hemoglobin, bloodstream.NormalPaO2)
@@ -1200,6 +1224,7 @@ func TestReference_CarbonMonoxideTakesTheCarrierNotTheTension(t *testing.T) {
 // treatment for carbon monoxide is oxygen, and why a hyperbaric chamber is worth
 // wheeling a patient to.
 func TestReference_COClearanceIsDrivenByOxygen(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	minutes := func(paO2 float64) float64 { return bloodstream.COHalfLifeAt(paO2) / 60 }
 
 	assert.InDelta(t, 300, minutes(bloodstream.NormalPaO2), 5,
@@ -1232,6 +1257,7 @@ func TestReference_COClearanceIsDrivenByOxygen(t *testing.T) {
 // Nothing in the body knows any of this. The lungs transfer what the air is
 // carrying, the blood counts millilitres, and the clearance reads a tension.
 func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1331,6 +1357,7 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 // sun had no effect on. The air is downstream of the sun now, and the chain
 // starts where it should.
 func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1403,6 +1430,7 @@ func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
 // puts carbon monoxide into a room, the body picks it up by breathing, and when
 // the fire burns out the body clears it without anybody intervening.
 func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
@@ -1458,6 +1486,7 @@ func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
 // hard effort, and 100-130 on a fright. The come-down is slow because the nerves
 // let go at once while the adrenaline they called for clears over minutes.
 func TestReference_ExertionAndFrightReachTheHeart(t *testing.T) {
+	t.Parallel() // each test builds its own simulation and shares nothing
 	if testing.Short() {
 		t.Skip("multi-minute physiological run")
 	}
