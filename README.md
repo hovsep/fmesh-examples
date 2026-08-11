@@ -28,20 +28,42 @@ F-Mesh is an FBP-inspired framework that lets you express your program as a mesh
 
 ## Examples
 
+Examples are grouped by what they teach, not by what they compute. Start at the top.
+
+### `basics/` — everyday meshes
+
 | Example | Description |
 |---------|-------------|
-| [Async Input](./async_input/main.go) | Handling asynchronous data sources |
-| [Electric Circuit](./electric_circuit/main.go) | Simulating electrical components |
-| [Fibonacci](./fibonacci/main.go) | Recursive computation with cyclic pipes |
-| [Filter](./filter/main.go) | Data filtering and routing |
-| [Graphviz](./graphviz/main.go) | Visualizing mesh topology |
-| [Load Balancer](./load_balancer/main.go) | Distributing work across components |
-| [Nesting](./nesting/main.go) | Composing meshes within meshes |
-| [Pipeline](./pipeline/main.go) | Sequential data processing |
-| [Ray Tracer](./ray_tracer/main.go) | Wavefront 3D ray tracer |
-| [String Processing](./string_processing/main.go) | Text transformation pipeline |
-| [Basic CAN Bus](./can_bus/basic/main.go) | Simple automotive network simulation |
-| [Advanced CAN Bus](./can_bus/advanced/main.go) | Full CAN protocol with ISO-TP |
+| [String Processing](./basics/string_processing/main.go) | Two components and one pipe: the smallest useful mesh |
+| [Filter](./basics/filter/main.go) | Routing signals to different outputs by label |
+| [Pipeline](./basics/pipeline/main.go) | A multi-stage chain that reads stdin and files |
+
+### `patterns/` — how a mesh is wired and driven
+
+| Example | Description |
+|---------|-------------|
+| [Fibonacci](./patterns/fibonacci/main.go) | Cycles: a component's outputs piped back into its own inputs |
+| [Nesting](./patterns/nesting/main.go) | Composition: a component whose activation runs a whole inner mesh |
+| [Load Balancer](./patterns/load_balancer/main.go) | Indexed ports and component state: round-robin across N workers |
+| [Async Input](./patterns/async_input/main.go) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
+
+### `simulation/` — systems evolving over time
+
+| Example | Description |
+|---------|-------------|
+| [Electric Circuit](./simulation/electric_circuit/main.go) | A supply/demand feedback loop with degrading state |
+| [Basic CAN Bus](./simulation/can_bus/basic/main.go) | One bus fanning every frame out to all connected ECUs |
+| [Advanced CAN Bus](./simulation/can_bus/advanced/main.go) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
+| [Life](./simulation/life/main.go) | A step simulation of human physiology inside a habitat |
+
+These share [`simulation/sim`](./simulation/sim) — a small library for building simulations on an f-mesh (engines, simulated time, commands, scheduling, telemetry). It is a library, not an example.
+
+### `graphics/` — pixels
+
+| Example | Description |
+|---------|-------------|
+| [Graphviz](./graphics/graphviz/main.go) | Exporting mesh topology to DOT/SVG, with activated components highlighted |
+| [Ray Tracer](./graphics/ray_tracer/main.go) | Wavefront 3D ray tracer: parallel tile bands and a reflection cycle |
 
 ---
 
@@ -60,10 +82,13 @@ git clone https://github.com/hovsep/fmesh-examples.git
 cd fmesh-examples
 go mod tidy
 
-# Run any example
-go run ./fibonacci
-go run ./electric_circuit
-go run ./ray_tracer
+# Run any example, from the repo root...
+go run ./patterns/fibonacci
+go run ./simulation/electric_circuit
+go run ./graphics/ray_tracer
+
+# ...or from the example's own directory
+cd patterns/fibonacci && go run .
 
 # Build all examples
 make build
@@ -78,20 +103,26 @@ make graph
 
 ```
 fmesh-examples/
-├── fibonacci/
-│   ├── main.go      # Example code
-│   ├── graph.dot    # Graphviz source (generated)
-│   └── graph.svg    # Visual diagram (generated)
-├── electric_circuit/
-│   └── main.go
-└── can_bus/
-    ├── basic/main.go
-    └── advanced/
-        ├── main.go
-        └── can/     # Reusable CAN components
+├── basics/                  # everyday meshes
+├── patterns/                # how a mesh is wired and driven
+│   └── fibonacci/
+│       ├── main.go          # example code
+│       ├── *-graph.dot      # graphviz source (generated)
+│       └── *-graph.svg      # visual diagram (generated)
+├── simulation/              # systems evolving over time
+│   ├── sim/                 # shared simulation library — not an example
+│   ├── electric_circuit/
+│   ├── can_bus/
+│   │   ├── basic/main.go
+│   │   └── advanced/
+│   │       ├── main.go
+│   │       └── can/         # reusable CAN components
+│   └── life/
+├── graphics/                # pixels
+└── internal/                # FMESH_GRAPH helper, shared by every example
 ```
 
-Each example is a standalone Go program. Visualization files (`graph.dot` and `graph.svg`) are generated using `make graph`.
+Each example is a standalone Go program, runnable either from the repo root (`go run ./patterns/fibonacci`) or from its own directory (`cd patterns/fibonacci && go run .`). Visualization files (`*-graph.dot` and `*-graph.svg`) are generated using `make graph`, and land in the example's own directory.
 
 ---
 
@@ -103,10 +134,11 @@ We welcome new examples from any domain: simulations, data processing, protocols
 
 1. **Fork** this repository
 
-2. **Create** a new directory for your example:
+2. **Create** a new directory under the category that fits what your example teaches
+   (`basics`, `patterns`, `simulation` or `graphics` — add a new category if none fit):
    ```bash
-   mkdir my_example
-   cd my_example
+   mkdir patterns/my_example
+   cd patterns/my_example
    ```
 
 3. **Write** your example in `main.go`:
@@ -116,8 +148,7 @@ We welcome new examples from any domain: simulations, data processing, protocols
 
 4. **Generate visualization** (optional):
    ```bash
-   cd my_example
-   go run . --graph
+   FMESH_GRAPH=1 go run .
    ```
 
 5. **Test** your example:
@@ -126,7 +157,7 @@ We welcome new examples from any domain: simulations, data processing, protocols
    ```
 
 6. **Update README.md**:
-   - Add your example to the Examples table with a brief description
+   - Add your example to its category's table with a brief description
 
 7. **Submit** a pull request
 
