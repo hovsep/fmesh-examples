@@ -55,7 +55,6 @@ func New(unitName string) (*component.Component, error) {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
 			}
 
-			// Get current bit set on the bus
 			currentBit, err := getCurrentBit(this)
 			if err != nil && errors.Is(err, errNoBitOnBus) {
 				return nil
@@ -64,7 +63,6 @@ func New(unitName string) (*component.Component, error) {
 				return fmt.Errorf("failed to determine current bit on the bus: %w", err)
 			}
 
-			// Run the main state machine:
 			return runStateMachine(this, currentBit)
 		}),
 	)
@@ -366,7 +364,6 @@ func handleTransmitState(this *component.Component, previousState State) (State,
 	}
 
 	txBit := txItem.Buf.NextBit()
-	//this.Logger().Println("write frame bit:", txBit)
 	this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
 	txItem.Buf.IncreaseOffset()
 

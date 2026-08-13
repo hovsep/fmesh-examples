@@ -112,7 +112,6 @@ func collectHigh(this *component.Component, allHigh []physical.Voltage) ([]physi
 }
 
 func validateVoltages(allLow, allHigh []physical.Voltage) error {
-	// Basic validations:
 	if len(allLow) == 0 {
 		return errors.New("no voltage on L")
 	}

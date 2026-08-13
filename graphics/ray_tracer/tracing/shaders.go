@@ -11,8 +11,7 @@ import (
 
 // GetShaders returns the collection of components converting hits into color
 // contributions. Reflective hits spawn a secondary wave which is looped back
-// into the chain's intersector — the recursion of a classic ray tracer
-// expressed as a mesh cycle.
+// into the chain's intersector.
 //
 // While bounce < render.MaxBounces the shader always emits the secondary wave,
 // even an empty one, so every tile produces a deterministic number of waves

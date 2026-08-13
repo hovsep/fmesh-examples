@@ -13,8 +13,7 @@ import (
 )
 
 // GetPalettizer returns the component converting RGBA frames to GIF's
-// indexed color space. It works pipelined: while it dithers frame N,
-// the chains are already busy with frame N+1
+// indexed color space
 func GetPalettizer() *component.Component {
 	return common.Must(component.New("palettizer",
 		component.WithDescription("Converts frames to paletted colors with dithering"),

@@ -34,27 +34,27 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 
 | Example | Description |
 |---------|-------------|
-| [String Processing](./basics/string_processing/main.go) | Two components and one pipe: the smallest useful mesh |
-| [Filter](./basics/filter/main.go) | Routing signals to different outputs by label |
-| [Pipeline](./basics/pipeline/main.go) | A multi-stage chain that reads stdin and files |
+| [String Processing](./basics/string_processing) | Two components and one pipe: the smallest useful mesh |
+| [Filter](./basics/filter) | Routing signals to different outputs by label |
+| [Pipeline](./basics/pipeline) | A multi-stage chain that reads stdin and files |
 
 ### `patterns/` — how a mesh is wired and driven
 
 | Example | Description |
 |---------|-------------|
-| [Fibonacci](./patterns/fibonacci/main.go) | Cycles: a component's outputs piped back into its own inputs |
-| [Nesting](./patterns/nesting/main.go) | Composition: a component whose activation runs a whole inner mesh |
-| [Load Balancer](./patterns/load_balancer/main.go) | Indexed ports and component state: round-robin across N workers |
-| [Async Input](./patterns/async_input/main.go) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
+| [Fibonacci](./patterns/fibonacci) | Cycles: a component's outputs piped back into its own inputs |
+| [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
+| [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
+| [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
 
 ### `simulation/` — systems evolving over time
 
 | Example | Description |
 |---------|-------------|
-| [Electric Circuit](./simulation/electric_circuit/main.go) | A supply/demand feedback loop with degrading state |
-| [Basic CAN Bus](./simulation/can_bus/basic/main.go) | One bus fanning every frame out to all connected ECUs |
-| [Advanced CAN Bus](./simulation/can_bus/advanced/main.go) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
-| [Life](./simulation/life/main.go) | A step simulation of human physiology inside a habitat |
+| [Electric Circuit](./simulation/electric_circuit) | A supply/demand feedback loop with degrading state |
+| [Basic CAN Bus](./simulation/can_bus/basic) | One bus fanning every frame out to all connected ECUs |
+| [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
+| [Life](./simulation/life) | A step simulation of human physiology inside a habitat |
 
 These share [`simulation/sim`](./simulation/sim) — a small library for building simulations on an f-mesh (engines, simulated time, commands, scheduling, telemetry). It is a library, not an example.
 
@@ -62,8 +62,8 @@ These share [`simulation/sim`](./simulation/sim) — a small library for buildin
 
 | Example | Description |
 |---------|-------------|
-| [Graphviz](./graphics/graphviz/main.go) | Exporting mesh topology to DOT/SVG, with activated components highlighted |
-| [Ray Tracer](./graphics/ray_tracer/main.go) | Wavefront 3D ray tracer: parallel tile bands and a reflection cycle |
+| [Graphviz](./graphics/graphviz) | Exporting mesh topology to DOT/SVG, with activated components highlighted |
+| [Ray Tracer](./graphics/ray_tracer) | Wavefront 3D ray tracer: parallel tile bands and a reflection cycle |
 
 ---
 

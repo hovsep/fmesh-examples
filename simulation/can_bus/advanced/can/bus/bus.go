@@ -31,7 +31,6 @@ func New(name string) (*Bus, error) {
 		return nil, fmt.Errorf("bus %s: %w", name, err)
 	}
 
-	// wires -> watchdog
 	if err := wires.OutputByName(common.PortCANL).PipeTo(watchDog.InputByName(common.PortCANL)); err != nil {
 		return nil, fmt.Errorf("bus %s: wire→watchdog CAN_L: %w", name, err)
 	}
@@ -39,7 +38,6 @@ func New(name string) (*Bus, error) {
 		return nil, fmt.Errorf("bus %s: wire→watchdog CAN_H: %w", name, err)
 	}
 
-	// watchdog -> wires
 	if err := watchDog.OutputByName(portRecessiveBitRequest).PipeTo(wires.InputByName(portRecessiveBitRequest)); err != nil {
 		return nil, fmt.Errorf("bus %s: watchdog→wire: %w", name, err)
 	}

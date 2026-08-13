@@ -22,7 +22,6 @@ type Nodes []*Node
 
 // NewNode creates a new CAN node
 func NewNode(unitName string, mcuInitState func(state component.State), mcuActivationFunction component.ActivationFunc) (*Node, error) {
-	// Create electronic components
 	mcu, err := microcontroller.New(unitName, mcuInitState, mcuActivationFunction)
 	if err != nil {
 		return nil, fmt.Errorf("node %s: mcu: %w", unitName, err)
@@ -36,22 +35,16 @@ func NewNode(unitName string, mcuInitState func(state component.State), mcuActiv
 		return nil, fmt.Errorf("node %s: transceiver: %w", unitName, err)
 	}
 
-	// Wiring : mcu <--> controller <--> transceiver
-
-	// mcu -> controller:
 	if err := mcu.OutputByName(common.PortCANTx).PipeTo(ctl.InputByName(common.PortCANTx)); err != nil {
 		return nil, fmt.Errorf("node %s: mcu→ctl: %w", unitName, err)
 	}
-	// mcu <- controller
 	if err := ctl.OutputByName(common.PortCANRx).PipeTo(mcu.InputByName(common.PortCANRx)); err != nil {
 		return nil, fmt.Errorf("node %s: ctl→mcu: %w", unitName, err)
 	}
 
-	// controller -> transceiver
 	if err := ctl.OutputByName(common.PortCANTx).PipeTo(trsv.InputByName(common.PortCANTx)); err != nil {
 		return nil, fmt.Errorf("node %s: ctl→trsv: %w", unitName, err)
 	}
-	// controller <- transceiver
 	if err := trsv.OutputByName(common.PortCANRx).PipeTo(ctl.InputByName(common.PortCANRx)); err != nil {
 		return nil, fmt.Errorf("node %s: trsv→ctl: %w", unitName, err)
 	}
@@ -75,7 +68,6 @@ func (nodes Nodes) GetAllComponents() []*component.Component {
 // ConnectToBus connect all nodes to the given bus
 func (nodes Nodes) ConnectToBus(b *bus.Bus) error {
 	for _, node := range nodes {
-		// transceiver -> bus:
 		if err := node.Transceiver.OutputByName(common.PortCANL).PipeTo(b.Wires.InputByName(common.PortCANL)); err != nil {
 			return fmt.Errorf("transceiver→bus CAN_L: %w", err)
 		}
@@ -83,7 +75,6 @@ func (nodes Nodes) ConnectToBus(b *bus.Bus) error {
 			return fmt.Errorf("transceiver→bus CAN_H: %w", err)
 		}
 
-		// transceiver <- bus:
 		if err := b.Wires.OutputByName(common.PortCANL).PipeTo(node.Transceiver.InputByName(common.PortCANL)); err != nil {
 			return fmt.Errorf("bus→transceiver CAN_L: %w", err)
 		}
@@ -91,7 +82,6 @@ func (nodes Nodes) ConnectToBus(b *bus.Bus) error {
 			return fmt.Errorf("bus→transceiver CAN_H: %w", err)
 		}
 
-		// ctl -> bus watchdog
 		if err := node.Controller.OutputByName(common.PortControllerState).PipeTo(b.Watchdog.InputByName(common.PortControllerState)); err != nil {
 			return fmt.Errorf("ctl→watchdog: %w", err)
 		}

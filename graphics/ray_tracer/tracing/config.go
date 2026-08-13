@@ -1,8 +1,6 @@
 // Package tracing provides the wavefront tracing components: the parallel
 // raygen -> intersector -> shadow-caster -> shader chains and the accumulator
-// summing the contribution waves. The reflection recursion of a classic ray
-// tracer is expressed here as a mesh cycle: shaders loop the reflected wave
-// back into their chain's intersector.
+// summing the contribution waves.
 package tracing
 
 import (

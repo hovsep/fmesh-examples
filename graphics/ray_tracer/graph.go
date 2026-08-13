@@ -11,9 +11,7 @@ import (
 )
 
 // handleGraphFlag handles the FMESH_GRAPH env flag: when set, it exports the
-// mesh topology as DOT (and SVG if graphviz is installed) and exits.
-// This is a local copy of the repo's internal helper: the example lives in
-// its own module and cannot import it
+// mesh topology as DOT (and SVG if graphviz is installed) and exits
 func handleGraphFlag(fm *fmesh.FMesh) error {
 	if os.Getenv("FMESH_GRAPH") != "1" {
 		return nil

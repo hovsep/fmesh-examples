@@ -32,10 +32,7 @@ func newWatchdog(name string) (*component.Component, error) {
 			common.PortSelfActivation,
 		),
 		component.WithInitialState(func(state component.State) {
-			// We will track the state of each controller
 			state.Set(stateKeyControllerStates, make(controller.StateMap))
-
-			// Tracking consecutive cycles in which the bus is silent allows us to stop the bus and whole simulation
 			state.Set(stateKeyObservedIdleCycles, 0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {

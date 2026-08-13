@@ -60,7 +60,6 @@ var (
 
 func NewNode() (*can.Node, error) {
 	node, err := can.NewNode(TCMUnitName, func(state component.State) {
-		// Set parameter values
 		paramState := microcontroller.ParamsState{
 			tcmPIDFluidTemp:     byte(88),
 			tcmPIDGearPosition:  byte(3),
@@ -69,7 +68,6 @@ func NewNode() (*can.Node, error) {
 		}
 		state.Set(tcmStateKeyParams, paramState)
 
-		// Set DTCs
 		dtcs := []microcontroller.DTC{
 			P0710,
 			P0705,

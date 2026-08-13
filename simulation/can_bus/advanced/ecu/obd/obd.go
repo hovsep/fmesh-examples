@@ -36,7 +36,6 @@ func NewNode() (*can.Node, error) {
 		return nil, fmt.Errorf("obd node: %w", err)
 	}
 
-	// Add custom ports
 	if err := obdDevice.MCU.AddInputs(PortOBDIn); err != nil {
 		return nil, fmt.Errorf("obd add inputs: %w", err)
 	}

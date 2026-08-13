@@ -14,11 +14,8 @@ import (
 )
 
 // GetSceneSource returns the mesh's single entry point: on kick-off it builds
-// the scene and derives per-concern config signals from it — the geometry for
-// the intersection tests and the light for shading (FBP-style initial
-// information packets: each consumer receives only the data it needs, and no
-// pointer is shared between components). It then forwards the kick-off to
-// the orbit to start the animation
+// the scene, derives the per-concern config signals from it (geometry, light)
+// and forwards the kick-off to the orbit to start the animation
 func GetSceneSource() *component.Component {
 	return common.Must(component.New("scene",
 		component.WithDescription("Builds the scene and emits its geometry and light"),

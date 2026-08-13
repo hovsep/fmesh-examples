@@ -27,7 +27,6 @@ var (
 	dtcP010C = microcontroller.DTC{0x01, 0x0C} // Mass or Volume Air Flow Circuit High Input
 	dtcP0300 = microcontroller.DTC{0x03, 0x00} // Random/Multiple Cylinder Misfire
 
-	// The "brain" of this unit
 	logicDescriptor = &microcontroller.LogicDescriptor{
 		PhysicalAddress: ECMPhysicalAddress,
 		Table: microcontroller.LogicMap{
@@ -65,7 +64,6 @@ var (
 
 func NewNode() (*can.Node, error) {
 	node, err := can.NewNode(ECMUnitName, func(state component.State) {
-		// Current state of params
 		paramsState := microcontroller.ParamsState{
 			ecmPIDRPM:                1984,
 			ecmPIDVehicleSpeed:       byte(34),
@@ -76,9 +74,7 @@ func NewNode() (*can.Node, error) {
 
 		state.Set(stateKeyParams, paramsState)
 
-		// Current state of DTCs.
-		// Due to limitations of this example we support
-		// only 2 DTC's maximum, so they can fit into a single frame
+		// Maximum 2 DTCs, so they can fit into a single frame
 		DTCsState := []microcontroller.DTC{
 			dtcP010C,
 			dtcP0300,
