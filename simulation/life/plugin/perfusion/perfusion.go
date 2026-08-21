@@ -114,7 +114,7 @@ func New(cfg Config) *Perfusion {
 	return p
 }
 
-func (p *Perfusion) GetName() string { return "Perfusion" }
+func (p *Perfusion) Name() string { return "Perfusion" }
 
 func (p *Perfusion) Init(c *component.Component) error {
 	// Start every organ believing it is well supplied, so it behaves normally on

@@ -68,7 +68,7 @@ func New(cfg Config) *Damage {
 	return &Damage{organ: cfg.Organ, agingRatePerSec: rate}
 }
 
-func (d *Damage) GetName() string { return "Damage" }
+func (d *Damage) Name() string { return "Damage" }
 
 func (d *Damage) Init(c *component.Component) error {
 	c.State().Set(stateLevel, 0.0)
@@ -98,7 +98,7 @@ func (d *Damage) onActivation(ctx context.Context, this *component.Component) er
 	var insult float64
 	if in := this.InputByName(InputPort); in != nil && in.HasSignals() {
 		_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-			insult += signal.AsFloat64OrDefault(sig, 0)
+			insult += sig.Float64OrDefault(0)
 			return nil
 		})
 		in.Clear(ctx)

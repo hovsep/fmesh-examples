@@ -90,7 +90,7 @@ func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	this.OutputByName("is_alive").PutPayloads(1.0)
 
 	// Calculate brain activity trend
-	currentBrainActivity, err := signal.AsFloat64(this.InputByName("brain_activity").Signals().First())
+	currentBrainActivity, err := this.InputByName("brain_activity").Signals().First().As[float64]()
 	if err != nil {
 		return err
 	}

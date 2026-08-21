@@ -187,7 +187,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 		component.WithOutputs("autonomic_tone"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			if in := this.InputByName("map"); in.HasSignals() {
-				this.State().Set(stateLastMAP, signal.AsFloat64OrDefault(in.Signals().First(), da.NormalMAP))
+				this.State().Set(stateLastMAP, in.Signals().First().Float64OrDefault(da.NormalMAP))
 			}
 			// Latched on arrival: neither load comes in on the tick, and a port
 			// is drained before the next one arrives.
@@ -214,7 +214,7 @@ func GetAutonomicCoordination() (*component.Component, error) {
 				return nil
 			}
 
-			neuralDrive := signal.AsFloat64OrDefault(this.InputByName("neural_drive").Signals().First(), 0.0)
+			neuralDrive := this.InputByName("neural_drive").Signals().First().Float64OrDefault(0.0)
 
 			// The collapse is a state, so it is reported on the two edges rather
 			// than for every cycle it lasts.

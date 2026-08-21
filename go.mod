@@ -1,6 +1,6 @@
 module github.com/hovsep/fmesh-examples
 
-go 1.26
+go 1.27
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0

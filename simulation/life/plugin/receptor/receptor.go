@@ -43,7 +43,7 @@ func For(hormones ...string) *Receptors {
 	return &Receptors{hormones: hormones}
 }
 
-func (r *Receptors) GetName() string { return "Receptors" }
+func (r *Receptors) Name() string { return "Receptors" }
 
 func (r *Receptors) Init(c *component.Component) error {
 	// Every receptor starts reading nothing, so an organ behaves as its

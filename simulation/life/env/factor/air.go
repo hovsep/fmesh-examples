@@ -174,10 +174,10 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
 		case "change_temperature":
 			setShade(this, this.State().Get(StateShadeTemperature).(float64)+
-				signal.AsFloat64OrDefault(ctlSig, 0.0))
+				ctlSig.Float64OrDefault(0.0))
 			return nil
 		case cmdSetAltitude:
-			metres := signal.AsFloat64OrDefault(ctlSig, 0.0)
+			metres := ctlSig.Float64OrDefault(0.0)
 			this.State().Set(StateAltitude, metres)
 			this.State().Set(StatePressure, atmosphere.PressureAtAltitude(metres))
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
@@ -188,13 +188,13 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			// the vapour pressure of water at body temperature the alveolar gas
 			// equation has no positive term left, and a body would not be short
 			// of oxygen so much as boiling.
-			pressure := max(signal.AsFloat64OrDefault(ctlSig, atmosphere.SeaLevelPressure), 50.0)
+			pressure := max(ctlSig.Float64OrDefault(atmosphere.SeaLevelPressure), 50.0)
 			this.State().Set(StatePressure, pressure)
 			this.Logger().Printf("air at %.0f mmHg (%.2f atmospheres)",
 				pressure, pressure/atmosphere.SeaLevelPressure)
 			return nil
 		case cmdSetOxygen:
-			oxygen := min(max(signal.AsFloat64OrDefault(ctlSig, 21.0), 1.0), 100.0)
+			oxygen := min(max(ctlSig.Float64OrDefault(21.0), 1.0), 100.0)
 			this.State().Set(StateOxygenPct, oxygen)
 			this.Logger().Printf("mixture now %.0f%% oxygen", oxygen)
 			return nil
@@ -203,7 +203,7 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			if _, ok := mixins[name]; !ok {
 				return fmt.Errorf("unknown mixin %q (have %v)", name, MixinNames())
 			}
-			seconds := max(signal.AsFloat64OrDefault(ctlSig, 0), 0)
+			seconds := max(ctlSig.Float64OrDefault(0), 0)
 			this.State().Update(StateMixins, func(v any) any {
 				active := v.(map[string]float64)
 				// Lighting a second cigarette while the first is still going
@@ -232,12 +232,12 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 				name, p.pressure, p.oxygenPct, p.temperature)
 			return nil
 		case cmdSetCO:
-			ppm := max(signal.AsFloat64OrDefault(ctlSig, 0.0), 0)
+			ppm := max(ctlSig.Float64OrDefault(0.0), 0)
 			this.State().Set(StateCOppm, ppm)
 			this.Logger().Printf("carbon monoxide in the air: %.0f ppm", ppm)
 			return nil
 		case "set_temperature":
-			shade := signal.AsFloat64OrDefault(ctlSig, 0.0)
+			shade := ctlSig.Float64OrDefault(0.0)
 			this.Logger().Printf("shade temperature now %.1f C; the sun adds to it", shade)
 			setShade(this, shade)
 			return nil
@@ -303,7 +303,7 @@ func setShade(this *component.Component, shade float64) {
 func warmInTheSun(_ context.Context, this *component.Component) error {
 	// Latch the sun whenever it speaks, whichever cycle that is.
 	if sun := this.InputByName("habitat_sun_uvi"); sun != nil && sun.HasSignals() {
-		this.State().Set(StateSunUVI, signal.AsFloat64OrDefault(sun.Signals().First(), 0))
+		this.State().Set(StateSunUVI, sun.Signals().First().Float64OrDefault(0))
 	}
 
 	tick := this.InputByName("time").Signals().First()

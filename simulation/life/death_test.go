@@ -11,7 +11,6 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/sim/session"
 	"github.com/hovsep/fmesh-examples/simulation/sim/simtest"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +27,7 @@ func observedAliveness(t *testing.T, sim *session.Session) func() (everDead bool
 	simMesh(sim).SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
-				if v, ok := signal.AsNumber(s); ok {
+				if v, ok := s.AsNumber(); ok {
 					final = v
 					if v == 0 {
 						everDead = true
@@ -98,7 +97,7 @@ func Test_DeathIsIrreversible(t *testing.T) {
 				injured = true
 			}
 			if s := agg.OutputByName("human-Leon::is_alive").Signals().First(); s != nil {
-				v, _ := signal.AsNumber(s)
+				v, _ := s.AsNumber()
 				if v == 0 {
 					seenDead = true
 				} else if seenDead {

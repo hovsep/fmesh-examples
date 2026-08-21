@@ -140,7 +140,7 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 	if flowSig == nil {
 		return nil
 	}
-	flow, err := signal.AsFloat64(flowSig)
+	flow, err := flowSig.As[float64]()
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 func strongestInspiratoryEffort(signals *signal.Group) (float64, error) {
 	strongest := math.Inf(1)
 	err := signals.ForEach(func(sig *signal.Signal) error {
-		p, err := signal.AsFloat64(sig)
+		p, err := sig.As[float64]()
 		if err != nil {
 			return err
 		}

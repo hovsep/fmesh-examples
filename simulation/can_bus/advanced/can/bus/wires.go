@@ -68,7 +68,7 @@ func newWires(name string) (*component.Component, error) {
 func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, []physical.Voltage, error) {
 	var allLow, allHigh []physical.Voltage
 
-	recessivesCount := this.InputByName(portRecessiveBitRequest).Signals().FirstPayloadOrDefault(0).(int)
+	recessivesCount := this.InputByName(portRecessiveBitRequest).Signals().FirstPayloadOrDefault(0)
 	if recessivesCount > 0 {
 		allLow = append(allLow, physical.RecessiveVoltage)
 		allHigh = append(allHigh, physical.RecessiveVoltage)

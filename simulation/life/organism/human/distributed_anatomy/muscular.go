@@ -9,7 +9,6 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/sim/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/sim/simtime"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // Muscle fatigue is a 0..100 scale: exertion builds it up, rest works it off.
@@ -84,7 +83,7 @@ func GetMuscularSystem() (*component.Component, error) {
 // latchExertion remembers the current exertion whenever it arrives.
 func latchExertion(_ context.Context, this *component.Component) error {
 	if in := this.InputByName("physical_load"); in.HasSignals() {
-		this.State().Set(stateIntensity, signal.AsFloat64OrDefault(in.Signals().First(), 1.0))
+		this.State().Set(stateIntensity, in.Signals().First().Float64OrDefault(1.0))
 	}
 	return nil
 }

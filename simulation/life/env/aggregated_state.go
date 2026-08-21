@@ -93,7 +93,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 // string type tag as their payload and keep every real measurement in scalars, so
 // without the scalar lines they would reach the UI carrying nothing at all.
 func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
-	if value, ok := signal.AsNumber(sig); ok {
+	if value, ok := sig.AsNumber(); ok {
 		if err := stream.PutPayloads(fmt.Sprintf("%s %v \n", key, value)); err != nil {
 			return err
 		}

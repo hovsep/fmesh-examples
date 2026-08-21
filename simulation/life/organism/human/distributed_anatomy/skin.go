@@ -149,7 +149,7 @@ func rememberEnvironment(_ context.Context, this *component.Component) error {
 		}
 	}
 	if sig := firstSignal(this, "radiation"); sig != nil {
-		this.State().Set(stateUVIndex, signal.AsFloat64OrDefault(sig, 0))
+		this.State().Set(stateUVIndex, sig.Float64OrDefault(0))
 	}
 	return nil
 }

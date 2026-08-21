@@ -105,7 +105,7 @@ func exchangeBloodGases(_ context.Context, this *component.Component) error {
 	// Latch the blood sugar the reservoir reports, whenever it arrives (on its
 	// own mesh cycle), so the published venous blood always carries a value.
 	if in := this.InputByName("glucose"); in.HasSignals() {
-		this.State().Set(stateGlucoseLevel, signal.AsFloat64OrDefault(in.Signals().First(), bloodstream.DefaultGlucoseLevel))
+		this.State().Set(stateGlucoseLevel, in.Signals().First().Float64OrDefault(bloodstream.DefaultGlucoseLevel))
 	}
 
 	// Blood leaving through a wound takes its hemoglobin with it, which is the
@@ -113,7 +113,7 @@ func exchangeBloodGases(_ context.Context, this *component.Component) error {
 	if in := this.InputByName("blood_loss"); in.HasSignals() {
 		var lost float64
 		in.Signals().ForEach(func(sig *signal.Signal) error {
-			lost += signal.AsFloat64OrDefault(sig, 0)
+			lost += sig.Float64OrDefault(0)
 			return nil
 		})
 		bleed(this, lost)
@@ -200,7 +200,7 @@ func updateBloodLevels(this *component.Component) {
 	// Net airflow across both lungs.
 	var netFlow float64
 	this.InputByName("airflow").Signals().ForEach(func(sig *signal.Signal) error {
-		netFlow += signal.AsFloat64OrDefault(sig, 0)
+		netFlow += sig.Float64OrDefault(0)
 		return nil
 	})
 
@@ -258,7 +258,7 @@ func updateBloodLevels(this *component.Component) {
 	var o2DrawPerSec, co2LoadPerSec, coLoad float64
 	hormoneRates := map[string]float64{}
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
-		rate := signal.AsFloat64OrDefault(sig, 0)
+		rate := sig.Float64OrDefault(0)
 		switch sig.Labels().ValueOrDefault(bloodstream.SubstanceLabel, "") {
 		case bloodstream.SubstanceO2Draw:
 			o2DrawPerSec += rate
@@ -470,7 +470,7 @@ func alveolarPO2(this *component.Component) float64 {
 	var sum float64
 	var n int
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		sum += signal.AsFloat64OrDefault(sig, bloodstream.SeaLevelAlveolarPO2)
+		sum += sig.Float64OrDefault(bloodstream.SeaLevelAlveolarPO2)
 		n++
 		return nil
 	})

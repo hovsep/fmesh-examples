@@ -73,7 +73,7 @@ func getMesh() (*fmesh.FMesh, error) {
 			defer func() { this.State().Set("level", level) }()
 
 			if this.InputByName("power_demand").HasSignals() {
-				demandedCurrent := this.InputByName("power_demand").Signals().FirstPayloadOrDefault(0).(int)
+				demandedCurrent := this.InputByName("power_demand").Signals().FirstPayloadOrDefault(0)
 				suppliedCurrent := min(level, demandedCurrent)
 				if suppliedCurrent > 0 {
 					this.OutputByName("power_supply").PutSignals(signal.New(suppliedCurrent))
@@ -104,7 +104,7 @@ func getMesh() (*fmesh.FMesh, error) {
 			defer func() { this.State().Set("temperature", temperature) }()
 
 			if !this.InputByName("start_power_demand").HasSignals() {
-				inputPower := this.InputByName("power_supply").Signals().FirstPayloadOrDefault(0).(int)
+				inputPower := this.InputByName("power_supply").Signals().FirstPayloadOrDefault(0)
 
 				if inputPower >= lightBulbPowerConsumption {
 					lightEmission := lightBulbLuminousFlux / temperature * 100

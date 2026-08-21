@@ -47,8 +47,8 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("i_cur", "i_prev"),
 		component.WithOutputs("o_cur", "o_prev"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			cur := this.InputByName("i_cur").Signals().FirstPayloadOrDefault(0).(int)
-			prev := this.InputByName("i_prev").Signals().FirstPayloadOrDefault(0).(int)
+			cur := this.InputByName("i_cur").Signals().FirstPayloadOrDefault(0)
+			prev := this.InputByName("i_prev").Signals().FirstPayloadOrDefault(0)
 
 			next := cur + prev
 

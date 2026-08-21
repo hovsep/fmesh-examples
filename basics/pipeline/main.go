@@ -110,7 +110,7 @@ func getFileReader(name string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("read file"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
+			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("")
 			if fileName == "" {
 				return errors.New("no input filename")
 			}
@@ -210,7 +210,7 @@ func getTokenizer(name, delimiter string) (*component.Component, error) {
 	c, err := component.New(name,
 		component.WithDescription("tokenize text"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("").(string)
+			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("")
 			if text == "" {
 				this.Logger().Println("got empty text. Aborting activation")
 				return nil
