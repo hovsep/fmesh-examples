@@ -2,8 +2,8 @@
   <h1>F-Mesh Examples</h1>
   <p>Real-world examples of Flow-Based Programming with F-Mesh</p>
 
-[![F-Mesh](https://img.shields.io/badge/F--Mesh-v1.4.0-blue)](https://github.com/hovsep/fmesh/releases/tag/v1.4.0-Vagharshapat)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev/)
+[![F-Mesh](https://img.shields.io/badge/F--Mesh-v1.13.0-blue)](https://github.com/hovsep/fmesh/releases/tag/v1.13.0)
+[![Go Version](https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hovsep/fmesh-examples)](https://goreportcard.com/report/github.com/hovsep/fmesh-examples)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -46,6 +46,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
 | [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
 | [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
+| [State Machine](./patterns/state_machine) | An FSM out of nothing but fmesh: states are components, transitions are pipes, the current state is a mesh label — the mesh graph is the state diagram |
 
 ### `simulation/` — systems evolving over time
 
@@ -71,7 +72,7 @@ These share [`simulation/sim`](./simulation/sim) — a small library for buildin
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.27 or later
 - Git
 
 ### Running Examples
@@ -217,6 +218,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 <div align="center">
-  <p>Built with <a href="https://github.com/hovsep/fmesh">F-Mesh</a> v1.4.0</p>
+  <p>Built with <a href="https://github.com/hovsep/fmesh">F-Mesh</a> v1.13.0</p>
   <p>Questions? Open an <a href="https://github.com/hovsep/fmesh-examples/issues">issue</a> or check the <a href="https://github.com/hovsep/fmesh/wiki">wiki</a></p>
 </div>
