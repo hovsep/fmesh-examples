@@ -139,7 +139,7 @@ func damageOutputs() []string {
 // on its own mesh cycle.
 func latchVitals(_ context.Context, this *component.Component) error {
 	if sig := firstSignal(this, "cardiac_output"); sig != nil {
-		this.State().Set(loadOutput, signal.AsFloat64OrDefault(sig, da.RestingCardiacOutput))
+		this.State().Set(loadOutput, sig.Float64OrDefault(da.RestingCardiacOutput))
 	}
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		s := sig.Scalars()
@@ -156,7 +156,7 @@ func latchVitals(_ context.Context, this *component.Component) error {
 		this.State().Set(loadDelivery, content*10*this.State().Get(loadOutput).(float64))
 	}
 	if sig := firstSignal(this, "map"); sig != nil {
-		this.State().Set(loadMAP, signal.AsFloat64OrDefault(sig, da.NormalMAP))
+		this.State().Set(loadMAP, sig.Float64OrDefault(da.NormalMAP))
 	}
 	return nil
 }

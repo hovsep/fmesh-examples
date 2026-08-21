@@ -7,7 +7,7 @@ import (
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/simulation/sim"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/plugin"
+	"github.com/hovsep/fmesh/plugin/autowire"
 )
 
 const (
@@ -40,8 +40,8 @@ func NewHabitat(factors *component.Collection) (*Habitat, error) {
 		fmesh.WithCyclesLimit(1000),
 		fmesh.WithTimeLimit(60*time.Second), // One mesh run (or 1 simulation tick) must not exceed this limit
 		fmesh.WithPlugins(
-			plugin.AutowireBroadcastAs("tick", sim.TimePort),
-			plugin.AutowirePrefixed("habitat_"),
+			autowire.BroadcastAs("tick", sim.TimePort),
+			autowire.Prefixed("habitat_"),
 		),
 	)
 	if err != nil {

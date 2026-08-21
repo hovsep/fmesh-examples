@@ -10,7 +10,6 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/sim/command"
 	"github.com/hovsep/fmesh-examples/simulation/sim/session"
 	"github.com/hovsep/fmesh-examples/simulation/sim/simtest"
-	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -336,7 +335,7 @@ func bodyValue(port string) func(*session.Session) float64 {
 		if p == nil || !p.HasSignals() {
 			return 0
 		}
-		value, _ := signal.AsNumber(p.Signals().First())
+		value, _ := p.Signals().First().AsNumber()
 		return value
 	}
 }

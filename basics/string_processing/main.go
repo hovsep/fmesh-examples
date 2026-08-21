@@ -48,8 +48,8 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("i1", "i2"),
 		component.WithOutputs("res"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
-			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("").(string)
+			word1 := this.InputByName("i1").Signals().FirstPayloadOrDefault("")
+			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("")
 			concatenated := word1 + word2
 			fmt.Printf("  Component 'concat': input1=%q + input2=%q => %q\n", word1, word2, concatenated)
 			this.OutputByName("res").PutSignals(signal.New(concatenated))
@@ -64,7 +64,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("i1"),
 		component.WithOutputs("res"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("").(string)
+			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("")
 			result := strings.ToTitle(inputString)
 			fmt.Printf("  Component 'case': %q => %q (title case)\n", inputString, result)
 			this.OutputByName("res").PutSignals(signal.New(result))

@@ -165,7 +165,7 @@ func applyHepaticGlucose(this *component.Component) {
 	}
 
 	dt := this.State().Get(StateDt).(float64)
-	delta := signal.AsFloat64OrDefault(in.Signals().First(), 0) * dt
+	delta := in.Signals().First().Float64OrDefault(0) * dt
 	if delta == 0 {
 		return
 	}
@@ -199,7 +199,7 @@ func applyThermal(this *component.Component) {
 		return
 	}
 
-	rate := signal.AsFloat64OrDefault(in.Signals().First(), 0)
+	rate := in.Signals().First().Float64OrDefault(0)
 	dt := this.State().Get(StateDt).(float64)
 	this.State().Update(StateCoreTemperature, func(v any) any {
 		return mathx.Clamp(v.(float64)+rate*dt, MinCoreTemperature, MaxCoreTemperature)
@@ -288,7 +288,7 @@ func applyExertion(this *component.Component) {
 		return
 	}
 
-	intensity := signal.AsFloat64OrDefault(in.Signals().First(), 1.0)
+	intensity := in.Signals().First().Float64OrDefault(1.0)
 	dt := this.State().Get(StateDt).(float64)
 	burnt := RestingBurnKcalPerSec * intensity * dt
 

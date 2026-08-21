@@ -190,13 +190,13 @@ func rememberInputs(this *component.Component) {
 		smooth(stateCO2, "PaCO2", bloodstream.NormalPaCO2)
 	}
 	if sig := firstSignal(this, "bladder_fill"); sig != nil {
-		this.State().Set(stateBladder, signal.AsFloat64OrDefault(sig, 0))
+		this.State().Set(stateBladder, sig.Float64OrDefault(0))
 	}
 	if sig := firstSignal(this, "bowel_fill"); sig != nil {
-		this.State().Set(stateBowel, signal.AsFloat64OrDefault(sig, 0))
+		this.State().Set(stateBowel, sig.Float64OrDefault(0))
 	}
 	if sig := firstSignal(this, "physical_load"); sig != nil {
-		this.State().Set(stateExertion, signal.AsFloat64OrDefault(sig, 1))
+		this.State().Set(stateExertion, sig.Float64OrDefault(1))
 	}
 	if sig := firstSignal(this, "mental_load"); sig != nil {
 		this.State().Set(stateArousal, sig.Scalars().ValueOrDefault("arousal", 0))

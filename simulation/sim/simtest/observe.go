@@ -28,7 +28,7 @@ type Observable struct {
 
 // Port watches the payload of the first signal on a component's output port.
 //
-// It reads through signal.AsNumber rather than a typed accessor on purpose. A
+// It reads through Signal.AsNumber rather than a typed accessor on purpose. A
 // mesh does not publish one numeric type -- a heart rate is a whole number of
 // beats and a stomach fill is not -- and the typed accessors infer their type
 // from the default they are given, so asking for a float64 with a default of 0
@@ -41,7 +41,7 @@ func Port(componentName, portName string) Observable {
 			if sig == nil {
 				return 0, false
 			}
-			return signal.AsNumber(sig)
+			return sig.AsNumber()
 		},
 	}
 }

@@ -208,7 +208,7 @@ func circulate(_ context.Context, this *component.Component) error {
 
 	// Phase B: fold in whatever has arrived.
 	if in := this.InputByName("heart_rate"); in.HasSignals() {
-		if rate, err := signal.AsInt(in.Signals().First()); err == nil {
+		if rate, err := in.Signals().First().As[int](); err == nil {
 			this.State().Set(stateHeartRate, float64(rate))
 		}
 	}

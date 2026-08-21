@@ -50,8 +50,8 @@ func newWatchdog(name string) (*component.Component, error) {
 				this.State().Set(stateKeyControllerStates, ctlStates)
 			}
 
-			currentL := this.InputByName(common.PortCANL).Signals().FirstPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
-			currentH := this.InputByName(common.PortCANH).Signals().FirstPayloadOrDefault(physical.NoVoltage).(physical.Voltage)
+			currentL := this.InputByName(common.PortCANL).Signals().FirstPayloadOrDefault(physical.NoVoltage)
+			currentH := this.InputByName(common.PortCANH).Signals().FirstPayloadOrDefault(physical.NoVoltage)
 
 			allControllersAreIdle := true
 			for _, ctlState := range ctlStates {

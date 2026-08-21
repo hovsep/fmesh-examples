@@ -13,7 +13,6 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/sim/mathx"
 	"github.com/hovsep/fmesh-examples/simulation/sim/session"
 	"github.com/hovsep/fmesh-examples/simulation/sim/simtest"
-	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +38,7 @@ func Test_HumanLiveness(t *testing.T) {
 							return nil
 						}
 						// Liveness travels as 1/0 so it survives the numeric telemetry wire.
-						alive, ok := signal.AsNumber(sig)
+						alive, ok := sig.AsNumber()
 						if !ok {
 							return fmt.Errorf("is_alive is not numeric: %v", sig.Payload())
 						}
@@ -70,7 +69,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigAct == nil {
 							return nil
 						}
-						v, err := signal.AsFloat64(sigAct)
+						v, err := sigAct.As[float64]()
 						if err != nil {
 							return err
 						}
@@ -80,7 +79,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRate == nil {
 							return nil
 						}
-						vRate, err := signal.AsInt(sigRate)
+						vRate, err := sigRate.As[int]()
 						if err != nil {
 							return err
 						}
@@ -111,7 +110,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigPressure == nil {
 							return nil
 						}
-						v, err := signal.AsFloat64(sigPressure)
+						v, err := sigPressure.As[float64]()
 						if err != nil {
 							return err
 						}
@@ -121,7 +120,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRate == nil {
 							return nil
 						}
-						vRate, err := signal.AsInt(sigRate)
+						vRate, err := sigRate.As[int]()
 						if err != nil {
 							return err
 						}
@@ -155,7 +154,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigLeft == nil {
 							return nil
 						}
-						vLeft, err := signal.AsFloat64(sigLeft)
+						vLeft, err := sigLeft.As[float64]()
 						if err != nil {
 							return err
 						}
@@ -165,7 +164,7 @@ func Test_HumanLiveness(t *testing.T) {
 						if sigRight == nil {
 							return nil
 						}
-						vRight, err := signal.AsFloat64(sigRight)
+						vRight, err := sigRight.As[float64]()
 						if err != nil {
 							return err
 						}

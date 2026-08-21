@@ -21,7 +21,6 @@ import (
 	"github.com/hovsep/fmesh-examples/simulation/sim/session"
 	"github.com/hovsep/fmesh-examples/simulation/sim/simtest"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -309,7 +308,7 @@ func TestReference_RestingCirculation(t *testing.T) {
 		hooks.AfterRun(func(context.Context, *fmesh.FMesh) error {
 			for _, p := range ports {
 				if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
-					if v, ok := signal.AsNumber(sig); ok {
+					if v, ok := sig.AsNumber(); ok {
 						series[p] = append(series[p], v)
 					}
 				}
@@ -364,7 +363,7 @@ func TestReference_BaroreflexDefendsPressure(t *testing.T) {
 		if sig == nil {
 			return 0
 		}
-		v, _ := signal.AsNumber(sig)
+		v, _ := sig.AsNumber()
 		return v
 	}
 
@@ -540,7 +539,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 
 	read := func(p string) float64 {
 		if sig := agg.OutputByName("human-Leon::" + p).Signals().First(); sig != nil {
-			v, _ := signal.AsNumber(sig)
+			v, _ := sig.AsNumber()
 			return v
 		}
 		return 0
@@ -725,7 +724,7 @@ func TestReference_BreathingIsDrivenByCarbonDioxide(t *testing.T) {
 
 	rate := func() float64 {
 		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
-			v, _ := signal.AsNumber(sig)
+			v, _ := sig.AsNumber()
 			return v
 		}
 		return 0
@@ -1049,7 +1048,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 	}
 	rate := func() float64 {
 		if sig := agg.OutputByName("human-Leon::respiratory_rate").Signals().First(); sig != nil {
-			v, _ := signal.AsNumber(sig)
+			v, _ := sig.AsNumber()
 			return v
 		}
 		return 0
@@ -1374,7 +1373,7 @@ func TestReference_TheSunWarmsTheAirAndTheBodySweats(t *testing.T) {
 
 	reading := func(port string) float64 {
 		if sig := agg.OutputByName("human-Leon::" + port).Signals().First(); sig != nil {
-			return signal.AsFloat64OrDefault(sig, 0)
+			return sig.Float64OrDefault(0)
 		}
 		return 0
 	}
@@ -1500,7 +1499,7 @@ func TestReference_ExertionAndFrightReachTheHeart(t *testing.T) {
 		var rate float64
 		simtest.RunFor(sim, d, func() {
 			if sig := agg.OutputByName("human-Leon::heart_rate").Signals().First(); sig != nil {
-				rate, _ = signal.AsNumber(sig)
+				rate, _ = sig.AsNumber()
 			}
 		})
 		return rate
