@@ -69,7 +69,7 @@ func GetMental() (*component.Component, error) {
 }
 
 func acceptStimulusCommands(_ context.Context, this *component.Component) error {
-	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Meta) error {
 		if command.Verb(name) != VerbStimulus {
 			this.Logger().Printf("unknown emotion command %q\n", name)
 			return nil
@@ -78,10 +78,10 @@ func acceptStimulusCommands(_ context.Context, this *component.Component) error 
 		// Stimuli add to the current mood rather than replacing it, so two
 		// frights land harder than one.
 		this.State().Update(Arousal, func(v any) any {
-			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarArousal, 0), 0, maxArousal)
+			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarArousal, 0.0), 0, maxArousal)
 		})
 		this.State().Update(Valence, func(v any) any {
-			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarValence, 0), minValence, maxValence)
+			return mathx.Clamp(v.(float64)+args.ValueOrDefault(ScalarValence, 0.0), minValence, maxValence)
 		})
 		return nil
 	})
@@ -105,8 +105,8 @@ func emitMentalLoad(_ context.Context, this *component.Component) error {
 
 	return this.OutputByName("mental_load").PutSignals(
 		signal.New(arousal).
-			WithLabel("category", "load").
-			WithScalar(ScalarArousal, arousal).
-			WithScalar(ScalarValence, valence),
+			WithMeta("category", "load").
+			WithMeta(ScalarArousal, arousal).
+			WithMeta(ScalarValence, valence),
 	)
 }

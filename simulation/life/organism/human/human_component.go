@@ -33,9 +33,9 @@ func InnerMesh(c *component.Component) *fmesh.FMesh {
 // "human" -- and anything looking for a body should not have to know who it is.
 func Find(fm *fmesh.FMesh) *component.Component {
 	return fm.Components().FindAny(func(c *component.Component) bool {
-		return c.Labels().ValueIs("role", "organism") &&
-			c.Labels().ValueIs("genus", "homo") &&
-			c.Labels().ValueIs("species", "sapiens")
+		return c.Meta().ValueIs("role", "organism") &&
+			c.Meta().ValueIs("genus", "homo") &&
+			c.Meta().ValueIs("species", "sapiens")
 	})
 }
 
@@ -48,9 +48,9 @@ func New(name string) (*component.Component, error) {
 
 	c, err := component.New("human-"+name,
 		component.WithDescription("A human being"),
-		component.WithLabel("role", "organism"),
-		component.WithLabel("genus", "homo"),
-		component.WithLabel("species", "sapiens"),
+		component.WithMeta("role", "organism"),
+		component.WithMeta("genus", "homo"),
+		component.WithMeta("species", "sapiens"),
 		component.WithInputs(
 			"habitat_time_tick",
 			"habitat_air_environmental_gas",

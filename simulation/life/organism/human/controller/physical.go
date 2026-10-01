@@ -75,7 +75,7 @@ func GetPhysical() (*component.Component, error) {
 }
 
 func acceptActivityCommands(_ context.Context, this *component.Component) error {
-	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Meta) error {
 		switch command.Verb(name) {
 		case VerbStart:
 			intensity := args.ValueOrDefault(ScalarIntensity, RestingIntensity)
@@ -121,8 +121,8 @@ func emitPhysicalLoad(_ context.Context, this *component.Component) error {
 
 	return this.OutputByName("physical_load").PutSignals(
 		signal.New(this.State().Get(ActivityIntensity).(float64)).
-			WithLabel("category", "load").
-			WithScalar(ScalarIntensity, this.State().Get(ActivityIntensity).(float64)),
+			WithMeta("category", "load").
+			WithMeta(ScalarIntensity, this.State().Get(ActivityIntensity).(float64)),
 	)
 }
 

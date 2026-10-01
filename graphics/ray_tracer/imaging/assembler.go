@@ -32,12 +32,12 @@ func GetAssembler() *component.Component {
 			}
 
 			err = this.OutputByName(common.PortFrameOut).PutSignals(
-				signal.New(img).WithScalar(common.ScalarFrame, float64(frame)))
+				signal.New(img).WithMeta(common.ScalarFrame, float64(frame)))
 			if err != nil {
 				return err
 			}
 			err = this.OutputByName(common.PortProgressOut).PutSignals(
-				signal.New(frame).WithScalar(common.ScalarFrame, float64(frame)))
+				signal.New(frame).WithMeta(common.ScalarFrame, float64(frame)))
 			if err != nil {
 				return err
 			}

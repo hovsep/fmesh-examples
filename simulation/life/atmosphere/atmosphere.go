@@ -24,7 +24,7 @@ const ScalarPressure = "pressure"
 
 // WithPressure stamps a barometric pressure onto an air signal.
 func WithPressure(air *signal.Signal, mmHg float64) *signal.Signal {
-	return air.WithScalar(ScalarPressure, mmHg)
+	return air.WithMeta(ScalarPressure, mmHg)
 }
 
 // Pressure reads the barometric pressure of an air signal, defaulting to sea
@@ -33,7 +33,7 @@ func Pressure(air *signal.Signal) float64 {
 	if air == nil {
 		return SeaLevelPressure
 	}
-	return air.Scalars().ValueOrDefault(ScalarPressure, SeaLevelPressure)
+	return air.Meta().ValueOrDefault(ScalarPressure, SeaLevelPressure)
 }
 
 // PressureAtAltitude returns the barometric pressure at a height above sea
@@ -55,9 +55,9 @@ func PressureAtAltitude(metres float64) float64 {
 	return SeaLevelPressure * math.Exp(-metres/8000.0)
 }
 
-// Pack packs air composition into a single signal with scalars.
+// Pack packs air composition into a single signal with numeric metadata.
 // Distribution members ("composition:...") are auto-rebalanced by MapScalar
-// because the signal declares WithLabel("distribution:composition", "true").
+// because the signal declares WithMeta("distribution:composition", "true").
 //
 // The air it produces is at sea level; use WithPressure to put it somewhere
 // else.
@@ -67,41 +67,44 @@ func Pack(nitrogen, oxygen, argon, pollution, temperature, humidity float64) (*s
 	}
 
 	return signal.New("air").
-		WithLabel("category", "gas").
-		WithLabel("type", "air").
-		WithLabel("distribution:composition", "true").
-		WithScalar("temperature", temperature).
-		WithScalar("humidity", humidity).
-		WithScalar("composition:nitrogen", nitrogen).
-		WithScalar("composition:oxygen", oxygen).
-		WithScalar("composition:argon", argon).
-		WithScalar("composition:pollution", pollution), nil
+		WithMeta("category", "gas").
+		WithMeta("type", "air").
+		WithMeta("distribution:composition", "true").
+		WithMeta("temperature", temperature).
+		WithMeta("humidity", humidity).
+		WithMeta("composition:nitrogen", nitrogen).
+		WithMeta("composition:oxygen", oxygen).
+		WithMeta("composition:argon", argon).
+		WithMeta("composition:pollution", pollution), nil
 }
 
 // Unpack extracts all components from an air signal
 func Unpack(airSignal *signal.Signal) (nitrogen, oxygen, argon, pollution, temperature, humidity float64, err error) {
-	if airSignal == nil || !airSignal.Labels().ValueIs("category", "gas") || !airSignal.Labels().ValueIs("type", "air") {
+	if airSignal == nil || !airSignal.Meta().ValueIs("category", "gas") || !airSignal.Meta().ValueIs("type", "air") {
 		return 0, 0, 0, 0, 0, 0, fmt.Errorf("signal is not air")
 	}
 
-	s := airSignal.Scalars()
-	return s.ValueOrDefault("composition:nitrogen", 0),
-		s.ValueOrDefault("composition:oxygen", 0),
-		s.ValueOrDefault("composition:argon", 0),
-		s.ValueOrDefault("composition:pollution", 0),
-		s.ValueOrDefault("temperature", 0),
-		s.ValueOrDefault("humidity", 0),
+	s := airSignal.Meta()
+	return s.ValueOrDefault("composition:nitrogen", 0.0),
+		s.ValueOrDefault("composition:oxygen", 0.0),
+		s.ValueOrDefault("composition:argon", 0.0),
+		s.ValueOrDefault("composition:pollution", 0.0),
+		s.ValueOrDefault("temperature", 0.0),
+		s.ValueOrDefault("humidity", 0.0),
 		nil
 }
 
 // MapScalar modifies a scalar on a signal. If the key belongs to a distribution
-// declared via a "distribution:<group>" label on the signal (e.g.
+// declared via a "distribution:<group>" string entry on the signal (e.g.
 // "distribution:composition"), all scalars with the matching "<group>:"
 // prefix are rebalanced to sum to 100.
+//
+// Only float64 entries take part; string entries sharing the prefix are left
+// alone.
 func MapScalar(s *signal.Signal, key string, fn func(old float64) float64) *signal.Signal {
-	old := s.Scalars().ValueOrDefault(key, 0)
+	old := s.Meta().ValueOrDefault(key, 0.0)
 	newVal := fn(old)
-	result := s.WithScalar(key, newVal)
+	result := s.WithMeta(key, newVal)
 
 	prefix := distributionPrefix(s, key)
 	if prefix == "" {
@@ -114,15 +117,20 @@ func MapScalar(s *signal.Signal, key string, fn func(old float64) float64) *sign
 // rebalanceDistribution rescales all scalars with the given prefix (except the
 // target key) so that the distribution group sums to 100.
 func rebalanceDistribution(s *signal.Signal, key string, newVal float64, prefix string) *signal.Signal {
-	distScalars := s.Scalars().Filter(func(k string, _ float64) bool {
-		return strings.HasPrefix(k, prefix)
-	})
+	// Keys come sorted, so the float sums below are the same on every run.
+	var keys []string
+	var values []float64
+	for _, k := range s.Meta().Keys() {
+		if v, err := s.Meta().Value[float64](k); err == nil && strings.HasPrefix(k, prefix) {
+			keys = append(keys, k)
+			values = append(values, v)
+		}
+	}
 
 	var sum float64
-	distScalars.ForEach(func(_ string, v float64) error {
+	for _, v := range values {
 		sum += v
-		return nil
-	})
+	}
 
 	if sum == 100 || sum == 0 {
 		return s
@@ -134,12 +142,11 @@ func rebalanceDistribution(s *signal.Signal, key string, newVal float64, prefix 
 	}
 
 	factor := (100.0 - newVal) / othersSum
-	distScalars.ForEach(func(k string, v float64) error {
+	for i, k := range keys {
 		if k != key {
-			s = s.WithScalar(k, v*factor)
+			s = s.WithMeta(k, values[i]*factor)
 		}
-		return nil
-	})
+	}
 	return s
 }
 
@@ -151,7 +158,7 @@ func distributionPrefix(s *signal.Signal, key string) string {
 		return ""
 	}
 	group := key[:idx]
-	if s.Labels().Has("distribution:" + group) {
+	if s.Meta().Has("distribution:" + group) {
 		return group + ":"
 	}
 	return ""
@@ -169,7 +176,7 @@ const ScalarCOppm = "carbon_monoxide_ppm"
 
 // WithCarbonMonoxide stamps a carbon monoxide concentration onto an air signal.
 func WithCarbonMonoxide(air *signal.Signal, ppm float64) *signal.Signal {
-	return air.WithScalar(ScalarCOppm, ppm)
+	return air.WithMeta(ScalarCOppm, ppm)
 }
 
 // CarbonMonoxide reads it. Clean air has none.
@@ -177,5 +184,5 @@ func CarbonMonoxide(air *signal.Signal) float64 {
 	if air == nil {
 		return 0
 	}
-	return air.Scalars().ValueOrDefault(ScalarCOppm, 0)
+	return air.Meta().ValueOrDefault(ScalarCOppm, 0.0)
 }

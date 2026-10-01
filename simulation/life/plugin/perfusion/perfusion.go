@@ -136,7 +136,15 @@ func (p *Perfusion) Init(c *component.Component) error {
 	}
 
 	c.SetupHooks(func(hooks *component.Hooks) {
-		hooks.OnActivation(p.onActivation)
+		// The latch and the draw run after the organ's own function, and only
+		// when it succeeded: the draw writes outputs, which must not be sent for
+		// a failed or waiting activation.
+		hooks.AfterActivation(func(ctx context.Context, ac *component.ActivationContext) error {
+			if ac.Result.Code() != component.ActivationCodeOK {
+				return nil
+			}
+			return p.onActivation(ctx, ac.Component)
+		})
 	})
 	return nil
 }
@@ -175,7 +183,7 @@ func (p *Perfusion) latchSupply(this *component.Component) {
 		return
 	}
 
-	s := sig.Scalars()
+	s := sig.Meta()
 	this.State().Set(stateSaO2, s.ValueOrDefault("SpO2", bloodstream.NormalSaO2))
 	this.State().Set(statePaO2, s.ValueOrDefault("PaO2", bloodstream.NormalPaO2))
 	this.State().Set(statePaCO2, s.ValueOrDefault("PaCO2", bloodstream.NormalPaCO2))

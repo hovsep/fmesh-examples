@@ -46,7 +46,7 @@ func main() {
 }
 
 func getMesh() (*fmesh.FMesh, error) {
-	filter, err := getFilter("pop-filter", meta.NewLabels().Set("genre", "pop"))
+	filter, err := getFilter("pop-filter", meta.New().Set("genre", "pop"))
 	if err != nil {
 		return nil, fmt.Errorf("filter: %w", err)
 	}
@@ -94,7 +94,7 @@ func getPrinter(name string) (*component.Component, error) {
 	)
 }
 
-func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component, error) {
+func getFilter(name string, disallowedLabels *meta.Meta) (*component.Component, error) {
 	return component.New(name,
 		component.WithDescription("Simple filter"),
 		component.WithInputs(portIn),
@@ -102,12 +102,11 @@ func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				var why string
-				disallowedLabels.ForEach(func(k, v string) error {
-					if sig.Labels().ValueIs(k, v) {
-						why = fmt.Sprintf("%s=%s matches the filter rule", k, v)
+				for k, v := range disallowedLabels.All() {
+					if want, ok := v.(string); ok && sig.Meta().ValueIs(k, want) {
+						why = fmt.Sprintf("%s=%s matches the filter rule", k, want)
 					}
-					return nil
-				})
+				}
 				if why != "" {
 					dropped := sig.MapPayload(func(p any) any {
 						return fmt.Sprintf("DROPPED: '%v' excluded because %s", p, why)
@@ -122,47 +121,47 @@ func getFilter(name string, disallowedLabels *meta.Labels) (*component.Component
 
 func getSignals() *signal.Group {
 	return signal.NewGroup().With(
-		signal.New("Justice").WithLabels(map[string]string{
+		signal.New("Justice").WithMetaMany(map[string]string{
 			"genre":  "pop",
 			"artist": "Justin Bieber",
 			"year":   "2021",
 		}),
-		signal.New("Dysania").WithLabels(map[string]string{
+		signal.New("Dysania").WithMetaMany(map[string]string{
 			"genre":  "rock",
 			"artist": "Elita",
 			"year":   "2023",
 		}),
-		signal.New("After Hours").WithLabels(map[string]string{
+		signal.New("After Hours").WithMetaMany(map[string]string{
 			"genre":  "pop",
 			"artist": "The Weekend",
 			"year":   "2020",
 		}),
-		signal.New("Random Access Memories").WithLabels(map[string]string{
+		signal.New("Random Access Memories").WithMetaMany(map[string]string{
 			"genre":  "electronic",
 			"artist": "Daft Punk",
 			"year":   "2013",
 		}),
-		signal.New("Evermore").WithLabels(map[string]string{
+		signal.New("Evermore").WithMetaMany(map[string]string{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2020",
 		}),
-		signal.New("1989").WithLabels(map[string]string{
+		signal.New("1989").WithMetaMany(map[string]string{
 			"genre":  "pop",
 			"artist": "Taylor Swift",
 			"year":   "2014",
 		}),
-		signal.New("To Pimp a Butterfly").WithLabels(map[string]string{
+		signal.New("To Pimp a Butterfly").WithMetaMany(map[string]string{
 			"genre":  "hip-hop",
 			"artist": "Kendrick Lamar",
 			"year":   "2015",
 		}),
-		signal.New("Ghost Stories").WithLabels(map[string]string{
+		signal.New("Ghost Stories").WithMetaMany(map[string]string{
 			"genre":  "alternative",
 			"artist": "Coldplay",
 			"year":   "2014",
 		}),
-		signal.New("Future Nostalgia").WithLabels(map[string]string{
+		signal.New("Future Nostalgia").WithMetaMany(map[string]string{
 			"genre":  "pop",
 			"artist": "Dua Lipa",
 			"year":   "2020",

@@ -26,7 +26,7 @@ const (
 	PortIn           = "in"
 	PortOut          = "out"
 
-	// Scalars: numeric metadata riding on signals (meta.Scalars)
+	// Numeric metadata keys riding on signals (signal Meta, float64 values)
 	ScalarFrame  = "frame"
 	ScalarYFrom  = "y_from"
 	ScalarYTo    = "y_to"

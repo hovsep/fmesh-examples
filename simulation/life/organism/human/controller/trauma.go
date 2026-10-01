@@ -67,10 +67,10 @@ func GetTrauma() (*component.Component, error) {
 }
 
 func acceptTraumaCommands(_ context.Context, this *component.Component) error {
-	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Meta) error {
 		switch command.Verb(name) {
 		case VerbBleed:
-			volume := args.ValueOrDefault(ScalarVolumeMl, 0)
+			volume := args.ValueOrDefault(ScalarVolumeMl, 0.0)
 			if volume <= 0 {
 				return nil
 			}
@@ -104,6 +104,6 @@ func emitBloodLoss(_ context.Context, this *component.Component) error {
 	this.State().Update(TotalBledMl, func(v any) any { return v.(float64) + lost })
 
 	return this.OutputByName("blood_loss").PutSignals(
-		signal.New(lost).WithLabel("category", "trauma"),
+		signal.New(lost).WithMeta("category", "trauma"),
 	)
 }

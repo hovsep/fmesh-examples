@@ -42,7 +42,7 @@ func GetShaders() *component.Collection {
 					}
 					return this.OutputByName(common.PortSecondaryOut).PutSignals(
 						sig.MapPayload(func(any) any { return secondaries }).
-							WithScalar(common.ScalarBounce, float64(bounce+1)))
+							WithMeta(common.ScalarBounce, float64(bounce+1)))
 				})
 			}),
 		))))

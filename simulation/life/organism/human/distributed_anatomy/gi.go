@@ -97,10 +97,10 @@ func acceptSwallowed(_ context.Context, this *component.Component) error {
 
 		if err := in.Signals().ForEach(func(sig *signal.Signal) error {
 			this.State().Update(StateStomachKcal, func(v any) any {
-				return v.(float64) + sig.Scalars().ValueOrDefault(body.GlucoseKcal, 0)
+				return v.(float64) + sig.Meta().ValueOrDefault(body.GlucoseKcal, 0.0)
 			})
 			this.State().Update(StateStomachMl, func(v any) any {
-				return v.(float64) + sig.Scalars().ValueOrDefault(body.WaterMl, 0)
+				return v.(float64) + sig.Meta().ValueOrDefault(body.WaterMl, 0.0)
 			})
 			return nil
 		}); err != nil {
@@ -154,9 +154,9 @@ func digest(_ context.Context, this *component.Component) error {
 	if absorbedKcal > 0 || absorbedWater > 0 {
 		if err := this.OutputByName("absorption").PutSignals(
 			signal.New("absorption").
-				WithLabel("category", "digestion").
-				WithScalar(body.GlucoseKcal, absorbedKcal).
-				WithScalar(body.WaterMl, absorbedWater),
+				WithMeta("category", "digestion").
+				WithMeta(body.GlucoseKcal, absorbedKcal).
+				WithMeta(body.WaterMl, absorbedWater),
 		); err != nil {
 			return err
 		}

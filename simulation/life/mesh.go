@@ -284,7 +284,7 @@ func setMeshCommands(sim *session.Session) {
 	setTemperature := func(cmd string, degrees float64) command.Handler {
 		return func(_ io.Writer, _ []string) error {
 			return gas.InputByName("ctl").PutSignals(
-				signal.New(degrees).WithLabel(command.Label, cmd))
+				signal.New(degrees).WithMeta(command.Label, cmd))
 		}
 	}
 
@@ -301,7 +301,7 @@ func setMeshCommands(sim *session.Session) {
 				value = parsed
 			}
 			return gas.InputByName("ctl").PutSignals(
-				signal.New(value).WithLabel(command.Label, cmd))
+				signal.New(value).WithMeta(command.Label, cmd))
 		}
 	}
 
@@ -409,8 +409,8 @@ func setMeshCommands(sim *session.Session) {
 				}
 				return gas.InputByName("ctl").PutSignals(
 					signal.New(args[0]).
-						WithLabel(command.Label, "set_preset").
-						WithLabel("preset", args[0]))
+						WithMeta(command.Label, "set_preset").
+						WithMeta("preset", args[0]))
 			},
 		},
 		command.Command{
@@ -428,8 +428,8 @@ func setMeshCommands(sim *session.Session) {
 				}
 				return gas.InputByName("ctl").PutSignals(
 					signal.New(d.Seconds()).
-						WithLabel(command.Label, "add_mixin").
-						WithLabel("mixin", args[0]))
+						WithMeta(command.Label, "add_mixin").
+						WithMeta("mixin", args[0]))
 			},
 		},
 		command.Command{
@@ -450,8 +450,8 @@ func setMeshCommands(sim *session.Session) {
 				// body swallows: the smoke fills the room and the body breathes it.
 				return gas.InputByName("ctl").PutSignals(
 					signal.New(count*cigaretteSeconds).
-						WithLabel(command.Label, "add_mixin").
-						WithLabel("mixin", "cigarette_smoke"))
+						WithMeta(command.Label, "add_mixin").
+						WithMeta("mixin", "cigarette_smoke"))
 			},
 		},
 		command.Command{
@@ -459,7 +459,7 @@ func setMeshCommands(sim *session.Session) {
 			Description: "clear everything mixed into the air",
 			Run: func(_ io.Writer, _ []string) error {
 				return gas.InputByName("ctl").PutSignals(
-					signal.New(0.0).WithLabel(command.Label, "clear_mixins"))
+					signal.New(0.0).WithMeta(command.Label, "clear_mixins"))
 			},
 		},
 		command.Command{

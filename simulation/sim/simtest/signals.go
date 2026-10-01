@@ -187,7 +187,8 @@ func EveryPayloadIs(want any) SignalCheck {
 	})
 }
 
-// Labelled asserts some signal after the command carried this label.
+// Labelled asserts some signal after the command carried this string metadata
+// entry (a label).
 //
 // Labels are how signals in this codebase say what kind of thing they are --
 // which command they answer, which category they belong to -- so this is the
@@ -195,7 +196,7 @@ func EveryPayloadIs(want any) SignalCheck {
 func Labelled(name, value string) SignalCheck {
 	return signalCheck(fmt.Sprintf("be labelled %s=%s", name, value), func(o SignalObservation) error {
 		for _, sig := range o.After {
-			if sig.Labels().ValueOrDefault(name, "") == value {
+			if sig.Meta().ValueOrDefault(name, "") == value {
 				return nil
 			}
 		}
@@ -203,12 +204,12 @@ func Labelled(name, value string) SignalCheck {
 	})
 }
 
-// CarriesScalar asserts some signal after the command carried a named scalar at
-// all, whatever its value.
+// CarriesScalar asserts some signal after the command carried a named numeric
+// metadata entry (a scalar) at all, whatever its value.
 func CarriesScalar(name string) SignalCheck {
 	return signalCheck(fmt.Sprintf("carry the scalar %q", name), func(o SignalObservation) error {
 		for _, sig := range o.After {
-			if sig.Scalars().Has(name) {
+			if _, err := sig.Meta().Value[float64](name); err == nil {
 				return nil
 			}
 		}
@@ -216,14 +217,14 @@ func CarriesScalar(name string) SignalCheck {
 	})
 }
 
-// ScalarIs asserts some signal after the command carried a named scalar at
-// roughly a given value.
+// ScalarIs asserts some signal after the command carried a named numeric
+// metadata entry (a scalar) at roughly a given value.
 func ScalarIs(name string, want, tolerance float64) SignalCheck {
 	return signalCheck(fmt.Sprintf("carry %s=%.4g (±%.3g)", name, want, tolerance),
 		func(o SignalObservation) error {
 			for _, sig := range o.After {
-				if sig.Scalars().Has(name) &&
-					math.Abs(sig.Scalars().ValueOrDefault(name, 0)-want) <= tolerance {
+				if got, err := sig.Meta().Value[float64](name); err == nil &&
+					math.Abs(got-want) <= tolerance {
 					return nil
 				}
 			}

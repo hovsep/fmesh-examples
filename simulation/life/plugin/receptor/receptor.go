@@ -60,7 +60,15 @@ func (r *Receptors) Init(c *component.Component) error {
 	}
 
 	c.SetupHooks(func(hooks *component.Hooks) {
-		hooks.OnActivation(r.latch)
+		// The latch runs after the organ's own function, and only when it
+		// succeeded, so the organ acts on the level latched on an earlier
+		// activation.
+		hooks.AfterActivation(func(ctx context.Context, ac *component.ActivationContext) error {
+			if ac.Result.Code() != component.ActivationCodeOK {
+				return nil
+			}
+			return r.latch(ctx, ac.Component)
+		})
 	})
 	return nil
 }
@@ -78,7 +86,7 @@ func (r *Receptors) latch(_ context.Context, this *component.Component) error {
 	}
 
 	for _, hormone := range r.hormones {
-		this.State().Set(stateKey(hormone), sig.Scalars().ValueOrDefault(hormone, 0))
+		this.State().Set(stateKey(hormone), sig.Meta().ValueOrDefault(hormone, 0.0))
 	}
 	return nil
 }

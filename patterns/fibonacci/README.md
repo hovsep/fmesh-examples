@@ -10,7 +10,7 @@ The scenario is Fibonacci number generation: one generator component is seeded w
   - `next < 100`: prints `Fibonacci: %d`, puts `next` on `o_cur` and `cur` on `o_prev`, or
   - `next >= 100`: prints `%d >= 100, sequence complete` and puts nothing on either output.
 - **Self-feedback pipes**: `o_cur → i_cur` and `o_prev → i_prev`, both on the same component, via `Outputs().ByName("o_cur").PipeTo(Inputs().ByName("i_cur"))`.
-- **Termination**: once no signals are put on any output, there's nothing left to pipe forward, so the component has no reason to activate again and `fm.Run()` returns.
+- **Termination**: once no signals are put on any output, there's nothing left to pipe forward, so the component has no reason to activate again and `fm.Run(ctx)` returns.
 
 The mesh (`fibonacci example`) is built with `fmesh.New(..., fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic))`. Seeds are put directly on the component's inputs with `ComponentByName(...).Inputs().ByName("i_prev").PutSignals(signal.New(0))` before `fm.Run(context.Background())`.
 

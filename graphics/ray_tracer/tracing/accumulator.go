@@ -37,7 +37,7 @@ func GetAccumulator() *component.Component {
 				samples := buffers[key]
 				delete(buffers, key)
 				return this.OutputByName(common.PortOut).PutSignals(
-					sig.MapPayload(func(any) any { return samples }).WithoutScalars(common.ScalarBounce))
+					sig.MapPayload(func(any) any { return samples }).WithoutMeta(common.ScalarBounce))
 			})
 		}),
 	))

@@ -323,7 +323,7 @@ func Test_FeelingsRespondToTheBody(t *testing.T) {
 			simtest.RunFor(sim, tt.duration, func() {
 				sig := feelings()
 				require.NotNil(t, sig, "the body published no feelings")
-				tt.assert(t, sig.Scalars().ValueOrDefault(tt.feeling, -1))
+				tt.assert(t, sig.Meta().ValueOrDefault(tt.feeling, -1.0))
 			})
 		})
 	}
@@ -341,7 +341,7 @@ func Test_EveryFeelingIsPublished(t *testing.T) {
 		// A missing feeling would render as a permanent zero rather than an
 		// obvious gap, so check the whole set arrives every time.
 		for _, feeling := range body.Feelings {
-			assert.True(t, sig.Scalars().Has(feeling), "feeling %q was not published", feeling)
+			assert.True(t, sig.Meta().Has(feeling), "feeling %q was not published", feeling)
 		}
 	})
 }

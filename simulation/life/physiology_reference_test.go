@@ -121,11 +121,11 @@ func TestReference_RestingArterialBloodGas(t *testing.T) {
 			if sig == nil {
 				return nil
 			}
-			s := sig.Scalars()
-			paO2 = append(paO2, s.ValueOrDefault("PaO2", 0))
-			paCO2 = append(paCO2, s.ValueOrDefault("PaCO2", 0))
-			spO2 = append(spO2, s.ValueOrDefault("SpO2", 0))
-			pH = append(pH, s.ValueOrDefault("pH", 0))
+			s := sig.Meta()
+			paO2 = append(paO2, s.ValueOrDefault("PaO2", 0.0))
+			paCO2 = append(paCO2, s.ValueOrDefault("PaCO2", 0.0))
+			spO2 = append(spO2, s.ValueOrDefault("SpO2", 0.0))
+			pH = append(pH, s.ValueOrDefault("pH", 0.0))
 			return nil
 		})
 	})
@@ -270,9 +270,9 @@ func TestReference_ApneaDesaturates(t *testing.T) {
 			}
 
 			if sig := aggState.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-				lastPaO2 = sig.Scalars().ValueOrDefault("PaO2", 0)
-				lastPaCO2 = sig.Scalars().ValueOrDefault("PaCO2", 0)
-				lastSpO2 = sig.Scalars().ValueOrDefault("SpO2", 0)
+				lastPaO2 = sig.Meta().ValueOrDefault("PaO2", 0.0)
+				lastPaCO2 = sig.Meta().ValueOrDefault("PaCO2", 0.0)
+				lastSpO2 = sig.Meta().ValueOrDefault("SpO2", 0.0)
 			}
 			return nil
 		})
@@ -448,7 +448,7 @@ func TestReference_StressHormonesRunOnTwoClocks(t *testing.T) {
 		if sig == nil {
 			return 0
 		}
-		return sig.Scalars().ValueOrDefault(hormone, 0)
+		return sig.Meta().ValueOrDefault(hormone, 0.0)
 	}
 
 	var atRest, earlyAdrenaline, earlyCortisol, peakAdrenaline, peakCortisol float64
@@ -546,7 +546,7 @@ func bleedAndWatch(t *testing.T, volume string, forDuration time.Duration) (wors
 	}
 	scalar := func(name string) float64 {
 		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-			return sig.Scalars().ValueOrDefault(name, 0)
+			return sig.Meta().ValueOrDefault(name, 0.0)
 		}
 		return 0
 	}
@@ -674,7 +674,7 @@ func TestReference_HemoglobinFallsAfterTheBleedingStops(t *testing.T) {
 
 	hemoglobin := func() float64 {
 		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-			return sig.Scalars().ValueOrDefault("hemoglobin", 0)
+			return sig.Meta().ValueOrDefault("hemoglobin", 0.0)
 		}
 		return 0
 	}
@@ -1042,7 +1042,7 @@ func TestReference_AltitudeThinsTheAirAndTheBodyAnswers(t *testing.T) {
 
 	blood := func(name string) float64 {
 		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-			return sig.Scalars().ValueOrDefault(name, 0)
+			return sig.Meta().ValueOrDefault(name, 0.0)
 		}
 		return 0
 	}
@@ -1148,7 +1148,7 @@ func TestReference_PressureAndMixtureAreInterchangeable(t *testing.T) {
 				}
 				if elapsed > 30 {
 					if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-						final = sig.Scalars().ValueOrDefault("SpO2", 0)
+						final = sig.Meta().ValueOrDefault("SpO2", 0.0)
 					}
 				}
 				return nil
@@ -1265,7 +1265,7 @@ func TestReference_ABoilerPoisonsAndAChamberRescues(t *testing.T) {
 
 	blood := func(name string) float64 {
 		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-			return sig.Scalars().ValueOrDefault(name, 0)
+			return sig.Meta().ValueOrDefault(name, 0.0)
 		}
 		return 0
 	}
@@ -1439,7 +1439,7 @@ func TestReference_AFireInTheRoomPoisonsAndThenClears(t *testing.T) {
 	agg := simMesh(sim).ComponentByName("aggregated_state")
 	carboxy := func() float64 {
 		if sig := agg.OutputByName("human-Leon::venous_blood").Signals().First(); sig != nil {
-			return sig.Scalars().ValueOrDefault("COHb", 0)
+			return sig.Meta().ValueOrDefault("COHb", 0.0)
 		}
 		return 0
 	}

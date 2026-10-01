@@ -142,8 +142,8 @@ func latchVitals(_ context.Context, this *component.Component) error {
 		this.State().Set(loadOutput, sig.Float64OrDefault(da.RestingCardiacOutput))
 	}
 	if sig := firstSignal(this, "body_state"); sig != nil {
-		s := sig.Scalars()
-		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100))
+		s := sig.Meta()
+		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100.0))
 		this.State().Set(body.Glycemia, s.ValueOrDefault(body.Glycemia, NormalGlycemia))
 		this.State().Set(body.CoreTemperature, s.ValueOrDefault(body.CoreTemperature, NormalCoreTemperature))
 	}
@@ -151,7 +151,7 @@ func latchVitals(_ context.Context, this *component.Component) error {
 		// Delivery, not tension: what the blood is carrying times what is
 		// carrying it. CaO2 is mL per dL and cardiac output is L per min, so ten
 		// decilitres to the litre turns the pair into mL per minute.
-		content := sig.Scalars().ValueOrDefault("CaO2", bloodstream.NormalOxygenContent)
+		content := sig.Meta().ValueOrDefault("CaO2", bloodstream.NormalOxygenContent)
 		this.State().Set(loadContent, content)
 		this.State().Set(loadDelivery, content*10*this.State().Get(loadOutput).(float64))
 	}
@@ -220,7 +220,7 @@ func inflictDamage(_ context.Context, this *component.Component) error {
 			continue
 		}
 		if err := this.OutputByName(organ + "_damage").PutSignals(
-			signal.New(amount).WithLabel("category", "damage"),
+			signal.New(amount).WithMeta("category", "damage"),
 		); err != nil {
 			return err
 		}

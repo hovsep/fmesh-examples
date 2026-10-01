@@ -137,7 +137,7 @@ func rememberBodyTemperature(_ context.Context, this *component.Component) error
 	if in == nil || !in.HasSignals() {
 		return nil
 	}
-	this.State().Set(stateCoreTemperature, in.Signals().First().Scalars().
+	this.State().Set(stateCoreTemperature, in.Signals().First().Meta().
 		ValueOrDefault(body.CoreTemperature, body.NormalCoreTemperature))
 	return nil
 }

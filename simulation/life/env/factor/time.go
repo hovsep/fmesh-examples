@@ -45,12 +45,12 @@ const tickScalar = "tick_duration_ns"
 
 // RecordTick notes on the mesh how much simulated time one run of it represents.
 func RecordTick(fm *fmesh.FMesh, tick time.Duration) {
-	fm.Scalars().Set(tickScalar, float64(tick))
+	fm.Meta().Set(tickScalar, float64(tick))
 }
 
 // TickOf reports the step a mesh was built with.
 func TickOf(fm *fmesh.FMesh) time.Duration {
-	return time.Duration(fm.Scalars().ValueOrDefault(tickScalar, float64(DefaultTickDuration)))
+	return time.Duration(fm.Meta().ValueOrDefault(tickScalar, float64(DefaultTickDuration)))
 }
 
 // GetTimeComponent returns the time component of the habitat, stepping the given

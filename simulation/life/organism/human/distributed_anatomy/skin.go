@@ -141,7 +141,7 @@ const (
 func rememberEnvironment(_ context.Context, this *component.Component) error {
 	if sig := firstSignal(this, "body_state"); sig != nil {
 		this.State().Set(body.CoreTemperature,
-			sig.Scalars().ValueOrDefault(body.CoreTemperature, NormalSkinCoreTemperature))
+			sig.Meta().ValueOrDefault(body.CoreTemperature, NormalSkinCoreTemperature))
 	}
 	if sig := firstSignal(this, "ambient_gas"); sig != nil {
 		if _, _, _, _, temp, _, err := atmosphere.Unpack(sig); err == nil {
@@ -202,8 +202,8 @@ func regulateSkin(_ context.Context, this *component.Component) error {
 	}
 	return this.OutputByName("losses").PutSignals(
 		signal.New("losses").
-			WithLabel("category", "skin").
-			WithScalar(body.WaterMl, lostMl),
+			WithMeta("category", "skin").
+			WithMeta(body.WaterMl, lostMl),
 	)
 }
 

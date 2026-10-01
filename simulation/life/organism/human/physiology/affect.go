@@ -170,9 +170,9 @@ func deriveFeelings(_ context.Context, this *component.Component) error {
 // different mesh cycles.
 func rememberInputs(this *component.Component) {
 	if sig := firstSignal(this, "body_state"); sig != nil {
-		s := sig.Scalars()
+		s := sig.Meta()
 		this.State().Set(body.EnergyKcal, s.ValueOrDefault(body.EnergyKcal, StartingEnergyKcal))
-		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100))
+		this.State().Set(body.HydrationPct, s.ValueOrDefault(body.HydrationPct, 100.0))
 		this.State().Set(body.Glycemia, s.ValueOrDefault(body.Glycemia, NormalGlycemia))
 		this.State().Set(body.CoreTemperature, s.ValueOrDefault(body.CoreTemperature, NormalCoreTemperature))
 	}
@@ -183,7 +183,7 @@ func rememberInputs(this *component.Component) {
 		smooth := func(key string, scalar string, fallback float64) {
 			this.State().Update(key, func(v any) any {
 				return mathx.DecayToward(v.(float64),
-					sig.Scalars().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
+					sig.Meta().ValueOrDefault(scalar, fallback), dt, bloodGasHalfLifeSec)
 			})
 		}
 		smooth(stateO2, "PaO2", bloodstream.NormalPaO2)
@@ -199,8 +199,8 @@ func rememberInputs(this *component.Component) {
 		this.State().Set(stateExertion, sig.Float64OrDefault(1))
 	}
 	if sig := firstSignal(this, "mental_load"); sig != nil {
-		this.State().Set(stateArousal, sig.Scalars().ValueOrDefault("arousal", 0))
-		this.State().Set(stateValence, sig.Scalars().ValueOrDefault("valence", 0))
+		this.State().Set(stateArousal, sig.Meta().ValueOrDefault("arousal", 0.0))
+		this.State().Set(stateValence, sig.Meta().ValueOrDefault("valence", 0.0))
 	}
 }
 
@@ -215,9 +215,9 @@ func firstSignal(this *component.Component, portName string) *signal.Signal {
 // packFeelings puts every feeling on one signal, so the whole emotional picture
 // travels together and cannot be read half-updated.
 func packFeelings(feelings map[string]float64) *signal.Signal {
-	sig := signal.New("feelings").WithLabel("category", "affect")
+	sig := signal.New("feelings").WithMeta("category", "affect")
 	for _, name := range body.Feelings {
-		sig = sig.WithScalar(name, mathx.Clamp(feelings[name], 0, 1))
+		sig = sig.WithMeta(name, mathx.Clamp(feelings[name], 0, 1))
 	}
 	return sig
 }

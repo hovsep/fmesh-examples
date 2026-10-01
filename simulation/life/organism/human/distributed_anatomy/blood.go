@@ -168,18 +168,18 @@ func publishBloodLevels(this *component.Component) {
 
 	this.OutputByName("venous_blood").PutSignals(
 		signal.New("venous_blood").
-			WithLabel("category", "gas").
-			WithLabel("type", "venous").
-			WithScalar("PaO2", paO2).
-			WithScalar("PaCO2", paCO2).
-			WithScalar("SpO2", displayed).
-			WithScalar("COHb", carboxy*100).
-			WithScalar("pH", bloodstream.PHAt(paCO2)).
-			WithScalar("CaO2", content).
-			WithScalar("hemoglobin", hemoglobin).
-			WithScalar("volume_l", this.State().Get(stateVolume).(float64)).
-			WithScalar("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
-			WithScalars(circulatingHormones(this)),
+			WithMeta("category", "gas").
+			WithMeta("type", "venous").
+			WithMeta("PaO2", paO2).
+			WithMeta("PaCO2", paCO2).
+			WithMeta("SpO2", displayed).
+			WithMeta("COHb", carboxy*100).
+			WithMeta("pH", bloodstream.PHAt(paCO2)).
+			WithMeta("CaO2", content).
+			WithMeta("hemoglobin", hemoglobin).
+			WithMeta("volume_l", this.State().Get(stateVolume).(float64)).
+			WithMeta("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
+			WithMetaMany(circulatingHormones(this)),
 	)
 	this.OutputByName("spo2").PutPayloads(displayed)
 	this.OutputByName("pao2").PutPayloads(paO2)
@@ -259,7 +259,7 @@ func updateBloodLevels(this *component.Component) {
 	hormoneRates := map[string]float64{}
 	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
 		rate := sig.Float64OrDefault(0)
-		switch sig.Labels().ValueOrDefault(bloodstream.SubstanceLabel, "") {
+		switch sig.Meta().ValueOrDefault(bloodstream.SubstanceLabel, "") {
 		case bloodstream.SubstanceO2Draw:
 			o2DrawPerSec += rate
 		case bloodstream.SubstanceCO2Load:
@@ -269,7 +269,7 @@ func updateBloodLevels(this *component.Component) {
 			// binds and does not un-bind on its own.
 			coLoad += rate
 		case bloodstream.SubstanceHormone:
-			hormoneRates[sig.Labels().ValueOrDefault(bloodstream.HormoneLabel, "")] += rate
+			hormoneRates[sig.Meta().ValueOrDefault(bloodstream.HormoneLabel, "")] += rate
 		}
 		return nil
 	})

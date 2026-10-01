@@ -8,7 +8,7 @@ import (
 
 // ScalarInt reads a numeric signal metadata value as an int
 func ScalarInt(sig *signal.Signal, name string) int {
-	return int(sig.Scalars().ValueOrDefault(name, 0))
+	return int(sig.Meta().ValueOrDefault(name, 0.0))
 }
 
 // IndexedPortName returns the name of the index-th port of an indexed group

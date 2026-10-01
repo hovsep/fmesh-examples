@@ -46,20 +46,25 @@ func Port(componentName, portName string) Observable {
 	}
 }
 
-// Scalar watches one named scalar carried by a composite signal.
+// Scalar watches one named numeric metadata entry (a scalar) carried by a
+// composite signal.
 //
 // Composite signals -- a breath of air, a sample of blood -- carry a string tag
-// as their payload and every real measurement as a scalar, so this is the only
+// as their payload and every real measurement as numeric metadata, so this is the only
 // way to see most of what a model publishes.
 func Scalar(componentName, portName, scalarName string) Observable {
 	return Observable{
 		Name: componentName + "." + portName + ":" + scalarName,
 		Read: func(fm *fmesh.FMesh) (float64, bool) {
 			sig := firstSignal(fm, componentName, portName)
-			if sig == nil || !sig.Scalars().Has(scalarName) {
+			if sig == nil {
 				return 0, false
 			}
-			return sig.Scalars().ValueOrDefault(scalarName, 0), true
+			v, err := sig.Meta().Value[float64](scalarName)
+			if err != nil {
+				return 0, false
+			}
+			return v, true
 		},
 	}
 }

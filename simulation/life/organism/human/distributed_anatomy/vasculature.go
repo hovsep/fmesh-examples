@@ -224,13 +224,13 @@ func circulate(_ context.Context, this *component.Component) error {
 	if in := this.InputByName("venous_blood"); in.HasSignals() {
 		if sig := in.Signals().First(); sig != nil {
 			this.State().Set(stateBloodVolume,
-				sig.Scalars().ValueOrDefault("volume_l", bloodstream.NormalBloodVolume))
+				sig.Meta().ValueOrDefault("volume_l", bloodstream.NormalBloodVolume))
 		}
 	}
 	if in := this.InputByName("physical_load"); in.HasSignals() {
 		if sig := in.Signals().First(); sig != nil {
 			this.State().Set(stateExertion,
-				sig.Scalars().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
+				sig.Meta().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
 		}
 	}
 
@@ -306,7 +306,7 @@ func publishCirculation(this *component.Component) {
 	get := func(key string) float64 { return this.State().Get(key).(float64) }
 
 	this.OutputByName("map").PutSignals(
-		signal.New(get(stateMAP)).WithLabel("category", "circulation"),
+		signal.New(get(stateMAP)).WithMeta("category", "circulation"),
 	)
 	this.OutputByName("cardiac_output").PutPayloads(get(stateCardiacOutput))
 	this.OutputByName("svr").PutPayloads(get(stateSVR))

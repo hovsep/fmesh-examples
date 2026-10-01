@@ -62,8 +62,8 @@ func TestPayloadChecks(t *testing.T) {
 
 func TestLabelAndScalarChecks(t *testing.T) {
 	labelled := signal.New("load").
-		WithLabel("category", "activity").
-		WithScalar("intensity", 8)
+		WithMeta("category", "activity").
+		WithMeta("intensity", 8.0)
 
 	o := traffic(nil, []*signal.Signal{labelled})
 

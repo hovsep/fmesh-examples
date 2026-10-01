@@ -23,8 +23,8 @@ const (
 )
 
 const (
-	labelEvent   = "event"   // on a signal: the event it carries
-	labelCurrent = "current" // on the mesh: the name of the current state
+	keyEvent   = "event"   // on a signal: the event it carries
+	keyCurrent = "current" // on the mesh: the name of the current state
 )
 
 var (
@@ -64,12 +64,12 @@ func main() {
 	fire(fm, "update")
 
 	fmt.Printf("Paying 5.00 for a %.2f order? The guard says no:\n", orderTotal)
-	fire(fm, "pay", signal.New("order #1042").WithScalar("amount", 5.00))
+	fire(fm, "pay", signal.New("order #1042").WithMeta("amount", 5.00))
 
 	fmt.Println("Paying in full, by card:")
-	fire(fm, "pay", signal.New("order #1042").WithScalar("amount", orderTotal).WithLabel("method", "card"))
+	fire(fm, "pay", signal.New("order #1042").WithMeta("amount", orderTotal).WithMeta("method", "card"))
 
-	fmt.Println("The shop restarts overnight. The machine's whole state is one mesh label,")
+	fmt.Println("The shop restarts overnight. The machine's whole state is one mesh metadata entry,")
 	fmt.Printf("so a fresh mesh built with it picks up where this one left off (%q):\n", current(fm))
 	resumed, err := getMesh(current(fm))
 	if err != nil {
@@ -93,7 +93,7 @@ func main() {
 func getMesh(startAt string) (*fmesh.FMesh, error) {
 	fm, err := fmesh.New("order lifecycle",
 		fmesh.WithDescription("a state machine: states are components, transitions are pipes leaving event-named ports, a guard sits on its pipe"),
-		fmesh.WithLabel(labelCurrent, startAt),
+		fmesh.WithMeta(keyCurrent, startAt),
 		// A refused event is an activation error, and the run must stop right
 		// there: the machine has not moved and the caller gets the reason.
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
@@ -103,10 +103,10 @@ func getMesh(startAt string) (*fmesh.FMesh, error) {
 	}
 
 	// Paying is allowed only for the full amount, and only with a stated
-	// method: the guard reads the signal's scalars and labels, not its payload.
+	// method: the guard reads the signal's metadata, not its payload.
 	paymentAccepted := signal.And(
-		signal.HasLabel("method"),
-		func(s *signal.Signal) bool { return s.Scalars().ValueOrDefault("amount", 0) >= orderTotal },
+		signal.HasMeta("method"),
+		func(s *signal.Signal) bool { return s.Meta().ValueOrDefault("amount", 0.0) >= orderTotal },
 	)
 
 	if err := errors.Join(
@@ -154,15 +154,15 @@ func addState(fm *fmesh.FMesh, name string, events ...string) error {
 			// records that on the mesh — it is the only one who knows for sure.
 			component.When(component.HasSignalsOn(portEnter), func(_ context.Context, this *component.Component) error {
 				sig := this.InputByName(portEnter).Signals().First()
-				fm.Labels().Set(labelCurrent, name)
-				fmt.Printf("   → entered %q on %q\n", name, sig.Labels().ValueOrDefault(labelEvent, ""))
+				fm.Meta().Set(keyCurrent, name)
+				fmt.Printf("   → entered %q on %q\n", name, sig.Meta().ValueOrDefault(keyEvent, ""))
 				return nil
 			}),
 			// An event was fired while this state is current: send it down the
 			// pipe of the same name, or refuse it if there is no such pipe.
 			component.When(component.HasSignalsOn(portEvent), func(_ context.Context, this *component.Component) error {
 				sig := this.InputByName(portEvent).Signals().First()
-				event := sig.Labels().ValueOrDefault(labelEvent, "")
+				event := sig.Meta().ValueOrDefault(keyEvent, "")
 				out := this.OutputByName(event)
 				if out == nil {
 					return fmt.Errorf("%w: %q in %q", errEventNotAllowed, event, name)
@@ -189,7 +189,7 @@ func addGuard(fm *fmesh.FMesh, name string, accept signal.Predicate) error {
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			sig := this.InputByName(portIn).Signals().First()
 			if !accept(sig) {
-				return fmt.Errorf("%w: %q", errGuardRejected, sig.Labels().ValueOrDefault(labelEvent, ""))
+				return fmt.Errorf("%w: %q", errGuardRejected, sig.Meta().ValueOrDefault(keyEvent, ""))
 			}
 			return this.OutputByName(portOut).PutSignals(sig)
 		}),
@@ -205,15 +205,18 @@ func addGuard(fm *fmesh.FMesh, name string, accept signal.Predicate) error {
 // error returns before the cycle's inputs are drained, so the refused signal
 // would still be sitting on the port, ready to replay on the next fire.
 var dropInputsOnError = component.WithHooks(func(h *component.Hooks) {
-	h.OnError(func(ctx context.Context, ac *component.ActivationContext) error {
+	h.AfterActivation(func(ctx context.Context, ac *component.ActivationContext) error {
+		if !ac.Result.IsError() {
+			return nil
+		}
 		return ac.Component.ClearInputs(ctx)
 	})
 })
 
-// current is the name of the state the machine is in: a label on the mesh,
+// current is the name of the state the machine is in: a metadata entry on the mesh,
 // written by whichever state a transition last entered.
 func current(fm *fmesh.FMesh) string {
-	return fm.Labels().ValueOrDefault(labelCurrent, "")
+	return fm.Meta().ValueOrDefault(keyCurrent, "")
 }
 
 // done reports whether the machine is in a final state: one with no way out.
@@ -222,7 +225,7 @@ func done(fm *fmesh.FMesh) bool {
 }
 
 // fire drops an event into the machine and runs the mesh until it settles:
-// one transition at most. The event is a labeled signal on the current
+// one transition at most. The event is a signal tagged with metadata on the current
 // state's event port; the optional signal carries payload and metadata for
 // guards to look at. An unknown event is one no state has an exit for.
 func fire(fm *fmesh.FMesh, event string, sig ...*signal.Signal) {
@@ -250,7 +253,7 @@ func fireEvent(fm *fmesh.FMesh, event string, sig ...*signal.Signal) error {
 	if len(sig) > 0 && sig[0] != nil {
 		s = sig[0]
 	}
-	s = s.WithLabel(labelEvent, event) // copy-on-write: the caller's signal is untouched
+	s = s.WithMeta(keyEvent, event) // copy-on-write: the caller's signal is untouched
 
 	if err := fm.ComponentByName(current(fm)).InputByName(portEvent).PutSignals(s); err != nil {
 		return err
