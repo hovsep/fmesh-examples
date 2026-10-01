@@ -20,10 +20,10 @@ func main() {
 	fmt.Println("Architecture: Engine -> Clutch -> Gearbox -> Wheels")
 	fmt.Println("Each activation cycle, signals flow through the chain, and every activated component is highlighted in the DOT output.")
 
-	// The exporter is a plugin: attach it when building the mesh. WithCycles
-	// records every cycle of the run for ExportCycles.
-	graphviz := dot.New(dot.WithCycles())
-	fm, err := getMesh(graphviz)
+	// The exporter is a plain value: it only reads the mesh, so nothing is
+	// attached to it. One exporter serves the structure and every cycle.
+	graphviz := dot.New()
+	fm, err := getMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
@@ -47,7 +47,7 @@ func main() {
 	fmt.Println("The mesh successfully finished, so we can try to export it as DOT graph")
 	fmt.Println("learn more about DOT at https://graphviz.org/")
 
-	staticGraphBytes, err := graphviz.Export()
+	staticGraphBytes, err := graphviz.Export(fm)
 	if err != nil {
 		fmt.Println("can not export static graph:", err)
 		os.Exit(1)
@@ -68,14 +68,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	cyclesGraphs, err := graphviz.ExportCycles()
-	if err != nil {
-		fmt.Println("can not export graph with cycles:", err)
-		os.Exit(1)
-	}
-
 	fmt.Println("Also you can create a graph representation of each activation cycle ! (activated components will be highlighted with different color)")
-	for cycleNum, cycleGraph := range cyclesGraphs {
+	// RuntimeInfo.Cycles holds every cycle of the run.
+	for cycleNum, c := range runtimeInfo.Cycles.All() {
+		cycleGraph, err := graphviz.ExportCycle(fm, c)
+		if err != nil {
+			fmt.Println("can not export cycle graph:", err)
+			os.Exit(1)
+		}
 		fmt.Printf("Cycle #%d graph:\n", cycleNum)
 		fmt.Println(string(cycleGraph))
 		if err := writeGraphToFile(cycleGraph, fmt.Sprintf("cycle#%d-%v.dot", cycleNum, runId)); err != nil {
@@ -91,7 +91,7 @@ func main() {
 	fmt.Println("=== DOT Export Complete ===")
 }
 
-func getMesh(graphviz *dot.Plugin) (*fmesh.FMesh, error) {
+func getMesh() (*fmesh.FMesh, error) {
 	engine, err := component.New("engine",
 		component.WithDescription("Sends out rotation signal once started"),
 		component.WithInputs("start"),
@@ -160,7 +160,6 @@ func getMesh(graphviz *dot.Plugin) (*fmesh.FMesh, error) {
 	fm, err := fmesh.New("graph",
 		fmesh.WithDescription("Simple car mechanics simulation"),
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
-		fmesh.WithPlugins(graphviz),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)
