@@ -87,7 +87,7 @@ func getSimulationMeshIn(environment func() (*component.Component, error), tick 
 	// separately, and cannot be told something different.
 	factor.RecordTick(habitat.FM, tick)
 
-	err = internal.HandleGraphFlag(habitat.FM, false)
+	_, err = internal.HandleGraphFlag(habitat.FM)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)

@@ -29,9 +29,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := internal.HandleGraphFlag(fm, true); err != nil {
+	handled, err := internal.HandleGraphFlag(fm)
+	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
+	}
+	if handled {
+		return
 	}
 
 	fmt.Println("Starting engine...")

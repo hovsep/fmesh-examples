@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = internal.HandleGraphFlag(mesh, false)
+	_, err = internal.HandleGraphFlag(mesh)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)

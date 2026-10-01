@@ -24,10 +24,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = internal.HandleGraphFlag(fm, true)
+	handled, err := internal.HandleGraphFlag(fm)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
+	}
+	if handled {
+		return
 	}
 
 	fmt.Println("============================================")
