@@ -1,0 +1,55 @@
+name: CI
+
+# Catches fmesh / fmesh-export API breaks in the examples. Two jobs, so most
+# feedback comes fast while the slow life suite runs alongside.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, vet and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (all but simulation/life)
+        run: go test $(go list ./... | grep -v '/simulation/life$')
+
+  life:
+    name: Life simulation suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # Simulates hours of physiology: ~15 minutes, past go test's 10-minute
+      # per-package default (see the Makefile's test target).
+      - name: Test simulation/life
+        run: go test -timeout 30m ./simulation/life/
