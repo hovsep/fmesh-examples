@@ -24,6 +24,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	handled, err := internal.HandleGraphFlag(outerMesh)
+	if err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+	if handled {
+		return
+	}
+
 	outerMesh.Components().ByName("starter").InputByName("in").PutSignals(signal.New(315))
 
 	if _, err := outerMesh.Run(context.Background()); err != nil {
@@ -132,10 +141,6 @@ func getMesh() (*fmesh.FMesh, error) {
 	}
 	if err := outerMesh.AddComponents(starter, filter, logger, factorizer); err != nil {
 		return nil, fmt.Errorf("add components: %w", err)
-	}
-
-	if err := internal.HandleGraphFlag(outerMesh, true); err != nil {
-		return nil, fmt.Errorf("handle graph flag: %w", err)
 	}
 
 	return outerMesh, nil
@@ -250,7 +255,7 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("add algo components: %w", err)
 	}
 
-	if err := internal.HandleGraphFlag(algoMesh, false); err != nil {
+	if _, err := internal.HandleGraphFlag(algoMesh); err != nil {
 		return nil, fmt.Errorf("handle graph flag: %w", err)
 	}
 

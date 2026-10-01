@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
+	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh/signal"
 )
 
@@ -20,9 +21,13 @@ func main() {
 	}
 
 	// Generate graphs if needed
-	if err := handleGraphFlag(fm); err != nil {
+	handled, err := internal.HandleGraphFlag(fm)
+	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
+	}
+	if handled {
+		return
 	}
 
 	// Request frame 0 from the scene source (the mesh's single entry point);
