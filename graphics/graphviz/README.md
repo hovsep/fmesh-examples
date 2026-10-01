@@ -22,11 +22,11 @@ Separately, `internal.HandleGraphFlag` (shared by every example via `FMESH_GRAPH
 ```bash
 go run .
 
-# Also generate graph-graph.dot / graph-graph.svg via internal.HandleGraphFlag
+# Only write graph-graph.dot / graph-graph.svg via internal.HandleGraphFlag, then exit without running the mesh
 FMESH_GRAPH=1 go run .
 ```
 
-Every run also writes the static and per-cycle `.dot` files described above into the current directory. To convert all of them to images:
+A plain `go run .` also writes the static and per-cycle `.dot` files described above into the current directory. To convert all of them to images:
 
 ```bash
 for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done

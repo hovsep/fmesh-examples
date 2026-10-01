@@ -15,7 +15,7 @@ F-Mesh concepts demonstrated:
 5. **Config as data flow** — the scene is not shared state: the scene source derives per-concern signals from it (geometry, light) and each tracing component adopts a private copy of only the data it needs.
 6. **Cycle barrier** — the assembler naively merges whatever tiles arrived, because a cycle only ends when every component has finished.
 7. **Feedback-driven animation** — the assembler requests the next frame from the orbit; there is no rendering loop in `main()`.
-8. **Observers** — the progress component reports from scalars alone, payload-agnostic.
+8. **Observers** — the progress component reports from signal metadata alone, payload-agnostic.
 
 ## How it works
 
@@ -26,7 +26,7 @@ The code is grouped by pipeline role. The pure 3D math (vectors, camera, scene, 
 - **scene** — the mesh's single entry point. On kick-off it builds the scene and emits per-concern config signals: geometry to every intersector and shadow-caster, the light to every shadow-caster and shader. These one-off signals arrive on the very first cycle, before any wave of rays; each component adopts its own private copy, so no pointer is shared. It then forwards the kick-off to the orbit.
 - **orbit** — for every requested frame number, emits the viewpoint on the camera's orbit around the scene. Once all frames are rendered it emits nothing, so the mesh naturally comes to a halt.
 - **camera-builder** — a pure mapping stage turning a viewpoint into a camera basis.
-- **director** — splits each frame into horizontal tiles, one per parallel tracing chain, tagging each tile signal with `frame`, `y_from` and `y_to` scalars.
+- **director** — splits each frame into horizontal tiles, one per parallel tracing chain, tagging each tile signal with `frame`, `y_from` and `y_to` metadata.
 
 ### Tracing — [`tracing`](./tracing)
 
@@ -49,9 +49,9 @@ Four parallel chains (one per tile band), each `raygen -> intersector -> shadow-
 
 - **palettizer** — converts RGBA frames to GIF's indexed color space with Floyd–Steinberg dithering. It works pipelined: while it dithers frame N, the chains are already busy with frame N+1.
 - **encoder** — accumulates paletted frames in its state and writes `out.gif` once the last frame arrives.
-- **progress** — sits aside of the main flow and logs `rendered frame N/36` from the signal's scalars alone.
+- **progress** — sits aside of the main flow and logs `rendered frame N/36` from the signal's metadata alone.
 
-Shared port names, scalar names and frame parameters live in [`common`](./common).
+Shared port names, metadata keys and frame parameters live in [`common`](./common).
 
 ![Mesh graph](./ray%20tracer-graph.svg)
 
