@@ -157,8 +157,8 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 
 	var bloodCO2, bloodO2 float64
 	if bloodSig := this.InputByName("venous_blood").Signals().First(); bloodSig != nil {
-		bloodCO2 = bloodSig.Scalars().ValueOrDefault("PaCO2", 0)
-		bloodO2 = bloodSig.Scalars().ValueOrDefault("PaO2", 0)
+		bloodCO2 = bloodSig.Meta().ValueOrDefault("PaCO2", 0.0)
+		bloodO2 = bloodSig.Meta().ValueOrDefault("PaO2", 0.0)
 	}
 
 	// Carbon monoxide crosses here like anything else, and the lung is the only
@@ -223,29 +223,29 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 
 	// Emit exhaled_gas (same structure as inspired — composition fractions)
 	exhaled := signal.New("air").
-		WithLabel("category", "gas").
-		WithLabel("type", "air").
-		WithLabel("distribution:composition", "true").
-		WithScalar("composition:nitrogen", n).
-		WithScalar("composition:oxygen", o2New).
-		WithScalar("composition:argon", a).
-		WithScalar("composition:pollution", pollNew).
-		WithScalar("composition:carbon_dioxide", co2Frac).
-		WithScalar("temperature", tempNew).
-		WithScalar("humidity", humidNew)
+		WithMeta("category", "gas").
+		WithMeta("type", "air").
+		WithMeta("distribution:composition", "true").
+		WithMeta("composition:nitrogen", n).
+		WithMeta("composition:oxygen", o2New).
+		WithMeta("composition:argon", a).
+		WithMeta("composition:pollution", pollNew).
+		WithMeta("composition:carbon_dioxide", co2Frac).
+		WithMeta("temperature", tempNew).
+		WithMeta("humidity", humidNew)
 	this.OutputByName("exhaled_gas").PutSignals(exhaled)
 
 	// Emit alveolar_gas (actual gas VOLUMES per tick, mL)
 	alveolar := signal.New("alveolar_gas").
-		WithLabel("category", "gas").
-		WithLabel("type", "alveolar").
-		WithScalar("O2_vol", o2New/100.0*tickVolume).
-		WithScalar("CO2_vol", co2Frac/100.0*tickVolume).
-		WithScalar("N2_vol", n/100.0*tickVolume).
-		WithScalar("Ar_vol", a/100.0*tickVolume).
-		WithScalar("tick_volume", tickVolume).
-		WithScalar("temperature", tempNew).
-		WithScalar("humidity", humidNew)
+		WithMeta("category", "gas").
+		WithMeta("type", "alveolar").
+		WithMeta("O2_vol", o2New/100.0*tickVolume).
+		WithMeta("CO2_vol", co2Frac/100.0*tickVolume).
+		WithMeta("N2_vol", n/100.0*tickVolume).
+		WithMeta("Ar_vol", a/100.0*tickVolume).
+		WithMeta("tick_volume", tickVolume).
+		WithMeta("temperature", tempNew).
+		WithMeta("humidity", humidNew)
 	this.OutputByName("alveolar_gas").PutSignals(alveolar)
 
 	return nil

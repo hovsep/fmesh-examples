@@ -11,7 +11,7 @@ F-Mesh concepts demonstrated:
 1. **Fan-out parallelism** — four `raygen -> intersector -> shadow-caster -> shader` chains render horizontal tile bands concurrently (components of a cycle activate in parallel goroutines).
 2. **Recursion as a feedback loop** — the shader's secondary output pipes reflected waves back into its intersector (the wavefront reflection cycle).
 3. **Fan-in** — all shaders feed one accumulator port; all chains feed one downsampler port.
-4. **Scalars** — routing metadata (`frame`, `y_from`, `bounce`) rides on signals as native numeric metadata; `MapPayload(s)` preserves it, so pure stages never touch it. There are no custom "message" structs.
+4. **Numeric metadata** — routing metadata (`frame`, `y_from`, `bounce`) rides on signals as native numeric metadata; `MapPayload(s)` preserves it, so pure stages never touch it. There are no custom "message" structs.
 5. **Config as data flow** — the scene is not shared state: the scene source derives per-concern signals from it (geometry, light) and each tracing component adopts a private copy of only the data it needs.
 6. **Cycle barrier** — the assembler naively merges whatever tiles arrived, because a cycle only ends when every component has finished.
 7. **Feedback-driven animation** — the assembler requests the next frame from the orbit; there is no rendering loop in `main()`.

@@ -82,7 +82,15 @@ func (d *Damage) Init(c *component.Component) error {
 	}
 
 	c.SetupHooks(func(hooks *component.Hooks) {
-		hooks.OnActivation(d.onActivation)
+		// Damage is folded in after the organ's own function, and only when it
+		// succeeded: it writes outputs, which must not be sent for a failed or
+		// waiting activation.
+		hooks.AfterActivation(func(ctx context.Context, ac *component.ActivationContext) error {
+			if ac.Result.Code() != component.ActivationCodeOK {
+				return nil
+			}
+			return d.onActivation(ctx, ac.Component)
+		})
 	})
 	return nil
 }
@@ -126,7 +134,7 @@ func (d *Damage) onActivation(ctx context.Context, this *component.Component) er
 	if level >= CriticalLevel && !this.State().Get(stateFailed).(bool) {
 		this.State().Set(stateFailed, true)
 		return this.OutputByName(d.failureOutput()).PutSignals(
-			signal.New(d.organ+"_failure").WithLabel("organ", d.organ))
+			signal.New(d.organ+"_failure").WithMeta("organ", d.organ))
 	}
 	return nil
 }

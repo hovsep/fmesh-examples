@@ -169,9 +169,9 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 	this.InputByName("ctl").
 		Signals().
 		Filter(func(s *signal.Signal) bool {
-			return s.Labels().Has("cmd")
+			return s.Meta().Has("cmd")
 		}).ForEach(func(ctlSig *signal.Signal) error {
-		switch ctlSig.Labels().ValueOrDefault("cmd", "") {
+		switch ctlSig.Meta().ValueOrDefault("cmd", "") {
 		case "change_temperature":
 			setShade(this, this.State().Get(StateShadeTemperature).(float64)+
 				ctlSig.Float64OrDefault(0.0))
@@ -199,7 +199,7 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			this.Logger().Printf("mixture now %.0f%% oxygen", oxygen)
 			return nil
 		case cmdAddMixin:
-			name := ctlSig.Labels().ValueOrDefault("mixin", "")
+			name := ctlSig.Meta().ValueOrDefault("mixin", "")
 			if _, ok := mixins[name]; !ok {
 				return fmt.Errorf("unknown mixin %q (have %v)", name, MixinNames())
 			}
@@ -218,7 +218,7 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			this.Logger().Println("the air is clear again")
 			return nil
 		case cmdSetPreset:
-			name := ctlSig.Labels().ValueOrDefault("preset", "")
+			name := ctlSig.Meta().ValueOrDefault("preset", "")
 			p, ok := presets[name]
 			if !ok {
 				return fmt.Errorf("unknown preset %q (have %v)", name, PresetNames())

@@ -60,7 +60,7 @@ func GetExcretion() (*component.Component, error) {
 }
 
 func acceptExcretionCommands(_ context.Context, this *component.Component) error {
-	return command.ForEach(this, sim.ControlPort, func(name string, _ *meta.Scalars) error {
+	return command.ForEach(this, sim.ControlPort, func(name string, _ *meta.Meta) error {
 		switch command.Verb(name) {
 		case VerbUrinate:
 			// A flag rather than a counter: asking twice in one tick still means
@@ -99,5 +99,5 @@ func emitExcretionIntent(_ context.Context, this *component.Component) error {
 }
 
 func voidIntent() *signal.Signal {
-	return signal.New("void").WithLabel("category", "excretion")
+	return signal.New("void").WithMeta("category", "excretion")
 }

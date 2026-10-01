@@ -20,7 +20,10 @@ func main() {
 	fmt.Println("Architecture: Engine -> Clutch -> Gearbox -> Wheels")
 	fmt.Println("Each activation cycle, signals flow through the chain, and every activated component is highlighted in the DOT output.")
 
-	fm, err := getMesh()
+	// The exporter is a plugin: attach it when building the mesh. WithCycles
+	// records every cycle of the run for ExportCycles.
+	graphviz := dot.New(dot.WithCycles())
+	fm, err := getMesh(graphviz)
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
@@ -44,9 +47,7 @@ func main() {
 	fmt.Println("The mesh successfully finished, so we can try to export it as DOT graph")
 	fmt.Println("learn more about DOT at https://graphviz.org/")
 
-	exporter := dot.NewDotExporter()
-
-	staticGraphBytes, err := exporter.Export(fm)
+	staticGraphBytes, err := graphviz.Export()
 	if err != nil {
 		fmt.Println("can not export static graph:", err)
 		os.Exit(1)
@@ -67,7 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cyclesGraphs, err := exporter.ExportWithCycles(fm, runtimeInfo.Cycles)
+	cyclesGraphs, err := graphviz.ExportCycles()
 	if err != nil {
 		fmt.Println("can not export graph with cycles:", err)
 		os.Exit(1)
@@ -90,13 +91,13 @@ func main() {
 	fmt.Println("=== DOT Export Complete ===")
 }
 
-func getMesh() (*fmesh.FMesh, error) {
+func getMesh(graphviz *dot.Plugin) (*fmesh.FMesh, error) {
 	engine, err := component.New("engine",
 		component.WithDescription("Sends out rotation signal once started"),
 		component.WithInputs("start"),
 		component.WithOutputs("rotation"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			revolution := signal.New(10).WithLabel("direction", "clockwise")
+			revolution := signal.New(10).WithMeta("direction", "clockwise")
 			this.OutputByName("rotation").PutSignals(revolution)
 			return nil
 		}),
@@ -159,6 +160,7 @@ func getMesh() (*fmesh.FMesh, error) {
 	fm, err := fmesh.New("graph",
 		fmesh.WithDescription("Simple car mechanics simulation"),
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
+		fmesh.WithPlugins(graphviz),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new mesh: %w", err)

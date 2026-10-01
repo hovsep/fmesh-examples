@@ -88,7 +88,7 @@ func readHydration(_ context.Context, this *component.Component) error {
 		return nil
 	}
 	if sig := in.Signals().First(); sig != nil {
-		this.State().Set(StateHydrationPct, sig.Scalars().ValueOrDefault(body.HydrationPct, 100.0))
+		this.State().Set(StateHydrationPct, sig.Meta().ValueOrDefault(body.HydrationPct, 100.0))
 	}
 	return nil
 }
@@ -134,8 +134,8 @@ func produceUrine(_ context.Context, this *component.Component) error {
 	// a loss the moment it is produced rather than when it is voided.
 	return this.OutputByName("losses").PutSignals(
 		signal.New("losses").
-			WithLabel("category", "kidney").
-			WithScalar(body.WaterMl, produced),
+			WithMeta("category", "kidney").
+			WithMeta(body.WaterMl, produced),
 	)
 }
 

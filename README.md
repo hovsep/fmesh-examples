@@ -35,7 +35,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | Example | Description |
 |---------|-------------|
 | [String Processing](./basics/string_processing) | Two components and one pipe: the smallest useful mesh |
-| [Filter](./basics/filter) | Routing signals to different outputs by label |
+| [Filter](./basics/filter) | Routing signals to different outputs by metadata |
 | [Pipeline](./basics/pipeline) | A multi-stage chain that reads stdin and files |
 
 ### `patterns/` — how a mesh is wired and driven
@@ -46,7 +46,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
 | [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
 | [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
-| [State Machine](./patterns/state_machine) | An FSM out of nothing but fmesh: states are components, transitions are pipes, the current state is a mesh label — the mesh graph is the state diagram |
+| [State Machine](./patterns/state_machine) | An FSM out of nothing but fmesh: states are components, transitions are pipes, the current state is a mesh metadata entry — the mesh graph is the state diagram |
 
 ### `simulation/` — systems evolving over time
 

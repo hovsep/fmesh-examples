@@ -65,11 +65,11 @@ func GetSunComponent() (*component.Component, error) {
 
 // setTimeOfDay records an hour the sky has been asked to show.
 func setTimeOfDay(_ context.Context, this *component.Component) error {
-	return command.ForEach(this, "ctl", func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, "ctl", func(name string, args *meta.Meta) error {
 		if command.Verb(name) != cmdSetHour {
 			return nil
 		}
-		this.State().Set(StatePendingHour, args.ValueOrDefault("hour", 12))
+		this.State().Set(StatePendingHour, args.ValueOrDefault("hour", 12.0))
 		return nil
 	})
 }

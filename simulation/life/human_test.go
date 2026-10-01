@@ -237,8 +237,8 @@ func Test_HumanLiveness(t *testing.T) {
 						if sig == nil {
 							return nil
 						}
-						observedO2 = append(observedO2, sig.Scalars().ValueOrDefault("PaO2", 0))
-						observedCO2 = append(observedCO2, sig.Scalars().ValueOrDefault("PaCO2", 0))
+						observedO2 = append(observedO2, sig.Meta().ValueOrDefault("PaO2", 0.0))
+						observedCO2 = append(observedCO2, sig.Meta().ValueOrDefault("PaCO2", 0.0))
 						return nil
 					})
 				})
@@ -340,8 +340,8 @@ func Test_HumanLiveness(t *testing.T) {
 					rN, rO, rA, rP, rTemp, rHum, err := atmosphere.Unpack(rSig)
 					require.NoError(t, err)
 
-					lCO2 := lSig.Scalars().ValueOrDefault("composition:carbon_dioxide", 0)
-					rCO2 := rSig.Scalars().ValueOrDefault("composition:carbon_dioxide", 0)
+					lCO2 := lSig.Meta().ValueOrDefault("composition:carbon_dioxide", 0.0)
+					rCO2 := rSig.Meta().ValueOrDefault("composition:carbon_dioxide", 0.0)
 
 					// Exhaled gas should be warmer, more humid, composition changed
 					assert.Greater(t, lTemp, inspTemp, "left exhaled should be warmer than inspired")
@@ -375,8 +375,8 @@ func Test_HumanLiveness(t *testing.T) {
 						if sig == nil {
 							return nil
 						}
-						o2 = append(o2, sig.Scalars().ValueOrDefault("PaO2", 0))
-						co2 = append(co2, sig.Scalars().ValueOrDefault("PaCO2", 0))
+						o2 = append(o2, sig.Meta().ValueOrDefault("PaO2", 0.0))
+						co2 = append(co2, sig.Meta().ValueOrDefault("PaCO2", 0.0))
 						return nil
 					})
 				})

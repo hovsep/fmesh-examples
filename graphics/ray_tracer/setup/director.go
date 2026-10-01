@@ -28,8 +28,8 @@ func GetDirector() *component.Component {
 						yTo = common.FrameHeight
 					}
 
-					tile := signal.New(cam).WithScalars(map[string]float64{
-						common.ScalarFrame: sig.Scalars().ValueOrDefault(common.ScalarFrame, 0),
+					tile := signal.New(cam).WithMetaMany(map[string]float64{
+						common.ScalarFrame: sig.Meta().ValueOrDefault(common.ScalarFrame, 0.0),
 						common.ScalarYFrom: float64(yFrom),
 						common.ScalarYTo:   float64(yTo),
 					})

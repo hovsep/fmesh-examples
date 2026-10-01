@@ -194,19 +194,19 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			if in := this.InputByName("physical_load"); in.HasSignals() {
 				if sig := in.Signals().First(); sig != nil {
 					this.State().Set(stateLastExertion,
-						sig.Scalars().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
+						sig.Meta().ValueOrDefault(controller.ScalarIntensity, controller.RestingIntensity))
 				}
 			}
 			if in := this.InputByName("mental_load"); in.HasSignals() {
 				if sig := in.Signals().First(); sig != nil {
 					this.State().Set(stateLastArousal,
-						sig.Scalars().ValueOrDefault(controller.ScalarArousal, 0))
+						sig.Meta().ValueOrDefault(controller.ScalarArousal, 0.0))
 				}
 			}
 			if in := this.InputByName("venous_blood"); in.HasSignals() {
 				if sig := in.Signals().First(); sig != nil {
-					this.State().Set(stateLastPaCO2, sig.Scalars().ValueOrDefault("PaCO2", da.NormalPaCO2Reference))
-					this.State().Set(stateLastPaO2, sig.Scalars().ValueOrDefault("PaO2", da.NormalPaO2Reference))
+					this.State().Set(stateLastPaCO2, sig.Meta().ValueOrDefault("PaCO2", da.NormalPaCO2Reference))
+					this.State().Set(stateLastPaO2, sig.Meta().ValueOrDefault("PaO2", da.NormalPaO2Reference))
 				}
 			}
 

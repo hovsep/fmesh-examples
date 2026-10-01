@@ -17,9 +17,9 @@ func newMachine(t *testing.T, startAt string) *fmesh.FMesh {
 }
 
 func payment(amount float64, method string) *signal.Signal {
-	s := signal.New("order").WithScalar("amount", amount)
+	s := signal.New("order").WithMeta("amount", amount)
 	if method != "" {
-		s = s.WithLabel("method", method)
+		s = s.WithMeta("method", method)
 	}
 	return s
 }
@@ -51,7 +51,7 @@ func TestRefusals(t *testing.T) {
 	assert.ErrorIs(t, fireEvent(fm, "refund"), errUnknownEvent)
 	assert.ErrorIs(t, fireEvent(fm, "ship"), errEventNotAllowed) // exists, but not from "created"
 	assert.ErrorIs(t, fireEvent(fm, "pay", payment(5, "card")), errGuardRejected)
-	assert.ErrorIs(t, fireEvent(fm, "pay", payment(orderTotal, "")), errGuardRejected) // no method label
+	assert.ErrorIs(t, fireEvent(fm, "pay", payment(orderTotal, "")), errGuardRejected) // no method entry
 	assert.Equal(t, "created", current(fm), "a refused event must not move the machine")
 
 	// A refusal leaves no residue: the next fire does not replay it.
@@ -65,14 +65,14 @@ func TestCallerSignalIsUntouched(t *testing.T) {
 	fm := newMachine(t, "created")
 	original := payment(orderTotal, "card")
 	require.NoError(t, fireEvent(fm, "pay", original))
-	assert.False(t, original.Labels().Has(labelEvent))
+	assert.False(t, original.Meta().Has(keyEvent))
 }
 
 func TestResume(t *testing.T) {
 	fm := newMachine(t, "created")
 	require.NoError(t, fireEvent(fm, "pay", payment(orderTotal, "card")))
 
-	// The whole state of the machine is one mesh label; a fresh mesh built
+	// The whole state of the machine is one mesh metadata entry; a fresh mesh built
 	// with it continues the journey.
 	resumed := newMachine(t, current(fm))
 	assert.Equal(t, "paid", current(resumed))

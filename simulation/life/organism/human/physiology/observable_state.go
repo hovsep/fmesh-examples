@@ -106,7 +106,7 @@ func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	// The trend rides as a number so it survives telemetry; the human-readable
 	// name stays available in-mesh as a label.
 	return this.OutputByName("brain_activity_trend").PutSignals(
-		signal.New(body.TrendCode(brainActivityTrend)).WithLabel("trend", brainActivityTrend),
+		signal.New(body.TrendCode(brainActivityTrend)).WithMeta("trend", brainActivityTrend),
 	)
 }
 

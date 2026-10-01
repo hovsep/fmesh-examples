@@ -17,7 +17,7 @@ import (
 // transports, and separating them is how a name ends up meaning one thing at the
 // prompt and another on the wire.
 
-// Label marks a signal as a control command.
+// Label is the metadata key that marks a signal as a control command.
 const Label = "cmd"
 
 // NamespaceSeparator splits a command name into the subsystem that owns it and
@@ -25,31 +25,33 @@ const Label = "cmd"
 const NamespaceSeparator = ":"
 
 // Pack builds a control signal named e.g. "intake:water", carrying its arguments
-// as scalars ("ml": 500). Arguments are scalars rather than a payload so a
-// command can carry several named quantities and be read with the same Scalars
-// API as every other structured signal in the mesh.
+// as numeric metadata ("ml": 500). Arguments are metadata rather than a payload
+// so a command can carry several named quantities and be read with the same Meta
+// API as every other structured signal in the mesh. The name is written last,
+// so an argument called Label cannot overwrite it.
 func Pack(name string, args map[string]float64) *signal.Signal {
-	sig := signal.New(name).WithLabel(Label, name)
-	for key, value := range args {
-		sig = sig.WithScalar(key, value)
-	}
-	return sig
+	return signal.New(name).WithMetaMany(args).WithMeta(Label, name)
 }
 
-// Unpack returns a command signal's name and arguments.
-func Unpack(sig *signal.Signal) (name string, args *meta.Scalars, err error) {
+// Unpack returns a command signal's name and arguments. The arguments are a
+// copy of the signal's metadata without the Label entry.
+func Unpack(sig *signal.Signal) (name string, args *meta.Meta, err error) {
 	if sig == nil {
 		return "", nil, fmt.Errorf("command signal is nil")
 	}
-	if !sig.Labels().Has(Label) {
-		return "", nil, fmt.Errorf("signal is not a command (no %q label)", Label)
+	if !IsCommand(sig) {
+		return "", nil, fmt.Errorf("signal is not a command (no %q metadata entry)", Label)
 	}
-	return sig.Labels().ValueOrDefault(Label, ""), sig.Scalars(), nil
+	return sig.Meta().ValueOrDefault(Label, ""), sig.Meta().Clone().Remove(Label), nil
 }
 
 // IsCommand reports whether a signal carries a command.
 func IsCommand(sig *signal.Signal) bool {
-	return sig != nil && sig.Labels().Has(Label)
+	if sig == nil {
+		return false
+	}
+	_, err := sig.Meta().Value[string](Label)
+	return err == nil
 }
 
 // Namespace returns the owning subsystem of a command name, so "intake:water"
@@ -75,7 +77,7 @@ func Verb(name string) string {
 // ForEach invokes fn for every command signal waiting on the given input port of
 // a component. Signals that are not commands are skipped rather than failing the
 // activation: an error would stop the entire mesh run.
-func ForEach(c *component.Component, portName string, fn func(name string, args *meta.Scalars) error) error {
+func ForEach(c *component.Component, portName string, fn func(name string, args *meta.Meta) error) error {
 	in := c.InputByName(portName)
 	if in == nil || !in.HasSignals() {
 		return nil

@@ -214,11 +214,11 @@ func publishBodyState(_ context.Context, this *component.Component) error {
 
 	if err := this.OutputByName("body_state").PutSignals(
 		signal.New("body_state").
-			WithLabel("category", "physiology").
-			WithScalar(body.HydrationPct, hydrationPct).
-			WithScalar(body.Glycemia, glycemia).
-			WithScalar(body.EnergyKcal, energy).
-			WithScalar(body.CoreTemperature, temperature),
+			WithMeta("category", "physiology").
+			WithMeta(body.HydrationPct, hydrationPct).
+			WithMeta(body.Glycemia, glycemia).
+			WithMeta(body.EnergyKcal, energy).
+			WithMeta(body.CoreTemperature, temperature),
 	); err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func applyAbsorption(this *component.Component) {
 	}
 
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		addHydration(this, sig.Scalars().ValueOrDefault(body.WaterMl, 0))
+		addHydration(this, sig.Meta().ValueOrDefault(body.WaterMl, 0.0))
 
 		// Absorbed food arrives in the blood, and only in the blood. Getting into
 		// storage from there is the liver's job and insulin's decision, which is
@@ -253,7 +253,7 @@ func applyAbsorption(this *component.Component) {
 		// credited again when insulin put the same sugar away -- so a meal was
 		// worth roughly twice its calories, and blood sugar could be regulated by
 		// a hormone that had nothing left to regulate. One number, one place.
-		kcal := sig.Scalars().ValueOrDefault(body.GlucoseKcal, 0)
+		kcal := sig.Meta().ValueOrDefault(body.GlucoseKcal, 0.0)
 		this.State().Update(StateGlycemia, func(v any) any {
 			return mathx.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
 		})
@@ -268,7 +268,7 @@ func applyLosses(this *component.Component) {
 	}
 
 	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
-		addHydration(this, -sig.Scalars().ValueOrDefault(body.WaterMl, 0))
+		addHydration(this, -sig.Meta().ValueOrDefault(body.WaterMl, 0.0))
 		return nil
 	})
 }

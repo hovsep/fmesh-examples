@@ -68,7 +68,7 @@ func inhaleToxins(_ context.Context, this *component.Component) error {
 	if inspired == nil {
 		return nil
 	}
-	pollution := inspired.Scalars().ValueOrDefault("composition:pollution", 0)
+	pollution := inspired.Meta().ValueOrDefault("composition:pollution", 0.0)
 
 	excess := pollution - cleanAirPollution/2 // the airway already took half
 	if excess <= 0 {
@@ -78,14 +78,14 @@ func inhaleToxins(_ context.Context, this *component.Component) error {
 	dose := excess * toxinPerPollutionPointPerSec * dt
 	return this.OutputByName("substance_load").PutSignals(
 		signal.New(dose).
-			WithLabel("category", "inhaled").
-			WithScalar(ScalarToxin, dose))
+			WithMeta("category", "inhaled").
+			WithMeta(ScalarToxin, dose))
 }
 
 // Applies pollution reduction.
 func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
-		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+		return s.Meta().ValueIs("category", "gas") && s.Meta().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
 		return atmosphere.MapScalar(airSignal, "composition:pollution", func(p float64) float64 {
 			return p * 0.5
@@ -97,7 +97,7 @@ func filterInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 // Applies humidity increase.
 func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
-		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+		return s.Meta().ValueIs("category", "gas") && s.Meta().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
 		return atmosphere.MapScalar(airSignal, "humidity", func(h float64) float64 {
 			return h * 1.1
@@ -109,7 +109,7 @@ func humidifyInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 // Applies temperature increase.
 func warmUpInspiredGas(sigs *signal.Group) (*signal.Group, error) {
 	result := sigs.MapIf(func(s *signal.Signal) bool {
-		return s.Labels().ValueIs("category", "gas") && s.Labels().ValueIs("type", "air")
+		return s.Meta().ValueIs("category", "gas") && s.Meta().ValueIs("type", "air")
 	}, func(airSignal *signal.Signal) *signal.Signal {
 		return atmosphere.MapScalar(airSignal, "temperature", func(t float64) float64 {
 			return t + 0.2

@@ -16,7 +16,7 @@ Seven components, each built with one `in` input and one `out` output, wired sta
 6. **counter-tokens** — counts occurrences per token and emits `token:count` signals.
 7. **persist-results** — writes the count signals to another `stage-<N>_...` file.
 
-Notable f-mesh APIs: components carry a `"stage"` label (`Labels().Set`/`ValueIs`) so `main` can locate stage 1 to seed it and the last stage to read its result, rather than holding direct references. The mesh runs with `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)`, and stages read/write signals with `Signals().FirstPayloadOrDefault`, `Signals().ForEach`, `PutSignals`, and `PutSignalGroups`. `main` triggers the pipeline by putting a signal on stage 1's input, then calls `fm.Run(context.Background())`.
+Notable f-mesh APIs: components carry a `"stage"` metadata entry (`Meta().Set`/`ValueIs`) so `main` can locate stage 1 to seed it and the last stage to read its result, rather than holding direct references. The mesh runs with `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)`, and stages read/write signals with `Signals().FirstPayloadOrDefault`, `Signals().ForEach`, `PutSignals`, and `PutSignalGroups`. `main` triggers the pipeline by putting a signal on stage 1's input, then calls `fm.Run(context.Background())`.
 
 ![Mesh graph](./demo-pipeline-graph.svg)
 

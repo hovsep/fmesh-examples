@@ -164,7 +164,7 @@ func getNode(name string, id int) (*component.Component, error) {
 							CanFrame{
 								Id:   4,
 								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.Payload()),
-							}).WithLabels(
+							}).WithMetaMany(
 							map[string]string{
 								"from":       this.Name(),
 								"detectedAt": time.Now().Format(time.RFC3339Nano),

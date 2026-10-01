@@ -16,13 +16,13 @@ import (
 func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*component.Component, error) {
 	agg, err := component.New(name,
 		component.WithDescription("composes data from multiple sources into one (single source of true for UI)"),
-		component.WithLabel("role", "aggregator"),
+		component.WithMeta("role", "aggregator"),
 		component.WithOutputs("aggregated_state"),
 		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			return this.Inputs().ForEach(func(in *port.Port) error {
 				// Add all signals from the input port to the aggregated state (for later publishing)
 				err := port.ForwardWithMap(ctx, in, this.OutputByName("aggregated_state"), func(sig *signal.Signal) *signal.Signal {
-					return sig.MapPayload(func(p any) any { return p }).WithLabel("from", in.Name())
+					return sig.MapPayload(func(p any) any { return p }).WithMeta("from", in.Name())
 				})
 
 				if err != nil {
@@ -88,10 +88,10 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 // publishSignal renders one signal onto the telemetry stream as whitespace-separated
 // "key value" lines, which is all the consumer (tui/protocol.Parse) can parse.
 //
-// A signal contributes at most one line for its payload, plus one line per scalar
-// keyed "<key>:<scalarName>". Composite signals such as air or venous blood carry a
-// string type tag as their payload and keep every real measurement in scalars, so
-// without the scalar lines they would reach the UI carrying nothing at all.
+// A signal contributes at most one line for its payload, plus one line per numeric
+// metadata entry keyed "<key>:<name>". Composite signals such as air or venous blood carry a
+// string type tag as their payload and keep every real measurement in numeric metadata, so
+// without those lines they would reach the UI carrying nothing at all.
 func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
 	if value, ok := sig.AsNumber(); ok {
 		if err := stream.PutPayloads(fmt.Sprintf("%s %v \n", key, value)); err != nil {
@@ -100,8 +100,13 @@ func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
 	}
 
 	// Keys() is sorted, so the line order of a snapshot is stable.
-	for _, name := range sig.Scalars().Keys() {
-		line := fmt.Sprintf("%s:%s %v \n", key, name, sig.Scalars().ValueOrDefault(name, 0))
+	// Only numeric entries are measurements; string ones (such as "from") are tags.
+	for _, name := range sig.Meta().Keys() {
+		value, valueErr := sig.Meta().Value[float64](name)
+		if valueErr != nil {
+			continue
+		}
+		line := fmt.Sprintf("%s:%s %v \n", key, name, value)
 		if err := stream.PutPayloads(line); err != nil {
 			return err
 		}
@@ -111,7 +116,7 @@ func publishSignal(stream *port.Port, key string, sig *signal.Signal) error {
 
 func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 	// Habitat-level sources. The tick signal carries tick_count and
-	// sim_duration_ms as scalars, so the UI can show real simulated time rather
+	// sim_duration_ms as numeric metadata, so the UI can show real simulated time rather
 	// than its own wall clock.
 	paths := []string{
 		"time::tick",
@@ -140,7 +145,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 
 func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
 	agg := h.FM.Components().FindAny(func(c *component.Component) bool {
-		return c.Labels().ValueIs("role", "aggregator")
+		return c.Meta().ValueIs("role", "aggregator")
 	})
 
 	if agg == nil {
@@ -149,15 +154,15 @@ func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
 
 	publisher, err := component.New("aggregated_state_publisher",
 		component.WithDescription("publishes aggregated state to unit socket"),
-		component.WithLabel("role", "publisher"),
+		component.WithMeta("role", "publisher"),
 		component.WithInputs("aggregated_state"),
 		component.WithOutputs("stream"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			err := this.InputByName("aggregated_state").Signals().ForEach(func(sig *signal.Signal) error {
-				if !sig.Labels().Has("from") {
+				if !sig.Meta().Has("from") {
 					return fmt.Errorf("missing 'from' label")
 				}
-				return publishSignal(this.OutputByName("stream"), sig.Labels().ValueOrDefault("from", "unknown"), sig)
+				return publishSignal(this.OutputByName("stream"), sig.Meta().ValueOrDefault("from", "unknown"), sig)
 			})
 			return err
 		}),

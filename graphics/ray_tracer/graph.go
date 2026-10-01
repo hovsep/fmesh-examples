@@ -18,8 +18,7 @@ func handleGraphFlag(fm *fmesh.FMesh) error {
 	}
 	defer os.Exit(0)
 
-	exporter := dot.NewDotExporter()
-	dotBytes, err := exporter.Export(fm)
+	dotBytes, err := dot.Export(fm)
 	if err != nil {
 		return fmt.Errorf("failed to export mesh to DOT: %w", err)
 	}

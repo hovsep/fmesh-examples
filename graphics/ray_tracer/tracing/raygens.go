@@ -25,7 +25,7 @@ func GetRayGenerators() *component.Collection {
 
 					wave := sig.MapPayload(func(p any) any {
 						return render.GenerateRays(p.(render.Camera), common.FrameWidth, common.FrameHeight, yFrom, yTo)
-					}).WithScalar(common.ScalarBounce, 0)
+					}).WithMeta(common.ScalarBounce, 0.0)
 
 					return this.OutputByName(common.PortOut).PutSignals(wave)
 				})

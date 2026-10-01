@@ -49,14 +49,14 @@ func handleIngestion(_ context.Context, this *component.Component) error {
 	}
 
 	return in.Signals().ForEach(func(sig *signal.Signal) error {
-		water := sig.Scalars().ValueOrDefault(ScalarWaterMl, 0)
-		food := sig.Scalars().ValueOrDefault(ScalarFoodKcal, 0)
+		water := sig.Meta().ValueOrDefault(ScalarWaterMl, 0.0)
+		food := sig.Meta().ValueOrDefault(ScalarFoodKcal, 0.0)
 
 		if water > 0 {
 			if err := this.OutputByName("hydration_load").PutSignals(
 				signal.New(water).
-					WithLabel("category", "ingestion").
-					WithScalar(body.WaterMl, water),
+					WithMeta("category", "ingestion").
+					WithMeta(body.WaterMl, water),
 			); err != nil {
 				return err
 			}
@@ -67,9 +67,9 @@ func handleIngestion(_ context.Context, this *component.Component) error {
 			// something to digest, and it is the volume that makes a stomach full.
 			if err := this.OutputByName("nutrient_load").PutSignals(
 				signal.New(food).
-					WithLabel("category", "ingestion").
-					WithScalar(body.GlucoseKcal, food).
-					WithScalar(body.WaterMl, food*mealWaterMlPerKcal),
+					WithMeta("category", "ingestion").
+					WithMeta(body.GlucoseKcal, food).
+					WithMeta(body.WaterMl, food*mealWaterMlPerKcal),
 			); err != nil {
 				return err
 			}

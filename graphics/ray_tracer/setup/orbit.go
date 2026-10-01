@@ -28,7 +28,7 @@ func GetOrbit() *component.Component {
 
 				viewpoint := render.OrbitPosition(frame, common.TotalFrames)
 				return this.OutputByName(common.PortOut).PutSignals(
-					signal.New(viewpoint).WithScalar(common.ScalarFrame, float64(frame)))
+					signal.New(viewpoint).WithMeta(common.ScalarFrame, float64(frame)))
 			})
 		}),
 	))

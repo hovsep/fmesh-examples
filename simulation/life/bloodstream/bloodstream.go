@@ -294,8 +294,8 @@ var Hormones = []string{HormoneAdrenaline, HormoneCortisol, HormoneInsulin, Horm
 // level, against the clearance that is always pulling it back down.
 func HormoneSecretion(hormone string, rate float64) *signal.Signal {
 	return signal.New(rate).
-		WithLabel(SubstanceLabel, SubstanceHormone).
-		WithLabel(HormoneLabel, hormone)
+		WithMeta(SubstanceLabel, SubstanceHormone).
+		WithMeta(HormoneLabel, hormone)
 }
 
 // Hormone half-lives: how long the blood takes to clear away half of what is
@@ -314,7 +314,7 @@ const (
 
 // Secretion builds a substance signal for an organ to emit on its "blood" output.
 func Secretion(substance string, rate float64) *signal.Signal {
-	return signal.New(rate).WithLabel(SubstanceLabel, substance)
+	return signal.New(rate).WithMeta(SubstanceLabel, substance)
 }
 
 // HormoneHalfLife returns how long the blood takes to clear half of a hormone.

@@ -1,6 +1,6 @@
 # String Processing
 
-The smallest useful mesh: two components joined by one pipe. It teaches the basic shape of an f-mesh program — components with named inputs and outputs, a pipe connecting one component's output to another's input, and a single `fm.Run()` driving both activations.
+The smallest useful mesh: two components joined by one pipe. It teaches the basic shape of an f-mesh program — components with named inputs and outputs, a pipe connecting one component's output to another's input, and a single `fm.Run(ctx)` driving both activations.
 
 The scenario is a two-stage string pipeline: `concat` joins two input words into one string, and `case` title-cases the result. Feeding `"hello "` and `"world !"` in produces `"HELLO WORLD !"` out.
 

@@ -75,14 +75,14 @@ func GetIntake() (*component.Component, error) {
 func acceptIntakeCommands(_ context.Context, this *component.Component) error {
 	processes := this.State().Get(StateProcesses).(*simtime.ProcessSet)
 
-	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Scalars) error {
+	return command.ForEach(this, sim.ControlPort, func(name string, args *meta.Meta) error {
 		switch command.Verb(name) {
 		case VerbWater:
-			ml := args.ValueOrDefault(KindWaterMl, 0)
+			ml := args.ValueOrDefault(KindWaterMl, 0.0)
 			processes.Start(&simtime.Process{Kind: KindWaterMl, Remaining: ml, RatePerSec: DrinkRateMlPerSec})
 			addTotal(this, TotalWaterMl, ml)
 		case VerbFood:
-			kcal := args.ValueOrDefault(KindFoodKcal, 0)
+			kcal := args.ValueOrDefault(KindFoodKcal, 0.0)
 			processes.Start(&simtime.Process{Kind: KindFoodKcal, Remaining: kcal, RatePerSec: EatRateKcalPerSec})
 			addTotal(this, TotalFoodKcal, kcal)
 		default:
@@ -120,8 +120,8 @@ func meterIntake(_ context.Context, this *component.Component) error {
 
 	return this.OutputByName("intake_intent").PutSignals(
 		signal.New("intake_intent").
-			WithLabel("category", "intake").
-			WithScalar(KindWaterMl, delivered[KindWaterMl]).
-			WithScalar(KindFoodKcal, delivered[KindFoodKcal]),
+			WithMeta("category", "intake").
+			WithMeta(KindWaterMl, delivered[KindWaterMl]).
+			WithMeta(KindFoodKcal, delivered[KindFoodKcal]),
 	)
 }

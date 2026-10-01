@@ -42,7 +42,7 @@ func main() {
 
 	fmt.Println("Starting the pipeline: reading user input from stdin...")
 	fm.Components().FindAny(func(c *component.Component) bool {
-		return c.Labels().ValueIs("stage", "1")
+		return c.Meta().ValueIs("stage", "1")
 	}).InputByName(portIn).PutSignals(signal.New("start"))
 
 	_, err = fm.Run(context.Background())
@@ -55,7 +55,7 @@ func main() {
 	fmt.Println("Pipeline finished successfully")
 
 	resultFileName := fm.Components().FindAny(func(c *component.Component) bool {
-		return c.Labels().ValueIs("stage", strconv.Itoa(fm.Components().Len()))
+		return c.Meta().ValueIs("stage", strconv.Itoa(fm.Components().Len()))
 	}).OutputByName(portOut).Signals().FirstPayloadOrDefault("")
 
 	if resultFileName != "" {
@@ -153,7 +153,7 @@ func getFileWriter(name string) (*component.Component, error) {
 			}
 			defer root.Close()
 
-			stageLabel := this.Labels().ValueOrDefault("stage", "")
+			stageLabel := this.Meta().ValueOrDefault("stage", "")
 			fileName := fmt.Sprintf("stage-%s_%s_%d", stageLabel, this.Name(), time.Now().UnixNano())
 			file, err := root.Create(fileName)
 			if err != nil {
@@ -284,7 +284,7 @@ func getTokenCounter(name string) (*component.Component, error) {
 func buildPipeline(name string, components ...*component.Component) (*fmesh.FMesh, error) {
 	stageIndex := 1
 	for _, c := range components {
-		c.Labels().Set("stage", strconv.Itoa(stageIndex))
+		c.Meta().Set("stage", strconv.Itoa(stageIndex))
 		if err := c.AddInputs(portIn); err != nil {
 			return nil, fmt.Errorf("add input to %s: %w", c.Name(), err)
 		}
