@@ -206,7 +206,7 @@ func main() {
 
 - **[F-Mesh Repository](https://github.com/hovsep/fmesh)** - Main framework
 - **[F-Mesh Wiki](https://github.com/hovsep/fmesh/wiki)** - Complete documentation
-- **[F-Mesh Graphviz](https://github.com/hovsep/fmesh-graphviz)** - Visualization tool
+- **[F-Mesh Graphviz](https://github.com/hovsep/fmesh-export)** - Visualization tool
 - **[Flow-Based Programming](https://jpaulm.github.io/fbp/)** - Learn about FBP (by J. Paul Morrison)
 
 ---

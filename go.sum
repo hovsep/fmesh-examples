@@ -30,8 +30,8 @@ github.com/guptarohit/asciigraph v0.8.1 h1:JBeHTGj2ntBODnZxLQhp+GQZdlZ/48S/m7J1i
 github.com/guptarohit/asciigraph v0.8.1/go.mod h1:dYl5wwK4gNsnFf9Zp+l06rFiDZ5YtXM6x7SRWZ3KGag=
 github.com/hovsep/fmesh v1.15.0 h1:T/0II8BG68UusNGsepHmtyGapEQypM6dpzSthVb2zvw=
 github.com/hovsep/fmesh v1.15.0/go.mod h1:IeonBF8hlLAk0N/ksL1sAyNw3DvkJrWoBsexvcqA6xI=
-github.com/hovsep/fmesh-graphviz v1.5.0 h1:7BeQJ6Ra00uL1WWUTntPvswHTiPU45yZKvJqZZUpovs=
-github.com/hovsep/fmesh-graphviz v1.5.0/go.mod h1:33CTppWwRv9f55tKVWQ0DpCDPE9rv0nYukmdGZUJKi8=
+github.com/hovsep/fmesh-export v1.6.0 h1:sBD5ADB/DR0VxyvRyMW7ofTXtKdsrnhxHMQ9YFWx6t4=
+github.com/hovsep/fmesh-export v1.6.0/go.mod h1:TeoocnoGOxwN34pWptm5IblfVtUkbz8heT6Yio2Fhv4=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=
 github.com/lucasb-eyer/go-colorful v1.3.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=

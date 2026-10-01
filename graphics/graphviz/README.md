@@ -1,6 +1,6 @@
 # Graphviz
 
-This example teaches how to export an f-mesh's topology to DOT/SVG using [`github.com/hovsep/fmesh-graphviz`](https://github.com/hovsep/fmesh-graphviz), and how to render each activation cycle as its own graph with the components that fired highlighted.
+This example teaches how to export an f-mesh's topology to DOT/SVG using [`github.com/hovsep/fmesh-export`](https://github.com/hovsep/fmesh-export), and how to render each activation cycle as its own graph with the components that fired highlighted.
 
 It runs a small car drivetrain mesh, then exports it twice: once as a static graph (topology only) and once per activation cycle (topology plus which components activated).
 
