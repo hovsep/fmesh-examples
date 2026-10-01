@@ -6,13 +6,13 @@ The scenario is an async HTTP crawler. A list of URLs is fed into the mesh one a
 
 ## How it works
 
-- **`web crawler`** component — input `url`, outputs `errors` and `headers`. On activation it reads all queued URL signals, does an `http.Client.Get` for each, and puts either an error signal or a `map[string]http.Header` signal on the matching output.
+- **`web crawler`** component — input `url`, outputs `errors` and `headers`. On activation it reads all queued URL signals and, for each, builds a request with `http.NewRequestWithContext` (so the run's context reaches the HTTP call) and sends it on a client with an 8-second timeout. It closes each response body, and puts either an error signal or a `map[string]http.Header` signal on the matching output.
 - **`error logger`** component — input `error`. Piped from the crawler's `errors` output; prints any error it receives.
 - The mesh (`"web scraper"`) is built with `fmesh.WithUnlimitedTime()` and `fmesh.WithUnlimitedCycles()` since crawling can be slow, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)`.
 - Outside the mesh, a `time.Ticker` fires every 3 seconds; each tick, one URL is popped off the queue, pushed onto the crawler's `url` input via `InputByName("url").PutSignals(...)`, and `fm.Run(ctx)` is called synchronously for that single URL.
-- After each run, if the `headers` output `HasSignals()`, its payloads are read with `Signals().AllPayloads()`, the output is `Clear()`ed, and the results are sent on `resultsChan`.
-- A second goroutine reads `resultsChan` until it's closed (once the URL queue is empty), then signals `doneChan` so `main` can exit.
-- Notable APIs: `component.WithActivationFunc`, `ErrWaitDroppingInputs` (crawler and logger both wait for input rather than activating on empty ports), `OutputByName(...).PipeTo(...)`, `OutputByName(...).Clear(ctx)`, and driving `fm.Run` repeatedly from outside instead of once.
+- After each run, if the `headers` output `HasSignals()`, its payloads are read with `Signals().AllPayloads()` and sent on `resultsChan`. The port needs no clearing: every `Run` starts by clearing all output ports.
+- A second goroutine prints each result it reads from `resultsChan` (URL, header count, `Content-Type`) until the channel is closed (once the URL queue is empty), then signals `doneChan` so `main` can exit.
+- Notable APIs: `component.WithActivationFunc`, `OutputByName(...).PipeTo(...)`, and driving `fm.Run` repeatedly from outside instead of once. Neither component checks for empty input: a component only activates when its inputs have signals.
 
 ![Mesh graph](./web%20scraper-graph.svg)
 
