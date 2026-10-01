@@ -7,8 +7,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/guptarohit/asciigraph v0.8.1
-	github.com/hovsep/fmesh v1.16.0
-	github.com/hovsep/fmesh-export v1.7.0
+	github.com/hovsep/fmesh v1.17.0
+	github.com/hovsep/fmesh-export v1.8.0
 	github.com/stretchr/testify v1.12.1
 )
 
