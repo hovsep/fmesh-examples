@@ -2,7 +2,7 @@
   <h1>F-Mesh Examples</h1>
   <p>Real-world examples of Flow-Based Programming with F-Mesh</p>
 
-[![F-Mesh](https://img.shields.io/badge/F--Mesh-v1.13.0-blue)](https://github.com/hovsep/fmesh/releases/tag/v1.13.0)
+[![F-Mesh](https://img.shields.io/badge/F--Mesh-v1.17.0-blue)](https://github.com/hovsep/fmesh/releases/tag/v1.17.0)
 [![Go Version](https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hovsep/fmesh-examples)](https://goreportcard.com/report/github.com/hovsep/fmesh-examples)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -218,6 +218,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 <div align="center">
-  <p>Built with <a href="https://github.com/hovsep/fmesh">F-Mesh</a> v1.13.0</p>
+  <p>Built with <a href="https://github.com/hovsep/fmesh">F-Mesh</a> v1.17.0</p>
   <p>Questions? Open an <a href="https://github.com/hovsep/fmesh-examples/issues">issue</a> or check the <a href="https://github.com/hovsep/fmesh/wiki">wiki</a></p>
 </div>
