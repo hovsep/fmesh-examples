@@ -42,9 +42,13 @@ func main() {
 	fmt.Println("  Invalid payloads are reported as corrupted signals")
 	fmt.Println()
 
-	if err := internal.HandleGraphFlag(fm, true); err != nil {
+	handled, err := internal.HandleGraphFlag(fm)
+	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
+	}
+	if handled {
+		return
 	}
 
 	runCycle := 0
