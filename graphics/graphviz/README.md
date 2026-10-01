@@ -10,8 +10,8 @@ The mesh models a drivetrain chain: `engine -> clutch -> gearbox -> wheels`. Sta
 
 The example creates one exporter with `dot.New()`. After `fm.Run(...)` completes, it:
 
-- calls `exporter.Export(fm)` for a static DOT graph of the topology, written to `static_graph-<id>.dot`
-- calls `exporter.ExportCycle(fm, c)` for every cycle in `runtimeInfo.Cycles`: one DOT graph per activation cycle, each with the activated components highlighted, written to `cycle#<n>-<id>.dot`
+- calls `exporter.Export(fm)` for a static DOT graph of the topology, written to `static_graph.dot`
+- calls `exporter.ExportCycle(fm, c)` for every cycle in `runtimeInfo.Cycles`: one DOT graph per activation cycle, each with the activated components highlighted, written to `cycle-000.dot`, `cycle-001.dot`, ... (each run overwrites the previous one's files)
 
 Separately, `internal.HandleGraphFlag` (shared by every example via `FMESH_GRAPH=1`) exports the mesh's static topology and, if the `dot` binary is on `PATH`, converts it to `graph-graph.svg` — the image below.
 
@@ -31,3 +31,14 @@ Every run also writes the static and per-cycle `.dot` files described above into
 ```bash
 for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done
 ```
+
+## Animate the cycles as a GIF
+
+The per-cycle graphs are frames of the run. With [graphviz](https://graphviz.org/) and [ImageMagick](https://imagemagick.org/) installed, render each frame to PNG and stitch them into a looping GIF, one second per cycle:
+
+```bash
+for f in cycle-*.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done
+magick -delay 100 -loop 0 cycle-*.png mesh.gif
+```
+
+The zero-padded frame names keep the glob in cycle order. ImageMagick 6 names the command `convert` instead of `magick`.
