@@ -14,7 +14,7 @@ import (
 
 func main() {
 	fmt.Println("=== String Processing Pipeline ===")
-	fmt.Println("Architecture: concat (joins two strings) → case (converts to title case)")
+	fmt.Println("Architecture: concat (joins two strings) → case (converts to upper case)")
 	fmt.Println()
 
 	fm, err := getMesh()
@@ -40,7 +40,7 @@ func main() {
 
 	result := fm.Components().ByName("case").OutputByName("res").Signals().FirstPayloadOrNil()
 	fmt.Printf("Result is : %v\n", result)
-	fmt.Println("Done! The pipeline successfully concatenated and title-cased the strings.")
+	fmt.Println("Done! The pipeline successfully concatenated and upper-cased the strings.")
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -66,7 +66,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("")
 			result := strings.ToTitle(inputString)
-			fmt.Printf("  Component 'case': %q => %q (title case)\n", inputString, result)
+			fmt.Printf("  Component 'case': %q => %q (upper case)\n", inputString, result)
 			this.OutputByName("res").PutSignals(signal.New(result))
 			return nil
 		}),

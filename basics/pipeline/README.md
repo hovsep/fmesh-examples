@@ -26,7 +26,7 @@ Notable f-mesh APIs: components carry a `"stage"` metadata entry (`Meta().Set`/`
 go run .
 ```
 
-You'll be prompted to type a line of text and press Enter; the pipeline reads it from stdin. It also writes and reads intermediate files (`stage-<N>_<component>_<timestamp>`) in the current directory as it runs.
+You'll be prompted to type a line of text and press Enter; the pipeline reads it from stdin. It also writes and reads intermediate files (`stage-<N>_<component>_<timestamp>`) in the current directory as it runs, and when it finishes it prints the name of the file holding the token counts.
 
 Set `FMESH_GRAPH=1` to regenerate `demo-pipeline-graph.dot`/`.svg` instead of running the pipeline:
 
