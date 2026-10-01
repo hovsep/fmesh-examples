@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/guptarohit/asciigraph v0.8.1
 	github.com/hovsep/fmesh v1.15.0
-	github.com/hovsep/fmesh-graphviz v1.5.0
+	github.com/hovsep/fmesh-export v1.6.0
 	github.com/stretchr/testify v1.12.1
 )
 

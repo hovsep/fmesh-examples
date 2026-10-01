@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-graphviz/dot"
+	"github.com/hovsep/fmesh-export/dot"
 )
 
 // HandleGraphFlag handles the FMESH_GRAPH env flag and generates graph files
