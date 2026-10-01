@@ -56,7 +56,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("in"),
 		component.WithOutputs("out", "log"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			isValid := func(num int) bool { return num < 1000 }
+			// Below 2 there is nothing to factorize, and the inner mesh's d2 stage
+			// would loop forever on 0
+			isValid := func(num int) bool { return num > 1 && num < 1000 }
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
 				if isValid(sig.Payload().(int)) {
 					return this.OutputByName("out").PutSignals(sig)
