@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -38,11 +36,11 @@ func main() {
 	fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch"))
 
 	runtimeInfo, err := fm.Run(context.Background())
-	fmt.Printf("Simulation completed — %d activation cycle(s) executed\n", runtimeInfo.Cycles.Len())
 	if err != nil {
 		fmt.Println("Pipeline finished with error:", err)
 		os.Exit(1)
 	}
+	fmt.Printf("Simulation completed — %d activation cycle(s) executed\n", runtimeInfo.Cycles.Len())
 
 	fmt.Println("The mesh successfully finished, so we can try to export it as DOT graph")
 	fmt.Println("learn more about DOT at https://graphviz.org/")
@@ -56,14 +54,7 @@ func main() {
 	fmt.Println("The mesh static (without activation cycles info) DOT graph:")
 	fmt.Println(string(staticGraphBytes))
 
-	hash := make([]byte, 4)
-	if _, err := rand.Read(hash); err != nil {
-		fmt.Println("failed to generate random id:", err)
-		os.Exit(1)
-	}
-	runId := hex.EncodeToString(hash[:])
-
-	if err := writeGraphToFile(staticGraphBytes, fmt.Sprintf("static_graph-%v.dot", runId)); err != nil {
+	if err := writeGraphToFile(staticGraphBytes, "static_graph.dot"); err != nil {
 		fmt.Println("failed to write static graph:", err)
 		os.Exit(1)
 	}
@@ -78,7 +69,8 @@ func main() {
 		}
 		fmt.Printf("Cycle #%d graph:\n", cycleNum)
 		fmt.Println(string(cycleGraph))
-		if err := writeGraphToFile(cycleGraph, fmt.Sprintf("cycle#%d-%v.dot", cycleNum, runId)); err != nil {
+		// Zero-padded, so the frames sort in cycle order when globbed into a GIF
+		if err := writeGraphToFile(cycleGraph, fmt.Sprintf("cycle-%03d.dot", cycleNum)); err != nil {
 			fmt.Println("failed to write cycle graph:", err)
 		}
 	}
@@ -88,6 +80,8 @@ func main() {
 	fmt.Println("Want to convert all .dot files to images? Run the following command:")
 	bashCmd := `for f in *.dot; do dot -Tpng "$f" -o "${f%.dot}.png"; done`
 	fmt.Println(bashCmd)
+	fmt.Println("Then stitch the cycle frames into an animated GIF (needs ImageMagick):")
+	fmt.Println("magick -delay 100 -loop 0 cycle-*.png mesh.gif")
 	fmt.Println("=== DOT Export Complete ===")
 }
 
