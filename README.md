@@ -45,6 +45,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Fibonacci](./patterns/fibonacci) | Cycles: a component's outputs piped back into its own inputs |
 | [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
 | [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
+| [Tree Search](./patterns/tree_search) | A generated tree, one component per node: a search goes down as a wave, one level per cycle, and the answers merge on the way back up |
 | [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
 | [Retry](./patterns/retry) | Retrying a failing activation: temporary errors get another attempt with backoff, permanent ones do not |
 | [State Machine](./patterns/state_machine) | An FSM out of nothing but fmesh: states are components, transitions are pipes, the current state is a mesh metadata entry — the mesh graph is the state diagram |

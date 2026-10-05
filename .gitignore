@@ -12,6 +12,7 @@
 /patterns/fibonacci/fibonacci
 /patterns/load_balancer/load_balancer
 /patterns/nesting/nesting
+/patterns/tree_search/tree_search
 /patterns/retry/retry
 /patterns/state_machine/state_machine
 /patterns/unix_pipes/unix_pipes
@@ -25,3 +26,4 @@
 /graphics/graphviz/static_graph.dot
 /graphics/graphviz/cycle-*.dot
 /graphics/graphviz/cycle-*.png
+/patterns/tree_search/frames/
