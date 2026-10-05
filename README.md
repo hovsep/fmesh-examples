@@ -57,6 +57,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | Example | Description |
 |---------|-------------|
 | [Electric Circuit](./simulation/electric_circuit) | A supply/demand feedback loop with degrading state |
+| [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine: fuel, current and rotation as flows, with the crankshaft driving the next stroke |
 | [Basic CAN Bus](./simulation/can_bus/basic) | One bus fanning every frame out to all connected ECUs |
 | [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
 | [Life](./simulation/life) | A step simulation of human physiology inside a habitat |
