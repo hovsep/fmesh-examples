@@ -103,10 +103,10 @@ func oscillateBreathing(_ context.Context, this *component.Component) error {
 	nextPhase := math.Mod(currentPhase+dt/(60.0/float64(currentRate)), 1.0)
 	this.State().Set(statePhase, nextPhase)
 
-	this.OutputByName("pleural_pressure").PutPayloads(diaphragmPressureWave(nextPhase))
-	this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(stateRate).(int))
-
-	return nil
+	if err := this.OutputByName("pleural_pressure").PutPayloads(diaphragmPressureWave(nextPhase)); err != nil {
+		return err
+	}
+	return this.OutputByName("respiratory_rate").PutPayloads(this.State().Get(stateRate).(int))
 }
 
 func handleRespiratoryBias(_ context.Context, this *component.Component) error {

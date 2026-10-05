@@ -70,22 +70,27 @@ func main() {
 	fmt.Printf("Injecting %d CAN frames into the bus...\n", frames.Len())
 	fmt.Println()
 
-	frames.ForEach(func(sig *signal.Signal) error {
-		fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig)
+	err = frames.ForEach(func(sig *signal.Signal) error {
+		if err := fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig); err != nil {
+			return err
+		}
 
 		fm.Logger().Println("======================")
 		fm.Logger().Printf("Run #%d", runCycle)
 		fm.Logger().Println("======================")
 
 		if _, err := fm.Run(context.Background()); err != nil {
-			fmt.Println("Error running mesh:", err)
-			os.Exit(1)
+			return err
 		}
 
 		time.Sleep(delayBetweenFrames)
 		runCycle++
 		return nil
 	})
+	if err != nil {
+		fmt.Println("Error running mesh:", err)
+		os.Exit(1)
+	}
 
 	fmt.Println()
 	fmt.Println("========================================")
@@ -159,22 +164,21 @@ func getNode(name string, id int) (*component.Component, error) {
 			myId := this.State().Get(stateNodeId).(int)
 			validFrames := make([]CanFrame, 0)
 
-			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+			err := this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				canFrame, ok := sig.Payload().(CanFrame)
 				if !ok {
 					this.Logger().Printf("Invalid frame received, skipping: %v", sig.Payload())
-					this.OutputByName(portOut).PutSignals(
+					return this.OutputByName(portOut).PutSignals(
 						signal.New(
 							CanFrame{
 								Id:   4,
-								Data: fmt.Appendf(nil, "register corrupted singal: %v", sig.Payload()),
+								Data: fmt.Appendf(nil, "register corrupted signal: %v", sig.Payload()),
 							}).WithMetaMany(
 							map[string]string{
 								"from":       this.Name(),
 								"detectedAt": time.Now().Format(time.RFC3339Nano),
 							}),
 					)
-					return nil
 				}
 
 				if canFrame.Id != myId {
@@ -185,6 +189,9 @@ func getNode(name string, id int) (*component.Component, error) {
 				validFrames = append(validFrames, canFrame)
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 
 			if len(validFrames) == 0 {
 				return nil

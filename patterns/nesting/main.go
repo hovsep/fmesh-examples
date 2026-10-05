@@ -33,7 +33,10 @@ func main() {
 		return
 	}
 
-	outerMesh.Components().ByName("starter").InputByName("in").PutSignals(signal.New(315))
+	if err := outerMesh.Components().ByName("starter").InputByName("in").PutSignals(signal.New(315)); err != nil {
+		fmt.Println("Failed to put the input number:", err)
+		os.Exit(1)
+	}
 
 	if _, err := outerMesh.Run(context.Background()); err != nil {
 		fmt.Println("outer mesh failed with error:", err)
@@ -98,15 +101,17 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Prime factorization implemented as separate f-mesh"),
 		component.WithInputs("in"),
 		component.WithOutputs("out"),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			factorization, err := getPrimeFactorizationMesh()
 			if err != nil {
 				return fmt.Errorf("build sub-mesh: %w", err)
 			}
 
 			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
-				factorization.Components().ByName("starter").InputByName("in").PutSignals(sig)
-				_, err := factorization.Run(context.Background())
+				if err := factorization.Components().ByName("starter").InputByName("in").PutSignals(sig); err != nil {
+					return err
+				}
+				_, err := factorization.Run(ctx)
 				if err != nil {
 					return fmt.Errorf("inner mesh failed: %w", err)
 				}
@@ -166,7 +171,9 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			number := this.InputByName("in").Signals().FirstPayloadOrNil().(int)
 			for number%2 == 0 {
-				this.OutputByName("factor").PutSignals(signal.New(2))
+				if err := this.OutputByName("factor").PutSignals(signal.New(2)); err != nil {
+					return err
+				}
 				number /= 2
 			}
 			return this.OutputByName("out").PutSignals(signal.New(number))
@@ -185,7 +192,9 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 			divisor := 3
 			for number > 1 && divisor*divisor <= number {
 				for number%divisor == 0 {
-					this.OutputByName("factor").PutSignals(signal.New(divisor))
+					if err := this.OutputByName("factor").PutSignals(signal.New(divisor)); err != nil {
+						return err
+					}
 					number /= divisor
 				}
 				divisor += 2
@@ -253,10 +262,6 @@ func getPrimeFactorizationMesh() (*fmesh.FMesh, error) {
 	}
 	if err := algoMesh.AddComponents(starter, d2, dodd, finalPrime, results); err != nil {
 		return nil, fmt.Errorf("add algo components: %w", err)
-	}
-
-	if _, err := internal.HandleGraphFlag(algoMesh); err != nil {
-		return nil, fmt.Errorf("handle graph flag: %w", err)
 	}
 
 	return algoMesh, nil

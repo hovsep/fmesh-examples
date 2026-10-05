@@ -8,7 +8,7 @@ The scenario is a simplified automotive CAN network. A stream of CAN frames — 
 
 - **`bus`** — one input port (`rx`), one output port (`tx`). Its activation function is a single call to `port.ForwardSignals`, copying every signal from `rx` to `tx` with no inspection or filtering.
 - **ECUs** (`engine-ecu`, `airbag-ecu`, `crash-sensor-front-left`, `door-lock-actuator-rear-left`, `obd`) — each has its own `rx`/`tx` ports and an integer ID stored via `component.WithInitialState`. Each is piped bus→ECU (`tx`→`rx`) and ECU→bus (`tx`→`rx`), so the bus's output port fans out to all five, and their outputs fan back into the bus's single input.
-- On activation, an ECU inspects every signal on `rx`: a payload that isn't a `CanFrame` is logged and re-emitted as a corrupted-signal frame with ID `4` (which the `obd` node, ID `4`, picks up on the next run); a `CanFrame` whose ID doesn't match the ECU's own ID is silently ignored; a match is processed and logged.
+- On activation, an ECU inspects every signal on `rx`: a payload that isn't a `CanFrame` is logged and re-emitted as a corrupted-signal frame with ID `4` (which the `obd` node, ID `4`, picks up in the next cycle of the same run); a `CanFrame` whose ID doesn't match the ECU's own ID is logged as a mismatch and ignored; a match is processed and logged.
 - The driving loop injects one signal per run cycle directly onto the bus's `rx` port with `PutSignals`, then calls `fm.Run` — showcasing fan-out/fan-in piping on single named ports (`OutputByName(...).PipeTo(...)`), per-component state (`component.WithInitialState`, `this.State().Get(...)`), and the `port.ForwardSignals` helper for pass-through components.
 
 ![Mesh graph](./can_bus_sim_v0-graph.svg)

@@ -47,7 +47,10 @@ func main() {
 		for j := range requestsPerWave {
 			requests = requests.With(signal.New(fmt.Sprintf("wave-%d req-%d", i, j)))
 		}
-		fm.ComponentByName("lb").InputByName(portIn).PutSignalGroups(requests)
+		if err := fm.ComponentByName("lb").InputByName(portIn).PutSignalGroups(requests); err != nil {
+			fmt.Println("Failed to put requests:", err)
+			os.Exit(1)
+		}
 
 		_, err := fm.Run(context.Background())
 		if err != nil {
@@ -141,13 +144,18 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 			lastWorkerIndex := this.State().GetOrDefault("last_worker_index", 0).(int)
 			workersNum := this.State().Get("workers_number").(int)
 
-			ingressPort.Signals().ForEach(func(sig *signal.Signal) error {
+			err := ingressPort.Signals().ForEach(func(sig *signal.Signal) error {
 				lastWorkerIndex %= workersNum
 				this.Logger().Printf("Routing %q -> worker-%d (%s)\n", sig.Payload(), lastWorkerIndex, indexedPortName("downstream", lastWorkerIndex))
-				this.OutputByName(indexedPortName("downstream", lastWorkerIndex)).PutSignals(sig)
+				if err := this.OutputByName(indexedPortName("downstream", lastWorkerIndex)).PutSignals(sig); err != nil {
+					return err
+				}
 				lastWorkerIndex++
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 
 			this.State().Set("last_worker_index", lastWorkerIndex)
 

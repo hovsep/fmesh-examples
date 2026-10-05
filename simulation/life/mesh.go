@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh-examples/internal"
 	"github.com/hovsep/fmesh-examples/simulation/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/simulation/life/bloodstream"
 	"github.com/hovsep/fmesh-examples/simulation/life/env"
@@ -78,20 +76,13 @@ func getSimulationMeshIn(environment func() (*component.Component, error), tick 
 	// Generate a tick signal before each run (time step simulation)
 	habitat.FM.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.BeforeRun(func(_ context.Context, mesh *fmesh.FMesh) error {
-			mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
-			return nil
+			return mesh.ComponentByName("time").InputByName("ctl").PutSignals(signal.New("tick"))
 		})
 	})
 
 	// Note the step on the mesh so the engine driving it does not have to be told
 	// separately, and cannot be told something different.
 	factor.RecordTick(habitat.FM, tick)
-
-	_, err = internal.HandleGraphFlag(habitat.FM)
-	if err != nil {
-		fmt.Println("Failed to generate graph:", err)
-		os.Exit(1)
-	}
 
 	return habitat.FM, nil
 }
@@ -132,8 +123,7 @@ func bodyCommand(sim *session.Session, name, description string, parseArgs func(
 	if !human.AcceptsCommand(name) {
 		// A namespace with no controller behind it would be silently dropped at
 		// runtime. Fail loudly at startup instead.
-		fmt.Printf("BUG: command %q has no controller (known namespaces: %v)\n", name, human.CommandNamespaces())
-		os.Exit(1)
+		panic(fmt.Sprintf("BUG: command %q has no controller (known namespaces: %v)", name, human.CommandNamespaces()))
 	}
 
 	mesh := sim.Engine.(*stepsim.Engine).Mesh()

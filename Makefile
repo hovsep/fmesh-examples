@@ -24,8 +24,9 @@ clean: ## Clean build artifacts
 	@for ex in $(EXAMPLES); do (cd $$ex && go clean) || true; done
 	@echo "✓ Clean complete"
 
-# The life suite simulates hours of physiology and takes ~15 minutes, so it
-# runs past go test's 10-minute per-package default and needs a limit of its own.
+# The life suite simulates hours of physiology: ~15 minutes locally and over 30
+# on a hosted CI runner, far past go test's 10-minute per-package default, so it
+# gets the same limit as CI.
 test: ## Run tests
-	go test -timeout 30m ./...
+	go test -timeout 60m ./...
 	@echo "✓ Tests finished"

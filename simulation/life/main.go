@@ -27,10 +27,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = internal.HandleGraphFlag(mesh)
+	handled, err := internal.HandleGraphFlag(mesh)
 	if err != nil {
 		fmt.Println("Failed to generate graph:", err)
 		os.Exit(1)
+	}
+	if handled {
+		return
 	}
 
 	sim, err := newSession(mesh)

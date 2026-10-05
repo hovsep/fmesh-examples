@@ -62,7 +62,10 @@ func main() {
 			url := urls[0]
 			urls = urls[1:]
 
-			fm.Components().ByName("web crawler").InputByName("url").PutSignals(signal.New(url))
+			if err := fm.Components().ByName("web crawler").InputByName("url").PutSignals(signal.New(url)); err != nil {
+				fmt.Println("Failed to put url:", err)
+				continue
+			}
 			_, err := fm.Run(context.Background())
 			if err != nil {
 				fmt.Println("fmesh returned error ", err)
@@ -111,26 +114,35 @@ func getMesh() (*fmesh.FMesh, error) {
 				url := urlVal.(string)
 				request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 				if err != nil {
-					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url)))
+					if putErr := this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url))); putErr != nil {
+						return putErr
+					}
 					continue
 				}
 
 				response, err := client.Do(request)
 				if err != nil {
-					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url)))
+					if putErr := this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url))); putErr != nil {
+						return putErr
+					}
 					continue
 				}
 				// Only the headers are needed, so the body is closed unread
 				_ = response.Body.Close()
 
 				if len(response.Header) == 0 {
-					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("no headers for url %s", url)))
+					if putErr := this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("no headers for url %s", url))); putErr != nil {
+						return putErr
+					}
 					continue
 				}
 
-				this.OutputByName("headers").PutSignals(signal.New(map[string]http.Header{
+				err = this.OutputByName("headers").PutSignals(signal.New(map[string]http.Header{
 					url: response.Header,
 				}))
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil

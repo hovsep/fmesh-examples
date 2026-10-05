@@ -33,8 +33,14 @@ func main() {
 	}
 
 	fmt.Println("Feeding inputs into the concat component...")
-	fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello "))
-	fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !"))
+	if err := fm.Components().ByName("concat").InputByName("i1").PutSignals(signal.New("hello ")); err != nil {
+		fmt.Println("Failed to put input signals:", err)
+		os.Exit(1)
+	}
+	if err := fm.Components().ByName("concat").InputByName("i2").PutSignals(signal.New("world !")); err != nil {
+		fmt.Println("Failed to put input signals:", err)
+		os.Exit(1)
+	}
 
 	_, err = fm.Run(context.Background())
 	if err != nil {
@@ -56,8 +62,7 @@ func getMesh() (*fmesh.FMesh, error) {
 			word2 := this.InputByName("i2").Signals().FirstPayloadOrDefault("")
 			concatenated := word1 + word2
 			fmt.Printf("  Component 'concat': input1=%q + input2=%q => %q\n", word1, word2, concatenated)
-			this.OutputByName("res").PutSignals(signal.New(concatenated))
-			return nil
+			return this.OutputByName("res").PutSignals(signal.New(concatenated))
 		}),
 	)
 	if err != nil {
@@ -71,8 +76,7 @@ func getMesh() (*fmesh.FMesh, error) {
 			inputString := this.InputByName("i1").Signals().FirstPayloadOrDefault("")
 			result := strings.ToTitle(inputString)
 			fmt.Printf("  Component 'case': %q => %q (upper case)\n", inputString, result)
-			this.OutputByName("res").PutSignals(signal.New(result))
-			return nil
+			return this.OutputByName("res").PutSignals(signal.New(result))
 		}),
 	)
 	if err != nil {

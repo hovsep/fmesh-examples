@@ -109,7 +109,9 @@ func (d *Damage) onActivation(ctx context.Context, this *component.Component) er
 			insult += sig.Float64OrDefault(0)
 			return nil
 		})
-		in.Clear(ctx)
+		if err := in.Clear(ctx); err != nil {
+			return err
+		}
 	}
 
 	// Aging accrues once per tick, scaled by the tick's real duration.

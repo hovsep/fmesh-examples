@@ -2,6 +2,7 @@ package da
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -127,8 +128,7 @@ func exchangeBloodGases(_ context.Context, this *component.Component) error {
 		}
 		this.State().Set(stateDt, dt)
 		advanceWithTime(this, dt)
-		publishBloodLevels(this)
-		return nil
+		return publishBloodLevels(this)
 	}
 
 	// Phase B: fold in breathing (airflow) and organ metabolism (secretions) as
@@ -143,7 +143,7 @@ func exchangeBloodGases(_ context.Context, this *component.Component) error {
 	return nil
 }
 
-func publishBloodLevels(this *component.Component) {
+func publishBloodLevels(this *component.Component) error {
 	content := this.State().Get(stateContent).(float64)
 	hemoglobin := this.State().Get(stateHemoglobin).(float64)
 	carboxy := this.State().Get(stateCarboxy).(float64)
@@ -166,25 +166,27 @@ func publishBloodLevels(this *component.Component) {
 		(oxyFraction*(1-carboxy)+carboxy)*100,
 		bloodstream.MinSaturation, bloodstream.MaxSaturation)
 
-	this.OutputByName("venous_blood").PutSignals(
-		signal.New("venous_blood").
-			WithMeta("category", "gas").
-			WithMeta("type", "venous").
-			WithMeta("PaO2", paO2).
-			WithMeta("PaCO2", paCO2).
-			WithMeta("SpO2", displayed).
-			WithMeta("COHb", carboxy*100).
-			WithMeta("pH", bloodstream.PHAt(paCO2)).
-			WithMeta("CaO2", content).
-			WithMeta("hemoglobin", hemoglobin).
-			WithMeta("volume_l", this.State().Get(stateVolume).(float64)).
-			WithMeta("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
-			WithMetaMany(circulatingHormones(this)),
+	venousBlood := signal.New("venous_blood").
+		WithMeta("category", "gas").
+		WithMeta("type", "venous").
+		WithMeta("PaO2", paO2).
+		WithMeta("PaCO2", paCO2).
+		WithMeta("SpO2", displayed).
+		WithMeta("COHb", carboxy*100).
+		WithMeta("pH", bloodstream.PHAt(paCO2)).
+		WithMeta("CaO2", content).
+		WithMeta("hemoglobin", hemoglobin).
+		WithMeta("volume_l", this.State().Get(stateVolume).(float64)).
+		WithMeta("glucose_level", this.State().Get(stateGlucoseLevel).(float64)).
+		WithMetaMany(circulatingHormones(this))
+
+	return errors.Join(
+		this.OutputByName("venous_blood").PutSignals(venousBlood),
+		this.OutputByName("spo2").PutPayloads(displayed),
+		this.OutputByName("pao2").PutPayloads(paO2),
+		this.OutputByName("paco2").PutPayloads(paCO2),
+		this.OutputByName("cao2").PutPayloads(content),
 	)
-	this.OutputByName("spo2").PutPayloads(displayed)
-	this.OutputByName("pao2").PutPayloads(paO2)
-	this.OutputByName("paco2").PutPayloads(paCO2)
-	this.OutputByName("cao2").PutPayloads(content)
 }
 
 func updateBloodLevels(this *component.Component) {

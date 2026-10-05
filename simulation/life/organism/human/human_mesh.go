@@ -2,7 +2,6 @@ package human
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -74,10 +73,8 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 		}
 	}
 
-	_, err = internal.HandleGraphFlag(mesh)
-	if err != nil {
-		fmt.Println("Failed to generate graph:", err)
-		os.Exit(1)
+	if _, err := internal.HandleGraphFlag(mesh); err != nil {
+		return nil, fmt.Errorf("handle graph flag: %w", err)
 	}
 
 	return mesh, nil

@@ -63,7 +63,7 @@ go run . --plain    # plain REPL, no dashboard
 # Headless scripting: piped stdin implies --plain behavior
 printf 'activity:start 3\ntime:now\nexit\n' | go run . --plain
 
-# Regenerate the mesh graphs (requires graphviz)
+# Regenerate the mesh graphs and exit (the .svg files need graphviz)
 FMESH_GRAPH=1 go run .
 ```
 
@@ -72,6 +72,6 @@ FMESH_GRAPH=1 go run .
 The test suite simulates hours of physiology and is by far the longest in the repository:
 
 ```bash
-go test ./simulation/life/...          # full suite: ~15 minutes
-go test -short ./simulation/life/...   # skips the multi-minute physiological runs
+go test -timeout 60m ./simulation/life/...   # full suite: ~15 minutes locally, over 30 on a hosted CI runner
+go test -short ./simulation/life/...         # skips the multi-minute physiological runs
 ```
