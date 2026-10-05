@@ -5,7 +5,7 @@ digraph  {
 	<table border="0" cellborder="0" cellspacing="10">
 			
 			<tr>
-				<td>Description:</td><td>a four-cylinder four-stroke engine: fuel, current and rotation as flows, one trip around the mesh per stroke</td>
+				<td>Description:</td><td>a four-cylinder engine, part by part; one trip around the mesh per stroke</td>
 			</tr>
 			
 		
@@ -17,184 +17,698 @@ digraph  {
 		
 	}
 	subgraph cluster_s3 {
-		color="black";label="alternator";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="alternator",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="alternator",height="1.0",label="charge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="alternator",height="1.0",label="rotation → charging current",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="ac-compressor";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="ac-compressor",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="ac-compressor",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="ac-compressor",height="1.0",label="condenser",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[fontname="Courier New",group="ac-compressor",height="1.0",label="drag",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="ac-compressor",height="1.0",label="belt-driven compressor with a magnetic clutch",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
-		n4->n6;
+		n6->n4;
+		n4->n7;
+		n4->n8;
 		
 	}
-	subgraph cluster_s7 {
+	subgraph cluster_s9 {
+		color="black";label="accessory-belt";margin="20";penwidth="5";style="rounded";
+		n11[fontname="Courier New",group="accessory-belt",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="accessory-belt",height="1.0",label="drag-ac-compressor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="accessory-belt",height="1.0",label="drag-alternator",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="accessory-belt",height="1.0",label="drag-water-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n15[fontname="Courier New",group="accessory-belt",height="1.0",label="drive-ac-compressor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[fontname="Courier New",group="accessory-belt",height="1.0",label="drive-alternator",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="accessory-belt",height="1.0",label="drive-water-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="accessory-belt",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[color="#9dddea",fontname="Courier New",group="accessory-belt",height="1.0",label="crank pulley → alternator, water pump, AC compressor; their drag back",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n11->n10;
+		n12->n10;
+		n13->n10;
+		n14->n10;
+		n10->n15;
+		n10->n16;
+		n10->n17;
+		n10->n18;
+		
+	}
+	subgraph cluster_s19 {
+		color="black";label="air-filter";margin="20";penwidth="5";style="rounded";
+		n21[fontname="Courier New",group="air-filter",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="air-filter",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[color="#9dddea",fontname="Courier New",group="air-filter",height="1.0",label="paper filter in the air box",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n21->n20;
+		n20->n22;
+		
+	}
+	subgraph cluster_s23 {
+		color="black";label="alternator";margin="20";penwidth="5";style="rounded";
+		n25[fontname="Courier New",group="alternator",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="alternator",height="1.0",label="charge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n27[fontname="Courier New",group="alternator",height="1.0",label="drag",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[color="#9dddea",fontname="Courier New",group="alternator",height="1.0",label="belt-driven generator: rotation → charging current",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n25->n24;
+		n24->n26;
+		n24->n27;
+		
+	}
+	subgraph cluster_s28 {
 		color="black";label="battery";margin="20";penwidth="5";style="rounded";
-		n9[fontname="Courier New",group="battery",height="1.0",label="charge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="battery",height="1.0",label="load",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="battery",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[color="#9dddea",fontname="Courier New",group="battery",height="1.0",label="12 V battery: charge in, load out, volts to every consumer",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n9->n8;
-		n10->n8;
-		n8->n11;
+		n30[fontname="Courier New",group="battery",height="1.0",label="charge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[fontname="Courier New",group="battery",height="1.0",label="load",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="battery",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n29[color="#9dddea",fontname="Courier New",group="battery",height="1.0",label="12 V battery: charge in, load out, volts back",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n30->n29;
+		n31->n29;
+		n29->n32;
 		
 	}
-	subgraph cluster_s12 {
+	subgraph cluster_s33 {
+		color="black";label="camshaft";margin="20";penwidth="5";style="rounded";
+		n35[fontname="Courier New",group="camshaft",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[fontname="Courier New",group="camshaft",height="1.0",label="exhaust1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n37[fontname="Courier New",group="camshaft",height="1.0",label="exhaust2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="camshaft",height="1.0",label="exhaust3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n39[fontname="Courier New",group="camshaft",height="1.0",label="exhaust4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[fontname="Courier New",group="camshaft",height="1.0",label="intake1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n41[fontname="Courier New",group="camshaft",height="1.0",label="intake2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[fontname="Courier New",group="camshaft",height="1.0",label="intake3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n43[fontname="Courier New",group="camshaft",height="1.0",label="intake4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[color="#9dddea",fontname="Courier New",group="camshaft",height="1.0",label="opens the intake and exhaust valves, half a turn per two strokes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n35->n34;
+		n34->n36;
+		n34->n37;
+		n34->n38;
+		n34->n39;
+		n34->n40;
+		n34->n41;
+		n34->n42;
+		n34->n43;
+		
+	}
+	subgraph cluster_s44 {
+		color="black";label="cockpit";margin="20";penwidth="5";style="rounded";
+		n46[fontname="Courier New",group="cockpit",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n47[fontname="Courier New",group="cockpit",height="1.0",label="controls",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[fontname="Courier New",group="cockpit",height="1.0",label="ignition",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n49[fontname="Courier New",group="cockpit",height="1.0",label="lights",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[fontname="Courier New",group="cockpit",height="1.0",label="refuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n45[color="#9dddea",fontname="Courier New",group="cockpit",height="1.0",label="accelerator pedal, ignition, AC and light switches",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n46->n45;
+		n45->n47;
+		n45->n48;
+		n45->n49;
+		n45->n50;
+		
+	}
+	subgraph cluster_s51 {
+		color="black";label="coolant-temp-sensor";margin="20";penwidth="5";style="rounded";
+		n53[fontname="Courier New",group="coolant-temp-sensor",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[fontname="Courier New",group="coolant-temp-sensor",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[color="#9dddea",fontname="Courier New",group="coolant-temp-sensor",height="1.0",label="thermistor in the water jacket",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n53->n52;
+		n52->n54;
+		
+	}
+	subgraph cluster_s55 {
+		color="black";label="cooling-fan";margin="20";penwidth="5";style="rounded";
+		n57[fontname="Courier New",group="cooling-fan",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="cooling-fan",height="1.0",label="airflow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n56[color="#9dddea",fontname="Courier New",group="cooling-fan",height="1.0",label="electric fan behind the radiator",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n57->n56;
+		n56->n58;
+		
+	}
+	subgraph cluster_s59 {
 		color="black";label="crankshaft";margin="20";penwidth="5";style="rounded";
-		n14[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n15[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n16[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n17[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[fontname="Courier New",group="crankshaft",height="1.0",label="key",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n19[fontname="Courier New",group="crankshaft",height="1.0",label="starter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n20[fontname="Courier New",group="crankshaft",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n13[color="#9dddea",fontname="Courier New",group="crankshaft",height="1.0",label="sums the torque, turns, and starts the next stroke",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n14->n13;
-		n15->n13;
-		n16->n13;
-		n17->n13;
-		n18->n13;
-		n19->n13;
-		n13->n20;
+		n61[fontname="Courier New",group="crankshaft",height="1.0",label="belt",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n63[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n65[fontname="Courier New",group="crankshaft",height="1.0",label="cylinder-4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[fontname="Courier New",group="crankshaft",height="1.0",label="key",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[fontname="Courier New",group="crankshaft",height="1.0",label="oil",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n68[fontname="Courier New",group="crankshaft",height="1.0",label="oil-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n69[fontname="Courier New",group="crankshaft",height="1.0",label="starter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="crankshaft",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[color="#9dddea",fontname="Courier New",group="crankshaft",height="1.0",label="sums the torque, turns, and starts the next stroke",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n61->n60;
+		n62->n60;
+		n63->n60;
+		n64->n60;
+		n65->n60;
+		n66->n60;
+		n67->n60;
+		n68->n60;
+		n69->n60;
+		n60->n70;
 		
 	}
-	subgraph cluster_s21 {
+	subgraph cluster_s71 {
 		color="black";label="cylinder-1";margin="20";penwidth="5";style="rounded";
-		n23[fontname="Courier New",group="cylinder-1",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n24[fontname="Courier New",group="cylinder-1",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n25[fontname="Courier New",group="cylinder-1",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n22[color="#9dddea",fontname="Courier New",group="cylinder-1",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n23->n22;
-		n24->n22;
-		n22->n25;
+		n73[fontname="Courier New",group="cylinder-1",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[fontname="Courier New",group="cylinder-1",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n75[fontname="Courier New",group="cylinder-1",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="cylinder-1",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n77[fontname="Courier New",group="cylinder-1",height="1.0",label="heat",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[fontname="Courier New",group="cylinder-1",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[color="#9dddea",fontname="Courier New",group="cylinder-1",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n73->n72;
+		n74->n72;
+		n75->n72;
+		n72->n76;
+		n72->n77;
+		n72->n78;
 		
 	}
-	subgraph cluster_s26 {
+	subgraph cluster_s79 {
 		color="black";label="cylinder-2";margin="20";penwidth="5";style="rounded";
-		n28[fontname="Courier New",group="cylinder-2",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n29[fontname="Courier New",group="cylinder-2",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n30[fontname="Courier New",group="cylinder-2",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n27[color="#9dddea",fontname="Courier New",group="cylinder-2",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n28->n27;
-		n29->n27;
-		n27->n30;
+		n81[fontname="Courier New",group="cylinder-2",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[fontname="Courier New",group="cylinder-2",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n83[fontname="Courier New",group="cylinder-2",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[fontname="Courier New",group="cylinder-2",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n85[fontname="Courier New",group="cylinder-2",height="1.0",label="heat",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n86[fontname="Courier New",group="cylinder-2",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n80[color="#9dddea",fontname="Courier New",group="cylinder-2",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n81->n80;
+		n82->n80;
+		n83->n80;
+		n80->n84;
+		n80->n85;
+		n80->n86;
 		
 	}
-	subgraph cluster_s31 {
+	subgraph cluster_s87 {
 		color="black";label="cylinder-3";margin="20";penwidth="5";style="rounded";
-		n33[fontname="Courier New",group="cylinder-3",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n34[fontname="Courier New",group="cylinder-3",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n35[fontname="Courier New",group="cylinder-3",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n32[color="#9dddea",fontname="Courier New",group="cylinder-3",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n33->n32;
-		n34->n32;
-		n32->n35;
+		n89[fontname="Courier New",group="cylinder-3",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n90[fontname="Courier New",group="cylinder-3",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n91[fontname="Courier New",group="cylinder-3",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n92[fontname="Courier New",group="cylinder-3",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n93[fontname="Courier New",group="cylinder-3",height="1.0",label="heat",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n94[fontname="Courier New",group="cylinder-3",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n88[color="#9dddea",fontname="Courier New",group="cylinder-3",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n89->n88;
+		n90->n88;
+		n91->n88;
+		n88->n92;
+		n88->n93;
+		n88->n94;
 		
 	}
-	subgraph cluster_s36 {
+	subgraph cluster_s95 {
 		color="black";label="cylinder-4";margin="20";penwidth="5";style="rounded";
-		n38[fontname="Courier New",group="cylinder-4",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n39[fontname="Courier New",group="cylinder-4",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n40[fontname="Courier New",group="cylinder-4",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n37[color="#9dddea",fontname="Courier New",group="cylinder-4",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n38->n37;
-		n39->n37;
-		n37->n40;
+		n97[fontname="Courier New",group="cylinder-4",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n98[fontname="Courier New",group="cylinder-4",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n99[fontname="Courier New",group="cylinder-4",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n100[fontname="Courier New",group="cylinder-4",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n101[fontname="Courier New",group="cylinder-4",height="1.0",label="heat",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n102[fontname="Courier New",group="cylinder-4",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n96[color="#9dddea",fontname="Courier New",group="cylinder-4",height="1.0",label="intake → compression → power → exhaust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n97->n96;
+		n98->n96;
+		n99->n96;
+		n96->n100;
+		n96->n101;
+		n96->n102;
 		
 	}
-	subgraph cluster_s41 {
+	subgraph cluster_s103 {
 		color="black";label="ecu";margin="20";penwidth="5";style="rounded";
-		n43[fontname="Courier New",group="ecu",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n44[fontname="Courier New",group="ecu",height="1.0",label="demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n45[fontname="Courier New",group="ecu",height="1.0",label="engage",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n46[fontname="Courier New",group="ecu",height="1.0",label="load",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n47[fontname="Courier New",group="ecu",height="1.0",label="target",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n42[color="#9dddea",fontname="Courier New",group="ecu",height="1.0",label="engine control unit: starter, fuel and spark timing",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n43->n42;
-		n42->n44;
-		n42->n45;
-		n42->n46;
-		n42->n47;
+		n105[fontname="Courier New",group="ecu",height="1.0",label="controls",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n106[fontname="Courier New",group="ecu",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n107[fontname="Courier New",group="ecu",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n108[fontname="Courier New",group="ecu",height="1.0",label="lambda",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n109[fontname="Courier New",group="ecu",height="1.0",label="map",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n110[fontname="Courier New",group="ecu",height="1.0",label="oil",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n111[fontname="Courier New",group="ecu",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n112[fontname="Courier New",group="ecu",height="1.0",label="ac-compressor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n113[fontname="Courier New",group="ecu",height="1.0",label="cooling-fan",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n114[fontname="Courier New",group="ecu",height="1.0",label="demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n115[fontname="Courier New",group="ecu",height="1.0",label="fuel-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n116[fontname="Courier New",group="ecu",height="1.0",label="inject",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n117[fontname="Courier New",group="ecu",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n118[fontname="Courier New",group="ecu",height="1.0",label="starter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n119[fontname="Courier New",group="ecu",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n120[fontname="Courier New",group="ecu",height="1.0",label="throttle",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n104[color="#9dddea",fontname="Courier New",group="ecu",height="1.0",label="engine control unit: starting, idle, fuel, spark, fan and AC",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n105->n104;
+		n106->n104;
+		n107->n104;
+		n108->n104;
+		n109->n104;
+		n110->n104;
+		n111->n104;
+		n104->n112;
+		n104->n113;
+		n104->n114;
+		n104->n115;
+		n104->n116;
+		n104->n117;
+		n104->n118;
+		n104->n119;
+		n104->n120;
 		
 	}
-	subgraph cluster_s48 {
+	subgraph cluster_s121 {
+		color="black";label="engine-block";margin="20";penwidth="5";style="rounded";
+		n123[fontname="Courier New",group="engine-block",height="1.0",label="cooling",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n124[fontname="Courier New",group="engine-block",height="1.0",label="cylinder-1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n125[fontname="Courier New",group="engine-block",height="1.0",label="cylinder-2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n126[fontname="Courier New",group="engine-block",height="1.0",label="cylinder-3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n127[fontname="Courier New",group="engine-block",height="1.0",label="cylinder-4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n128[fontname="Courier New",group="engine-block",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n129[fontname="Courier New",group="engine-block",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n130[fontname="Courier New",group="engine-block",height="1.0",label="temp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n122[color="#9dddea",fontname="Courier New",group="engine-block",height="1.0",label="cylinder block and head with their water jacket",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n123->n122;
+		n124->n122;
+		n125->n122;
+		n126->n122;
+		n127->n122;
+		n128->n122;
+		n122->n129;
+		n122->n130;
+		
+	}
+	subgraph cluster_s131 {
+		color="black";label="exhaust-manifold";margin="20";penwidth="5";style="rounded";
+		n133[fontname="Courier New",group="exhaust-manifold",height="1.0",label="cylinder-1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n134[fontname="Courier New",group="exhaust-manifold",height="1.0",label="cylinder-2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n135[fontname="Courier New",group="exhaust-manifold",height="1.0",label="cylinder-3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n136[fontname="Courier New",group="exhaust-manifold",height="1.0",label="cylinder-4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n137[fontname="Courier New",group="exhaust-manifold",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n132[color="#9dddea",fontname="Courier New",group="exhaust-manifold",height="1.0",label="four exhaust ports into one pipe",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n133->n132;
+		n134->n132;
+		n135->n132;
+		n136->n132;
+		n132->n137;
+		
+	}
+	subgraph cluster_s138 {
+		color="black";label="exhaust-valve-1";margin="20";penwidth="5";style="rounded";
+		n140[fontname="Courier New",group="exhaust-valve-1",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n141[fontname="Courier New",group="exhaust-valve-1",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n142[fontname="Courier New",group="exhaust-valve-1",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n139[color="#9dddea",fontname="Courier New",group="exhaust-valve-1",height="1.0",label="exhaust valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n140->n139;
+		n141->n139;
+		n139->n142;
+		
+	}
+	subgraph cluster_s143 {
+		color="black";label="exhaust-valve-2";margin="20";penwidth="5";style="rounded";
+		n145[fontname="Courier New",group="exhaust-valve-2",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n146[fontname="Courier New",group="exhaust-valve-2",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n147[fontname="Courier New",group="exhaust-valve-2",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n144[color="#9dddea",fontname="Courier New",group="exhaust-valve-2",height="1.0",label="exhaust valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n145->n144;
+		n146->n144;
+		n144->n147;
+		
+	}
+	subgraph cluster_s148 {
+		color="black";label="exhaust-valve-3";margin="20";penwidth="5";style="rounded";
+		n150[fontname="Courier New",group="exhaust-valve-3",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n151[fontname="Courier New",group="exhaust-valve-3",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n152[fontname="Courier New",group="exhaust-valve-3",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n149[color="#9dddea",fontname="Courier New",group="exhaust-valve-3",height="1.0",label="exhaust valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n150->n149;
+		n151->n149;
+		n149->n152;
+		
+	}
+	subgraph cluster_s153 {
+		color="black";label="exhaust-valve-4";margin="20";penwidth="5";style="rounded";
+		n155[fontname="Courier New",group="exhaust-valve-4",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n156[fontname="Courier New",group="exhaust-valve-4",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n157[fontname="Courier New",group="exhaust-valve-4",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n154[color="#9dddea",fontname="Courier New",group="exhaust-valve-4",height="1.0",label="exhaust valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n155->n154;
+		n156->n154;
+		n154->n157;
+		
+	}
+	subgraph cluster_s158 {
 		color="black";label="fuel-pump";margin="20";penwidth="5";style="rounded";
-		n50[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n51[fontname="Courier New",group="fuel-pump",height="1.0",label="target",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n52[fontname="Courier New",group="fuel-pump",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n53[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n54[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n55[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n56[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n49[color="#9dddea",fontname="Courier New",group="fuel-pump",height="1.0",label="electric pump: tank → injector of the cylinder on intake",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n50->n49;
-		n51->n49;
-		n52->n49;
-		n49->n53;
-		n49->n54;
-		n49->n55;
-		n49->n56;
+		n160[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n161[fontname="Courier New",group="fuel-pump",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n162[fontname="Courier New",group="fuel-pump",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n159[color="#9dddea",fontname="Courier New",group="fuel-pump",height="1.0",label="electric pump in the tank: tank → fuel rail at 3.5 bar",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n160->n159;
+		n161->n159;
+		n159->n162;
 		
 	}
-	subgraph cluster_s57 {
+	subgraph cluster_s163 {
+		color="black";label="fuel-rail";margin="20";penwidth="5";style="rounded";
+		n165[fontname="Courier New",group="fuel-rail",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n166[fontname="Courier New",group="fuel-rail",height="1.0",label="inject",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n167[fontname="Courier New",group="fuel-rail",height="1.0",label="injector1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n168[fontname="Courier New",group="fuel-rail",height="1.0",label="injector2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n169[fontname="Courier New",group="fuel-rail",height="1.0",label="injector3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n170[fontname="Courier New",group="fuel-rail",height="1.0",label="injector4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n164[color="#9dddea",fontname="Courier New",group="fuel-rail",height="1.0",label="fuel rail with four injectors, one at each intake port",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n165->n164;
+		n166->n164;
+		n164->n167;
+		n164->n168;
+		n164->n169;
+		n164->n170;
+		
+	}
+	subgraph cluster_s171 {
 		color="black";label="fuel-tank";margin="20";penwidth="5";style="rounded";
-		n59[fontname="Courier New",group="fuel-tank",height="1.0",label="demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n60[fontname="Courier New",group="fuel-tank",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n58[color="#9dddea",fontname="Courier New",group="fuel-tank",height="1.0",label="holds the fuel; gives what is asked, while it lasts",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n59->n58;
-		n58->n60;
+		n173[fontname="Courier New",group="fuel-tank",height="1.0",label="demand",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n174[fontname="Courier New",group="fuel-tank",height="1.0",label="refuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n175[fontname="Courier New",group="fuel-tank",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n176[fontname="Courier New",group="fuel-tank",height="1.0",label="level",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n172[color="#9dddea",fontname="Courier New",group="fuel-tank",height="1.0",label="holds the fuel; gives what is asked, while it lasts",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n173->n172;
+		n174->n172;
+		n172->n175;
+		n172->n176;
 		
 	}
-	subgraph cluster_s61 {
+	subgraph cluster_s177 {
+		color="black";label="fuse-box";margin="20";penwidth="5";style="rounded";
+		n179[fontname="Courier New",group="fuse-box",height="1.0",label="ac-compressor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n180[fontname="Courier New",group="fuse-box",height="1.0",label="cooling-fan",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n181[fontname="Courier New",group="fuse-box",height="1.0",label="fuel-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n182[fontname="Courier New",group="fuse-box",height="1.0",label="headlights",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n183[fontname="Courier New",group="fuse-box",height="1.0",label="ignition",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n184[fontname="Courier New",group="fuse-box",height="1.0",label="starter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n185[fontname="Courier New",group="fuse-box",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n186[fontname="Courier New",group="fuse-box",height="1.0",label="ac-compressor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n187[fontname="Courier New",group="fuse-box",height="1.0",label="cooling-fan",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n188[fontname="Courier New",group="fuse-box",height="1.0",label="fuel-pump",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n189[fontname="Courier New",group="fuse-box",height="1.0",label="headlights",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n190[fontname="Courier New",group="fuse-box",height="1.0",label="ignition",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n191[fontname="Courier New",group="fuse-box",height="1.0",label="load",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n192[fontname="Courier New",group="fuse-box",height="1.0",label="starter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n178[color="#9dddea",fontname="Courier New",group="fuse-box",height="1.0",label="relays and fuses: switches → load to the battery, volts → each circuit",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n179->n178;
+		n180->n178;
+		n181->n178;
+		n182->n178;
+		n183->n178;
+		n184->n178;
+		n185->n178;
+		n178->n186;
+		n178->n187;
+		n178->n188;
+		n178->n189;
+		n178->n190;
+		n178->n191;
+		n178->n192;
+		
+	}
+	subgraph cluster_s193 {
+		color="black";label="headlights";margin="20";penwidth="5";style="rounded";
+		n195[fontname="Courier New",group="headlights",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n194[color="#9dddea",fontname="Courier New",group="headlights",height="1.0",label="two 55 W lamps: a load on the alternator",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n195->n194;
+		
+	}
+	subgraph cluster_s196 {
 		color="black";label="ignition-coil";margin="20";penwidth="5";style="rounded";
-		n63[fontname="Courier New",group="ignition-coil",height="1.0",label="target",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n64[fontname="Courier New",group="ignition-coil",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n65[fontname="Courier New",group="ignition-coil",height="1.0",label="spark1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n66[fontname="Courier New",group="ignition-coil",height="1.0",label="spark2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n67[fontname="Courier New",group="ignition-coil",height="1.0",label="spark3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n68[fontname="Courier New",group="ignition-coil",height="1.0",label="spark4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n62[color="#9dddea",fontname="Courier New",group="ignition-coil",height="1.0",label="12 V → spark, to the cylinder on its power stroke",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n63->n62;
-		n64->n62;
-		n62->n65;
-		n62->n66;
-		n62->n67;
-		n62->n68;
+		n198[fontname="Courier New",group="ignition-coil",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n199[fontname="Courier New",group="ignition-coil",height="1.0",label="spark",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n200[fontname="Courier New",group="ignition-coil",height="1.0",label="spark1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n201[fontname="Courier New",group="ignition-coil",height="1.0",label="spark2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n202[fontname="Courier New",group="ignition-coil",height="1.0",label="spark3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n203[fontname="Courier New",group="ignition-coil",height="1.0",label="spark4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n197[color="#9dddea",fontname="Courier New",group="ignition-coil",height="1.0",label="12 V → 30 kV, to the spark plug of the cylinder on its power stroke",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n198->n197;
+		n199->n197;
+		n197->n200;
+		n197->n201;
+		n197->n202;
+		n197->n203;
 		
 	}
-	subgraph cluster_s69 {
+	subgraph cluster_s204 {
+		color="black";label="instrument-cluster";margin="20";penwidth="5";style="rounded";
+		n206[fontname="Courier New",group="instrument-cluster",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n207[fontname="Courier New",group="instrument-cluster",height="1.0",label="fuel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n208[fontname="Courier New",group="instrument-cluster",height="1.0",label="lambda",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n209[fontname="Courier New",group="instrument-cluster",height="1.0",label="map",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n210[fontname="Courier New",group="instrument-cluster",height="1.0",label="oil",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n211[fontname="Courier New",group="instrument-cluster",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n212[fontname="Courier New",group="instrument-cluster",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n205[color="#9dddea",fontname="Courier New",group="instrument-cluster",height="1.0",label="tachometer, gauges and warning lamps",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n206->n205;
+		n207->n205;
+		n208->n205;
+		n209->n205;
+		n210->n205;
+		n211->n205;
+		n212->n205;
+		
+	}
+	subgraph cluster_s213 {
+		color="black";label="intake-manifold";margin="20";penwidth="5";style="rounded";
+		n215[fontname="Courier New",group="intake-manifold",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n216[fontname="Courier New",group="intake-manifold",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n217[fontname="Courier New",group="intake-manifold",height="1.0",label="charge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n218[fontname="Courier New",group="intake-manifold",height="1.0",label="map",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n214[color="#9dddea",fontname="Courier New",group="intake-manifold",height="1.0",label="plenum and runners to the four intake valves, with a pressure sensor",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n215->n214;
+		n216->n214;
+		n214->n217;
+		n214->n218;
+		
+	}
+	subgraph cluster_s219 {
+		color="black";label="intake-valve-1";margin="20";penwidth="5";style="rounded";
+		n221[fontname="Courier New",group="intake-valve-1",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n222[fontname="Courier New",group="intake-valve-1",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n223[fontname="Courier New",group="intake-valve-1",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n220[color="#9dddea",fontname="Courier New",group="intake-valve-1",height="1.0",label="intake valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n221->n220;
+		n222->n220;
+		n220->n223;
+		
+	}
+	subgraph cluster_s224 {
+		color="black";label="intake-valve-2";margin="20";penwidth="5";style="rounded";
+		n226[fontname="Courier New",group="intake-valve-2",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n227[fontname="Courier New",group="intake-valve-2",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n228[fontname="Courier New",group="intake-valve-2",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n225[color="#9dddea",fontname="Courier New",group="intake-valve-2",height="1.0",label="intake valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n226->n225;
+		n227->n225;
+		n225->n228;
+		
+	}
+	subgraph cluster_s229 {
+		color="black";label="intake-valve-3";margin="20";penwidth="5";style="rounded";
+		n231[fontname="Courier New",group="intake-valve-3",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n232[fontname="Courier New",group="intake-valve-3",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n233[fontname="Courier New",group="intake-valve-3",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n230[color="#9dddea",fontname="Courier New",group="intake-valve-3",height="1.0",label="intake valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n231->n230;
+		n232->n230;
+		n230->n233;
+		
+	}
+	subgraph cluster_s234 {
+		color="black";label="intake-valve-4";margin="20";penwidth="5";style="rounded";
+		n236[fontname="Courier New",group="intake-valve-4",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n237[fontname="Courier New",group="intake-valve-4",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n238[fontname="Courier New",group="intake-valve-4",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n235[color="#9dddea",fontname="Courier New",group="intake-valve-4",height="1.0",label="intake valve: opens when the cam lobe pushes it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n236->n235;
+		n237->n235;
+		n235->n238;
+		
+	}
+	subgraph cluster_s239 {
+		color="black";label="lambda-sensor";margin="20";penwidth="5";style="rounded";
+		n241[fontname="Courier New",group="lambda-sensor",height="1.0",label="exhaust",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n242[fontname="Courier New",group="lambda-sensor",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n240[color="#9dddea",fontname="Courier New",group="lambda-sensor",height="1.0",label="oxygen sensor: how rich or lean the engine burns",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n241->n240;
+		n240->n242;
+		
+	}
+	subgraph cluster_s243 {
+		color="black";label="oil-pressure-sensor";margin="20";penwidth="5";style="rounded";
+		n245[fontname="Courier New",group="oil-pressure-sensor",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n246[fontname="Courier New",group="oil-pressure-sensor",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n244[color="#9dddea",fontname="Courier New",group="oil-pressure-sensor",height="1.0",label="oil pressure sender on the main gallery",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n245->n244;
+		n244->n246;
+		
+	}
+	subgraph cluster_s247 {
+		color="black";label="oil-pump";margin="20";penwidth="5";style="rounded";
+		n249[fontname="Courier New",group="oil-pump",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n250[fontname="Courier New",group="oil-pump",height="1.0",label="pressure",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n251[fontname="Courier New",group="oil-pump",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n248[color="#9dddea",fontname="Courier New",group="oil-pump",height="1.0",label="gear pump in the sump, driven by the crankshaft",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n249->n248;
+		n248->n250;
+		n248->n251;
+		
+	}
+	subgraph cluster_s252 {
+		color="black";label="radiator";margin="20";penwidth="5";style="rounded";
+		n254[fontname="Courier New",group="radiator",height="1.0",label="airflow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n255[fontname="Courier New",group="radiator",height="1.0",label="condenser",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n256[fontname="Courier New",group="radiator",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n257[fontname="Courier New",group="radiator",height="1.0",label="cooling",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n253[color="#9dddea",fontname="Courier New",group="radiator",height="1.0",label="coolant → air heat exchanger, with the AC condenser in front",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n254->n253;
+		n255->n253;
+		n256->n253;
+		n253->n257;
+		
+	}
+	subgraph cluster_s258 {
 		color="black";label="starter";margin="20";penwidth="5";style="rounded";
-		n71[fontname="Courier New",group="starter",height="1.0",label="engage",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n72[fontname="Courier New",group="starter",height="1.0",label="volts",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n73[fontname="Courier New",group="starter",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n70[color="#9dddea",fontname="Courier New",group="starter",height="1.0",label="electric motor that turns the engine until it runs on its own",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n71->n70;
-		n72->n70;
-		n70->n73;
+		n260[fontname="Courier New",group="starter",height="1.0",label="crank",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n261[fontname="Courier New",group="starter",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n262[fontname="Courier New",group="starter",height="1.0",label="torque",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n259[color="#9dddea",fontname="Courier New",group="starter",height="1.0",label="electric motor that turns the engine until it runs on its own",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n260->n259;
+		n261->n259;
+		n259->n262;
+		
+	}
+	subgraph cluster_s263 {
+		color="black";label="thermostat";margin="20";penwidth="5";style="rounded";
+		n265[fontname="Courier New",group="thermostat",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n266[fontname="Courier New",group="thermostat",height="1.0",label="coolant",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n264[color="#9dddea",fontname="Courier New",group="thermostat",height="1.0",label="wax valve between the engine and the radiator",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n265->n264;
+		n264->n266;
+		
+	}
+	subgraph cluster_s267 {
+		color="black";label="throttle-body";margin="20";penwidth="5";style="rounded";
+		n269[fontname="Courier New",group="throttle-body",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n270[fontname="Courier New",group="throttle-body",height="1.0",label="throttle",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n271[fontname="Courier New",group="throttle-body",height="1.0",label="air",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n268[color="#9dddea",fontname="Courier New",group="throttle-body",height="1.0",label="drive-by-wire throttle plate",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n269->n268;
+		n270->n268;
+		n268->n271;
+		
+	}
+	subgraph cluster_s272 {
+		color="black";label="water-pump";margin="20";penwidth="5";style="rounded";
+		n274[fontname="Courier New",group="water-pump",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n275[fontname="Courier New",group="water-pump",height="1.0",label="drag",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n276[fontname="Courier New",group="water-pump",height="1.0",label="flow",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n273[color="#9dddea",fontname="Courier New",group="water-pump",height="1.0",label="belt-driven coolant pump",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n274->n273;
+		n273->n275;
+		n273->n276;
 		
 	}
 	layout="dot";splines="ortho";
-	n6->n9[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n72[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n52[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n64[color="#e437ea",minlen="3",penwidth="2"];
-	n20->n43[color="#e437ea",minlen="3",penwidth="2"];
-	n20->n5[color="#e437ea",minlen="3",penwidth="2"];
-	n25->n14[color="#e437ea",minlen="3",penwidth="2"];
-	n30->n15[color="#e437ea",minlen="3",penwidth="2"];
-	n35->n16[color="#e437ea",minlen="3",penwidth="2"];
-	n40->n17[color="#e437ea",minlen="3",penwidth="2"];
-	n44->n59[color="#e437ea",minlen="3",penwidth="2"];
-	n45->n71[color="#e437ea",minlen="3",penwidth="2"];
-	n46->n10[color="#e437ea",minlen="3",penwidth="2"];
-	n47->n51[color="#e437ea",minlen="3",penwidth="2"];
-	n47->n63[color="#e437ea",minlen="3",penwidth="2"];
-	n53->n23[color="#e437ea",minlen="3",penwidth="2"];
-	n54->n28[color="#e437ea",minlen="3",penwidth="2"];
-	n55->n33[color="#e437ea",minlen="3",penwidth="2"];
-	n56->n38[color="#e437ea",minlen="3",penwidth="2"];
-	n60->n50[color="#e437ea",minlen="3",penwidth="2"];
-	n65->n24[color="#e437ea",minlen="3",penwidth="2"];
-	n66->n29[color="#e437ea",minlen="3",penwidth="2"];
-	n67->n34[color="#e437ea",minlen="3",penwidth="2"];
-	n68->n39[color="#e437ea",minlen="3",penwidth="2"];
-	n73->n19[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n255[color="#e437ea",minlen="3",penwidth="2"];
+	n8->n12[color="#e437ea",minlen="3",penwidth="2"];
+	n15->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n16->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n17->n274[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n269[color="#e437ea",minlen="3",penwidth="2"];
+	n26->n30[color="#e437ea",minlen="3",penwidth="2"];
+	n27->n13[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n185[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n111[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n212[color="#e437ea",minlen="3",penwidth="2"];
+	n36->n141[color="#e437ea",minlen="3",penwidth="2"];
+	n37->n146[color="#e437ea",minlen="3",penwidth="2"];
+	n38->n151[color="#e437ea",minlen="3",penwidth="2"];
+	n39->n156[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n222[color="#e437ea",minlen="3",penwidth="2"];
+	n41->n227[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n232[color="#e437ea",minlen="3",penwidth="2"];
+	n43->n237[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n105[color="#e437ea",minlen="3",penwidth="2"];
+	n48->n183[color="#e437ea",minlen="3",penwidth="2"];
+	n49->n182[color="#e437ea",minlen="3",penwidth="2"];
+	n50->n174[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n106[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n206[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n254[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n46[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n107[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n35[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n11[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n249[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n260[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n216[color="#e437ea",minlen="3",penwidth="2"];
+	n76->n140[color="#e437ea",minlen="3",penwidth="2"];
+	n77->n124[color="#e437ea",minlen="3",penwidth="2"];
+	n78->n62[color="#e437ea",minlen="3",penwidth="2"];
+	n84->n145[color="#e437ea",minlen="3",penwidth="2"];
+	n85->n125[color="#e437ea",minlen="3",penwidth="2"];
+	n86->n63[color="#e437ea",minlen="3",penwidth="2"];
+	n92->n150[color="#e437ea",minlen="3",penwidth="2"];
+	n93->n126[color="#e437ea",minlen="3",penwidth="2"];
+	n94->n64[color="#e437ea",minlen="3",penwidth="2"];
+	n100->n155[color="#e437ea",minlen="3",penwidth="2"];
+	n101->n127[color="#e437ea",minlen="3",penwidth="2"];
+	n102->n65[color="#e437ea",minlen="3",penwidth="2"];
+	n112->n179[color="#e437ea",minlen="3",penwidth="2"];
+	n113->n180[color="#e437ea",minlen="3",penwidth="2"];
+	n114->n173[color="#e437ea",minlen="3",penwidth="2"];
+	n115->n181[color="#e437ea",minlen="3",penwidth="2"];
+	n116->n166[color="#e437ea",minlen="3",penwidth="2"];
+	n117->n199[color="#e437ea",minlen="3",penwidth="2"];
+	n118->n184[color="#e437ea",minlen="3",penwidth="2"];
+	n119->n211[color="#e437ea",minlen="3",penwidth="2"];
+	n120->n270[color="#e437ea",minlen="3",penwidth="2"];
+	n129->n265[color="#e437ea",minlen="3",penwidth="2"];
+	n130->n53[color="#e437ea",minlen="3",penwidth="2"];
+	n137->n241[color="#e437ea",minlen="3",penwidth="2"];
+	n142->n133[color="#e437ea",minlen="3",penwidth="2"];
+	n147->n134[color="#e437ea",minlen="3",penwidth="2"];
+	n152->n135[color="#e437ea",minlen="3",penwidth="2"];
+	n157->n136[color="#e437ea",minlen="3",penwidth="2"];
+	n162->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n167->n74[color="#e437ea",minlen="3",penwidth="2"];
+	n168->n82[color="#e437ea",minlen="3",penwidth="2"];
+	n169->n90[color="#e437ea",minlen="3",penwidth="2"];
+	n170->n98[color="#e437ea",minlen="3",penwidth="2"];
+	n175->n160[color="#e437ea",minlen="3",penwidth="2"];
+	n176->n207[color="#e437ea",minlen="3",penwidth="2"];
+	n186->n6[color="#e437ea",minlen="3",penwidth="2"];
+	n187->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n188->n161[color="#e437ea",minlen="3",penwidth="2"];
+	n189->n195[color="#e437ea",minlen="3",penwidth="2"];
+	n190->n198[color="#e437ea",minlen="3",penwidth="2"];
+	n191->n31[color="#e437ea",minlen="3",penwidth="2"];
+	n192->n261[color="#e437ea",minlen="3",penwidth="2"];
+	n200->n75[color="#e437ea",minlen="3",penwidth="2"];
+	n201->n83[color="#e437ea",minlen="3",penwidth="2"];
+	n202->n91[color="#e437ea",minlen="3",penwidth="2"];
+	n203->n99[color="#e437ea",minlen="3",penwidth="2"];
+	n217->n221[color="#e437ea",minlen="3",penwidth="2"];
+	n217->n226[color="#e437ea",minlen="3",penwidth="2"];
+	n217->n231[color="#e437ea",minlen="3",penwidth="2"];
+	n217->n236[color="#e437ea",minlen="3",penwidth="2"];
+	n218->n109[color="#e437ea",minlen="3",penwidth="2"];
+	n218->n209[color="#e437ea",minlen="3",penwidth="2"];
+	n223->n73[color="#e437ea",minlen="3",penwidth="2"];
+	n228->n81[color="#e437ea",minlen="3",penwidth="2"];
+	n233->n89[color="#e437ea",minlen="3",penwidth="2"];
+	n238->n97[color="#e437ea",minlen="3",penwidth="2"];
+	n242->n108[color="#e437ea",minlen="3",penwidth="2"];
+	n242->n208[color="#e437ea",minlen="3",penwidth="2"];
+	n246->n110[color="#e437ea",minlen="3",penwidth="2"];
+	n246->n210[color="#e437ea",minlen="3",penwidth="2"];
+	n250->n67[color="#e437ea",minlen="3",penwidth="2"];
+	n250->n245[color="#e437ea",minlen="3",penwidth="2"];
+	n251->n68[color="#e437ea",minlen="3",penwidth="2"];
+	n257->n123[color="#e437ea",minlen="3",penwidth="2"];
+	n262->n69[color="#e437ea",minlen="3",penwidth="2"];
+	n266->n256[color="#e437ea",minlen="3",penwidth="2"];
+	n271->n215[color="#e437ea",minlen="3",penwidth="2"];
+	n275->n14[color="#e437ea",minlen="3",penwidth="2"];
+	n276->n128[color="#e437ea",minlen="3",penwidth="2"];
 	
 }
