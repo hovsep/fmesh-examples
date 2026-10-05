@@ -1,0 +1,18 @@
+{
+  "conditions": [
+    { "name": "from-ceo",    "field": "from",       "op": "equals",      "value": "ceo@acme.example" },
+    { "name": "urgent",      "field": "subject",    "op": "contains",    "value": "urgent" },
+    { "name": "invoice",     "field": "subject",    "op": "contains",    "value": "invoice" },
+    { "name": "pdf",         "field": "attachment", "op": "equals",      "value": "pdf" },
+    { "name": "from-vendor", "field": "from",       "op": "ends_with",   "value": "@supplies.example" },
+    { "name": "newsletter",  "field": "from",       "op": "starts_with", "value": "news@" },
+    { "name": "huge",        "field": "size_kb",    "op": "greater_than", "value": 10000 }
+  ],
+  "rules": [
+    { "name": "escalate", "all": ["from-ceo", "urgent"],     "actions": ["flag", "notify-phone"] },
+    { "name": "bills",    "all": ["invoice", "pdf"],         "actions": ["move-to-finance", "forward-to-accountant"] },
+    { "name": "vendors",  "any": ["from-vendor", "invoice"], "actions": ["label-vendor"] },
+    { "name": "reading",  "any": ["newsletter"],             "actions": ["move-to-later"] },
+    { "name": "storage",  "any": ["huge"],                   "actions": ["notify-phone"] }
+  ]
+}

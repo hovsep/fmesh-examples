@@ -50,6 +50,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Retry](./patterns/retry) | Retrying a failing activation: temporary errors get another attempt with backoff, permanent ones do not |
 | [State Machine](./patterns/state_machine) | An FSM out of nothing but fmesh: states are components, transitions are pipes, the current state is a mesh metadata entry — the mesh graph is the state diagram |
 | [Unix Pipes](./patterns/unix_pipes) | A shell job as a mesh: unix commands as components, one log analysed three ways at once and joined into one report |
+| [Rule Engine](./patterns/rule_engine) | Rules from a config file compiled into a mesh: shared conditions, all/any rules, actions, rebuilt from the file on every run |
 
 ### `simulation/` — systems evolving over time
 

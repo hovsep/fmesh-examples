@@ -1,0 +1,9 @@
+[
+  { "id": "1", "from": "ceo@acme.example",     "subject": "urgent: board deck",      "attachment": "pptx", "size_kb": 18000 },
+  { "id": "2", "from": "billing@supplies.example", "subject": "invoice #2231",      "attachment": "pdf",  "size_kb": 120 },
+  { "id": "3", "from": "news@weekly.example",  "subject": "This week in Go",         "attachment": "",     "size_kb": 40 },
+  { "id": "4", "from": "ceo@acme.example",     "subject": "lunch on friday?",        "attachment": "",     "size_kb": 3 },
+  { "id": "5", "from": "sales@supplies.example", "subject": "new catalogue",          "attachment": "pdf",  "size_kb": 900 },
+  { "id": "6", "from": "friend@mail.example",  "subject": "holiday photos",          "attachment": "zip",  "size_kb": 25000 },
+  { "id": "7", "from": "accounts@cloud.example", "subject": "your invoice is ready", "attachment": "",     "size_kb": 15 }
+]
