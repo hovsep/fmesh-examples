@@ -18,8 +18,8 @@ const (
 
 func main() {
 	fmt.Println("=== Song Filter Demo ===")
-	fmt.Println("This example demonstrates signal filtering by labels.")
-	fmt.Println("Signals matching a disallowed label set are dropped; all others pass through.")
+	fmt.Println("This example demonstrates signal filtering by metadata.")
+	fmt.Println("Signals whose metadata matches a disallowed entry are dropped; all others pass through.")
 	fmt.Println()
 
 	fm, err := getMesh()
@@ -98,7 +98,7 @@ func getPrinter(name string) (*component.Component, error) {
 	)
 }
 
-func getFilter(name string, disallowedLabels *meta.Meta) (*component.Component, error) {
+func getFilter(name string, disallowedMeta *meta.Meta) (*component.Component, error) {
 	return component.New(name,
 		component.WithDescription("Simple filter"),
 		component.WithInputs(portIn),
@@ -106,7 +106,7 @@ func getFilter(name string, disallowedLabels *meta.Meta) (*component.Component, 
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
 				var why string
-				for k, v := range disallowedLabels.All() {
+				for k, v := range disallowedMeta.All() {
 					if want, ok := v.(string); ok && sig.Meta().ValueIs(k, want) {
 						why = fmt.Sprintf("%s=%s matches the filter rule", k, want)
 					}

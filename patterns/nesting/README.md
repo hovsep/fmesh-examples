@@ -8,7 +8,7 @@ The scenario is prime factorization. The outer mesh takes a number (315), filter
 
 - **Outer mesh** (`outer`): `starter` → `filter` → `factorizer`, with `filter` also branching a `log` output to `logger`.
   - `starter` just forwards the input number.
-  - `filter` accepts numbers under 1000 on `out`; anything else goes to `log` instead.
+  - `filter` accepts numbers from 2 to 999 on `out`; anything else goes to `log` instead.
   - `logger` prints whatever lands on `log`.
   - `factorizer` is the composition boundary: on each activation it calls `getPrimeFactorizationMesh()` to construct the inner mesh, pushes the incoming signal onto the inner mesh's `starter` input, calls `Run(ctx)` on it synchronously, and reads the inner mesh's `results` output before putting a `factorizedNumber{Num, Factors}` signal on its own `out` port.
 - **Inner mesh** ("prime factors algo"): `starter` → `d2` → `dodd` → `final_prime`, each of `d2`/`dodd`/`final_prime` also emitting factors onto a shared `factor` port that fans into `results`, which forwards them to its `factors` output.

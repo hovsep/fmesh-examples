@@ -62,41 +62,42 @@ func main() {
 		return c.Meta().ValueIs("stage", strconv.Itoa(fm.Components().Len()))
 	}).OutputByName(portOut).Signals().FirstPayloadOrDefault("")
 
-	if resultFileName != "" {
-
+	if resultFileName == "" {
+		fmt.Println("No results file was written")
+		return
 	}
+	fmt.Println("Token counts written to", resultFileName)
 }
 
 func getMesh() (*fmesh.FMesh, error) {
 	stdinReader, err := getStdInReader("read-stdin", "Please input text and press ENTER")
 	if err != nil {
-		return nil, fmt.Errorf("getStdInReader: %w", err)
+		return nil, fmt.Errorf("read-stdin component: %w", err)
 	}
 	persistInput, err := getFileWriter("persist-input")
 	if err != nil {
-		return nil, fmt.Errorf("getFileWriter: %w", err)
+		return nil, fmt.Errorf("persist-input component: %w", err)
 	}
-	fmt.Println("  Stage 2 → persist-input: writing stdin to a file...")
 
 	fileReader, err := getFileReader("read-file")
 	if err != nil {
-		return nil, fmt.Errorf("getFileReader: %w", err)
+		return nil, fmt.Errorf("read-file component: %w", err)
 	}
 	tokenizer, err := getTokenizer("tokenize", tokenizerDelimiter)
 	if err != nil {
-		return nil, fmt.Errorf("getTokenizer: %w", err)
+		return nil, fmt.Errorf("tokenize component: %w", err)
 	}
 	filter, err := getFilter("remove-stop-words", map[string]bool{"yes": true, "no": true})
 	if err != nil {
-		return nil, fmt.Errorf("getFilter: %w", err)
+		return nil, fmt.Errorf("remove-stop-words component: %w", err)
 	}
 	tokenCounter, err := getTokenCounter("counter-tokens")
 	if err != nil {
-		return nil, fmt.Errorf("getTokenCounter: %w", err)
+		return nil, fmt.Errorf("counter-tokens component: %w", err)
 	}
 	persistResults, err := getFileWriter("persist-results")
 	if err != nil {
-		return nil, fmt.Errorf("getFileWriter: %w", err)
+		return nil, fmt.Errorf("persist-results component: %w", err)
 	}
 	return buildPipeline(
 		"demo-pipeline",
@@ -111,7 +112,7 @@ func getMesh() (*fmesh.FMesh, error) {
 }
 
 func getFileReader(name string) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("read file"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			fileName := this.InputByName(portIn).Signals().FirstPayloadOrDefault("")
@@ -141,14 +142,10 @@ func getFileReader(name string) (*component.Component, error) {
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getFileReader: %w", err)
-	}
-	return c, nil
 }
 
 func getFileWriter(name string) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("write to file"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			root, err := os.OpenRoot(".")
@@ -182,14 +179,10 @@ func getFileWriter(name string) (*component.Component, error) {
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getFileWriter: %w", err)
-	}
-	return c, nil
 }
 
 func getStdInReader(name, prompt string) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("read a line from stdin"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			scanner := bufio.NewScanner(os.Stdin)
@@ -204,14 +197,10 @@ func getStdInReader(name, prompt string) (*component.Component, error) {
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getStdInReader: %w", err)
-	}
-	return c, nil
 }
 
 func getTokenizer(name, delimiter string) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("tokenize text"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			text := this.InputByName(portIn).Signals().FirstPayloadOrDefault("")
@@ -230,18 +219,14 @@ func getTokenizer(name, delimiter string) (*component.Component, error) {
 				tokenCount++
 				this.OutputByName(portOut).PutSignals(signal.New(t))
 			}
-			fmt.Println("  Stage 4 → tokenize: tokenization complete")
+			fmt.Printf("  Stage 4 → tokenize: tokenization complete, %d token(s)\n", tokenCount)
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getTokenizer: %w", err)
-	}
-	return c, nil
 }
 
 func getFilter(name string, blockList map[string]bool) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("filter-tokens"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			allSignals := this.InputByName(portIn).Signals()
@@ -258,14 +243,10 @@ func getFilter(name string, blockList map[string]bool) (*component.Component, er
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getFilter: %w", err)
-	}
-	return c, nil
 }
 
 func getTokenCounter(name string) (*component.Component, error) {
-	c, err := component.New(name,
+	return component.New(name,
 		component.WithDescription("count tokens"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			counters := make(map[string]int)
@@ -279,10 +260,6 @@ func getTokenCounter(name string) (*component.Component, error) {
 			return nil
 		}),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("getTokenCounter: %w", err)
-	}
-	return c, nil
 }
 
 func buildPipeline(name string, components ...*component.Component) (*fmesh.FMesh, error) {
