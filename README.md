@@ -43,6 +43,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | Example | Description |
 |---------|-------------|
 | [Fibonacci](./patterns/fibonacci) | Cycles: a component's outputs piped back into its own inputs |
+| [Auto-diff](./patterns/autodiff) | The mesh is the computation graph: a neural network learns XOR with values flowing forward and gradients flowing back through reverse pipes |
 | [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
 | [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
 | [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |

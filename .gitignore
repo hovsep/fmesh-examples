@@ -9,6 +9,7 @@
 /graphics/graphviz/graphviz
 /graphics/ray_tracer/ray_tracer
 /patterns/async_input/async_input
+/patterns/autodiff/autodiff
 /patterns/fibonacci/fibonacci
 /patterns/load_balancer/load_balancer
 /patterns/nesting/nesting
