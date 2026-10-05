@@ -14,6 +14,7 @@
 /patterns/nesting/nesting
 /patterns/retry/retry
 /patterns/state_machine/state_machine
+/patterns/unix_pipes/unix_pipes
 /simulation/can_bus/advanced/advanced
 /simulation/can_bus/basic/basic
 /simulation/electric_circuit/electric_circuit
