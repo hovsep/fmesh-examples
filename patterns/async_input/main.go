@@ -46,6 +46,7 @@ func main() {
 	}
 
 	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
 	resultsChan := make(chan []any)
 	doneChan := make(chan struct{})
 
@@ -68,22 +69,26 @@ func main() {
 			}
 
 			if fm.Components().ByName("web crawler").OutputByName("headers").HasSignals() {
-				results := fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
-				fm.Components().ByName("web crawler").OutputByName("headers").Clear(context.Background())
-				resultsChan <- results
+				// No need to clear the port: the next Run starts by clearing every output
+				resultsChan <- fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
 			}
 		}
 	}()
 
 	go func() {
 		for {
-			_, ok := <-resultsChan
+			results, ok := <-resultsChan
 			if !ok {
 				fmt.Println("[Consumer] Results channel closed. Shutting down.")
 				doneChan <- struct{}{}
 				return
 			}
 
+			for _, result := range results {
+				for url, headers := range result.(map[string]http.Header) {
+					fmt.Printf("[Consumer] %s: %d header(s), Content-Type %q\n", url, len(headers), headers.Get("Content-Type"))
+				}
+			}
 		}
 	}()
 
@@ -92,26 +97,31 @@ func main() {
 }
 
 func getMesh() (*fmesh.FMesh, error) {
-	client := &http.Client{}
+	// The mesh runs with no time limit, so the client's timeout is what stops a slow URL
+	client := &http.Client{Timeout: 8 * time.Second}
 
 	crawler, err := component.New("web crawler",
 		component.WithDescription("gets http headers from given url"),
 		component.WithInputs("url"),
 		component.WithOutputs("errors", "headers"),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			if !this.InputByName("url").HasSignals() {
-				return component.ErrWaitDroppingInputs
-			}
-
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
 			allUrls := this.InputByName("url").Signals().AllPayloads()
 
 			for _, urlVal := range allUrls {
 				url := urlVal.(string)
-				response, err := client.Get(url)
+				request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 				if err != nil {
 					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url)))
 					continue
 				}
+
+				response, err := client.Do(request)
+				if err != nil {
+					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("got error: %w from url: %s", err, url)))
+					continue
+				}
+				// Only the headers are needed, so the body is closed unread
+				_ = response.Body.Close()
 
 				if len(response.Header) == 0 {
 					this.OutputByName("errors").PutSignals(signal.New(fmt.Errorf("no headers for url %s", url)))
@@ -134,10 +144,6 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("logs http errors"),
 		component.WithInputs("error"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			if !this.InputByName("error").HasSignals() {
-				return component.ErrWaitDroppingInputs
-			}
-
 			allErrors := this.InputByName("error").Signals().AllPayloads()
 
 			for _, errVal := range allErrors {

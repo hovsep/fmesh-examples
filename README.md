@@ -79,10 +79,9 @@ These share [`simulation/sim`](./simulation/sim) — a small library for buildin
 ### Running Examples
 
 ```bash
-# Clone and setup
+# Clone
 git clone https://github.com/hovsep/fmesh-examples.git
 cd fmesh-examples
-go mod tidy
 
 # Run any example, from the repo root...
 go run ./patterns/fibonacci
@@ -169,28 +168,71 @@ We welcome new examples from any domain: simulations, data processing, protocols
 package main
 
 import (
-    "fmt"
-    "github.com/hovsep/fmesh"
-    "github.com/hovsep/fmesh/component"
-    "github.com/hovsep/fmesh/signal"
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
 // Description of what this example demonstrates.
 // Run: go run .
 
 func main() {
-    fm := fmesh.New("example").
-        AddComponents(
-            component.New("processor").
-                AddInputs("in").
-                AddOutputs("out").
-                WithActivationFunc(func(c *component.Component) error {
-                    // Your logic here
-                    return nil
-                }),
-        )
-    
-    // Connect, initialize, run, and display results
+	fm, err := getMesh()
+	if err != nil {
+		fmt.Println("Failed to build mesh:", err)
+		os.Exit(1)
+	}
+
+	handled, err := internal.HandleGraphFlag(fm)
+	if err != nil {
+		fmt.Println("Failed to generate graph:", err)
+		os.Exit(1)
+	}
+	if handled {
+		return
+	}
+
+	fm.ComponentByName("processor").InputByName("in").PutSignals(signal.New("hello"))
+
+	if _, err := fm.Run(context.Background()); err != nil {
+		fmt.Println("Mesh finished with error:", err)
+		os.Exit(1)
+	}
+
+	result := fm.ComponentByName("processor").OutputByName("out").Signals().FirstPayloadOrNil()
+	fmt.Println("Result:", result)
+}
+
+func getMesh() (*fmesh.FMesh, error) {
+	processor, err := component.New("processor",
+		component.WithInputs("in"),
+		component.WithOutputs("out"),
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
+			input := this.InputByName("in").Signals().FirstPayloadOrDefault("")
+			// Your logic here
+			return this.OutputByName("out").PutSignals(signal.New(input))
+		}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("processor component: %w", err)
+	}
+
+	fm, err := fmesh.New("example")
+	if err != nil {
+		return nil, fmt.Errorf("new mesh: %w", err)
+	}
+	if err := fm.AddComponents(processor); err != nil {
+		return nil, fmt.Errorf("add components: %w", err)
+	}
+
+	// Connect components with PipeTo here
+
+	return fm, nil
 }
 ```
 
@@ -207,7 +249,7 @@ func main() {
 
 - **[F-Mesh Repository](https://github.com/hovsep/fmesh)** - Main framework
 - **[F-Mesh Wiki](https://github.com/hovsep/fmesh/wiki)** - Complete documentation
-- **[F-Mesh Graphviz](https://github.com/hovsep/fmesh-export)** - Visualization tool
+- **[F-Mesh Export](https://github.com/hovsep/fmesh-export)** - Exports meshes to DOT and other formats
 - **[Flow-Based Programming](https://jpaulm.github.io/fbp/)** - Learn about FBP (by J. Paul Morrison)
 
 ---
