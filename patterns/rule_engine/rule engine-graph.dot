@@ -1,0 +1,235 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>rules from a config file compiled into a mesh: conditions → rules → actions</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="do:flag";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="do:flag",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="do:flag",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="do:flag",height="1.0",label="take action: flag",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="do:forward-to-accountant";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="do:forward-to-accountant",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="do:forward-to-accountant",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="do:forward-to-accountant",height="1.0",label="take action: forward-to-accountant",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="do:label-vendor";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="do:label-vendor",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="do:label-vendor",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="do:label-vendor",height="1.0",label="take action: label-vendor",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		n12->n14;
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="do:move-to-finance";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="do:move-to-finance",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="do:move-to-finance",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="do:move-to-finance",height="1.0",label="take action: move-to-finance",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n16->n18;
+		
+	}
+	subgraph cluster_s19 {
+		color="black";label="do:move-to-later";margin="20";penwidth="5";style="rounded";
+		n21[fontname="Courier New",group="do:move-to-later",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="do:move-to-later",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[color="#9dddea",fontname="Courier New",group="do:move-to-later",height="1.0",label="take action: move-to-later",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n21->n20;
+		n20->n22;
+		
+	}
+	subgraph cluster_s23 {
+		color="black";label="do:notify-phone";margin="20";penwidth="5";style="rounded";
+		n25[fontname="Courier New",group="do:notify-phone",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="do:notify-phone",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[color="#9dddea",fontname="Courier New",group="do:notify-phone",height="1.0",label="take action: notify-phone",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n25->n24;
+		n24->n26;
+		
+	}
+	subgraph cluster_s27 {
+		color="black";label="if:from-ceo";margin="20";penwidth="5";style="rounded";
+		n29[fontname="Courier New",group="if:from-ceo",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="if:from-ceo",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[color="#9dddea",fontname="Courier New",group="if:from-ceo",height="1.0",label="from equals ceo@acme.example",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n29->n28;
+		n28->n30;
+		
+	}
+	subgraph cluster_s31 {
+		color="black";label="if:from-vendor";margin="20";penwidth="5";style="rounded";
+		n33[fontname="Courier New",group="if:from-vendor",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[fontname="Courier New",group="if:from-vendor",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[color="#9dddea",fontname="Courier New",group="if:from-vendor",height="1.0",label="from ends_with @supplies.example",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n33->n32;
+		n32->n34;
+		
+	}
+	subgraph cluster_s35 {
+		color="black";label="if:huge";margin="20";penwidth="5";style="rounded";
+		n37[fontname="Courier New",group="if:huge",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="if:huge",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[color="#9dddea",fontname="Courier New",group="if:huge",height="1.0",label="size_kb greater_than 10000",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n37->n36;
+		n36->n38;
+		
+	}
+	subgraph cluster_s39 {
+		color="black";label="if:invoice";margin="20";penwidth="5";style="rounded";
+		n41[fontname="Courier New",group="if:invoice",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[fontname="Courier New",group="if:invoice",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[color="#9dddea",fontname="Courier New",group="if:invoice",height="1.0",label="subject contains invoice",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n41->n40;
+		n40->n42;
+		
+	}
+	subgraph cluster_s43 {
+		color="black";label="if:newsletter";margin="20";penwidth="5";style="rounded";
+		n45[fontname="Courier New",group="if:newsletter",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="if:newsletter",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[color="#9dddea",fontname="Courier New",group="if:newsletter",height="1.0",label="from starts_with news@",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n45->n44;
+		n44->n46;
+		
+	}
+	subgraph cluster_s47 {
+		color="black";label="if:pdf";margin="20";penwidth="5";style="rounded";
+		n49[fontname="Courier New",group="if:pdf",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[fontname="Courier New",group="if:pdf",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[color="#9dddea",fontname="Courier New",group="if:pdf",height="1.0",label="attachment equals pdf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n49->n48;
+		n48->n50;
+		
+	}
+	subgraph cluster_s51 {
+		color="black";label="if:urgent";margin="20";penwidth="5";style="rounded";
+		n53[fontname="Courier New",group="if:urgent",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[fontname="Courier New",group="if:urgent",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[color="#9dddea",fontname="Courier New",group="if:urgent",height="1.0",label="subject contains urgent",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n53->n52;
+		n52->n54;
+		
+	}
+	subgraph cluster_s55 {
+		color="black";label="inbox";margin="20";penwidth="5";style="rounded";
+		n57[fontname="Courier New",group="inbox",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="inbox",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n56[color="#9dddea",fontname="Courier New",group="inbox",height="1.0",label="every email enters here",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n57->n56;
+		n56->n58;
+		
+	}
+	subgraph cluster_s59 {
+		color="black";label="outbox";margin="20";penwidth="5";style="rounded";
+		n61[fontname="Courier New",group="outbox",height="1.0",label="in",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[fontname="Courier New",group="outbox",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[color="#9dddea",fontname="Courier New",group="outbox",height="1.0",label="every action taken leaves here",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n61->n60;
+		n60->n62;
+		
+	}
+	subgraph cluster_s63 {
+		color="black";label="rule:bills";margin="20";penwidth="5";style="rounded";
+		n65[fontname="Courier New",group="rule:bills",height="1.0",label="invoice",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[fontname="Courier New",group="rule:bills",height="1.0",label="pdf",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[fontname="Courier New",group="rule:bills",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[color="#9dddea",fontname="Courier New",group="rule:bills",height="1.0",label="all of invoice, pdf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n65->n64;
+		n66->n64;
+		n64->n67;
+		
+	}
+	subgraph cluster_s68 {
+		color="black";label="rule:escalate";margin="20";penwidth="5";style="rounded";
+		n70[fontname="Courier New",group="rule:escalate",height="1.0",label="from-ceo",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="rule:escalate",height="1.0",label="urgent",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[fontname="Courier New",group="rule:escalate",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n69[color="#9dddea",fontname="Courier New",group="rule:escalate",height="1.0",label="all of from-ceo, urgent",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n70->n69;
+		n71->n69;
+		n69->n72;
+		
+	}
+	subgraph cluster_s73 {
+		color="black";label="rule:reading";margin="20";penwidth="5";style="rounded";
+		n75[fontname="Courier New",group="rule:reading",height="1.0",label="newsletter",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="rule:reading",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[color="#9dddea",fontname="Courier New",group="rule:reading",height="1.0",label="any of newsletter",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n75->n74;
+		n74->n76;
+		
+	}
+	subgraph cluster_s77 {
+		color="black";label="rule:storage";margin="20";penwidth="5";style="rounded";
+		n79[fontname="Courier New",group="rule:storage",height="1.0",label="huge",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n80[fontname="Courier New",group="rule:storage",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[color="#9dddea",fontname="Courier New",group="rule:storage",height="1.0",label="any of huge",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n79->n78;
+		n78->n80;
+		
+	}
+	subgraph cluster_s81 {
+		color="black";label="rule:vendors";margin="20";penwidth="5";style="rounded";
+		n83[fontname="Courier New",group="rule:vendors",height="1.0",label="from-vendor",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[fontname="Courier New",group="rule:vendors",height="1.0",label="invoice",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n85[fontname="Courier New",group="rule:vendors",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[color="#9dddea",fontname="Courier New",group="rule:vendors",height="1.0",label="any of from-vendor, invoice",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n83->n82;
+		n84->n82;
+		n82->n85;
+		
+	}
+	layout="dot";splines="ortho";
+	n6->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n10->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n26->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n30->n70[color="#e437ea",minlen="3",penwidth="2"];
+	n34->n83[color="#e437ea",minlen="3",penwidth="2"];
+	n38->n79[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n65[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n84[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n75[color="#e437ea",minlen="3",penwidth="2"];
+	n50->n66[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n71[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n29[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n53[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n41[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n49[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n33[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n67->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n67->n9[color="#e437ea",minlen="3",penwidth="2"];
+	n72->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n72->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n76->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n80->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n85->n13[color="#e437ea",minlen="3",penwidth="2"];
+	
+}

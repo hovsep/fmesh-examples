@@ -13,6 +13,7 @@
 /patterns/load_balancer/load_balancer
 /patterns/nesting/nesting
 /patterns/retry/retry
+/patterns/rule_engine/rule_engine
 /patterns/state_machine/state_machine
 /patterns/unix_pipes/unix_pipes
 /simulation/can_bus/advanced/advanced
