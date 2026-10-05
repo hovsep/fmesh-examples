@@ -1,0 +1,482 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>a tree of people: questions go down level by level, answers come back up</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="Abe";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="Abe",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="Abe",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="Abe",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="Abe",height="1.0",label="Engineer · React, Kubernetes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		n4->n7;
+		
+	}
+	subgraph cluster_s8 {
+		color="black";label="Ada";margin="20";penwidth="5";style="rounded";
+		n10[fontname="Courier New",group="Ada",height="1.0",label="Bea",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="Ada",height="1.0",label="Quinn",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="Ada",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="Ada",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="Ada",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="Ada",height="1.0",label="CEO · Go, SQL",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n10->n9;
+		n11->n9;
+		n12->n9;
+		n9->n13;
+		n9->n14;
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="Bea";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="Bea",height="1.0",label="Cyd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="Bea",height="1.0",label="Jon",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[fontname="Courier New",group="Bea",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[fontname="Courier New",group="Bea",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="Bea",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="Bea",height="1.0",label="VP · Rust, React",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n18->n16;
+		n19->n16;
+		n16->n20;
+		n16->n21;
+		
+	}
+	subgraph cluster_s22 {
+		color="black";label="Bo";margin="20";penwidth="5";style="rounded";
+		n24[fontname="Courier New",group="Bo",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n25[fontname="Courier New",group="Bo",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="Bo",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n23[color="#9dddea",fontname="Courier New",group="Bo",height="1.0",label="Engineer · Java",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n24->n23;
+		n23->n25;
+		n23->n26;
+		
+	}
+	subgraph cluster_s27 {
+		color="black";label="Cal";margin="20";penwidth="5";style="rounded";
+		n29[fontname="Courier New",group="Cal",height="1.0",label="Dee",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="Cal",height="1.0",label="Eli",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[fontname="Courier New",group="Cal",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="Cal",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n33[fontname="Courier New",group="Cal",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[color="#9dddea",fontname="Courier New",group="Cal",height="1.0",label="Manager · Go, SQL",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n29->n28;
+		n30->n28;
+		n31->n28;
+		n28->n32;
+		n28->n33;
+		
+	}
+	subgraph cluster_s34 {
+		color="black";label="Cyd";margin="20";penwidth="5";style="rounded";
+		n36[fontname="Courier New",group="Cyd",height="1.0",label="Dan",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n37[fontname="Courier New",group="Cyd",height="1.0",label="Gus",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="Cyd",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n39[fontname="Courier New",group="Cyd",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[fontname="Courier New",group="Cyd",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n35[color="#9dddea",fontname="Courier New",group="Cyd",height="1.0",label="Director · SQL, Rust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n36->n35;
+		n37->n35;
+		n38->n35;
+		n35->n39;
+		n35->n40;
+		
+	}
+	subgraph cluster_s41 {
+		color="black";label="Dan";margin="20";penwidth="5";style="rounded";
+		n43[fontname="Courier New",group="Dan",height="1.0",label="Eve",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[fontname="Courier New",group="Dan",height="1.0",label="Fay",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n45[fontname="Courier New",group="Dan",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="Dan",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n47[fontname="Courier New",group="Dan",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[color="#9dddea",fontname="Courier New",group="Dan",height="1.0",label="Manager · Kubernetes, Python",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n43->n42;
+		n44->n42;
+		n45->n42;
+		n42->n46;
+		n42->n47;
+		
+	}
+	subgraph cluster_s48 {
+		color="black";label="Dee";margin="20";penwidth="5";style="rounded";
+		n50[fontname="Courier New",group="Dee",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n51[fontname="Courier New",group="Dee",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="Dee",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n49[color="#9dddea",fontname="Courier New",group="Dee",height="1.0",label="Engineer · Rust, React",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n50->n49;
+		n49->n51;
+		n49->n52;
+		
+	}
+	subgraph cluster_s53 {
+		color="black";label="Eli";margin="20";penwidth="5";style="rounded";
+		n55[fontname="Courier New",group="Eli",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n56[fontname="Courier New",group="Eli",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n57[fontname="Courier New",group="Eli",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[color="#9dddea",fontname="Courier New",group="Eli",height="1.0",label="Engineer · SQL, Rust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n55->n54;
+		n54->n56;
+		n54->n57;
+		
+	}
+	subgraph cluster_s58 {
+		color="black";label="Eve";margin="20";penwidth="5";style="rounded";
+		n60[fontname="Courier New",group="Eve",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n61[fontname="Courier New",group="Eve",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[fontname="Courier New",group="Eve",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n59[color="#9dddea",fontname="Courier New",group="Eve",height="1.0",label="Engineer · Python, Go",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n60->n59;
+		n59->n61;
+		n59->n62;
+		
+	}
+	subgraph cluster_s63 {
+		color="black";label="Fay";margin="20";penwidth="5";style="rounded";
+		n65[fontname="Courier New",group="Fay",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[fontname="Courier New",group="Fay",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[fontname="Courier New",group="Fay",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[color="#9dddea",fontname="Courier New",group="Fay",height="1.0",label="Engineer · React, Kubernetes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n65->n64;
+		n64->n66;
+		n64->n67;
+		
+	}
+	subgraph cluster_s68 {
+		color="black";label="Gus";margin="20";penwidth="5";style="rounded";
+		n70[fontname="Courier New",group="Gus",height="1.0",label="Hal",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="Gus",height="1.0",label="Ivy",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[fontname="Courier New",group="Gus",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n73[fontname="Courier New",group="Gus",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[fontname="Courier New",group="Gus",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n69[color="#9dddea",fontname="Courier New",group="Gus",height="1.0",label="Manager · Java",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n70->n69;
+		n71->n69;
+		n72->n69;
+		n69->n73;
+		n69->n74;
+		
+	}
+	subgraph cluster_s75 {
+		color="black";label="Hal";margin="20";penwidth="5";style="rounded";
+		n77[fontname="Courier New",group="Hal",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[fontname="Courier New",group="Hal",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n79[fontname="Courier New",group="Hal",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[color="#9dddea",fontname="Courier New",group="Hal",height="1.0",label="Engineer · Go, SQL",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n77->n76;
+		n76->n78;
+		n76->n79;
+		
+	}
+	subgraph cluster_s80 {
+		color="black";label="Ivy";margin="20";penwidth="5";style="rounded";
+		n82[fontname="Courier New",group="Ivy",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n83[fontname="Courier New",group="Ivy",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[fontname="Courier New",group="Ivy",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n81[color="#9dddea",fontname="Courier New",group="Ivy",height="1.0",label="Engineer · Rust, React",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n82->n81;
+		n81->n83;
+		n81->n84;
+		
+	}
+	subgraph cluster_s85 {
+		color="black";label="Jon";margin="20";penwidth="5";style="rounded";
+		n87[fontname="Courier New",group="Jon",height="1.0",label="Kai",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n88[fontname="Courier New",group="Jon",height="1.0",label="Nia",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n89[fontname="Courier New",group="Jon",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n90[fontname="Courier New",group="Jon",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n91[fontname="Courier New",group="Jon",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n86[color="#9dddea",fontname="Courier New",group="Jon",height="1.0",label="Director · SQL, Rust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n87->n86;
+		n88->n86;
+		n89->n86;
+		n86->n90;
+		n86->n91;
+		
+	}
+	subgraph cluster_s92 {
+		color="black";label="Kai";margin="20";penwidth="5";style="rounded";
+		n94[fontname="Courier New",group="Kai",height="1.0",label="Lea",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n95[fontname="Courier New",group="Kai",height="1.0",label="Max",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n96[fontname="Courier New",group="Kai",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n97[fontname="Courier New",group="Kai",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n98[fontname="Courier New",group="Kai",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n93[color="#9dddea",fontname="Courier New",group="Kai",height="1.0",label="Manager · Kubernetes, Python",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n94->n93;
+		n95->n93;
+		n96->n93;
+		n93->n97;
+		n93->n98;
+		
+	}
+	subgraph cluster_s99 {
+		color="black";label="Lea";margin="20";penwidth="5";style="rounded";
+		n101[fontname="Courier New",group="Lea",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n102[fontname="Courier New",group="Lea",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n103[fontname="Courier New",group="Lea",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n100[color="#9dddea",fontname="Courier New",group="Lea",height="1.0",label="Engineer · Python, Go",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n101->n100;
+		n100->n102;
+		n100->n103;
+		
+	}
+	subgraph cluster_s104 {
+		color="black";label="Max";margin="20";penwidth="5";style="rounded";
+		n106[fontname="Courier New",group="Max",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n107[fontname="Courier New",group="Max",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n108[fontname="Courier New",group="Max",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n105[color="#9dddea",fontname="Courier New",group="Max",height="1.0",label="Engineer · React, Kubernetes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n106->n105;
+		n105->n107;
+		n105->n108;
+		
+	}
+	subgraph cluster_s109 {
+		color="black";label="Nia";margin="20";penwidth="5";style="rounded";
+		n111[fontname="Courier New",group="Nia",height="1.0",label="Oli",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n112[fontname="Courier New",group="Nia",height="1.0",label="Pam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n113[fontname="Courier New",group="Nia",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n114[fontname="Courier New",group="Nia",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n115[fontname="Courier New",group="Nia",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n110[color="#9dddea",fontname="Courier New",group="Nia",height="1.0",label="Manager · Java",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n111->n110;
+		n112->n110;
+		n113->n110;
+		n110->n114;
+		n110->n115;
+		
+	}
+	subgraph cluster_s116 {
+		color="black";label="Oli";margin="20";penwidth="5";style="rounded";
+		n118[fontname="Courier New",group="Oli",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n119[fontname="Courier New",group="Oli",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n120[fontname="Courier New",group="Oli",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n117[color="#9dddea",fontname="Courier New",group="Oli",height="1.0",label="Engineer · Go, SQL",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n118->n117;
+		n117->n119;
+		n117->n120;
+		
+	}
+	subgraph cluster_s121 {
+		color="black";label="Pam";margin="20";penwidth="5";style="rounded";
+		n123[fontname="Courier New",group="Pam",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n124[fontname="Courier New",group="Pam",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n125[fontname="Courier New",group="Pam",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n122[color="#9dddea",fontname="Courier New",group="Pam",height="1.0",label="Engineer · Rust, React",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n123->n122;
+		n122->n124;
+		n122->n125;
+		
+	}
+	subgraph cluster_s126 {
+		color="black";label="Quinn";margin="20";penwidth="5";style="rounded";
+		n128[fontname="Courier New",group="Quinn",height="1.0",label="Ray",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n129[fontname="Courier New",group="Quinn",height="1.0",label="Yan",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n130[fontname="Courier New",group="Quinn",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n131[fontname="Courier New",group="Quinn",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n132[fontname="Courier New",group="Quinn",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n127[color="#9dddea",fontname="Courier New",group="Quinn",height="1.0",label="VP · SQL, Rust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n128->n127;
+		n129->n127;
+		n130->n127;
+		n127->n131;
+		n127->n132;
+		
+	}
+	subgraph cluster_s133 {
+		color="black";label="Ray";margin="20";penwidth="5";style="rounded";
+		n135[fontname="Courier New",group="Ray",height="1.0",label="Sam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n136[fontname="Courier New",group="Ray",height="1.0",label="Vic",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n137[fontname="Courier New",group="Ray",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n138[fontname="Courier New",group="Ray",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n139[fontname="Courier New",group="Ray",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n134[color="#9dddea",fontname="Courier New",group="Ray",height="1.0",label="Director · Kubernetes, Python",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n135->n134;
+		n136->n134;
+		n137->n134;
+		n134->n138;
+		n134->n139;
+		
+	}
+	subgraph cluster_s140 {
+		color="black";label="Sam";margin="20";penwidth="5";style="rounded";
+		n142[fontname="Courier New",group="Sam",height="1.0",label="Tia",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n143[fontname="Courier New",group="Sam",height="1.0",label="Uma",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n144[fontname="Courier New",group="Sam",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n145[fontname="Courier New",group="Sam",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n146[fontname="Courier New",group="Sam",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n141[color="#9dddea",fontname="Courier New",group="Sam",height="1.0",label="Manager · Python, Go",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n142->n141;
+		n143->n141;
+		n144->n141;
+		n141->n145;
+		n141->n146;
+		
+	}
+	subgraph cluster_s147 {
+		color="black";label="Tia";margin="20";penwidth="5";style="rounded";
+		n149[fontname="Courier New",group="Tia",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n150[fontname="Courier New",group="Tia",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n151[fontname="Courier New",group="Tia",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n148[color="#9dddea",fontname="Courier New",group="Tia",height="1.0",label="Engineer · React, Kubernetes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n149->n148;
+		n148->n150;
+		n148->n151;
+		
+	}
+	subgraph cluster_s152 {
+		color="black";label="Uma";margin="20";penwidth="5";style="rounded";
+		n154[fontname="Courier New",group="Uma",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n155[fontname="Courier New",group="Uma",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n156[fontname="Courier New",group="Uma",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n153[color="#9dddea",fontname="Courier New",group="Uma",height="1.0",label="Engineer · Java",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n154->n153;
+		n153->n155;
+		n153->n156;
+		
+	}
+	subgraph cluster_s157 {
+		color="black";label="Vic";margin="20";penwidth="5";style="rounded";
+		n159[fontname="Courier New",group="Vic",height="1.0",label="Wes",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n160[fontname="Courier New",group="Vic",height="1.0",label="Xia",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n161[fontname="Courier New",group="Vic",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n162[fontname="Courier New",group="Vic",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n163[fontname="Courier New",group="Vic",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n158[color="#9dddea",fontname="Courier New",group="Vic",height="1.0",label="Manager · Go, SQL",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n159->n158;
+		n160->n158;
+		n161->n158;
+		n158->n162;
+		n158->n163;
+		
+	}
+	subgraph cluster_s164 {
+		color="black";label="Wes";margin="20";penwidth="5";style="rounded";
+		n166[fontname="Courier New",group="Wes",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n167[fontname="Courier New",group="Wes",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n168[fontname="Courier New",group="Wes",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n165[color="#9dddea",fontname="Courier New",group="Wes",height="1.0",label="Engineer · Rust, React",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n166->n165;
+		n165->n167;
+		n165->n168;
+		
+	}
+	subgraph cluster_s169 {
+		color="black";label="Xia";margin="20";penwidth="5";style="rounded";
+		n171[fontname="Courier New",group="Xia",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n172[fontname="Courier New",group="Xia",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n173[fontname="Courier New",group="Xia",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n170[color="#9dddea",fontname="Courier New",group="Xia",height="1.0",label="Engineer · SQL, Rust",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n171->n170;
+		n170->n172;
+		n170->n173;
+		
+	}
+	subgraph cluster_s174 {
+		color="black";label="Yan";margin="20";penwidth="5";style="rounded";
+		n176[fontname="Courier New",group="Yan",height="1.0",label="Cal",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n177[fontname="Courier New",group="Yan",height="1.0",label="Zoe",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n178[fontname="Courier New",group="Yan",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n179[fontname="Courier New",group="Yan",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n180[fontname="Courier New",group="Yan",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n175[color="#9dddea",fontname="Courier New",group="Yan",height="1.0",label="Director · Kubernetes, Python",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n176->n175;
+		n177->n175;
+		n178->n175;
+		n175->n179;
+		n175->n180;
+		
+	}
+	subgraph cluster_s181 {
+		color="black";label="Zoe";margin="20";penwidth="5";style="rounded";
+		n183[fontname="Courier New",group="Zoe",height="1.0",label="Abe",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n184[fontname="Courier New",group="Zoe",height="1.0",label="Bo",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n185[fontname="Courier New",group="Zoe",height="1.0",label="query",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n186[fontname="Courier New",group="Zoe",height="1.0",label="answers",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n187[fontname="Courier New",group="Zoe",height="1.0",label="down",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n182[color="#9dddea",fontname="Courier New",group="Zoe",height="1.0",label="Manager · Python, Go",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n183->n182;
+		n184->n182;
+		n185->n182;
+		n182->n186;
+		n182->n187;
+		
+	}
+	layout="dot";splines="ortho";
+	n6->n183[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n19[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n130[color="#e437ea",minlen="3",penwidth="2"];
+	n20->n10[color="#e437ea",minlen="3",penwidth="2"];
+	n21->n38[color="#e437ea",minlen="3",penwidth="2"];
+	n21->n89[color="#e437ea",minlen="3",penwidth="2"];
+	n25->n184[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n176[color="#e437ea",minlen="3",penwidth="2"];
+	n33->n50[color="#e437ea",minlen="3",penwidth="2"];
+	n33->n55[color="#e437ea",minlen="3",penwidth="2"];
+	n39->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n72[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n36[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n60[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n65[color="#e437ea",minlen="3",penwidth="2"];
+	n51->n29[color="#e437ea",minlen="3",penwidth="2"];
+	n56->n30[color="#e437ea",minlen="3",penwidth="2"];
+	n61->n43[color="#e437ea",minlen="3",penwidth="2"];
+	n66->n44[color="#e437ea",minlen="3",penwidth="2"];
+	n73->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n74->n77[color="#e437ea",minlen="3",penwidth="2"];
+	n74->n82[color="#e437ea",minlen="3",penwidth="2"];
+	n78->n70[color="#e437ea",minlen="3",penwidth="2"];
+	n83->n71[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n18[color="#e437ea",minlen="3",penwidth="2"];
+	n91->n96[color="#e437ea",minlen="3",penwidth="2"];
+	n91->n113[color="#e437ea",minlen="3",penwidth="2"];
+	n97->n87[color="#e437ea",minlen="3",penwidth="2"];
+	n98->n101[color="#e437ea",minlen="3",penwidth="2"];
+	n98->n106[color="#e437ea",minlen="3",penwidth="2"];
+	n102->n94[color="#e437ea",minlen="3",penwidth="2"];
+	n107->n95[color="#e437ea",minlen="3",penwidth="2"];
+	n114->n88[color="#e437ea",minlen="3",penwidth="2"];
+	n115->n118[color="#e437ea",minlen="3",penwidth="2"];
+	n115->n123[color="#e437ea",minlen="3",penwidth="2"];
+	n119->n111[color="#e437ea",minlen="3",penwidth="2"];
+	n124->n112[color="#e437ea",minlen="3",penwidth="2"];
+	n131->n11[color="#e437ea",minlen="3",penwidth="2"];
+	n132->n137[color="#e437ea",minlen="3",penwidth="2"];
+	n132->n178[color="#e437ea",minlen="3",penwidth="2"];
+	n138->n128[color="#e437ea",minlen="3",penwidth="2"];
+	n139->n144[color="#e437ea",minlen="3",penwidth="2"];
+	n139->n161[color="#e437ea",minlen="3",penwidth="2"];
+	n145->n135[color="#e437ea",minlen="3",penwidth="2"];
+	n146->n149[color="#e437ea",minlen="3",penwidth="2"];
+	n146->n154[color="#e437ea",minlen="3",penwidth="2"];
+	n150->n142[color="#e437ea",minlen="3",penwidth="2"];
+	n155->n143[color="#e437ea",minlen="3",penwidth="2"];
+	n162->n136[color="#e437ea",minlen="3",penwidth="2"];
+	n163->n166[color="#e437ea",minlen="3",penwidth="2"];
+	n163->n171[color="#e437ea",minlen="3",penwidth="2"];
+	n167->n159[color="#e437ea",minlen="3",penwidth="2"];
+	n172->n160[color="#e437ea",minlen="3",penwidth="2"];
+	n179->n129[color="#e437ea",minlen="3",penwidth="2"];
+	n180->n185[color="#e437ea",minlen="3",penwidth="2"];
+	n180->n31[color="#e437ea",minlen="3",penwidth="2"];
+	n186->n177[color="#e437ea",minlen="3",penwidth="2"];
+	n187->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n187->n24[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
