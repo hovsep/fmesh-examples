@@ -60,6 +60,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine: fuel, current and rotation as flows, with the crankshaft driving the next stroke |
 | [Basic CAN Bus](./simulation/can_bus/basic) | One bus fanning every frame out to all connected ECUs |
 | [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
+| [Elevator](./simulation/elevator) | Two cabs, six floors: a terminal UI sends button presses in, the mesh sends the building's state back out |
 | [Life](./simulation/life) | A step simulation of human physiology inside a habitat |
 
 These share [`simulation/sim`](./simulation/sim) — a small library for building simulations on an f-mesh (engines, simulated time, commands, scheduling, telemetry). It is a library, not an example.
