@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F-Mesh Elevator</title>
+<style>
+  html, body { margin: 0; background: #0b0f18; color: #cfd8e6; font: 14px system-ui, sans-serif; }
+  #wrap { max-width: 1280px; margin: 0 auto; padding: 8px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 12px; touch-action: manipulation; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1280" height="860"></canvas></div>
+<script>
+// The page only draws what the mesh reports and posts clicks back to it.
+// Every frame from /events is the state of every part, keyed by part name.
+'use strict';
+const W = 1280, H = 860, FLOORS = 6, FH = 3.5, CABS = ['A', 'B'];
+const PX = 96 / FH;                       // pixels per metre: 96 px per floor
+const FLOOR1 = 752;                       // y of the lobby floor
+const SHAFT = { A: 150, B: 470 };         // left edge of each shaft
+const COL = {
+  bg: '#0b0f18', wall: '#1f2738', wallHi: '#283247', slab: '#3b465c', shaft: '#0f141f',
+  steel: '#9aa7ba', steelDark: '#5d687b', text: '#cfd8e6', dim: '#7b879b',
+  amber: '#ffb020', cyan: '#4fd8ff', green: '#45e08a', red: '#ff4d5e', warm: '#ffe6a3',
+};
+
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const dpr = Math.min(2, window.devicePixelRatio || 1);
+cv.width = W * dpr; cv.height = H * dpr; g.scale(dpr, dpr);
+
+// ---- frames from the mesh ----------------------------------------------
+let prev = null, cur = null, curAt = 0, meta = { cycles: 0, components: 0 }, online = false, k = 1;
+const es = new EventSource('events');
+es.onopen = () => { online = true; };
+es.onerror = () => { online = false; };
+es.onmessage = e => {
+  const m = JSON.parse(e.data);
+  prev = cur; cur = m.parts; curAt = performance.now(); meta = m; online = true;
+  for (const c of CABS) {               // a ding when a car opens its doors
+    const was = prev && prev['controller-' + c], now = cur['controller-' + c];
+    if (now && now.mode === 'opening' && was && was.mode !== 'opening') ding(c === 'A' ? 880 : 660);
+  }
+};
+const part = name => (cur && cur[name]) || {};
+// num is a part's value eased between the last two frames, so motion is smooth.
+function num(name, key, def = 0) {
+  const c = cur && cur[name], p = prev && prev[name];
+  const cv_ = c && c[key] != null ? c[key] : def;
+  const pv = p && p[key] != null ? p[key] : cv_;
+  return pv + (cv_ - pv) * k;
+}
+function angle(name) {
+  const c = part(name).angle || 0, p = (prev && prev[name] && prev[name].angle) || c;
+  let d = c - p; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+  return p + d * k;
+}
+const on = name => !!part(name).on;
+
+// ---- clicks back into the mesh -----------------------------------------
+let hits = [], hover = null;
+const pressedAt = {};
+function press(p, port) {
+  pressedAt[p] = performance.now();
+  audio();
+  fetch('press', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ part: p, port }) });
+}
+function hitAt(ev) {
+  const r = cv.getBoundingClientRect();
+  const x = (ev.clientX - r.left) * W / r.width, y = (ev.clientY - r.top) * H / r.height;
+  for (let i = hits.length - 1; i >= 0; i--) {
+    const h = hits[i];
+    if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) return h;
+  }
+  return null;
+}
+cv.addEventListener('click', ev => { const h = hitAt(ev); if (h) press(h.part, h.port); });
+cv.addEventListener('mousemove', ev => { hover = hitAt(ev); cv.style.cursor = hover ? 'pointer' : 'default'; });
+function hit(x, y, w, h, p, port = 'press', tip = '') { hits.push({ x, y, w, h, part: p, port, tip }); }
+const isPressed = p => performance.now() - (pressedAt[p] || 0) < 160;
+
+// ---- sound -------------------------------------------------------------
+let actx = null, muted = false;
+function audio() { if (!actx) { try { actx = new AudioContext(); } catch (e) { /* no sound */ } } }
+function ding(freq) {
+  if (!actx || muted) return;
+  const t = actx.currentTime, o = actx.createOscillator(), v = actx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+  v.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+  o.connect(v).connect(actx.destination); o.start(t); o.stop(t + 1.3);
+}
+
+// ---- drawing helpers ---------------------------------------------------
+function rr(x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function box(x, y, w, h, fill, r = 4, stroke) { rr(x, y, w, h, r); g.fillStyle = fill; g.fill(); if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1; g.stroke(); } }
+function text(s, x, y, color = COL.text, size = 12, align = 'left', weight = '') {
+  g.font = `${weight} ${size}px system-ui, sans-serif`; g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y);
+}
+function glow(color, blur, fn) { g.save(); g.shadowColor = color; g.shadowBlur = blur; fn(); g.restore(); }
+function circle(x, y, r, fill, stroke, lw = 1) {
+  g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw; g.stroke(); }
+}
+function arrow(x, y, dir, size, color) {
+  g.beginPath(); g.moveTo(x, y - dir * size); g.lineTo(x - size, y + dir * size * 0.6); g.lineTo(x + size, y + dir * size * 0.6); g.closePath();
+  g.fillStyle = color; g.fill();
+}
+function led(s, x, y, size, color = COL.red, align = 'center') {
+  glow(color, 8, () => { g.font = `bold ${size}px ui-monospace, Menlo, monospace`; g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y); });
+}
+const floorY = f => FLOOR1 - (f - 1) * 96;
+const carY = pos => FLOOR1 - pos * PX;   // bottom of the car
+
+// A round push button with an LED ring: the button and the LED are two
+// separate parts in the mesh, as they are in a real panel.
+function pushButton(x, y, r, label, btn, lit, color) {
+  const down = isPressed(btn), hov = hover && hover.part === btn;
+  if (lit) glow(color, 16, () => circle(x, y, r + 3, null, color, 3));
+  else circle(x, y, r + 3, null, '#3a4356', 3);
+  const grad = g.createRadialGradient(x - r / 3, y - r / 3, 1, x, y, r);
+  grad.addColorStop(0, down ? '#8892a3' : '#e6ebf2'); grad.addColorStop(1, down ? '#4b5466' : '#8a96a8');
+  circle(x, y + (down ? 1 : 0), r, grad, hov ? '#ffffff' : '#2a3242', hov ? 2 : 1);
+  if (typeof label === 'number') text(String(label), x, y + (down ? 1 : 0), lit ? color : '#1d2433', r * 0.95, 'center', 'bold');
+  else drawGlyph(label, x, y + (down ? 1 : 0), r, lit ? color : '#1d2433');
+  hit(x - r - 4, y - r - 4, 2 * r + 8, 2 * r + 8, btn);
+}
+function drawGlyph(kind, x, y, r, color) {
+  g.fillStyle = color; const s = r * 0.45;
+  if (kind === 'up' || kind === 'down') { arrow(x, y, kind === 'up' ? 1 : -1, s, color); return; }
+  const tri = (cx, dir) => { g.beginPath(); g.moveTo(cx + dir * s * 0.9, y); g.lineTo(cx, y - s); g.lineTo(cx, y + s); g.closePath(); g.fill(); };
+  if (kind === 'open') { tri(x - 3, -1); tri(x + 3, 1); g.fillRect(x - 1, y - s, 2, 2 * s); }
+  if (kind === 'close') { tri(x - s - 2, 1); tri(x + s + 2, -1); g.fillRect(x - 1, y - s, 2, 2 * s); }
+}
+
+// ---- the building ------------------------------------------------------
+function drawBuilding() {
+  // walls and floors
+  box(30, 20, 720, 790, COL.wall, 10);
+  const grad = g.createLinearGradient(0, 20, 0, 180); grad.addColorStop(0, '#232b3b'); grad.addColorStop(1, '#2b3446');
+  box(36, 26, 708, 150, grad, 8);
+  text('MACHINE ROOM', 46, 40, COL.dim, 11, 'left', '600');
+  for (let f = 1; f <= FLOORS; f++) {
+    const y = floorY(f);
+    g.fillStyle = COL.wallHi; g.fillRect(36, y - 96 + 8, 708, 88);
+    g.fillStyle = COL.slab; g.fillRect(30, y, 720, 8);
+    text(String(f), 92, y - 46, '#e9eef7', 34, 'center', '800');
+    text('FLOOR', 92, y - 22, COL.dim, 10, 'center', '600');
+    drawHallButtons(f);
+  }
+  g.fillStyle = '#161c29'; g.fillRect(36, FLOOR1 + 8, 708, 46);
+  text('PIT', 46, FLOOR1 + 30, COL.dim, 11, 'left', '600');
+  g.fillStyle = COL.slab; g.fillRect(30, 172, 720, 8);
+}
+
+function drawHallButtons(f) {
+  const x = 405, y = floorY(f) - 52;
+  box(x - 22, y - 32, 44, 64, '#a7b1c2', 6, '#5d687b');
+  if (f < FLOORS) pushButton(x, f > 1 ? y - 14 : y, 11, 'up', `hall-up-${f}`, on(`hall-up-led-${f}`), COL.amber);
+  if (f > 1) pushButton(x, f < FLOORS ? y + 14 : y, 11, 'down', `hall-down-${f}`, on(`hall-down-led-${f}`), COL.amber);
+}
+
+function drawShaft(c) {
+  const sx = SHAFT[c];
+  g.fillStyle = COL.shaft; g.fillRect(sx, 180, 190, FLOOR1 + 54 - 180);
+  // guide rails, tape and limit switches
+  g.fillStyle = '#3c4659'; g.fillRect(sx + 12, 180, 4, FLOOR1 + 54 - 180); g.fillRect(sx + 136, 180, 4, FLOOR1 + 54 - 180);
+  g.strokeStyle = '#2d3546'; g.setLineDash([2, 6]); g.beginPath(); g.moveTo(sx + 184, 182); g.lineTo(sx + 184, FLOOR1 + 50); g.stroke(); g.setLineDash([]);
+  for (const [end, y] of [['top', floorY(FLOORS) - 96 + 2], ['bottom', FLOOR1 + 22]]) {
+    const ok = part(`limit-${end}-${c}`).closed !== false;
+    box(sx + 140, y, 14, 9, ok ? '#556076' : COL.red, 2);
+  }
+  // counterweight and its ropes
+  const cwPos = num('counterweight-' + c, 'pos', 0);
+  const cwTop = FLOOR1 - cwPos * PX - 66;
+  box(sx + 142, cwTop, 22, 64, '#59647a', 3, '#2a3242');
+  for (let i = 1; i < 6; i++) { g.fillStyle = '#4a5468'; g.fillRect(sx + 144, cwTop + i * 10.5, 18, 2); }
+  // car and its ropes
+  const pos = num('car-' + c, 'pos', 0);
+  const top = carY(pos) - 86;
+  g.strokeStyle = '#8c96a8'; g.lineWidth = 1.5;
+  for (const dx of [-2, 2]) {
+    g.beginPath(); g.moveTo(sx + 76 + dx, 125); g.lineTo(sx + 76 + dx, top); g.stroke();
+    g.beginPath(); g.moveTo(sx + 144 + dx, 125); g.lineTo(sx + 153 + dx, cwTop); g.stroke();
+  }
+  // governor rope, tied to the car
+  g.strokeStyle = '#5a6476'; g.lineWidth = 1; g.beginPath(); g.moveTo(sx + 178, 80); g.lineTo(sx + 178, FLOOR1 + 40); g.stroke();
+  g.fillStyle = '#7f8a9d'; g.fillRect(sx + 134, top + 30, 46, 3);
+  drawCar(c, sx + 18, top, 116, 86);
+}
+
+function drawCar(c, x, y, w, h) {
+  const light = part('car-' + c + '-light').on !== false;
+  const opening = num('door-operator-' + c, 'opening', 0);
+  const blocked = part('light-curtain-' + c).blocked;
+  const clamped = part('safety-gear-' + c).engaged;
+  // frame and sling
+  box(x - 4, y - 8, w + 8, h + 12, '#4b5568', 4);
+  g.fillStyle = '#6b7689'; g.fillRect(x + w / 2 - 14, y - 12, 28, 6);
+  // the interior, lit or dark
+  const inside = g.createLinearGradient(0, y, 0, y + h);
+  inside.addColorStop(0, light ? '#fff3cf' : '#20232b'); inside.addColorStop(1, light ? '#d9c08a' : '#15171d');
+  box(x, y, w, h, inside, 2);
+  if (light) glow(COL.warm, 18, () => { g.fillStyle = '#fffbe8'; g.fillRect(x + 20, y + 3, w - 40, 3); });
+  g.fillStyle = light ? '#b59b62' : '#2b2e36'; g.fillRect(x, y + h - 8, w, 8);
+  g.fillStyle = light ? '#a88d55' : '#262931'; g.fillRect(x + 6, y + 44, w - 12, 3); // handrail
+  // light curtain across the doorway while the doors are open
+  if (opening > 0.05) {
+    for (let i = 0; i < 6; i++) {
+      g.strokeStyle = blocked ? 'rgba(255,77,94,0.9)' : 'rgba(255,77,94,0.25)'; g.lineWidth = blocked ? 2 : 1;
+      g.beginPath(); g.moveTo(x + 4, y + 36 + i * 8); g.lineTo(x + w - 4, y + 36 + i * 8); g.stroke();
+    }
+    hit(x, y + 30, w, h - 30, 'light-curtain-' + c, 'block');
+  }
+  if (blocked) drawPerson(x + w / 2, y + h - 8, light);
+  // car doors: two panels sliding apart
+  const half = (w - 8) / 2, slide = half * opening;
+  g.save(); g.beginPath(); g.rect(x + 4, y + 30, w - 8, h - 38); g.clip();
+  g.fillStyle = 'rgba(150,165,185,0.55)';
+  g.fillRect(x + 4 - slide, y + 30, half, h - 38); g.fillRect(x + 4 + half + slide, y + 30, half, h - 38);
+  g.restore();
+  if (clamped) { text('SAFETY GEAR', x + w / 2, y - 18, COL.red, 11, 'center', '800'); }
+}
+
+function drawPerson(x, yFeet, light) {
+  const c = light ? '#3b4a66' : '#566078';
+  circle(x, yFeet - 40, 6, c);
+  g.strokeStyle = c; g.lineWidth = 5; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x, yFeet - 32); g.lineTo(x, yFeet - 14); g.moveTo(x, yFeet - 14); g.lineTo(x - 5, yFeet); g.moveTo(x, yFeet - 14); g.lineTo(x + 5, yFeet);
+  g.moveTo(x, yFeet - 28); g.lineTo(x - 8, yFeet - 18); g.moveTo(x, yFeet - 28); g.lineTo(x + 8, yFeet - 18); g.stroke(); g.lineCap = 'butt';
+}
+
+// The front wall of every landing: the door the car door drags, the lock
+// beside it, and the lantern above it. Drawn half see-through, so the car is
+// visible behind it.
+function drawLandings(c) {
+  const sx = SHAFT[c];
+  for (let f = 1; f <= FLOORS; f++) {
+    const y = floorY(f), opening = num(`landing-door-${c}-${f}`, 'opening', 0);
+    const x0 = sx + 26, dw = 100, dh = 76, top = y - dh;
+    g.fillStyle = 'rgba(31,39,56,0.55)'; g.fillRect(sx, y - 96 + 8, 26, 88); g.fillRect(sx + 126, y - 96 + 8, 64, 88);
+    g.fillStyle = 'rgba(31,39,56,0.55)'; g.fillRect(x0, y - 96 + 8, dw, 12);
+    g.strokeStyle = '#8994a8'; g.lineWidth = 3; g.strokeRect(x0 - 2, top - 2, dw + 4, dh + 2);
+    const half = dw / 2, slide = half * opening;
+    g.save(); g.beginPath(); g.rect(x0, top, dw, dh); g.clip();
+    g.fillStyle = 'rgba(154,167,186,0.42)';
+    g.fillRect(x0 - slide, top, half - 0.5, dh); g.fillRect(x0 + half + 0.5 + slide, top, half, dh);
+    g.strokeStyle = 'rgba(220,228,240,0.35)'; g.lineWidth = 1;
+    g.strokeRect(x0 - slide + 4, top + 4, half - 8, dh - 8); g.strokeRect(x0 + half + slide + 4, top + 4, half - 8, dh - 8);
+    g.restore();
+    // the lock: green when shut and locked
+    const locked = part(`door-lock-${c}-${f}`).closed !== false;
+    circle(x0 + dw + 8, top + 10, 3.5, locked ? COL.green : COL.red);
+    // the lantern
+    const ln = part(`lantern-${c}-${f}`);
+    box(x0 + 28, y - 92, 44, 15, '#07090d', 3);
+    led(String(ln.floor || ''), x0 + 50, y - 84.5, 11);
+    if (ln.gong) glow(ln.dir < 0 ? COL.red : COL.green, 12, () => arrow(x0 + 36, y - 84.5, ln.dir || 1, 4.5, ln.dir < 0 ? COL.red : COL.green));
+    else if (ln.dir) arrow(x0 + 36, y - 84.5, ln.dir, 4, '#3d4556');
+  }
+}
+
+// The machine room above each shaft: drive, encoder, brake, motor, sheave
+// and governor, each drawn from its own part's report.
+function drawMachine(c) {
+  const sx = SHAFT[c], y = 125;
+  const drive = part('drive-' + c), brake = part('brake-' + c), gov = part('governor-' + c);
+  // drive cabinet
+  box(sx - 95, 52, 50, 110, '#36415a', 4, '#55617a');
+  box(sx - 90, 60, 40, 26, '#08110c', 2);
+  led((drive.hz || 0).toFixed(0) + 'Hz', sx - 70, 73, 11, COL.green);
+  const bar = Math.min(1, (drive.hz || 0) / 60);
+  box(sx - 90, 94, 40, 6, '#1a2030', 2); box(sx - 90, 94, 40 * bar, 6, drive.test ? COL.red : COL.cyan, 2);
+  circle(sx - 80, 114, 4, drive.enabled === false ? COL.red : COL.green);
+  text('DRIVE', sx - 70, 148, COL.dim, 10, 'center', '700');
+  // power cable
+  g.strokeStyle = '#1a1f2a'; g.lineWidth = 4; g.beginPath(); g.moveTo(sx - 45, 130); g.lineTo(sx + 12, 130); g.stroke();
+  // encoder
+  const a = angle('sheave-' + c);
+  circle(sx - 32, y, 8, '#222a39', '#7c879b');
+  g.strokeStyle = COL.cyan; g.lineWidth = 2; g.beginPath(); g.moveTo(sx - 32, y); g.lineTo(sx - 32 + 7 * Math.cos(a * 3), y + 7 * Math.sin(a * 3)); g.stroke();
+  // brake: a drum gripped by two shoes that lift when released
+  const lift = num('brake-' + c, 'lift', 0);
+  circle(sx - 8, y, 16, '#4a5366', '#2a3242', 2);
+  const shoe = brake.released ? COL.green : COL.red;
+  box(sx - 20, y - 24 - lift * 6, 24, 7, shoe, 2); box(sx - 20, y + 17 + lift * 6, 24, 7, shoe, 2);
+  text('BRAKE', sx - 8, 158, COL.dim, 10, 'center', '700');
+  // motor
+  const mg = g.createLinearGradient(0, y - 24, 0, y + 24); mg.addColorStop(0, '#6a7690'); mg.addColorStop(1, '#3c455a');
+  box(sx + 12, y - 24, 58, 48, mg, 6, '#2a3242');
+  for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(sx + 18 + i * 8.5, y - 20, 3, 40); }
+  text(Math.abs(part('motor-' + c).rpm || 0).toFixed(0) + ' rpm', sx + 41, y - 32, COL.text, 10, 'center', '600');
+  text('MOTOR', sx + 41, 158, COL.dim, 10, 'center', '700');
+  g.fillStyle = '#2a3242'; g.fillRect(sx + 70, y - 4, 10, 8);
+  // traction sheave with spokes turning
+  circle(sx + 110, y, 34, '#596479', '#2a3242', 3);
+  circle(sx + 110, y, 27, '#3a4356');
+  g.strokeStyle = '#8f9bb0'; g.lineWidth = 3;
+  for (let i = 0; i < 5; i++) {
+    const t = a + i * 2 * Math.PI / 5;
+    g.beginPath(); g.moveTo(sx + 110, y); g.lineTo(sx + 110 + 26 * Math.cos(t), y + 26 * Math.sin(t)); g.stroke();
+  }
+  circle(sx + 110, y, 6, '#c3ccd9');
+  // overspeed governor
+  const gt = gov.tripped;
+  circle(sx + 178, 72, 13, gt ? '#5b1d25' : '#4a5366', gt ? COL.red : '#2a3242', 2);
+  g.strokeStyle = gt ? COL.red : '#aab4c4'; g.lineWidth = 2;
+  for (let i = 0; i < 2; i++) { const t = a * 2 + i * Math.PI; g.beginPath(); g.moveTo(sx + 178, 72); g.lineTo(sx + 178 + 11 * Math.cos(t), 72 + 11 * Math.sin(t)); g.stroke(); }
+  text('GOVERNOR', sx + 178, 50, gt ? COL.red : COL.dim, 9, 'center', '700');
+  text('SHAFT ' + c, sx + 110, 42, COL.text, 12, 'center', '800');
+}
+
+// ---- the panels on the right -------------------------------------------
+function drawCOP(c, x, y) {
+  const w = 235, h = 430;
+  const steel = g.createLinearGradient(x, 0, x + w, 0); steel.addColorStop(0, '#9aa5b6'); steel.addColorStop(0.5, '#c5ccd7'); steel.addColorStop(1, '#8d98aa');
+  box(x, y, w, h, steel, 12, '#5d687b');
+  text('CAR ' + c, x + 16, y + 20, '#1a2130', 16, 'left', '800');
+  const ctl = part('controller-' + c);
+  box(x + w - 92, y + 10, 78, 20, '#1d2433', 10);
+  text((ctl.mode || '…').toUpperCase(), x + w - 53, y + 20, COL.cyan, 10, 'center', '700');
+  // display
+  const disp = part('car-' + c + '-display');
+  box(x + 40, y + 40, w - 80, 54, '#07090d', 6, '#333');
+  led(String(disp.floor || part('position-sensor-' + c).floor || '-'), x + w / 2 + 14, y + 67, 34);
+  if (disp.dir) glow(disp.dir > 0 ? COL.green : COL.red, 10, () => arrow(x + w / 2 - 26, y + 67, disp.dir, 10, disp.dir > 0 ? COL.green : COL.red));
+  // floor buttons, two columns, the lobby at the bottom left
+  for (let f = 1; f <= FLOORS; f++) {
+    const col = (f - 1) % 2, row = Math.floor((f - 1) / 2);
+    pushButton(x + 80 + col * 76, y + 268 - row * 62, 22, f, `car-${c}-button-${f}`, on(`car-${c}-led-${f}`), COL.cyan);
+  }
+  pushButton(x + 80, y + 322, 18, 'open', `car-${c}-open`, false, COL.cyan);
+  pushButton(x + 156, y + 322, 18, 'close', `car-${c}-close`, false, COL.cyan);
+  text('open', x + 80, y + 350, '#2a3242', 10, 'center', '600');
+  text('close', x + 156, y + 350, '#2a3242', 10, 'center', '600');
+  // walk in: someone steps through the doorway and breaks the light curtain
+  const bx = x + 20, by = y + 368, bw = w - 40, bh = 30;
+  const blocked = part('light-curtain-' + c).blocked;
+  box(bx, by, bw, bh, blocked ? '#5b1d25' : (hover && hover.part === 'light-curtain-' + c ? '#3a4560' : '#2a3242'), 8);
+  text(blocked ? 'someone in the doorway' : 'walk through the doorway', bx + bw / 2, by + bh / 2, blocked ? COL.red : COL.text, 12, 'center', '600');
+  hit(bx, by, bw, bh, 'light-curtain-' + c, 'block');
+  const light = part('car-' + c + '-light').on !== false;
+  circle(x + 26, y + 413, 6, light ? COL.warm : '#3a4356');
+  text(light ? 'cab light on' : 'cab light off (idle)', x + 38, y + 413, '#1a2130', 11);
+}
+
+function drawDiag(c, x, y) {
+  const w = 235, h = 320;
+  box(x, y, w, h, '#151b28', 12, '#2a3346');
+  text('MACHINE & SAFETY ' + c, x + 14, y + 18, COL.text, 12, 'left', '800');
+  const d = part('drive-' + c), car = part('car-' + c), enc = part('encoder-' + c), gov = part('governor-' + c);
+  const rows = [
+    ['drive', `${(d.ref || 0).toFixed(2)} → ${(d.out || 0).toFixed(2)} m/s`],
+    ['motor', `${(part('motor-' + c).rpm || 0).toFixed(1)} rpm`],
+    ['encoder', `${enc.pulses || 0} pulses`],
+    ['brake', part('brake-' + c).released ? 'released' : 'applied'],
+    ['car', `${(car.pos || 0).toFixed(3)} m  ${(car.speed || 0).toFixed(2)} m/s`],
+    ['level', part('position-sensor-' + c).level ? 'yes' : 'no'],
+    ['governor', gov.tripped ? 'TRIPPED' : `${Math.abs(gov.rpm || 0).toFixed(0)} rpm`],
+    ['safety gear', part('safety-gear-' + c).engaged ? 'ENGAGED' : 'off'],
+  ];
+  rows.forEach(([k_, v], i) => {
+    text(k_, x + 14, y + 42 + i * 19, COL.dim, 11);
+    text(v, x + w - 14, y + 42 + i * 19, /TRIPPED|ENGAGED/.test(v) ? COL.red : COL.text, 11, 'right', '600');
+  });
+  // the safety chain: every contact a lamp, in series
+  const chain = part('safety-chain-' + c), open = new Set(chain.open || []);
+  const yy = y + 204;
+  text('safety chain', x + 14, yy, COL.dim, 11);
+  text(chain.ok === false ? 'OPEN' : 'closed', x + w - 14, yy, chain.ok === false ? COL.amber : COL.green, 11, 'right', '700');
+  const contacts = ['car door', ...[1, 2, 3, 4, 5, 6].map(f => 'landing door ' + f), 'top limit', 'bottom limit', 'governor'];
+  const labels = ['car', '1', '2', '3', '4', '5', '6', 'top', 'bot', 'gov'];
+  contacts.forEach((ct, i) => {
+    const cx = x + 22 + i * 21.5, cy = yy + 22, ok = !open.has(ct);
+    if (i > 0) { g.strokeStyle = '#3a4356'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 16, cy); g.lineTo(cx - 6, cy); g.stroke(); }
+    glow(ok ? COL.green : COL.amber, ok ? 0 : 8, () => circle(cx, cy, 5, ok ? COL.green : COL.amber));
+    text(labels[i], cx, cy + 14, COL.dim, 8.5, 'center');
+  });
+  // the technician's switches
+  techButton(x + 14, y + h - 46, 100, 'overspeed test', 'drive-' + c, 'test', d.test);
+  techButton(x + w - 114, y + h - 46, 100, 'reset governor', 'governor-' + c, 'reset', false);
+}
+function techButton(x, y, w, label, p, port, active) {
+  const hov = hover && hover.part === p && hover.port === port;
+  box(x, y, w, 32, active ? '#5b1d25' : hov ? '#3a4560' : '#262f42', 8, '#3d4860');
+  text(label, x + w / 2, y + 16, active ? COL.red : COL.text, 11, 'center', '600');
+  hit(x, y, w, 32, p, port);
+}
+
+function drawFooter() {
+  const clock = part('clock');
+  const s = clock.seconds || 0;
+  const t = `${String(Math.floor(s / 60)).padStart(2, '0')}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+  text(online ? '● live' : '● offline: is go run . still running?', 40, 836, online ? COL.green : COL.red, 12, 'left', '700');
+  text(`${t}   ${meta.components || 0} components   ${meta.cycles || 0} cycles per tick`, online ? 100 : 300, 836, COL.dim, 12, 'left', '600');
+  text('Call a car from any floor, pick a floor inside it, click an open doorway to walk through.', 1260, 836, COL.dim, 11, 'right');
+  const calls = (part('dispatcher').calls || []).map(cl => `${cl.floor}${cl.dir > 0 ? '▲' : '▼'}→${cl.cab}`).join('  ');
+  text('hall calls: ' + (calls || 'none'), 770, 16, COL.dim, 11);
+}
+
+function frame() {
+  k = Math.min(1, (performance.now() - curAt) / 50);
+  hits = [];
+  g.fillStyle = COL.bg; g.fillRect(0, 0, W, H);
+  drawBuilding();
+  for (const c of CABS) drawShaft(c);
+  for (const c of CABS) drawLandings(c);
+  for (const c of CABS) drawMachine(c);
+  drawCOP('A', 770, 26); drawCOP('B', 1025, 26);
+  drawDiag('A', 770, 470); drawDiag('B', 1025, 470);
+  drawFooter();
+  if (!cur) { box(250, 380, 300, 60, 'rgba(0,0,0,0.7)', 10); text('waiting for the mesh…', 400, 410, COL.text, 16, 'center', '600'); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
