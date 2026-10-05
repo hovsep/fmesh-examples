@@ -17,6 +17,7 @@
 /patterns/unix_pipes/unix_pipes
 /simulation/can_bus/advanced/advanced
 /simulation/can_bus/basic/basic
+/simulation/combustion_engine/combustion_engine
 /simulation/electric_circuit/electric_circuit
 /simulation/life/life
 
