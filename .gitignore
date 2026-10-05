@@ -10,6 +10,7 @@
 /graphics/ray_tracer/ray_tracer
 /patterns/async_input/async_input
 /patterns/fibonacci/fibonacci
+/patterns/fpga/fpga
 /patterns/load_balancer/load_balancer
 /patterns/nesting/nesting
 /patterns/retry/retry

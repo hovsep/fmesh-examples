@@ -44,6 +44,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 |---------|-------------|
 | [Fibonacci](./patterns/fibonacci) | Cycles: a component's outputs piped back into its own inputs |
 | [Nesting](./patterns/nesting) | Composition: a component whose activation runs a whole inner mesh |
+| [FPGA](./patterns/fpga) | A board of generic logic cells flashed at runtime from a Verilog-like file: the same mesh becomes an adder, then a counter |
 | [Load Balancer](./patterns/load_balancer) | Indexed ports and component state: round-robin across N workers |
 | [Async Input](./patterns/async_input) | Driving a mesh from outside: signals injected on a ticker, results drained into a channel |
 | [Retry](./patterns/retry) | Retrying a failing activation: temporary errors get another attempt with backoff, permanent ones do not |
