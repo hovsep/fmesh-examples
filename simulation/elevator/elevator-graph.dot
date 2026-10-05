@@ -1,0 +1,245 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>two cabs, six floors: buttons in, building state out, one run per second</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="cab-A";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="cab-A",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="cab-A",height="1.0",label="button",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="cab-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[fontname="Courier New",group="cab-A",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[fontname="Courier New",group="cab-A",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="cab-A",height="1.0",label="doors",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="cab-A",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="cab-A",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="cab-A",height="1.0",label="cab controller: drives the motor and the door, serves its stops",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n6->n4;
+		n7->n4;
+		n8->n4;
+		n9->n4;
+		n4->n10;
+		n4->n11;
+		n4->n12;
+		
+	}
+	subgraph cluster_s13 {
+		color="black";label="cab-B";margin="20";penwidth="5";style="rounded";
+		n15[fontname="Courier New",group="cab-B",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[fontname="Courier New",group="cab-B",height="1.0",label="button",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="cab-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="cab-B",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[fontname="Courier New",group="cab-B",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[fontname="Courier New",group="cab-B",height="1.0",label="doors",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="cab-B",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="cab-B",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[color="#9dddea",fontname="Courier New",group="cab-B",height="1.0",label="cab controller: drives the motor and the door, serves its stops",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n15->n14;
+		n16->n14;
+		n17->n14;
+		n18->n14;
+		n19->n14;
+		n14->n20;
+		n14->n21;
+		n14->n22;
+		
+	}
+	subgraph cluster_s23 {
+		color="black";label="dispatcher";margin="20";penwidth="5";style="rounded";
+		n25[fontname="Courier New",group="dispatcher",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="dispatcher",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n27[fontname="Courier New",group="dispatcher",height="1.0",label="assign-A",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[fontname="Courier New",group="dispatcher",height="1.0",label="assign-B",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n29[fontname="Courier New",group="dispatcher",height="1.0",label="served1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="dispatcher",height="1.0",label="served2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[fontname="Courier New",group="dispatcher",height="1.0",label="served3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="dispatcher",height="1.0",label="served4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n33[fontname="Courier New",group="dispatcher",height="1.0",label="served5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[fontname="Courier New",group="dispatcher",height="1.0",label="served6",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[color="#9dddea",fontname="Courier New",group="dispatcher",height="1.0",label="assigns each hall call to the cab that can get there first",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n25->n24;
+		n26->n24;
+		n24->n27;
+		n24->n28;
+		n24->n29;
+		n24->n30;
+		n24->n31;
+		n24->n32;
+		n24->n33;
+		n24->n34;
+		
+	}
+	subgraph cluster_s35 {
+		color="black";label="display";margin="20";penwidth="5";style="rounded";
+		n37[fontname="Courier New",group="display",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="display",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n39[fontname="Courier New",group="display",height="1.0",label="view",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[color="#9dddea",fontname="Courier New",group="display",height="1.0",label="collects cab and lamp state into one view for the UI",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n37->n36;
+		n38->n36;
+		n36->n39;
+		
+	}
+	subgraph cluster_s40 {
+		color="black";label="door-A";margin="20";penwidth="5";style="rounded";
+		n42[fontname="Courier New",group="door-A",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n43[fontname="Courier New",group="door-A",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n41[color="#9dddea",fontname="Courier New",group="door-A",height="1.0",label="cab door: opens on command, closes by itself",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n42->n41;
+		n41->n43;
+		
+	}
+	subgraph cluster_s44 {
+		color="black";label="door-B";margin="20";penwidth="5";style="rounded";
+		n46[fontname="Courier New",group="door-B",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n47[fontname="Courier New",group="door-B",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n45[color="#9dddea",fontname="Courier New",group="door-B",height="1.0",label="cab door: opens on command, closes by itself",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n46->n45;
+		n45->n47;
+		
+	}
+	subgraph cluster_s48 {
+		color="black";label="floor-1";margin="20";penwidth="5";style="rounded";
+		n50[fontname="Courier New",group="floor-1",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n51[fontname="Courier New",group="floor-1",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="floor-1",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n53[fontname="Courier New",group="floor-1",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n49[color="#9dddea",fontname="Courier New",group="floor-1",height="1.0",label="hall call button and lamp on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n50->n49;
+		n51->n49;
+		n49->n52;
+		n49->n53;
+		
+	}
+	subgraph cluster_s54 {
+		color="black";label="floor-2";margin="20";penwidth="5";style="rounded";
+		n56[fontname="Courier New",group="floor-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n57[fontname="Courier New",group="floor-2",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="floor-2",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n59[fontname="Courier New",group="floor-2",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n55[color="#9dddea",fontname="Courier New",group="floor-2",height="1.0",label="hall call button and lamp on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n56->n55;
+		n57->n55;
+		n55->n58;
+		n55->n59;
+		
+	}
+	subgraph cluster_s60 {
+		color="black";label="floor-3";margin="20";penwidth="5";style="rounded";
+		n62[fontname="Courier New",group="floor-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n63[fontname="Courier New",group="floor-3",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[fontname="Courier New",group="floor-3",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n65[fontname="Courier New",group="floor-3",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n61[color="#9dddea",fontname="Courier New",group="floor-3",height="1.0",label="hall call button and lamp on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n62->n61;
+		n63->n61;
+		n61->n64;
+		n61->n65;
+		
+	}
+	subgraph cluster_s66 {
+		color="black";label="floor-4";margin="20";penwidth="5";style="rounded";
+		n68[fontname="Courier New",group="floor-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n69[fontname="Courier New",group="floor-4",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="floor-4",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="floor-4",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n67[color="#9dddea",fontname="Courier New",group="floor-4",height="1.0",label="hall call button and lamp on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n68->n67;
+		n69->n67;
+		n67->n70;
+		n67->n71;
+		
+	}
+	subgraph cluster_s72 {
+		color="black";label="floor-5";margin="20";penwidth="5";style="rounded";
+		n74[fontname="Courier New",group="floor-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n75[fontname="Courier New",group="floor-5",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="floor-5",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n77[fontname="Courier New",group="floor-5",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n73[color="#9dddea",fontname="Courier New",group="floor-5",height="1.0",label="hall call button and lamp on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n74->n73;
+		n75->n73;
+		n73->n76;
+		n73->n77;
+		
+	}
+	subgraph cluster_s78 {
+		color="black";label="floor-6";margin="20";penwidth="5";style="rounded";
+		n80[fontname="Courier New",group="floor-6",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n81[fontname="Courier New",group="floor-6",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[fontname="Courier New",group="floor-6",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n83[fontname="Courier New",group="floor-6",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n79[color="#9dddea",fontname="Courier New",group="floor-6",height="1.0",label="hall call button and lamp on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n80->n79;
+		n81->n79;
+		n79->n82;
+		n79->n83;
+		
+	}
+	subgraph cluster_s84 {
+		color="black";label="motor-A";margin="20";penwidth="5";style="rounded";
+		n86[fontname="Courier New",group="motor-A",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n87[fontname="Courier New",group="motor-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n85[color="#9dddea",fontname="Courier New",group="motor-A",height="1.0",label="hoist motor: one floor per tick, up or down",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n86->n85;
+		n85->n87;
+		
+	}
+	subgraph cluster_s88 {
+		color="black";label="motor-B";margin="20";penwidth="5";style="rounded";
+		n90[fontname="Courier New",group="motor-B",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n91[fontname="Courier New",group="motor-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n89[color="#9dddea",fontname="Courier New",group="motor-B",height="1.0",label="hoist motor: one floor per tick, up or down",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n90->n89;
+		n89->n91;
+		
+	}
+	layout="dot";splines="ortho";
+	n10->n42[color="#e437ea",minlen="3",penwidth="2"];
+	n11->n86[color="#e437ea",minlen="3",penwidth="2"];
+	n12->n26[color="#e437ea",minlen="3",penwidth="2"];
+	n12->n38[color="#e437ea",minlen="3",penwidth="2"];
+	n20->n46[color="#e437ea",minlen="3",penwidth="2"];
+	n21->n90[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n26[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n38[color="#e437ea",minlen="3",penwidth="2"];
+	n27->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n28->n15[color="#e437ea",minlen="3",penwidth="2"];
+	n29->n51[color="#e437ea",minlen="3",penwidth="2"];
+	n30->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n31->n63[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n69[color="#e437ea",minlen="3",penwidth="2"];
+	n33->n75[color="#e437ea",minlen="3",penwidth="2"];
+	n34->n81[color="#e437ea",minlen="3",penwidth="2"];
+	n43->n8[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n18[color="#e437ea",minlen="3",penwidth="2"];
+	n52->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n53->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n59->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n64->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n65->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n70->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n71->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n76->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n77->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n82->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n83->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n87->n7[color="#e437ea",minlen="3",penwidth="2"];
+	n91->n17[color="#e437ea",minlen="3",penwidth="2"];
+	
+}

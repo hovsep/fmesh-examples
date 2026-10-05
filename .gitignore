@@ -18,6 +18,7 @@
 /simulation/can_bus/advanced/advanced
 /simulation/can_bus/basic/basic
 /simulation/electric_circuit/electric_circuit
+/simulation/elevator/elevator
 /simulation/life/life
 
 # Files written by running the examples
