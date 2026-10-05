@@ -1,49 +1,41 @@
 # Elevator
 
-Two elevators in a six-floor building, and a terminal UI that talks to the mesh both ways: **button presses go in as signals, and the state of the building comes back out as a signal** that the UI draws.
+Two elevators in a six-floor building, built from **every part a real installation has**: 123 components. You play it in the browser: call a car from any landing, pick a floor inside it, walk through a closing door, run the governor's overspeed test. Every click goes into the mesh as a signal on a button, and the page only draws what the parts report back.
 
-```
-second 10  2 4
-       A     B   call
-  6 │     │  ·  │
-  5 │     │ [▲] │
-  4 │ [▼] │  ·  │  ●
-  3 │     │     │
-  2 │  ·  │     │  ●
-  1 │  ·  │     │
-```
-
-A cab is `[▲]`/`[▼]` while moving, `[■]` when idle and `[ ]` with its doors open; a dot is a floor it will stop at, and `●` is a lit call lamp.
-
-## How it works
-
-14 components, each a real part of the building:
-
-| Component | What it does |
-|-----------|--------------|
-| `floor-1` … `floor-6` | The call button and lamp on each landing. A press lights the lamp and sends a call; `served` puts it out. |
-| `dispatcher` | Gives every call to the cab that can get there first (distance, how busy it is, whether it is heading away), and tells a floor when a cab has opened its doors there. |
-| `cab-A`, `cab-B` | The cab controllers. On every tick they decide: open the doors, move, or wait, and keep going in one direction while there are stops ahead, as real elevators do. |
-| `motor-A`, `motor-B` | Move their cab one floor per tick and report where it is. |
-| `door-A`, `door-B` | Open on command and close by themselves a few ticks later. |
-| `display` | Gathers every cab's status and every lamp into one `View`: the way state leaves the mesh. |
-
-- **The UI drives time, the mesh is the building.** Every `Run` is one second: the UI puts a `tick` on each cab, plus whatever was pressed (`press` on a floor, `button` inside a cab), runs the mesh and draws the `View` it finds on the display's output. Components keep their `State()` between runs, so nothing in `main` knows where the cabs are.
-- **Feedback loops everywhere.** Each cab commands its motor and door and listens to what they report; cabs report to the dispatcher, which assigns them new stops; the dispatcher turns a cab's arrival into a lamp going off on a floor.
-- **A controller listens all the time but acts once per tick.** Position, door state and new stops can arrive in any cycle of the run and are only recorded; the decision is taken when the tick arrives, so each second moves a cab at most one floor.
-- Notable APIs: `component.WithIndexedOutputs` for the dispatcher's `served1..served6`, `port.MultiPipe` for the wiring, typed payloads read with `sig.As[CabStatus]()`, and re-running one mesh many times.
-
-![Mesh graph](./elevator-graph.svg)
+![The building in the browser](./screenshot.png)
 
 ## Run
 
 ```bash
-# Interactive: type a floor (1-6) to call a cab, a1-a6 / b1-b6 to ride one, q to quit
-go run .
-
-# A scripted rush hour (also what you get when stdin is not a terminal)
-go run . -demo
+go run .          # then open http://localhost:8080
+go run . -demo    # visitors press buttons on their own
 
 # Regenerate the graph files (elevator-graph.dot / .svg)
 FMESH_GRAPH=1 go run .
 ```
+
+The page is one HTML file with plain JavaScript on a canvas, embedded in the binary: no build step, nothing fetched from the internet. The Go side uses only the standard library: server-sent events stream the frames out, plain `POST /press` brings the clicks in.
+
+## The parts
+
+| Where | Components |
+|-------|------------|
+| Every landing | `hall-up-N`, `hall-down-N` call buttons and their LEDs `hall-up-led-N`, `hall-down-led-N` |
+| Every landing of each shaft | `landing-door-X-N`, which the car door drags open, its interlock `door-lock-X-N`, and the `lantern-X-N` above it |
+| Inside each car | `car-X-button-1` … `6` and their LEDs, `car-X-open`, `car-X-close`, `car-X-display`, `car-X-light` |
+| Each car's doorway | `door-operator-X` (the door motor and the car door contact), `light-curtain-X` |
+| Each hoist | `drive-X` → `motor-X` → `sheave-X` → `car-X` and `counterweight-X`, with `brake-X` on the motor shaft, `encoder-X` feeding the drive, `position-sensor-X` reading the car's height, `governor-X` and `safety-gear-X`, final limit switches `limit-top-X`, `limit-bottom-X` |
+| Each shaft's safety | `safety-chain-X`: the series circuit through the car door contact, the six door locks, both limit switches and the governor |
+| The building | `controller-A`, `controller-B`, the `dispatcher` that hands hall calls to them, the `clock` and the `panel` |
+
+## How it works
+
+- **One run is 50 ms of the building's life.** The UI loop puts one pulse into the `clock`, which fans a tick out to both controllers and both light curtains. The tick ripples through the hoist as a wave, one part per cycle: the controller asks the drive for a speed, the drive ramps the motor, the motor turns the encoder and the sheave, the sheave moves the car and the counterweight, the car moves past the position sensor, the governor and the limit switches. Ten cycles later the mesh is quiet and the run is over.
+- **Each part acts on one input and only remembers the rest.** The motor moves when the drive powers it and remembers whether the brake is released; the drive ramps when the controller asks and remembers what the encoder and the safety chain said. That is why a tick moves everything exactly once, however many cycles it takes to settle, and why feedback loops (drive ↔ encoder, controller ↔ door operator, controller ↔ dispatcher) never run away.
+- **Safety is wiring, not code.** No `if door open then stop` lives in the controller. Every door lock, the car door contact, the limit switches and the governor pipe into the safety chain; the chain pipes into the drive and the brake, which cut power the moment it opens. Press *overspeed test* while a car runs: the drive overspeeds, the governor trips, the safety gear grips the rails and the chain stops everything, until you press *reset governor*.
+- **Mechanics talk to each other directly.** The car door drags the landing door at whatever floor the car stands, and that door's lock reports to the chain: the controller never touches a landing door.
+- **Buttons and their LEDs are separate parts**, as in a real panel: a button only says it was pressed; the controller or the dispatcher decides when its LED lights and goes out.
+- **State leaves the mesh through one component.** Every part with something to show (all but the buttons) has a `telemetry` output: 96 pipes into the `panel`, which merges them into one frame: the fan-in the page draws.
+- Notable APIs: `component.WithIndexedOutputs` for the LEDs (`led1`…`led6`, `led-up1`…), one output piped to many inputs (the car's position to its sensors, its governor and six landing doors), `fmesh.WithCyclesHistoryLimit(1)` for a mesh that runs forever, components keeping their `State()` across runs, typed payloads read with `sig.As[Contact]()`.
+
+![Mesh graph](./elevator-graph.svg)

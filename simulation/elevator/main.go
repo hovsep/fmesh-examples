@@ -1,43 +1,36 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// Two elevators in a six-floor building. The UI and the mesh talk both ways:
-// button presses go in as signals, and the state of the building comes back
-// out as a signal the UI draws.
+// Two elevators in a six-floor building, every part of them a component:
+// the buttons, LEDs, lanterns and doors on every landing, the buttons,
+// display, light, door and light curtain of every car, and the whole hoist
+// from the drive to the counterweight, wired through safety chains.
 //
-//	UI → mesh:  press → floor-N, button → cab-X, tick → cab-X
-//	calls:      floor-N → dispatcher → cab-X, and served → floor-N (lamp off)
-//	each cab:   cab-X → motor-X → cab-X, cab-X → door-X → cab-X
-//	mesh → UI:  cab-X status, floor-N lamp → display → view
+// A browser page draws the building from the mesh's state and sends every
+// click back in as a signal on a button. Every Run of the mesh is 50 ms of
+// the building's life: one pulse goes into the clock, the tick ripples
+// through the parts, and the panel gathers what they report into one frame.
 //
-// Every Run of the mesh is one second of the building's life. Components
-// keep their state between runs, so the mesh is the building and the UI only
-// pushes time and buttons into it.
-//
-// Run: go run .   (or go run . -demo for a scripted rush hour)
+// Run: go run .   then open http://localhost:8080
 
-const floors = 6
-
-var cabs = []string{"A", "B"}
+// starts is the floor each car waits on when the building opens.
+var starts = map[string]int{"A": 1, "B": floors}
 
 func main() {
-	demo := flag.Bool("demo", false, "play a scripted scenario instead of reading buttons from the keyboard")
-	tick := flag.Duration("tick", time.Second, "how long one simulated second takes")
+	addr := flag.String("addr", "localhost:8080", "where to serve the page")
+	demo := flag.Bool("demo", false, "people keep pressing buttons on their own")
 	flag.Parse()
 
 	fm, err := getMesh()
@@ -55,269 +48,232 @@ func main() {
 		return
 	}
 
-	if *demo || !isTerminal(os.Stdin) {
-		if err := playDemo(fm, *tick/3); err != nil {
-			fmt.Println("Elevator failed:", err)
-			os.Exit(1)
-		}
-		return
-	}
-	if err := playInteractive(fm, *tick); err != nil {
+	if err := serve(fm, *addr, *demo); err != nil {
 		fmt.Println("Elevator failed:", err)
 		os.Exit(1)
 	}
 }
 
-// step pushes one second and any button presses into the mesh, runs it, and
-// returns the view of the building the mesh sends back.
-func step(fm *fmesh.FMesh, presses []string) (View, error) {
-	for _, p := range presses {
-		target, err := parsePress(fm, p)
+// Input is something done to the building from outside: a button pressed,
+// someone stepping through a doorway, a technician's switch.
+type Input struct {
+	Part string `json:"part"`
+	Port string `json:"port"`
+}
+
+// uiPorts are the only inputs a visitor can reach.
+var uiPorts = map[string]bool{portPress: true, portBlock: true, portTest: true, portReset: true}
+
+// target finds the port an input goes to.
+func target(fm *fmesh.FMesh, in Input) (*port.Port, error) {
+	c := fm.ComponentByName(in.Part)
+	if c == nil || !uiPorts[in.Port] {
+		return nil, fmt.Errorf("nothing to press at %s/%s", in.Part, in.Port)
+	}
+	p := c.InputByName(in.Port)
+	if p == nil {
+		return nil, fmt.Errorf("nothing to press at %s/%s", in.Part, in.Port)
+	}
+	return p, nil
+}
+
+// step runs 50 ms of the building's life: the inputs and one pulse go in,
+// the frame of every part's state comes out, with the number of cycles the
+// tick took to settle.
+func step(fm *fmesh.FMesh, inputs []Input) (Frame, int, error) {
+	for _, in := range inputs {
+		p, err := target(fm, in)
 		if err != nil {
-			return View{}, err
+			return nil, 0, err
 		}
-		if err := target.PutSignals(signal.New(pressedFloor(p))); err != nil {
-			return View{}, err
-		}
-	}
-	for _, c := range cabs {
-		if err := fm.ComponentByName(cabName(c)).InputByName(portTick).PutSignals(signal.New(1)); err != nil {
-			return View{}, err
+		if err := p.PutSignals(signal.New(true)); err != nil {
+			return nil, 0, err
 		}
 	}
-
-	if _, err := fm.Run(context.Background()); err != nil {
-		return View{}, err
+	if err := fm.ComponentByName("clock").InputByName(portPulse).PutSignals(signal.New(true)); err != nil {
+		return nil, 0, err
 	}
-
-	views := fm.ComponentByName("display").OutputByName(portView).Signals().All()
-	return views[len(views)-1].PayloadOrDefault(View{}), nil
+	info, err := fm.Run(context.Background())
+	if err != nil {
+		return nil, 0, err
+	}
+	frame := latest(fm.ComponentByName("panel").OutputByName(portFrame), Frame{})
+	// The last cycle is the quiet one in which nothing activated.
+	return frame, info.Cycles.Last().Number() - 1, nil
 }
 
-// parsePress turns what the user typed into the port it presses:
-// "4" is the call button on floor 4, "a4" is button 4 inside cab A.
-func parsePress(fm *fmesh.FMesh, p string) (*port.Port, error) {
-	f := pressedFloor(p)
-	if f < 1 || f > floors {
-		return nil, fmt.Errorf("no such floor in %q (1-%d)", p, floors)
-	}
-	if len(p) == 1 {
-		return fm.ComponentByName(floorName(f)).InputByName(portPress), nil
-	}
-	cab := fm.ComponentByName(cabName(strings.ToUpper(p[:1])))
-	if cab == nil {
-		return nil, fmt.Errorf("no such cab in %q", p)
-	}
-	return cab.InputByName(portButton), nil
+// mesh collects components and the pipes between them while the building
+// is put together.
+type mesh struct {
+	parts []*component.Component
+	pipes []port.Pipe
 }
 
-func pressedFloor(p string) int {
-	f, _ := strconv.Atoi(p[len(p)-1:])
-	return f
+func (m *mesh) add(c *component.Component, err error) *component.Component {
+	if err != nil {
+		panic(err) // only a mistake in this file can get here
+	}
+	m.parts = append(m.parts, c)
+	return c
 }
 
-// The demo: people call cabs and ride them, then the building goes quiet.
-var script = map[int][]string{
-	1:  {"5"},      // someone on 5 wants to go down
-	2:  {"3"},      // and someone on 3
-	7:  {"a1"},     // the one picked up on 5 rides to the lobby
-	8:  {"b6"},     // the one on 3 goes up to 6
-	10: {"2", "4"}, // two more calls while both cabs are busy
-	16: {"a3"},     // the one picked up on 2 goes to 3
-	18: {"b1"},     // the one picked up on 4 goes down to the lobby
+// pipe wires one output to any number of inputs.
+func (m *mesh) pipe(from *component.Component, out string, to ...*component.Component) {
+	m.pipeTo(from, out, "", to...)
 }
 
-func playDemo(fm *fmesh.FMesh, delay time.Duration) error {
-	fmt.Println("=== Elevator (demo) ===")
-	for t := 1; ; t++ {
-		view, err := step(fm, script[t])
-		if err != nil {
-			return err
-		}
-		fmt.Printf("\nsecond %d  %s\n%s", t, strings.Join(script[t], " "), render(view))
-		if t > 18 && idle(view) {
-			fmt.Println("\nEverybody has arrived; the building is quiet.")
-			return nil
-		}
-		time.Sleep(delay)
+// pipeTo is pipe for an input whose name differs from the output's.
+func (m *mesh) pipeTo(from *component.Component, out, in string, to ...*component.Component) {
+	if in == "" {
+		in = out
+	}
+	for _, t := range to {
+		m.pipes = append(m.pipes, port.Pipe{From: from.OutputByName(out), To: t.InputByName(in)})
 	}
 }
 
-func playInteractive(fm *fmesh.FMesh, tick time.Duration) error {
-	presses := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			presses <- strings.TrimSpace(scanner.Text())
+// getMesh puts the building together.
+func getMesh() (fm *fmesh.FMesh, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fm, err = nil, fmt.Errorf("%v", r)
 		}
-		close(presses)
 	}()
+	m := &mesh{}
 
-	fmt.Print("\033[H\033[2J")
-	help := fmt.Sprintf("Call a cab: 1-%d   Ride: a1-a%d, b1-b%d   Quit: q   (then Enter)", floors, floors, floors)
-	var pending []string
-	ticker := time.NewTicker(tick)
-	defer ticker.Stop()
-	for t := 1; ; t++ {
-		view, err := step(fm, pending)
-		if err != nil {
-			fmt.Println(err)
-		}
-		pending = nil
-		// Redraw the building in place, without touching the line being typed.
-		frame := fmt.Sprintf("=== Elevator ===  second %d\n%s%s\n", t, render(view), help)
-		fmt.Print("\0337\033[H" + strings.ReplaceAll(frame, "\n", "\033[K\n") + "\0338")
-		if t == 1 {
-			fmt.Print("\n> ")
-		}
+	clock := m.add(newClock())
+	panel := m.add(newPanel())
+	dispatcher := m.add(newDispatcher())
 
-		select {
-		case p, ok := <-presses:
-			if !ok || p == "q" {
-				return nil
+	// The landings: an up and a down button with their LEDs on every floor
+	// (no up on the top floor, no down in the lobby).
+	for f := 1; f <= floors; f++ {
+		for _, h := range []struct {
+			dir  int
+			name string
+			led  string
+		}{{+1, "up", portLEDUp}, {-1, "down", portLEDDn}} {
+			if (h.dir > 0 && f == floors) || (h.dir < 0 && f == 1) {
+				continue
 			}
-			if _, err := parsePress(fm, p); err == nil {
-				pending = append(pending, p)
-			}
-			fmt.Print("> ")
-			<-ticker.C
-		case <-ticker.C:
+			button := m.add(newButton(fmt.Sprintf("hall-%s-%d", h.name, f),
+				fmt.Sprintf("hall call button %s on floor %d", h.name, f), HallCall{Floor: f, Dir: h.dir}))
+			led := m.add(newLamp(fmt.Sprintf("hall-%s-led-%d", h.name, f), fmt.Sprintf("LED of the %s button on floor %d", h.name, f)))
+			m.pipeTo(button, portPressed, portCall, dispatcher)
+			m.pipeTo(dispatcher, fmt.Sprint(h.led, f), portSet, led)
 		}
 	}
-}
 
-// render draws the shafts: one column per cab, one row per floor, the call
-// lamps on the right. A cab is [▲] or [▼] while moving, [■] when idle and
-// [ ] with its doors open; a dot marks a floor the cab will stop at.
-func render(v View) string {
-	var b strings.Builder
-	b.WriteString("       A     B   call\n")
-	for f := floors; f >= 1; f-- {
-		fmt.Fprintf(&b, "  %d ", f)
-		for _, c := range cabs {
-			st := v.Cabs[c]
-			cell := "     "
-			switch {
-			case st.Floor == f && st.Door == doorOpen:
-				cell = " [ ] "
-			case st.Floor == f && st.Dir > 0:
-				cell = " [▲] "
-			case st.Floor == f && st.Dir < 0:
-				cell = " [▼] "
-			case st.Floor == f:
-				cell = " [■] "
-			case contains(st.Stops, f):
-				cell = "  ·  "
-			}
-			b.WriteString("│" + cell)
-		}
-		lamp := ""
-		if v.Lamps[f] {
-			lamp = "●"
-		}
-		fmt.Fprintf(&b, "│  %s\n", lamp)
+	for _, c := range cabs {
+		buildCab(m, c, clock, dispatcher)
 	}
-	return b.String()
-}
 
-func idle(v View) bool {
-	for _, st := range v.Cabs {
-		if st.Dir != 0 || st.Door == doorOpen || len(st.Stops) > 0 {
-			return false
+	// Every part reports to the panel.
+	for _, c := range m.parts {
+		if c.OutputByName(portTelemetry) != nil {
+			m.pipe(c, portTelemetry, panel)
 		}
 	}
-	for _, on := range v.Lamps {
-		if on {
-			return false
-		}
-	}
-	return true
-}
 
-func contains(s []int, n int) bool {
-	for _, x := range s {
-		if x == n {
-			return true
-		}
-	}
-	return false
-}
-
-// getMesh builds the building.
-func getMesh() (*fmesh.FMesh, error) {
-	fm, err := fmesh.New("elevator",
-		fmesh.WithDescription("two cabs, six floors: buttons in, building state out, one run per second"),
+	fm, err = fmesh.New("elevator",
+		fmesh.WithDescription("two elevators in a six-floor building, every part a component, 50 ms per run"),
+		fmesh.WithCyclesHistoryLimit(1),
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	dispatcher, err := newDispatcher(cabs)
-	if err != nil {
+	if err := fm.AddComponents(m.parts...); err != nil {
 		return nil, err
 	}
-	display, err := newDisplay()
-	if err != nil {
+	if err := port.MultiPipe(m.pipes...); err != nil {
 		return nil, err
 	}
-	if err := fm.AddComponents(dispatcher, display); err != nil {
-		return nil, err
-	}
-
-	for f := 1; f <= floors; f++ {
-		floor, err := newFloor(f)
-		if err != nil {
-			return nil, err
-		}
-		if err := fm.AddComponents(floor); err != nil {
-			return nil, err
-		}
-		if err := port.MultiPipe(
-			port.Pipe{From: floor.OutputByName(portCall), To: dispatcher.InputByName(portCall)},
-			port.Pipe{From: dispatcher.OutputByName(fmt.Sprint(portServed, f)), To: floor.InputByName(portServed)},
-			port.Pipe{From: floor.OutputByName(portLamp), To: display.InputByName(portLamp)},
-		); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, c := range cabs {
-		cab, err := newCab(c)
-		if err != nil {
-			return nil, err
-		}
-		motor, err := newMotor(c)
-		if err != nil {
-			return nil, err
-		}
-		door, err := newDoor(c)
-		if err != nil {
-			return nil, err
-		}
-		if err := fm.AddComponents(cab, motor, door); err != nil {
-			return nil, err
-		}
-		if err := port.MultiPipe(
-			// The cab's two feedback loops: it commands, the motor and the door report back.
-			port.Pipe{From: cab.OutputByName(portDrive), To: motor.InputByName(portCmd)},
-			port.Pipe{From: motor.OutputByName(portPosition), To: cab.InputByName(portPosition)},
-			port.Pipe{From: cab.OutputByName(portDoors), To: door.InputByName(portCmd)},
-			port.Pipe{From: door.OutputByName(portState), To: cab.InputByName(portState)},
-			// And the loop through the dispatcher.
-			port.Pipe{From: cab.OutputByName(portStatus), To: dispatcher.InputByName(portStatus)},
-			port.Pipe{From: dispatcher.OutputByName(portAssign + "-" + c), To: cab.InputByName(portAssign)},
-			port.Pipe{From: cab.OutputByName(portStatus), To: display.InputByName(portStatus)},
-		); err != nil {
-			return nil, err
-		}
-	}
-
 	return fm, nil
 }
 
-// isTerminal reports whether f is an interactive terminal rather than a file
-// or a pipe.
-func isTerminal(f *os.File) bool {
-	info, err := f.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
+// buildCab puts one elevator together: its car with everything inside, its
+// hoist, its doors on every landing and its safety chain.
+func buildCab(m *mesh, c string, clock, dispatcher *component.Component) {
+	name := func(part string) string { return fmt.Sprintf("car-%s-%s", c, part) }
+	start := starts[c]
+
+	controller := m.add(newController(c, start))
+	m.pipe(clock, portTick, controller)
+	m.pipeTo(controller, portStatus, portStatus, dispatcher)
+	m.pipeTo(dispatcher, portToCab+c, portAssign, controller)
+
+	// Inside the car.
+	for f := 1; f <= floors; f++ {
+		button := m.add(newButton(name(fmt.Sprint("button-", f)), fmt.Sprintf("car %s button for floor %d", c, f), f))
+		led := m.add(newLamp(name(fmt.Sprint("led-", f)), fmt.Sprintf("LED of the car %s button for floor %d", c, f)))
+		m.pipeTo(button, portPressed, portCarCall, controller)
+		m.pipeTo(controller, ledPort(f), portSet, led)
+	}
+	for _, cmd := range []string{doorOpen, doorClose} {
+		button := m.add(newButton(name(cmd), fmt.Sprintf("door %s button in car %s", cmd, c), cmd))
+		m.pipeTo(button, portPressed, portDoorBtn, controller)
+	}
+	display := m.add(newIndicator(name("display"), "floor display in car "+c, 0))
+	light := m.add(newLamp(name("light"), "ceiling light in car "+c))
+	m.pipeTo(controller, portDisplay, portShow, display)
+	m.pipeTo(controller, portLight, portSet, light)
+
+	// The hoist.
+	drive := m.add(newDrive(c))
+	motor := m.add(newMotor(c))
+	brake := m.add(newBrake(c))
+	encoder := m.add(newEncoder(c))
+	sheave := m.add(newSheave(c))
+	car := m.add(newCar(c, start))
+	counterweight := m.add(newCounterweight(c, start))
+	governor := m.add(newGovernor(c))
+	gear := m.add(newSafetyGear(c))
+	sensor := m.add(newPositionSensor(c))
+	top := m.add(newLimitSwitch(c, "top", func(pos float64) bool { return pos > travel+0.3 }))
+	bottom := m.add(newLimitSwitch(c, "bottom", func(pos float64) bool { return pos < -0.3 }))
+
+	m.pipe(controller, portRef, drive)
+	m.pipe(controller, portLift, brake)
+	m.pipe(drive, portPower, motor)
+	m.pipe(brake, portBrake, motor, controller)
+	m.pipe(motor, portShaft, encoder, sheave)
+	m.pipeTo(encoder, portSpeed, portFeedback, drive)
+	m.pipe(sheave, portRope, car, counterweight)
+	m.pipe(gear, portClamp, car)
+	m.pipe(car, portPosition, sensor, governor, top, bottom)
+	m.pipe(sensor, portReading, controller)
+	m.pipe(governor, portContact, gear)
+
+	// The doors.
+	operator := m.add(newDoorOperator(c))
+	curtain := m.add(newLightCurtain(c))
+	m.pipe(controller, portDoorCmd, operator)
+	m.pipe(operator, portDoor, controller)
+	m.pipe(clock, portTick, curtain)
+	m.pipe(curtain, portBeam, controller)
+
+	// The safety chain runs through every contact of the shaft.
+	contacts := []string{"car door", "governor", "top limit", "bottom limit"}
+	for f := 1; f <= floors; f++ {
+		contacts = append(contacts, landingContact(f))
+	}
+	chain := m.add(newSafetyChain(c, contacts))
+	m.pipe(operator, portContact, chain)
+	m.pipe(governor, portContact, chain)
+	m.pipe(top, portContact, chain)
+	m.pipe(bottom, portContact, chain)
+	m.pipe(chain, portChain, drive, brake, controller)
+
+	// Every landing of the shaft: a door the car door drags, its lock, and
+	// a lantern showing where the car is.
+	for f := 1; f <= floors; f++ {
+		door := m.add(newLandingDoor(c, f))
+		lock := m.add(newDoorLock(c, f))
+		lantern := m.add(newIndicator(fmt.Sprintf("lantern-%s-%d", c, f), fmt.Sprintf("hall lantern of shaft %s on floor %d", c, f), f))
+		m.pipe(operator, portDoor, door)
+		m.pipe(car, portPosition, door)
+		m.pipe(door, portPanel, lock)
+		m.pipe(lock, portContact, chain)
+		m.pipeTo(controller, portIndicator, portShow, lantern)
+	}
 }

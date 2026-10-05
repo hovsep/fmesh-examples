@@ -5,7 +5,7 @@ digraph  {
 	<table border="0" cellborder="0" cellspacing="10">
 			
 			<tr>
-				<td>Description:</td><td>two cabs, six floors: buttons in, building state out, one run per second</td>
+				<td>Description:</td><td>two elevators in a six-floor building, every part a component, 50 ms per run</td>
 			</tr>
 			
 		
@@ -17,229 +17,1658 @@ digraph  {
 		
 	}
 	subgraph cluster_s3 {
-		color="black";label="cab-A";margin="20";penwidth="5";style="rounded";
-		n5[fontname="Courier New",group="cab-A",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n6[fontname="Courier New",group="cab-A",height="1.0",label="button",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n7[fontname="Courier New",group="cab-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n8[fontname="Courier New",group="cab-A",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n9[fontname="Courier New",group="cab-A",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n10[fontname="Courier New",group="cab-A",height="1.0",label="doors",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n11[fontname="Courier New",group="cab-A",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n12[fontname="Courier New",group="cab-A",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n4[color="#9dddea",fontname="Courier New",group="cab-A",height="1.0",label="cab controller: drives the motor and the door, serves its stops",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		color="black";label="brake-A";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="brake-A",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="brake-A",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="brake-A",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[fontname="Courier New",group="brake-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="brake-A",height="1.0",label="machine brake: lifts when energised, drops on command or when the safety chain opens",penwidth="2.5",shape="rect",style="filled",width="1.0"];
 		n5->n4;
 		n6->n4;
-		n7->n4;
-		n8->n4;
-		n9->n4;
-		n4->n10;
-		n4->n11;
-		n4->n12;
+		n4->n7;
+		n4->n8;
 		
 	}
-	subgraph cluster_s13 {
-		color="black";label="cab-B";margin="20";penwidth="5";style="rounded";
-		n15[fontname="Courier New",group="cab-B",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n16[fontname="Courier New",group="cab-B",height="1.0",label="button",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n17[fontname="Courier New",group="cab-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n18[fontname="Courier New",group="cab-B",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n19[fontname="Courier New",group="cab-B",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n20[fontname="Courier New",group="cab-B",height="1.0",label="doors",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n21[fontname="Courier New",group="cab-B",height="1.0",label="drive",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n22[fontname="Courier New",group="cab-B",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n14[color="#9dddea",fontname="Courier New",group="cab-B",height="1.0",label="cab controller: drives the motor and the door, serves its stops",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n15->n14;
-		n16->n14;
-		n17->n14;
-		n18->n14;
-		n19->n14;
-		n14->n20;
-		n14->n21;
-		n14->n22;
+	subgraph cluster_s9 {
+		color="black";label="brake-B";margin="20";penwidth="5";style="rounded";
+		n11[fontname="Courier New",group="brake-B",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="brake-B",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n13[fontname="Courier New",group="brake-B",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="brake-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[color="#9dddea",fontname="Courier New",group="brake-B",height="1.0",label="machine brake: lifts when energised, drops on command or when the safety chain opens",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n11->n10;
+		n12->n10;
+		n10->n13;
+		n10->n14;
 		
 	}
-	subgraph cluster_s23 {
+	subgraph cluster_s15 {
+		color="black";label="car-A";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="car-A",height="1.0",label="clamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="car-A",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[fontname="Courier New",group="car-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[fontname="Courier New",group="car-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="car-A",height="1.0",label="car frame on the ropes: moves with them unless the safety gear grips the rails",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n18->n16;
+		n16->n19;
+		n16->n20;
+		
+	}
+	subgraph cluster_s21 {
+		color="black";label="car-A-button-1";margin="20";penwidth="5";style="rounded";
+		n23[fontname="Courier New",group="car-A-button-1",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[fontname="Courier New",group="car-A-button-1",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[color="#9dddea",fontname="Courier New",group="car-A-button-1",height="1.0",label="car A button for floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n23->n22;
+		n22->n24;
+		
+	}
+	subgraph cluster_s25 {
+		color="black";label="car-A-button-2";margin="20";penwidth="5";style="rounded";
+		n27[fontname="Courier New",group="car-A-button-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[fontname="Courier New",group="car-A-button-2",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[color="#9dddea",fontname="Courier New",group="car-A-button-2",height="1.0",label="car A button for floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n27->n26;
+		n26->n28;
+		
+	}
+	subgraph cluster_s29 {
+		color="black";label="car-A-button-3";margin="20";penwidth="5";style="rounded";
+		n31[fontname="Courier New",group="car-A-button-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[fontname="Courier New",group="car-A-button-3",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[color="#9dddea",fontname="Courier New",group="car-A-button-3",height="1.0",label="car A button for floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n31->n30;
+		n30->n32;
+		
+	}
+	subgraph cluster_s33 {
+		color="black";label="car-A-button-4";margin="20";penwidth="5";style="rounded";
+		n35[fontname="Courier New",group="car-A-button-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[fontname="Courier New",group="car-A-button-4",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[color="#9dddea",fontname="Courier New",group="car-A-button-4",height="1.0",label="car A button for floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n35->n34;
+		n34->n36;
+		
+	}
+	subgraph cluster_s37 {
+		color="black";label="car-A-button-5";margin="20";penwidth="5";style="rounded";
+		n39[fontname="Courier New",group="car-A-button-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[fontname="Courier New",group="car-A-button-5",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[color="#9dddea",fontname="Courier New",group="car-A-button-5",height="1.0",label="car A button for floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n39->n38;
+		n38->n40;
+		
+	}
+	subgraph cluster_s41 {
+		color="black";label="car-A-button-6";margin="20";penwidth="5";style="rounded";
+		n43[fontname="Courier New",group="car-A-button-6",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[fontname="Courier New",group="car-A-button-6",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[color="#9dddea",fontname="Courier New",group="car-A-button-6",height="1.0",label="car A button for floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n43->n42;
+		n42->n44;
+		
+	}
+	subgraph cluster_s45 {
+		color="black";label="car-A-close";margin="20";penwidth="5";style="rounded";
+		n47[fontname="Courier New",group="car-A-close",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[fontname="Courier New",group="car-A-close",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[color="#9dddea",fontname="Courier New",group="car-A-close",height="1.0",label="door close button in car A",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n47->n46;
+		n46->n48;
+		
+	}
+	subgraph cluster_s49 {
+		color="black";label="car-A-display";margin="20";penwidth="5";style="rounded";
+		n51[fontname="Courier New",group="car-A-display",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="car-A-display",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[color="#9dddea",fontname="Courier New",group="car-A-display",height="1.0",label="floor display in car A",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n51->n50;
+		n50->n52;
+		
+	}
+	subgraph cluster_s53 {
+		color="black";label="car-A-led-1";margin="20";penwidth="5";style="rounded";
+		n55[fontname="Courier New",group="car-A-led-1",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n56[fontname="Courier New",group="car-A-led-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[color="#9dddea",fontname="Courier New",group="car-A-led-1",height="1.0",label="LED of the car A button for floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n55->n54;
+		n54->n56;
+		
+	}
+	subgraph cluster_s57 {
+		color="black";label="car-A-led-2";margin="20";penwidth="5";style="rounded";
+		n59[fontname="Courier New",group="car-A-led-2",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[fontname="Courier New",group="car-A-led-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[color="#9dddea",fontname="Courier New",group="car-A-led-2",height="1.0",label="LED of the car A button for floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n59->n58;
+		n58->n60;
+		
+	}
+	subgraph cluster_s61 {
+		color="black";label="car-A-led-3";margin="20";penwidth="5";style="rounded";
+		n63[fontname="Courier New",group="car-A-led-3",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[fontname="Courier New",group="car-A-led-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[color="#9dddea",fontname="Courier New",group="car-A-led-3",height="1.0",label="LED of the car A button for floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n63->n62;
+		n62->n64;
+		
+	}
+	subgraph cluster_s65 {
+		color="black";label="car-A-led-4";margin="20";penwidth="5";style="rounded";
+		n67[fontname="Courier New",group="car-A-led-4",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n68[fontname="Courier New",group="car-A-led-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[color="#9dddea",fontname="Courier New",group="car-A-led-4",height="1.0",label="LED of the car A button for floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n67->n66;
+		n66->n68;
+		
+	}
+	subgraph cluster_s69 {
+		color="black";label="car-A-led-5";margin="20";penwidth="5";style="rounded";
+		n71[fontname="Courier New",group="car-A-led-5",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[fontname="Courier New",group="car-A-led-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[color="#9dddea",fontname="Courier New",group="car-A-led-5",height="1.0",label="LED of the car A button for floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n71->n70;
+		n70->n72;
+		
+	}
+	subgraph cluster_s73 {
+		color="black";label="car-A-led-6";margin="20";penwidth="5";style="rounded";
+		n75[fontname="Courier New",group="car-A-led-6",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[fontname="Courier New",group="car-A-led-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[color="#9dddea",fontname="Courier New",group="car-A-led-6",height="1.0",label="LED of the car A button for floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n75->n74;
+		n74->n76;
+		
+	}
+	subgraph cluster_s77 {
+		color="black";label="car-A-light";margin="20";penwidth="5";style="rounded";
+		n79[fontname="Courier New",group="car-A-light",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n80[fontname="Courier New",group="car-A-light",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[color="#9dddea",fontname="Courier New",group="car-A-light",height="1.0",label="ceiling light in car A",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n79->n78;
+		n78->n80;
+		
+	}
+	subgraph cluster_s81 {
+		color="black";label="car-A-open";margin="20";penwidth="5";style="rounded";
+		n83[fontname="Courier New",group="car-A-open",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[fontname="Courier New",group="car-A-open",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[color="#9dddea",fontname="Courier New",group="car-A-open",height="1.0",label="door open button in car A",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n83->n82;
+		n82->n84;
+		
+	}
+	subgraph cluster_s85 {
+		color="black";label="car-B";margin="20";penwidth="5";style="rounded";
+		n87[fontname="Courier New",group="car-B",height="1.0",label="clamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n88[fontname="Courier New",group="car-B",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n89[fontname="Courier New",group="car-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n90[fontname="Courier New",group="car-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n86[color="#9dddea",fontname="Courier New",group="car-B",height="1.0",label="car frame on the ropes: moves with them unless the safety gear grips the rails",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n87->n86;
+		n88->n86;
+		n86->n89;
+		n86->n90;
+		
+	}
+	subgraph cluster_s91 {
+		color="black";label="car-B-button-1";margin="20";penwidth="5";style="rounded";
+		n93[fontname="Courier New",group="car-B-button-1",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n94[fontname="Courier New",group="car-B-button-1",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n92[color="#9dddea",fontname="Courier New",group="car-B-button-1",height="1.0",label="car B button for floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n93->n92;
+		n92->n94;
+		
+	}
+	subgraph cluster_s95 {
+		color="black";label="car-B-button-2";margin="20";penwidth="5";style="rounded";
+		n97[fontname="Courier New",group="car-B-button-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n98[fontname="Courier New",group="car-B-button-2",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n96[color="#9dddea",fontname="Courier New",group="car-B-button-2",height="1.0",label="car B button for floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n97->n96;
+		n96->n98;
+		
+	}
+	subgraph cluster_s99 {
+		color="black";label="car-B-button-3";margin="20";penwidth="5";style="rounded";
+		n101[fontname="Courier New",group="car-B-button-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n102[fontname="Courier New",group="car-B-button-3",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n100[color="#9dddea",fontname="Courier New",group="car-B-button-3",height="1.0",label="car B button for floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n101->n100;
+		n100->n102;
+		
+	}
+	subgraph cluster_s103 {
+		color="black";label="car-B-button-4";margin="20";penwidth="5";style="rounded";
+		n105[fontname="Courier New",group="car-B-button-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n106[fontname="Courier New",group="car-B-button-4",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n104[color="#9dddea",fontname="Courier New",group="car-B-button-4",height="1.0",label="car B button for floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n105->n104;
+		n104->n106;
+		
+	}
+	subgraph cluster_s107 {
+		color="black";label="car-B-button-5";margin="20";penwidth="5";style="rounded";
+		n109[fontname="Courier New",group="car-B-button-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n110[fontname="Courier New",group="car-B-button-5",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n108[color="#9dddea",fontname="Courier New",group="car-B-button-5",height="1.0",label="car B button for floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n109->n108;
+		n108->n110;
+		
+	}
+	subgraph cluster_s111 {
+		color="black";label="car-B-button-6";margin="20";penwidth="5";style="rounded";
+		n113[fontname="Courier New",group="car-B-button-6",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n114[fontname="Courier New",group="car-B-button-6",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n112[color="#9dddea",fontname="Courier New",group="car-B-button-6",height="1.0",label="car B button for floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n113->n112;
+		n112->n114;
+		
+	}
+	subgraph cluster_s115 {
+		color="black";label="car-B-close";margin="20";penwidth="5";style="rounded";
+		n117[fontname="Courier New",group="car-B-close",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n118[fontname="Courier New",group="car-B-close",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n116[color="#9dddea",fontname="Courier New",group="car-B-close",height="1.0",label="door close button in car B",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n117->n116;
+		n116->n118;
+		
+	}
+	subgraph cluster_s119 {
+		color="black";label="car-B-display";margin="20";penwidth="5";style="rounded";
+		n121[fontname="Courier New",group="car-B-display",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n122[fontname="Courier New",group="car-B-display",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n120[color="#9dddea",fontname="Courier New",group="car-B-display",height="1.0",label="floor display in car B",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n121->n120;
+		n120->n122;
+		
+	}
+	subgraph cluster_s123 {
+		color="black";label="car-B-led-1";margin="20";penwidth="5";style="rounded";
+		n125[fontname="Courier New",group="car-B-led-1",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n126[fontname="Courier New",group="car-B-led-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n124[color="#9dddea",fontname="Courier New",group="car-B-led-1",height="1.0",label="LED of the car B button for floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n125->n124;
+		n124->n126;
+		
+	}
+	subgraph cluster_s127 {
+		color="black";label="car-B-led-2";margin="20";penwidth="5";style="rounded";
+		n129[fontname="Courier New",group="car-B-led-2",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n130[fontname="Courier New",group="car-B-led-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n128[color="#9dddea",fontname="Courier New",group="car-B-led-2",height="1.0",label="LED of the car B button for floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n129->n128;
+		n128->n130;
+		
+	}
+	subgraph cluster_s131 {
+		color="black";label="car-B-led-3";margin="20";penwidth="5";style="rounded";
+		n133[fontname="Courier New",group="car-B-led-3",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n134[fontname="Courier New",group="car-B-led-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n132[color="#9dddea",fontname="Courier New",group="car-B-led-3",height="1.0",label="LED of the car B button for floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n133->n132;
+		n132->n134;
+		
+	}
+	subgraph cluster_s135 {
+		color="black";label="car-B-led-4";margin="20";penwidth="5";style="rounded";
+		n137[fontname="Courier New",group="car-B-led-4",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n138[fontname="Courier New",group="car-B-led-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n136[color="#9dddea",fontname="Courier New",group="car-B-led-4",height="1.0",label="LED of the car B button for floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n137->n136;
+		n136->n138;
+		
+	}
+	subgraph cluster_s139 {
+		color="black";label="car-B-led-5";margin="20";penwidth="5";style="rounded";
+		n141[fontname="Courier New",group="car-B-led-5",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n142[fontname="Courier New",group="car-B-led-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n140[color="#9dddea",fontname="Courier New",group="car-B-led-5",height="1.0",label="LED of the car B button for floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n141->n140;
+		n140->n142;
+		
+	}
+	subgraph cluster_s143 {
+		color="black";label="car-B-led-6";margin="20";penwidth="5";style="rounded";
+		n145[fontname="Courier New",group="car-B-led-6",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n146[fontname="Courier New",group="car-B-led-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n144[color="#9dddea",fontname="Courier New",group="car-B-led-6",height="1.0",label="LED of the car B button for floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n145->n144;
+		n144->n146;
+		
+	}
+	subgraph cluster_s147 {
+		color="black";label="car-B-light";margin="20";penwidth="5";style="rounded";
+		n149[fontname="Courier New",group="car-B-light",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n150[fontname="Courier New",group="car-B-light",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n148[color="#9dddea",fontname="Courier New",group="car-B-light",height="1.0",label="ceiling light in car B",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n149->n148;
+		n148->n150;
+		
+	}
+	subgraph cluster_s151 {
+		color="black";label="car-B-open";margin="20";penwidth="5";style="rounded";
+		n153[fontname="Courier New",group="car-B-open",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n154[fontname="Courier New",group="car-B-open",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n152[color="#9dddea",fontname="Courier New",group="car-B-open",height="1.0",label="door open button in car B",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n153->n152;
+		n152->n154;
+		
+	}
+	subgraph cluster_s155 {
+		color="black";label="clock";margin="20";penwidth="5";style="rounded";
+		n157[fontname="Courier New",group="clock",height="1.0",label="pulse",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n158[fontname="Courier New",group="clock",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n159[fontname="Courier New",group="clock",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n156[color="#9dddea",fontname="Courier New",group="clock",height="1.0",label="one tick per run, fanned out to every part that keeps time",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n157->n156;
+		n156->n158;
+		n156->n159;
+		
+	}
+	subgraph cluster_s160 {
+		color="black";label="controller-A";margin="20";penwidth="5";style="rounded";
+		n162[fontname="Courier New",group="controller-A",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n163[fontname="Courier New",group="controller-A",height="1.0",label="beam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n164[fontname="Courier New",group="controller-A",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n165[fontname="Courier New",group="controller-A",height="1.0",label="car-call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n166[fontname="Courier New",group="controller-A",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n167[fontname="Courier New",group="controller-A",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n168[fontname="Courier New",group="controller-A",height="1.0",label="door-btn",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n169[fontname="Courier New",group="controller-A",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n170[fontname="Courier New",group="controller-A",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n171[fontname="Courier New",group="controller-A",height="1.0",label="display",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n172[fontname="Courier New",group="controller-A",height="1.0",label="door-cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n173[fontname="Courier New",group="controller-A",height="1.0",label="indicator",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n174[fontname="Courier New",group="controller-A",height="1.0",label="led1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n175[fontname="Courier New",group="controller-A",height="1.0",label="led2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n176[fontname="Courier New",group="controller-A",height="1.0",label="led3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n177[fontname="Courier New",group="controller-A",height="1.0",label="led4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n178[fontname="Courier New",group="controller-A",height="1.0",label="led5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n179[fontname="Courier New",group="controller-A",height="1.0",label="led6",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n180[fontname="Courier New",group="controller-A",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n181[fontname="Courier New",group="controller-A",height="1.0",label="light",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n182[fontname="Courier New",group="controller-A",height="1.0",label="ref",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n183[fontname="Courier New",group="controller-A",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n184[fontname="Courier New",group="controller-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n161[color="#9dddea",fontname="Courier New",group="controller-A",height="1.0",label="cab controller: serves its stops by driving the brake, the drive and the doors",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n162->n161;
+		n163->n161;
+		n164->n161;
+		n165->n161;
+		n166->n161;
+		n167->n161;
+		n168->n161;
+		n169->n161;
+		n170->n161;
+		n161->n171;
+		n161->n172;
+		n161->n173;
+		n161->n174;
+		n161->n175;
+		n161->n176;
+		n161->n177;
+		n161->n178;
+		n161->n179;
+		n161->n180;
+		n161->n181;
+		n161->n182;
+		n161->n183;
+		n161->n184;
+		
+	}
+	subgraph cluster_s185 {
+		color="black";label="controller-B";margin="20";penwidth="5";style="rounded";
+		n187[fontname="Courier New",group="controller-B",height="1.0",label="assign",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n188[fontname="Courier New",group="controller-B",height="1.0",label="beam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n189[fontname="Courier New",group="controller-B",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n190[fontname="Courier New",group="controller-B",height="1.0",label="car-call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n191[fontname="Courier New",group="controller-B",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n192[fontname="Courier New",group="controller-B",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n193[fontname="Courier New",group="controller-B",height="1.0",label="door-btn",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n194[fontname="Courier New",group="controller-B",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n195[fontname="Courier New",group="controller-B",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n196[fontname="Courier New",group="controller-B",height="1.0",label="display",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n197[fontname="Courier New",group="controller-B",height="1.0",label="door-cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n198[fontname="Courier New",group="controller-B",height="1.0",label="indicator",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n199[fontname="Courier New",group="controller-B",height="1.0",label="led1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n200[fontname="Courier New",group="controller-B",height="1.0",label="led2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n201[fontname="Courier New",group="controller-B",height="1.0",label="led3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n202[fontname="Courier New",group="controller-B",height="1.0",label="led4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n203[fontname="Courier New",group="controller-B",height="1.0",label="led5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n204[fontname="Courier New",group="controller-B",height="1.0",label="led6",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n205[fontname="Courier New",group="controller-B",height="1.0",label="lift",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n206[fontname="Courier New",group="controller-B",height="1.0",label="light",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n207[fontname="Courier New",group="controller-B",height="1.0",label="ref",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n208[fontname="Courier New",group="controller-B",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n209[fontname="Courier New",group="controller-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n186[color="#9dddea",fontname="Courier New",group="controller-B",height="1.0",label="cab controller: serves its stops by driving the brake, the drive and the doors",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n187->n186;
+		n188->n186;
+		n189->n186;
+		n190->n186;
+		n191->n186;
+		n192->n186;
+		n193->n186;
+		n194->n186;
+		n195->n186;
+		n186->n196;
+		n186->n197;
+		n186->n198;
+		n186->n199;
+		n186->n200;
+		n186->n201;
+		n186->n202;
+		n186->n203;
+		n186->n204;
+		n186->n205;
+		n186->n206;
+		n186->n207;
+		n186->n208;
+		n186->n209;
+		
+	}
+	subgraph cluster_s210 {
+		color="black";label="counterweight-A";margin="20";penwidth="5";style="rounded";
+		n212[fontname="Courier New",group="counterweight-A",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n213[fontname="Courier New",group="counterweight-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n211[color="#9dddea",fontname="Courier New",group="counterweight-A",height="1.0",label="counterweight: the other end of the ropes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n212->n211;
+		n211->n213;
+		
+	}
+	subgraph cluster_s214 {
+		color="black";label="counterweight-B";margin="20";penwidth="5";style="rounded";
+		n216[fontname="Courier New",group="counterweight-B",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n217[fontname="Courier New",group="counterweight-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n215[color="#9dddea",fontname="Courier New",group="counterweight-B",height="1.0",label="counterweight: the other end of the ropes",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n216->n215;
+		n215->n217;
+		
+	}
+	subgraph cluster_s218 {
 		color="black";label="dispatcher";margin="20";penwidth="5";style="rounded";
-		n25[fontname="Courier New",group="dispatcher",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n26[fontname="Courier New",group="dispatcher",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n27[fontname="Courier New",group="dispatcher",height="1.0",label="assign-A",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n28[fontname="Courier New",group="dispatcher",height="1.0",label="assign-B",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n29[fontname="Courier New",group="dispatcher",height="1.0",label="served1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n30[fontname="Courier New",group="dispatcher",height="1.0",label="served2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n31[fontname="Courier New",group="dispatcher",height="1.0",label="served3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n32[fontname="Courier New",group="dispatcher",height="1.0",label="served4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n33[fontname="Courier New",group="dispatcher",height="1.0",label="served5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n34[fontname="Courier New",group="dispatcher",height="1.0",label="served6",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n24[color="#9dddea",fontname="Courier New",group="dispatcher",height="1.0",label="assigns each hall call to the cab that can get there first",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n25->n24;
-		n26->n24;
-		n24->n27;
-		n24->n28;
-		n24->n29;
-		n24->n30;
-		n24->n31;
-		n24->n32;
-		n24->n33;
-		n24->n34;
+		n220[fontname="Courier New",group="dispatcher",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n221[fontname="Courier New",group="dispatcher",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n222[fontname="Courier New",group="dispatcher",height="1.0",label="assign-A",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n223[fontname="Courier New",group="dispatcher",height="1.0",label="assign-B",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n224[fontname="Courier New",group="dispatcher",height="1.0",label="led-down2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n225[fontname="Courier New",group="dispatcher",height="1.0",label="led-down3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n226[fontname="Courier New",group="dispatcher",height="1.0",label="led-down4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n227[fontname="Courier New",group="dispatcher",height="1.0",label="led-down5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n228[fontname="Courier New",group="dispatcher",height="1.0",label="led-down6",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n229[fontname="Courier New",group="dispatcher",height="1.0",label="led-up1",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n230[fontname="Courier New",group="dispatcher",height="1.0",label="led-up2",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n231[fontname="Courier New",group="dispatcher",height="1.0",label="led-up3",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n232[fontname="Courier New",group="dispatcher",height="1.0",label="led-up4",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n233[fontname="Courier New",group="dispatcher",height="1.0",label="led-up5",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n234[fontname="Courier New",group="dispatcher",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n219[color="#9dddea",fontname="Courier New",group="dispatcher",height="1.0",label="group controller: assigns each hall call to the cab that can get there first",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n220->n219;
+		n221->n219;
+		n219->n222;
+		n219->n223;
+		n219->n224;
+		n219->n225;
+		n219->n226;
+		n219->n227;
+		n219->n228;
+		n219->n229;
+		n219->n230;
+		n219->n231;
+		n219->n232;
+		n219->n233;
+		n219->n234;
 		
 	}
-	subgraph cluster_s35 {
-		color="black";label="display";margin="20";penwidth="5";style="rounded";
-		n37[fontname="Courier New",group="display",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n38[fontname="Courier New",group="display",height="1.0",label="status",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n39[fontname="Courier New",group="display",height="1.0",label="view",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n36[color="#9dddea",fontname="Courier New",group="display",height="1.0",label="collects cab and lamp state into one view for the UI",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n37->n36;
-		n38->n36;
-		n36->n39;
+	subgraph cluster_s235 {
+		color="black";label="door-lock-A-1";margin="20";penwidth="5";style="rounded";
+		n237[fontname="Courier New",group="door-lock-A-1",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n238[fontname="Courier New",group="door-lock-A-1",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n239[fontname="Courier New",group="door-lock-A-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n236[color="#9dddea",fontname="Courier New",group="door-lock-A-1",height="1.0",label="interlock of the shaft A landing door on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n237->n236;
+		n236->n238;
+		n236->n239;
 		
 	}
-	subgraph cluster_s40 {
-		color="black";label="door-A";margin="20";penwidth="5";style="rounded";
-		n42[fontname="Courier New",group="door-A",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n43[fontname="Courier New",group="door-A",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n41[color="#9dddea",fontname="Courier New",group="door-A",height="1.0",label="cab door: opens on command, closes by itself",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n42->n41;
-		n41->n43;
+	subgraph cluster_s240 {
+		color="black";label="door-lock-A-2";margin="20";penwidth="5";style="rounded";
+		n242[fontname="Courier New",group="door-lock-A-2",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n243[fontname="Courier New",group="door-lock-A-2",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n244[fontname="Courier New",group="door-lock-A-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n241[color="#9dddea",fontname="Courier New",group="door-lock-A-2",height="1.0",label="interlock of the shaft A landing door on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n242->n241;
+		n241->n243;
+		n241->n244;
 		
 	}
-	subgraph cluster_s44 {
-		color="black";label="door-B";margin="20";penwidth="5";style="rounded";
-		n46[fontname="Courier New",group="door-B",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n47[fontname="Courier New",group="door-B",height="1.0",label="state",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n45[color="#9dddea",fontname="Courier New",group="door-B",height="1.0",label="cab door: opens on command, closes by itself",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n46->n45;
-		n45->n47;
+	subgraph cluster_s245 {
+		color="black";label="door-lock-A-3";margin="20";penwidth="5";style="rounded";
+		n247[fontname="Courier New",group="door-lock-A-3",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n248[fontname="Courier New",group="door-lock-A-3",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n249[fontname="Courier New",group="door-lock-A-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n246[color="#9dddea",fontname="Courier New",group="door-lock-A-3",height="1.0",label="interlock of the shaft A landing door on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n247->n246;
+		n246->n248;
+		n246->n249;
 		
 	}
-	subgraph cluster_s48 {
-		color="black";label="floor-1";margin="20";penwidth="5";style="rounded";
-		n50[fontname="Courier New",group="floor-1",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n51[fontname="Courier New",group="floor-1",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n52[fontname="Courier New",group="floor-1",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n53[fontname="Courier New",group="floor-1",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n49[color="#9dddea",fontname="Courier New",group="floor-1",height="1.0",label="hall call button and lamp on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n50->n49;
-		n51->n49;
-		n49->n52;
-		n49->n53;
+	subgraph cluster_s250 {
+		color="black";label="door-lock-A-4";margin="20";penwidth="5";style="rounded";
+		n252[fontname="Courier New",group="door-lock-A-4",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n253[fontname="Courier New",group="door-lock-A-4",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n254[fontname="Courier New",group="door-lock-A-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n251[color="#9dddea",fontname="Courier New",group="door-lock-A-4",height="1.0",label="interlock of the shaft A landing door on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n252->n251;
+		n251->n253;
+		n251->n254;
 		
 	}
-	subgraph cluster_s54 {
-		color="black";label="floor-2";margin="20";penwidth="5";style="rounded";
-		n56[fontname="Courier New",group="floor-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n57[fontname="Courier New",group="floor-2",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n58[fontname="Courier New",group="floor-2",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n59[fontname="Courier New",group="floor-2",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n55[color="#9dddea",fontname="Courier New",group="floor-2",height="1.0",label="hall call button and lamp on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n56->n55;
-		n57->n55;
-		n55->n58;
-		n55->n59;
+	subgraph cluster_s255 {
+		color="black";label="door-lock-A-5";margin="20";penwidth="5";style="rounded";
+		n257[fontname="Courier New",group="door-lock-A-5",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n258[fontname="Courier New",group="door-lock-A-5",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n259[fontname="Courier New",group="door-lock-A-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n256[color="#9dddea",fontname="Courier New",group="door-lock-A-5",height="1.0",label="interlock of the shaft A landing door on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n257->n256;
+		n256->n258;
+		n256->n259;
 		
 	}
-	subgraph cluster_s60 {
-		color="black";label="floor-3";margin="20";penwidth="5";style="rounded";
-		n62[fontname="Courier New",group="floor-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n63[fontname="Courier New",group="floor-3",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n64[fontname="Courier New",group="floor-3",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n65[fontname="Courier New",group="floor-3",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n61[color="#9dddea",fontname="Courier New",group="floor-3",height="1.0",label="hall call button and lamp on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n62->n61;
-		n63->n61;
-		n61->n64;
-		n61->n65;
+	subgraph cluster_s260 {
+		color="black";label="door-lock-A-6";margin="20";penwidth="5";style="rounded";
+		n262[fontname="Courier New",group="door-lock-A-6",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n263[fontname="Courier New",group="door-lock-A-6",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n264[fontname="Courier New",group="door-lock-A-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n261[color="#9dddea",fontname="Courier New",group="door-lock-A-6",height="1.0",label="interlock of the shaft A landing door on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n262->n261;
+		n261->n263;
+		n261->n264;
 		
 	}
-	subgraph cluster_s66 {
-		color="black";label="floor-4";margin="20";penwidth="5";style="rounded";
-		n68[fontname="Courier New",group="floor-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n69[fontname="Courier New",group="floor-4",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n70[fontname="Courier New",group="floor-4",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n71[fontname="Courier New",group="floor-4",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n67[color="#9dddea",fontname="Courier New",group="floor-4",height="1.0",label="hall call button and lamp on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n68->n67;
-		n69->n67;
-		n67->n70;
-		n67->n71;
+	subgraph cluster_s265 {
+		color="black";label="door-lock-B-1";margin="20";penwidth="5";style="rounded";
+		n267[fontname="Courier New",group="door-lock-B-1",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n268[fontname="Courier New",group="door-lock-B-1",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n269[fontname="Courier New",group="door-lock-B-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n266[color="#9dddea",fontname="Courier New",group="door-lock-B-1",height="1.0",label="interlock of the shaft B landing door on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n267->n266;
+		n266->n268;
+		n266->n269;
 		
 	}
-	subgraph cluster_s72 {
-		color="black";label="floor-5";margin="20";penwidth="5";style="rounded";
-		n74[fontname="Courier New",group="floor-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n75[fontname="Courier New",group="floor-5",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n76[fontname="Courier New",group="floor-5",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n77[fontname="Courier New",group="floor-5",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n73[color="#9dddea",fontname="Courier New",group="floor-5",height="1.0",label="hall call button and lamp on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n74->n73;
-		n75->n73;
-		n73->n76;
-		n73->n77;
+	subgraph cluster_s270 {
+		color="black";label="door-lock-B-2";margin="20";penwidth="5";style="rounded";
+		n272[fontname="Courier New",group="door-lock-B-2",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n273[fontname="Courier New",group="door-lock-B-2",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n274[fontname="Courier New",group="door-lock-B-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n271[color="#9dddea",fontname="Courier New",group="door-lock-B-2",height="1.0",label="interlock of the shaft B landing door on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n272->n271;
+		n271->n273;
+		n271->n274;
 		
 	}
-	subgraph cluster_s78 {
-		color="black";label="floor-6";margin="20";penwidth="5";style="rounded";
-		n80[fontname="Courier New",group="floor-6",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n81[fontname="Courier New",group="floor-6",height="1.0",label="served",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n82[fontname="Courier New",group="floor-6",height="1.0",label="call",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n83[fontname="Courier New",group="floor-6",height="1.0",label="lamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n79[color="#9dddea",fontname="Courier New",group="floor-6",height="1.0",label="hall call button and lamp on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n80->n79;
-		n81->n79;
-		n79->n82;
-		n79->n83;
+	subgraph cluster_s275 {
+		color="black";label="door-lock-B-3";margin="20";penwidth="5";style="rounded";
+		n277[fontname="Courier New",group="door-lock-B-3",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n278[fontname="Courier New",group="door-lock-B-3",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n279[fontname="Courier New",group="door-lock-B-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n276[color="#9dddea",fontname="Courier New",group="door-lock-B-3",height="1.0",label="interlock of the shaft B landing door on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n277->n276;
+		n276->n278;
+		n276->n279;
 		
 	}
-	subgraph cluster_s84 {
+	subgraph cluster_s280 {
+		color="black";label="door-lock-B-4";margin="20";penwidth="5";style="rounded";
+		n282[fontname="Courier New",group="door-lock-B-4",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n283[fontname="Courier New",group="door-lock-B-4",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n284[fontname="Courier New",group="door-lock-B-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n281[color="#9dddea",fontname="Courier New",group="door-lock-B-4",height="1.0",label="interlock of the shaft B landing door on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n282->n281;
+		n281->n283;
+		n281->n284;
+		
+	}
+	subgraph cluster_s285 {
+		color="black";label="door-lock-B-5";margin="20";penwidth="5";style="rounded";
+		n287[fontname="Courier New",group="door-lock-B-5",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n288[fontname="Courier New",group="door-lock-B-5",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n289[fontname="Courier New",group="door-lock-B-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n286[color="#9dddea",fontname="Courier New",group="door-lock-B-5",height="1.0",label="interlock of the shaft B landing door on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n287->n286;
+		n286->n288;
+		n286->n289;
+		
+	}
+	subgraph cluster_s290 {
+		color="black";label="door-lock-B-6";margin="20";penwidth="5";style="rounded";
+		n292[fontname="Courier New",group="door-lock-B-6",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n293[fontname="Courier New",group="door-lock-B-6",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n294[fontname="Courier New",group="door-lock-B-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n291[color="#9dddea",fontname="Courier New",group="door-lock-B-6",height="1.0",label="interlock of the shaft B landing door on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n292->n291;
+		n291->n293;
+		n291->n294;
+		
+	}
+	subgraph cluster_s295 {
+		color="black";label="door-operator-A";margin="20";penwidth="5";style="rounded";
+		n297[fontname="Courier New",group="door-operator-A",height="1.0",label="door-cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n298[fontname="Courier New",group="door-operator-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n299[fontname="Courier New",group="door-operator-A",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n300[fontname="Courier New",group="door-operator-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n296[color="#9dddea",fontname="Courier New",group="door-operator-A",height="1.0",label="car door operator: slides the door open or shut, with the car door contact",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n297->n296;
+		n296->n298;
+		n296->n299;
+		n296->n300;
+		
+	}
+	subgraph cluster_s301 {
+		color="black";label="door-operator-B";margin="20";penwidth="5";style="rounded";
+		n303[fontname="Courier New",group="door-operator-B",height="1.0",label="door-cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n304[fontname="Courier New",group="door-operator-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n305[fontname="Courier New",group="door-operator-B",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n306[fontname="Courier New",group="door-operator-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n302[color="#9dddea",fontname="Courier New",group="door-operator-B",height="1.0",label="car door operator: slides the door open or shut, with the car door contact",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n303->n302;
+		n302->n304;
+		n302->n305;
+		n302->n306;
+		
+	}
+	subgraph cluster_s307 {
+		color="black";label="drive-A";margin="20";penwidth="5";style="rounded";
+		n309[fontname="Courier New",group="drive-A",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n310[fontname="Courier New",group="drive-A",height="1.0",label="feedback",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n311[fontname="Courier New",group="drive-A",height="1.0",label="ref",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n312[fontname="Courier New",group="drive-A",height="1.0",label="test",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n313[fontname="Courier New",group="drive-A",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n314[fontname="Courier New",group="drive-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n308[color="#9dddea",fontname="Courier New",group="drive-A",height="1.0",label="inverter: ramps the motor to the requested speed, cuts power when the safety chain opens",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n309->n308;
+		n310->n308;
+		n311->n308;
+		n312->n308;
+		n308->n313;
+		n308->n314;
+		
+	}
+	subgraph cluster_s315 {
+		color="black";label="drive-B";margin="20";penwidth="5";style="rounded";
+		n317[fontname="Courier New",group="drive-B",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n318[fontname="Courier New",group="drive-B",height="1.0",label="feedback",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n319[fontname="Courier New",group="drive-B",height="1.0",label="ref",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n320[fontname="Courier New",group="drive-B",height="1.0",label="test",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n321[fontname="Courier New",group="drive-B",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n322[fontname="Courier New",group="drive-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n316[color="#9dddea",fontname="Courier New",group="drive-B",height="1.0",label="inverter: ramps the motor to the requested speed, cuts power when the safety chain opens",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n317->n316;
+		n318->n316;
+		n319->n316;
+		n320->n316;
+		n316->n321;
+		n316->n322;
+		
+	}
+	subgraph cluster_s323 {
+		color="black";label="encoder-A";margin="20";penwidth="5";style="rounded";
+		n325[fontname="Courier New",group="encoder-A",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n326[fontname="Courier New",group="encoder-A",height="1.0",label="speed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n327[fontname="Courier New",group="encoder-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n324[color="#9dddea",fontname="Courier New",group="encoder-A",height="1.0",label="motor encoder: measures the real shaft speed for the drive",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n325->n324;
+		n324->n326;
+		n324->n327;
+		
+	}
+	subgraph cluster_s328 {
+		color="black";label="encoder-B";margin="20";penwidth="5";style="rounded";
+		n330[fontname="Courier New",group="encoder-B",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n331[fontname="Courier New",group="encoder-B",height="1.0",label="speed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n332[fontname="Courier New",group="encoder-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n329[color="#9dddea",fontname="Courier New",group="encoder-B",height="1.0",label="motor encoder: measures the real shaft speed for the drive",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n330->n329;
+		n329->n331;
+		n329->n332;
+		
+	}
+	subgraph cluster_s333 {
+		color="black";label="governor-A";margin="20";penwidth="5";style="rounded";
+		n335[fontname="Courier New",group="governor-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n336[fontname="Courier New",group="governor-A",height="1.0",label="reset",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n337[fontname="Courier New",group="governor-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n338[fontname="Courier New",group="governor-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n334[color="#9dddea",fontname="Courier New",group="governor-A",height="1.0",label="overspeed governor: trips the safety chain and the safety gear past the trip speed",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n335->n334;
+		n336->n334;
+		n334->n337;
+		n334->n338;
+		
+	}
+	subgraph cluster_s339 {
+		color="black";label="governor-B";margin="20";penwidth="5";style="rounded";
+		n341[fontname="Courier New",group="governor-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n342[fontname="Courier New",group="governor-B",height="1.0",label="reset",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n343[fontname="Courier New",group="governor-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n344[fontname="Courier New",group="governor-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n340[color="#9dddea",fontname="Courier New",group="governor-B",height="1.0",label="overspeed governor: trips the safety chain and the safety gear past the trip speed",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n341->n340;
+		n342->n340;
+		n340->n343;
+		n340->n344;
+		
+	}
+	subgraph cluster_s345 {
+		color="black";label="hall-down-2";margin="20";penwidth="5";style="rounded";
+		n347[fontname="Courier New",group="hall-down-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n348[fontname="Courier New",group="hall-down-2",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n346[color="#9dddea",fontname="Courier New",group="hall-down-2",height="1.0",label="hall call button down on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n347->n346;
+		n346->n348;
+		
+	}
+	subgraph cluster_s349 {
+		color="black";label="hall-down-3";margin="20";penwidth="5";style="rounded";
+		n351[fontname="Courier New",group="hall-down-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n352[fontname="Courier New",group="hall-down-3",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n350[color="#9dddea",fontname="Courier New",group="hall-down-3",height="1.0",label="hall call button down on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n351->n350;
+		n350->n352;
+		
+	}
+	subgraph cluster_s353 {
+		color="black";label="hall-down-4";margin="20";penwidth="5";style="rounded";
+		n355[fontname="Courier New",group="hall-down-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n356[fontname="Courier New",group="hall-down-4",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n354[color="#9dddea",fontname="Courier New",group="hall-down-4",height="1.0",label="hall call button down on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n355->n354;
+		n354->n356;
+		
+	}
+	subgraph cluster_s357 {
+		color="black";label="hall-down-5";margin="20";penwidth="5";style="rounded";
+		n359[fontname="Courier New",group="hall-down-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n360[fontname="Courier New",group="hall-down-5",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n358[color="#9dddea",fontname="Courier New",group="hall-down-5",height="1.0",label="hall call button down on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n359->n358;
+		n358->n360;
+		
+	}
+	subgraph cluster_s361 {
+		color="black";label="hall-down-6";margin="20";penwidth="5";style="rounded";
+		n363[fontname="Courier New",group="hall-down-6",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n364[fontname="Courier New",group="hall-down-6",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n362[color="#9dddea",fontname="Courier New",group="hall-down-6",height="1.0",label="hall call button down on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n363->n362;
+		n362->n364;
+		
+	}
+	subgraph cluster_s365 {
+		color="black";label="hall-down-led-2";margin="20";penwidth="5";style="rounded";
+		n367[fontname="Courier New",group="hall-down-led-2",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n368[fontname="Courier New",group="hall-down-led-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n366[color="#9dddea",fontname="Courier New",group="hall-down-led-2",height="1.0",label="LED of the down button on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n367->n366;
+		n366->n368;
+		
+	}
+	subgraph cluster_s369 {
+		color="black";label="hall-down-led-3";margin="20";penwidth="5";style="rounded";
+		n371[fontname="Courier New",group="hall-down-led-3",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n372[fontname="Courier New",group="hall-down-led-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n370[color="#9dddea",fontname="Courier New",group="hall-down-led-3",height="1.0",label="LED of the down button on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n371->n370;
+		n370->n372;
+		
+	}
+	subgraph cluster_s373 {
+		color="black";label="hall-down-led-4";margin="20";penwidth="5";style="rounded";
+		n375[fontname="Courier New",group="hall-down-led-4",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n376[fontname="Courier New",group="hall-down-led-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n374[color="#9dddea",fontname="Courier New",group="hall-down-led-4",height="1.0",label="LED of the down button on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n375->n374;
+		n374->n376;
+		
+	}
+	subgraph cluster_s377 {
+		color="black";label="hall-down-led-5";margin="20";penwidth="5";style="rounded";
+		n379[fontname="Courier New",group="hall-down-led-5",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n380[fontname="Courier New",group="hall-down-led-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n378[color="#9dddea",fontname="Courier New",group="hall-down-led-5",height="1.0",label="LED of the down button on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n379->n378;
+		n378->n380;
+		
+	}
+	subgraph cluster_s381 {
+		color="black";label="hall-down-led-6";margin="20";penwidth="5";style="rounded";
+		n383[fontname="Courier New",group="hall-down-led-6",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n384[fontname="Courier New",group="hall-down-led-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n382[color="#9dddea",fontname="Courier New",group="hall-down-led-6",height="1.0",label="LED of the down button on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n383->n382;
+		n382->n384;
+		
+	}
+	subgraph cluster_s385 {
+		color="black";label="hall-up-1";margin="20";penwidth="5";style="rounded";
+		n387[fontname="Courier New",group="hall-up-1",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n388[fontname="Courier New",group="hall-up-1",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n386[color="#9dddea",fontname="Courier New",group="hall-up-1",height="1.0",label="hall call button up on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n387->n386;
+		n386->n388;
+		
+	}
+	subgraph cluster_s389 {
+		color="black";label="hall-up-2";margin="20";penwidth="5";style="rounded";
+		n391[fontname="Courier New",group="hall-up-2",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n392[fontname="Courier New",group="hall-up-2",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n390[color="#9dddea",fontname="Courier New",group="hall-up-2",height="1.0",label="hall call button up on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n391->n390;
+		n390->n392;
+		
+	}
+	subgraph cluster_s393 {
+		color="black";label="hall-up-3";margin="20";penwidth="5";style="rounded";
+		n395[fontname="Courier New",group="hall-up-3",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n396[fontname="Courier New",group="hall-up-3",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n394[color="#9dddea",fontname="Courier New",group="hall-up-3",height="1.0",label="hall call button up on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n395->n394;
+		n394->n396;
+		
+	}
+	subgraph cluster_s397 {
+		color="black";label="hall-up-4";margin="20";penwidth="5";style="rounded";
+		n399[fontname="Courier New",group="hall-up-4",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n400[fontname="Courier New",group="hall-up-4",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n398[color="#9dddea",fontname="Courier New",group="hall-up-4",height="1.0",label="hall call button up on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n399->n398;
+		n398->n400;
+		
+	}
+	subgraph cluster_s401 {
+		color="black";label="hall-up-5";margin="20";penwidth="5";style="rounded";
+		n403[fontname="Courier New",group="hall-up-5",height="1.0",label="press",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n404[fontname="Courier New",group="hall-up-5",height="1.0",label="pressed",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n402[color="#9dddea",fontname="Courier New",group="hall-up-5",height="1.0",label="hall call button up on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n403->n402;
+		n402->n404;
+		
+	}
+	subgraph cluster_s405 {
+		color="black";label="hall-up-led-1";margin="20";penwidth="5";style="rounded";
+		n407[fontname="Courier New",group="hall-up-led-1",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n408[fontname="Courier New",group="hall-up-led-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n406[color="#9dddea",fontname="Courier New",group="hall-up-led-1",height="1.0",label="LED of the up button on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n407->n406;
+		n406->n408;
+		
+	}
+	subgraph cluster_s409 {
+		color="black";label="hall-up-led-2";margin="20";penwidth="5";style="rounded";
+		n411[fontname="Courier New",group="hall-up-led-2",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n412[fontname="Courier New",group="hall-up-led-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n410[color="#9dddea",fontname="Courier New",group="hall-up-led-2",height="1.0",label="LED of the up button on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n411->n410;
+		n410->n412;
+		
+	}
+	subgraph cluster_s413 {
+		color="black";label="hall-up-led-3";margin="20";penwidth="5";style="rounded";
+		n415[fontname="Courier New",group="hall-up-led-3",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n416[fontname="Courier New",group="hall-up-led-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n414[color="#9dddea",fontname="Courier New",group="hall-up-led-3",height="1.0",label="LED of the up button on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n415->n414;
+		n414->n416;
+		
+	}
+	subgraph cluster_s417 {
+		color="black";label="hall-up-led-4";margin="20";penwidth="5";style="rounded";
+		n419[fontname="Courier New",group="hall-up-led-4",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n420[fontname="Courier New",group="hall-up-led-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n418[color="#9dddea",fontname="Courier New",group="hall-up-led-4",height="1.0",label="LED of the up button on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n419->n418;
+		n418->n420;
+		
+	}
+	subgraph cluster_s421 {
+		color="black";label="hall-up-led-5";margin="20";penwidth="5";style="rounded";
+		n423[fontname="Courier New",group="hall-up-led-5",height="1.0",label="set",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n424[fontname="Courier New",group="hall-up-led-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n422[color="#9dddea",fontname="Courier New",group="hall-up-led-5",height="1.0",label="LED of the up button on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n423->n422;
+		n422->n424;
+		
+	}
+	subgraph cluster_s425 {
+		color="black";label="landing-door-A-1";margin="20";penwidth="5";style="rounded";
+		n427[fontname="Courier New",group="landing-door-A-1",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n428[fontname="Courier New",group="landing-door-A-1",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n429[fontname="Courier New",group="landing-door-A-1",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n430[fontname="Courier New",group="landing-door-A-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n426[color="#9dddea",fontname="Courier New",group="landing-door-A-1",height="1.0",label="landing door of shaft A on floor 1, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n427->n426;
+		n428->n426;
+		n426->n429;
+		n426->n430;
+		
+	}
+	subgraph cluster_s431 {
+		color="black";label="landing-door-A-2";margin="20";penwidth="5";style="rounded";
+		n433[fontname="Courier New",group="landing-door-A-2",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n434[fontname="Courier New",group="landing-door-A-2",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n435[fontname="Courier New",group="landing-door-A-2",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n436[fontname="Courier New",group="landing-door-A-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n432[color="#9dddea",fontname="Courier New",group="landing-door-A-2",height="1.0",label="landing door of shaft A on floor 2, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n433->n432;
+		n434->n432;
+		n432->n435;
+		n432->n436;
+		
+	}
+	subgraph cluster_s437 {
+		color="black";label="landing-door-A-3";margin="20";penwidth="5";style="rounded";
+		n439[fontname="Courier New",group="landing-door-A-3",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n440[fontname="Courier New",group="landing-door-A-3",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n441[fontname="Courier New",group="landing-door-A-3",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n442[fontname="Courier New",group="landing-door-A-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n438[color="#9dddea",fontname="Courier New",group="landing-door-A-3",height="1.0",label="landing door of shaft A on floor 3, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n439->n438;
+		n440->n438;
+		n438->n441;
+		n438->n442;
+		
+	}
+	subgraph cluster_s443 {
+		color="black";label="landing-door-A-4";margin="20";penwidth="5";style="rounded";
+		n445[fontname="Courier New",group="landing-door-A-4",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n446[fontname="Courier New",group="landing-door-A-4",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n447[fontname="Courier New",group="landing-door-A-4",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n448[fontname="Courier New",group="landing-door-A-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n444[color="#9dddea",fontname="Courier New",group="landing-door-A-4",height="1.0",label="landing door of shaft A on floor 4, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n445->n444;
+		n446->n444;
+		n444->n447;
+		n444->n448;
+		
+	}
+	subgraph cluster_s449 {
+		color="black";label="landing-door-A-5";margin="20";penwidth="5";style="rounded";
+		n451[fontname="Courier New",group="landing-door-A-5",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n452[fontname="Courier New",group="landing-door-A-5",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n453[fontname="Courier New",group="landing-door-A-5",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n454[fontname="Courier New",group="landing-door-A-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n450[color="#9dddea",fontname="Courier New",group="landing-door-A-5",height="1.0",label="landing door of shaft A on floor 5, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n451->n450;
+		n452->n450;
+		n450->n453;
+		n450->n454;
+		
+	}
+	subgraph cluster_s455 {
+		color="black";label="landing-door-A-6";margin="20";penwidth="5";style="rounded";
+		n457[fontname="Courier New",group="landing-door-A-6",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n458[fontname="Courier New",group="landing-door-A-6",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n459[fontname="Courier New",group="landing-door-A-6",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n460[fontname="Courier New",group="landing-door-A-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n456[color="#9dddea",fontname="Courier New",group="landing-door-A-6",height="1.0",label="landing door of shaft A on floor 6, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n457->n456;
+		n458->n456;
+		n456->n459;
+		n456->n460;
+		
+	}
+	subgraph cluster_s461 {
+		color="black";label="landing-door-B-1";margin="20";penwidth="5";style="rounded";
+		n463[fontname="Courier New",group="landing-door-B-1",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n464[fontname="Courier New",group="landing-door-B-1",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n465[fontname="Courier New",group="landing-door-B-1",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n466[fontname="Courier New",group="landing-door-B-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n462[color="#9dddea",fontname="Courier New",group="landing-door-B-1",height="1.0",label="landing door of shaft B on floor 1, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n463->n462;
+		n464->n462;
+		n462->n465;
+		n462->n466;
+		
+	}
+	subgraph cluster_s467 {
+		color="black";label="landing-door-B-2";margin="20";penwidth="5";style="rounded";
+		n469[fontname="Courier New",group="landing-door-B-2",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n470[fontname="Courier New",group="landing-door-B-2",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n471[fontname="Courier New",group="landing-door-B-2",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n472[fontname="Courier New",group="landing-door-B-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n468[color="#9dddea",fontname="Courier New",group="landing-door-B-2",height="1.0",label="landing door of shaft B on floor 2, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n469->n468;
+		n470->n468;
+		n468->n471;
+		n468->n472;
+		
+	}
+	subgraph cluster_s473 {
+		color="black";label="landing-door-B-3";margin="20";penwidth="5";style="rounded";
+		n475[fontname="Courier New",group="landing-door-B-3",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n476[fontname="Courier New",group="landing-door-B-3",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n477[fontname="Courier New",group="landing-door-B-3",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n478[fontname="Courier New",group="landing-door-B-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n474[color="#9dddea",fontname="Courier New",group="landing-door-B-3",height="1.0",label="landing door of shaft B on floor 3, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n475->n474;
+		n476->n474;
+		n474->n477;
+		n474->n478;
+		
+	}
+	subgraph cluster_s479 {
+		color="black";label="landing-door-B-4";margin="20";penwidth="5";style="rounded";
+		n481[fontname="Courier New",group="landing-door-B-4",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n482[fontname="Courier New",group="landing-door-B-4",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n483[fontname="Courier New",group="landing-door-B-4",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n484[fontname="Courier New",group="landing-door-B-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n480[color="#9dddea",fontname="Courier New",group="landing-door-B-4",height="1.0",label="landing door of shaft B on floor 4, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n481->n480;
+		n482->n480;
+		n480->n483;
+		n480->n484;
+		
+	}
+	subgraph cluster_s485 {
+		color="black";label="landing-door-B-5";margin="20";penwidth="5";style="rounded";
+		n487[fontname="Courier New",group="landing-door-B-5",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n488[fontname="Courier New",group="landing-door-B-5",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n489[fontname="Courier New",group="landing-door-B-5",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n490[fontname="Courier New",group="landing-door-B-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n486[color="#9dddea",fontname="Courier New",group="landing-door-B-5",height="1.0",label="landing door of shaft B on floor 5, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n487->n486;
+		n488->n486;
+		n486->n489;
+		n486->n490;
+		
+	}
+	subgraph cluster_s491 {
+		color="black";label="landing-door-B-6";margin="20";penwidth="5";style="rounded";
+		n493[fontname="Courier New",group="landing-door-B-6",height="1.0",label="door",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n494[fontname="Courier New",group="landing-door-B-6",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n495[fontname="Courier New",group="landing-door-B-6",height="1.0",label="panel",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n496[fontname="Courier New",group="landing-door-B-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n492[color="#9dddea",fontname="Courier New",group="landing-door-B-6",height="1.0",label="landing door of shaft B on floor 6, moved by the car door",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n493->n492;
+		n494->n492;
+		n492->n495;
+		n492->n496;
+		
+	}
+	subgraph cluster_s497 {
+		color="black";label="lantern-A-1";margin="20";penwidth="5";style="rounded";
+		n499[fontname="Courier New",group="lantern-A-1",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n500[fontname="Courier New",group="lantern-A-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n498[color="#9dddea",fontname="Courier New",group="lantern-A-1",height="1.0",label="hall lantern of shaft A on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n499->n498;
+		n498->n500;
+		
+	}
+	subgraph cluster_s501 {
+		color="black";label="lantern-A-2";margin="20";penwidth="5";style="rounded";
+		n503[fontname="Courier New",group="lantern-A-2",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n504[fontname="Courier New",group="lantern-A-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n502[color="#9dddea",fontname="Courier New",group="lantern-A-2",height="1.0",label="hall lantern of shaft A on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n503->n502;
+		n502->n504;
+		
+	}
+	subgraph cluster_s505 {
+		color="black";label="lantern-A-3";margin="20";penwidth="5";style="rounded";
+		n507[fontname="Courier New",group="lantern-A-3",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n508[fontname="Courier New",group="lantern-A-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n506[color="#9dddea",fontname="Courier New",group="lantern-A-3",height="1.0",label="hall lantern of shaft A on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n507->n506;
+		n506->n508;
+		
+	}
+	subgraph cluster_s509 {
+		color="black";label="lantern-A-4";margin="20";penwidth="5";style="rounded";
+		n511[fontname="Courier New",group="lantern-A-4",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n512[fontname="Courier New",group="lantern-A-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n510[color="#9dddea",fontname="Courier New",group="lantern-A-4",height="1.0",label="hall lantern of shaft A on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n511->n510;
+		n510->n512;
+		
+	}
+	subgraph cluster_s513 {
+		color="black";label="lantern-A-5";margin="20";penwidth="5";style="rounded";
+		n515[fontname="Courier New",group="lantern-A-5",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n516[fontname="Courier New",group="lantern-A-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n514[color="#9dddea",fontname="Courier New",group="lantern-A-5",height="1.0",label="hall lantern of shaft A on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n515->n514;
+		n514->n516;
+		
+	}
+	subgraph cluster_s517 {
+		color="black";label="lantern-A-6";margin="20";penwidth="5";style="rounded";
+		n519[fontname="Courier New",group="lantern-A-6",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n520[fontname="Courier New",group="lantern-A-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n518[color="#9dddea",fontname="Courier New",group="lantern-A-6",height="1.0",label="hall lantern of shaft A on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n519->n518;
+		n518->n520;
+		
+	}
+	subgraph cluster_s521 {
+		color="black";label="lantern-B-1";margin="20";penwidth="5";style="rounded";
+		n523[fontname="Courier New",group="lantern-B-1",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n524[fontname="Courier New",group="lantern-B-1",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n522[color="#9dddea",fontname="Courier New",group="lantern-B-1",height="1.0",label="hall lantern of shaft B on floor 1",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n523->n522;
+		n522->n524;
+		
+	}
+	subgraph cluster_s525 {
+		color="black";label="lantern-B-2";margin="20";penwidth="5";style="rounded";
+		n527[fontname="Courier New",group="lantern-B-2",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n528[fontname="Courier New",group="lantern-B-2",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n526[color="#9dddea",fontname="Courier New",group="lantern-B-2",height="1.0",label="hall lantern of shaft B on floor 2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n527->n526;
+		n526->n528;
+		
+	}
+	subgraph cluster_s529 {
+		color="black";label="lantern-B-3";margin="20";penwidth="5";style="rounded";
+		n531[fontname="Courier New",group="lantern-B-3",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n532[fontname="Courier New",group="lantern-B-3",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n530[color="#9dddea",fontname="Courier New",group="lantern-B-3",height="1.0",label="hall lantern of shaft B on floor 3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n531->n530;
+		n530->n532;
+		
+	}
+	subgraph cluster_s533 {
+		color="black";label="lantern-B-4";margin="20";penwidth="5";style="rounded";
+		n535[fontname="Courier New",group="lantern-B-4",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n536[fontname="Courier New",group="lantern-B-4",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n534[color="#9dddea",fontname="Courier New",group="lantern-B-4",height="1.0",label="hall lantern of shaft B on floor 4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n535->n534;
+		n534->n536;
+		
+	}
+	subgraph cluster_s537 {
+		color="black";label="lantern-B-5";margin="20";penwidth="5";style="rounded";
+		n539[fontname="Courier New",group="lantern-B-5",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n540[fontname="Courier New",group="lantern-B-5",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n538[color="#9dddea",fontname="Courier New",group="lantern-B-5",height="1.0",label="hall lantern of shaft B on floor 5",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n539->n538;
+		n538->n540;
+		
+	}
+	subgraph cluster_s541 {
+		color="black";label="lantern-B-6";margin="20";penwidth="5";style="rounded";
+		n543[fontname="Courier New",group="lantern-B-6",height="1.0",label="show",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n544[fontname="Courier New",group="lantern-B-6",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n542[color="#9dddea",fontname="Courier New",group="lantern-B-6",height="1.0",label="hall lantern of shaft B on floor 6",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n543->n542;
+		n542->n544;
+		
+	}
+	subgraph cluster_s545 {
+		color="black";label="light-curtain-A";margin="20";penwidth="5";style="rounded";
+		n547[fontname="Courier New",group="light-curtain-A",height="1.0",label="block",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n548[fontname="Courier New",group="light-curtain-A",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n549[fontname="Courier New",group="light-curtain-A",height="1.0",label="beam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n550[fontname="Courier New",group="light-curtain-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n546[color="#9dddea",fontname="Courier New",group="light-curtain-A",height="1.0",label="infrared beams across the doorway: interrupted while someone steps through",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n547->n546;
+		n548->n546;
+		n546->n549;
+		n546->n550;
+		
+	}
+	subgraph cluster_s551 {
+		color="black";label="light-curtain-B";margin="20";penwidth="5";style="rounded";
+		n553[fontname="Courier New",group="light-curtain-B",height="1.0",label="block",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n554[fontname="Courier New",group="light-curtain-B",height="1.0",label="tick",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n555[fontname="Courier New",group="light-curtain-B",height="1.0",label="beam",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n556[fontname="Courier New",group="light-curtain-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n552[color="#9dddea",fontname="Courier New",group="light-curtain-B",height="1.0",label="infrared beams across the doorway: interrupted while someone steps through",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n553->n552;
+		n554->n552;
+		n552->n555;
+		n552->n556;
+		
+	}
+	subgraph cluster_s557 {
+		color="black";label="limit-bottom-A";margin="20";penwidth="5";style="rounded";
+		n559[fontname="Courier New",group="limit-bottom-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n560[fontname="Courier New",group="limit-bottom-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n561[fontname="Courier New",group="limit-bottom-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n558[color="#9dddea",fontname="Courier New",group="limit-bottom-A",height="1.0",label="final limit switch at the bottom of the shaft",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n559->n558;
+		n558->n560;
+		n558->n561;
+		
+	}
+	subgraph cluster_s562 {
+		color="black";label="limit-bottom-B";margin="20";penwidth="5";style="rounded";
+		n564[fontname="Courier New",group="limit-bottom-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n565[fontname="Courier New",group="limit-bottom-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n566[fontname="Courier New",group="limit-bottom-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n563[color="#9dddea",fontname="Courier New",group="limit-bottom-B",height="1.0",label="final limit switch at the bottom of the shaft",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n564->n563;
+		n563->n565;
+		n563->n566;
+		
+	}
+	subgraph cluster_s567 {
+		color="black";label="limit-top-A";margin="20";penwidth="5";style="rounded";
+		n569[fontname="Courier New",group="limit-top-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n570[fontname="Courier New",group="limit-top-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n571[fontname="Courier New",group="limit-top-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n568[color="#9dddea",fontname="Courier New",group="limit-top-A",height="1.0",label="final limit switch at the top of the shaft",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n569->n568;
+		n568->n570;
+		n568->n571;
+		
+	}
+	subgraph cluster_s572 {
+		color="black";label="limit-top-B";margin="20";penwidth="5";style="rounded";
+		n574[fontname="Courier New",group="limit-top-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n575[fontname="Courier New",group="limit-top-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n576[fontname="Courier New",group="limit-top-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n573[color="#9dddea",fontname="Courier New",group="limit-top-B",height="1.0",label="final limit switch at the top of the shaft",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n574->n573;
+		n573->n575;
+		n573->n576;
+		
+	}
+	subgraph cluster_s577 {
 		color="black";label="motor-A";margin="20";penwidth="5";style="rounded";
-		n86[fontname="Courier New",group="motor-A",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n87[fontname="Courier New",group="motor-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n85[color="#9dddea",fontname="Courier New",group="motor-A",height="1.0",label="hoist motor: one floor per tick, up or down",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n86->n85;
-		n85->n87;
+		n579[fontname="Courier New",group="motor-A",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n580[fontname="Courier New",group="motor-A",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n581[fontname="Courier New",group="motor-A",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n582[fontname="Courier New",group="motor-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n578[color="#9dddea",fontname="Courier New",group="motor-A",height="1.0",label="gearless hoist motor: turns as powered unless the brake holds it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n579->n578;
+		n580->n578;
+		n578->n581;
+		n578->n582;
 		
 	}
-	subgraph cluster_s88 {
+	subgraph cluster_s583 {
 		color="black";label="motor-B";margin="20";penwidth="5";style="rounded";
-		n90[fontname="Courier New",group="motor-B",height="1.0",label="cmd",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n91[fontname="Courier New",group="motor-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
-		n89[color="#9dddea",fontname="Courier New",group="motor-B",height="1.0",label="hoist motor: one floor per tick, up or down",penwidth="2.5",shape="rect",style="filled",width="1.0"];
-		n90->n89;
-		n89->n91;
+		n585[fontname="Courier New",group="motor-B",height="1.0",label="brake",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n586[fontname="Courier New",group="motor-B",height="1.0",label="power",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n587[fontname="Courier New",group="motor-B",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n588[fontname="Courier New",group="motor-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n584[color="#9dddea",fontname="Courier New",group="motor-B",height="1.0",label="gearless hoist motor: turns as powered unless the brake holds it",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n585->n584;
+		n586->n584;
+		n584->n587;
+		n584->n588;
+		
+	}
+	subgraph cluster_s589 {
+		color="black";label="panel";margin="20";penwidth="5";style="rounded";
+		n591[fontname="Courier New",group="panel",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n592[fontname="Courier New",group="panel",height="1.0",label="frame",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n590[color="#9dddea",fontname="Courier New",group="panel",height="1.0",label="collects every part's report into one frame for the UI",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n591->n590;
+		n590->n592;
+		
+	}
+	subgraph cluster_s593 {
+		color="black";label="position-sensor-A";margin="20";penwidth="5";style="rounded";
+		n595[fontname="Courier New",group="position-sensor-A",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n596[fontname="Courier New",group="position-sensor-A",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n597[fontname="Courier New",group="position-sensor-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n594[color="#9dddea",fontname="Courier New",group="position-sensor-A",height="1.0",label="tape reader: the car's height, nearest floor and whether it is level",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n595->n594;
+		n594->n596;
+		n594->n597;
+		
+	}
+	subgraph cluster_s598 {
+		color="black";label="position-sensor-B";margin="20";penwidth="5";style="rounded";
+		n600[fontname="Courier New",group="position-sensor-B",height="1.0",label="position",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n601[fontname="Courier New",group="position-sensor-B",height="1.0",label="reading",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n602[fontname="Courier New",group="position-sensor-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n599[color="#9dddea",fontname="Courier New",group="position-sensor-B",height="1.0",label="tape reader: the car's height, nearest floor and whether it is level",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n600->n599;
+		n599->n601;
+		n599->n602;
+		
+	}
+	subgraph cluster_s603 {
+		color="black";label="safety-chain-A";margin="20";penwidth="5";style="rounded";
+		n605[fontname="Courier New",group="safety-chain-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n606[fontname="Courier New",group="safety-chain-A",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n607[fontname="Courier New",group="safety-chain-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n604[color="#9dddea",fontname="Courier New",group="safety-chain-A",height="1.0",label="series circuit through every safety contact: one open contact stops the car",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n605->n604;
+		n604->n606;
+		n604->n607;
+		
+	}
+	subgraph cluster_s608 {
+		color="black";label="safety-chain-B";margin="20";penwidth="5";style="rounded";
+		n610[fontname="Courier New",group="safety-chain-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n611[fontname="Courier New",group="safety-chain-B",height="1.0",label="chain",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n612[fontname="Courier New",group="safety-chain-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n609[color="#9dddea",fontname="Courier New",group="safety-chain-B",height="1.0",label="series circuit through every safety contact: one open contact stops the car",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n610->n609;
+		n609->n611;
+		n609->n612;
+		
+	}
+	subgraph cluster_s613 {
+		color="black";label="safety-gear-A";margin="20";penwidth="5";style="rounded";
+		n615[fontname="Courier New",group="safety-gear-A",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n616[fontname="Courier New",group="safety-gear-A",height="1.0",label="clamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n617[fontname="Courier New",group="safety-gear-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n614[color="#9dddea",fontname="Courier New",group="safety-gear-A",height="1.0",label="safety gear: grips the guide rails when the governor trips",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n615->n614;
+		n614->n616;
+		n614->n617;
+		
+	}
+	subgraph cluster_s618 {
+		color="black";label="safety-gear-B";margin="20";penwidth="5";style="rounded";
+		n620[fontname="Courier New",group="safety-gear-B",height="1.0",label="contact",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n621[fontname="Courier New",group="safety-gear-B",height="1.0",label="clamp",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n622[fontname="Courier New",group="safety-gear-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n619[color="#9dddea",fontname="Courier New",group="safety-gear-B",height="1.0",label="safety gear: grips the guide rails when the governor trips",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n620->n619;
+		n619->n621;
+		n619->n622;
+		
+	}
+	subgraph cluster_s623 {
+		color="black";label="sheave-A";margin="20";penwidth="5";style="rounded";
+		n625[fontname="Courier New",group="sheave-A",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n626[fontname="Courier New",group="sheave-A",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n627[fontname="Courier New",group="sheave-A",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n624[color="#9dddea",fontname="Courier New",group="sheave-A",height="1.0",label="traction sheave: turns shaft rotation into rope travel",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n625->n624;
+		n624->n626;
+		n624->n627;
+		
+	}
+	subgraph cluster_s628 {
+		color="black";label="sheave-B";margin="20";penwidth="5";style="rounded";
+		n630[fontname="Courier New",group="sheave-B",height="1.0",label="shaft",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n631[fontname="Courier New",group="sheave-B",height="1.0",label="rope",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n632[fontname="Courier New",group="sheave-B",height="1.0",label="telemetry",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n629[color="#9dddea",fontname="Courier New",group="sheave-B",height="1.0",label="traction sheave: turns shaft rotation into rope travel",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n630->n629;
+		n629->n631;
+		n629->n632;
 		
 	}
 	layout="dot";splines="ortho";
-	n10->n42[color="#e437ea",minlen="3",penwidth="2"];
-	n11->n86[color="#e437ea",minlen="3",penwidth="2"];
-	n12->n26[color="#e437ea",minlen="3",penwidth="2"];
-	n12->n38[color="#e437ea",minlen="3",penwidth="2"];
-	n20->n46[color="#e437ea",minlen="3",penwidth="2"];
-	n21->n90[color="#e437ea",minlen="3",penwidth="2"];
-	n22->n26[color="#e437ea",minlen="3",penwidth="2"];
-	n22->n38[color="#e437ea",minlen="3",penwidth="2"];
-	n27->n5[color="#e437ea",minlen="3",penwidth="2"];
-	n28->n15[color="#e437ea",minlen="3",penwidth="2"];
-	n29->n51[color="#e437ea",minlen="3",penwidth="2"];
-	n30->n57[color="#e437ea",minlen="3",penwidth="2"];
-	n31->n63[color="#e437ea",minlen="3",penwidth="2"];
-	n32->n69[color="#e437ea",minlen="3",penwidth="2"];
-	n33->n75[color="#e437ea",minlen="3",penwidth="2"];
-	n34->n81[color="#e437ea",minlen="3",penwidth="2"];
-	n43->n8[color="#e437ea",minlen="3",penwidth="2"];
-	n47->n18[color="#e437ea",minlen="3",penwidth="2"];
-	n52->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n53->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n58->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n59->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n64->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n65->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n70->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n71->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n76->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n77->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n82->n25[color="#e437ea",minlen="3",penwidth="2"];
-	n83->n37[color="#e437ea",minlen="3",penwidth="2"];
-	n87->n7[color="#e437ea",minlen="3",penwidth="2"];
-	n91->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n579[color="#e437ea",minlen="3",penwidth="2"];
+	n7->n164[color="#e437ea",minlen="3",penwidth="2"];
+	n8->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n13->n585[color="#e437ea",minlen="3",penwidth="2"];
+	n13->n189[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n24->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n28->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n32->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n36->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n44->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n48->n168[color="#e437ea",minlen="3",penwidth="2"];
+	n52->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n56->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n60->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n64->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n68->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n72->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n76->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n80->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n84->n168[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n595[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n335[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n569[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n559[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n428[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n434[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n440[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n446[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n452[color="#e437ea",minlen="3",penwidth="2"];
+	n19->n458[color="#e437ea",minlen="3",penwidth="2"];
+	n20->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n94->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n98->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n102->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n106->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n110->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n114->n190[color="#e437ea",minlen="3",penwidth="2"];
+	n118->n193[color="#e437ea",minlen="3",penwidth="2"];
+	n122->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n126->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n130->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n138->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n142->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n146->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n150->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n154->n193[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n600[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n341[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n574[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n564[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n464[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n470[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n476[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n482[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n488[color="#e437ea",minlen="3",penwidth="2"];
+	n89->n494[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n158->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n159->n170[color="#e437ea",minlen="3",penwidth="2"];
+	n159->n548[color="#e437ea",minlen="3",penwidth="2"];
+	n159->n195[color="#e437ea",minlen="3",penwidth="2"];
+	n159->n554[color="#e437ea",minlen="3",penwidth="2"];
+	n171->n51[color="#e437ea",minlen="3",penwidth="2"];
+	n172->n297[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n499[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n503[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n507[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n511[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n515[color="#e437ea",minlen="3",penwidth="2"];
+	n173->n519[color="#e437ea",minlen="3",penwidth="2"];
+	n174->n55[color="#e437ea",minlen="3",penwidth="2"];
+	n175->n59[color="#e437ea",minlen="3",penwidth="2"];
+	n176->n63[color="#e437ea",minlen="3",penwidth="2"];
+	n177->n67[color="#e437ea",minlen="3",penwidth="2"];
+	n178->n71[color="#e437ea",minlen="3",penwidth="2"];
+	n179->n75[color="#e437ea",minlen="3",penwidth="2"];
+	n180->n6[color="#e437ea",minlen="3",penwidth="2"];
+	n181->n79[color="#e437ea",minlen="3",penwidth="2"];
+	n182->n311[color="#e437ea",minlen="3",penwidth="2"];
+	n183->n221[color="#e437ea",minlen="3",penwidth="2"];
+	n184->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n196->n121[color="#e437ea",minlen="3",penwidth="2"];
+	n197->n303[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n523[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n527[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n531[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n535[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n539[color="#e437ea",minlen="3",penwidth="2"];
+	n198->n543[color="#e437ea",minlen="3",penwidth="2"];
+	n199->n125[color="#e437ea",minlen="3",penwidth="2"];
+	n200->n129[color="#e437ea",minlen="3",penwidth="2"];
+	n201->n133[color="#e437ea",minlen="3",penwidth="2"];
+	n202->n137[color="#e437ea",minlen="3",penwidth="2"];
+	n203->n141[color="#e437ea",minlen="3",penwidth="2"];
+	n204->n145[color="#e437ea",minlen="3",penwidth="2"];
+	n205->n12[color="#e437ea",minlen="3",penwidth="2"];
+	n206->n149[color="#e437ea",minlen="3",penwidth="2"];
+	n207->n319[color="#e437ea",minlen="3",penwidth="2"];
+	n208->n221[color="#e437ea",minlen="3",penwidth="2"];
+	n209->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n213->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n217->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n222->n162[color="#e437ea",minlen="3",penwidth="2"];
+	n223->n187[color="#e437ea",minlen="3",penwidth="2"];
+	n224->n367[color="#e437ea",minlen="3",penwidth="2"];
+	n225->n371[color="#e437ea",minlen="3",penwidth="2"];
+	n226->n375[color="#e437ea",minlen="3",penwidth="2"];
+	n227->n379[color="#e437ea",minlen="3",penwidth="2"];
+	n228->n383[color="#e437ea",minlen="3",penwidth="2"];
+	n229->n407[color="#e437ea",minlen="3",penwidth="2"];
+	n230->n411[color="#e437ea",minlen="3",penwidth="2"];
+	n231->n415[color="#e437ea",minlen="3",penwidth="2"];
+	n232->n419[color="#e437ea",minlen="3",penwidth="2"];
+	n233->n423[color="#e437ea",minlen="3",penwidth="2"];
+	n234->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n238->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n239->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n243->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n244->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n248->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n249->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n253->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n254->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n258->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n259->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n263->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n264->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n268->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n269->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n273->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n274->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n278->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n279->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n283->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n284->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n288->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n289->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n293->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n294->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n298->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n167[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n427[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n433[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n439[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n445[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n451[color="#e437ea",minlen="3",penwidth="2"];
+	n299->n457[color="#e437ea",minlen="3",penwidth="2"];
+	n300->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n304->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n192[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n463[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n469[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n475[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n481[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n487[color="#e437ea",minlen="3",penwidth="2"];
+	n305->n493[color="#e437ea",minlen="3",penwidth="2"];
+	n306->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n313->n580[color="#e437ea",minlen="3",penwidth="2"];
+	n314->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n321->n586[color="#e437ea",minlen="3",penwidth="2"];
+	n322->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n326->n310[color="#e437ea",minlen="3",penwidth="2"];
+	n327->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n331->n318[color="#e437ea",minlen="3",penwidth="2"];
+	n332->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n337->n615[color="#e437ea",minlen="3",penwidth="2"];
+	n337->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n338->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n343->n620[color="#e437ea",minlen="3",penwidth="2"];
+	n343->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n344->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n348->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n352->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n356->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n360->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n364->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n368->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n372->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n376->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n380->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n384->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n388->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n392->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n396->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n400->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n404->n220[color="#e437ea",minlen="3",penwidth="2"];
+	n408->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n412->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n416->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n420->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n424->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n429->n237[color="#e437ea",minlen="3",penwidth="2"];
+	n430->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n435->n242[color="#e437ea",minlen="3",penwidth="2"];
+	n436->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n441->n247[color="#e437ea",minlen="3",penwidth="2"];
+	n442->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n447->n252[color="#e437ea",minlen="3",penwidth="2"];
+	n448->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n453->n257[color="#e437ea",minlen="3",penwidth="2"];
+	n454->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n459->n262[color="#e437ea",minlen="3",penwidth="2"];
+	n460->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n465->n267[color="#e437ea",minlen="3",penwidth="2"];
+	n466->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n471->n272[color="#e437ea",minlen="3",penwidth="2"];
+	n472->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n477->n277[color="#e437ea",minlen="3",penwidth="2"];
+	n478->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n483->n282[color="#e437ea",minlen="3",penwidth="2"];
+	n484->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n489->n287[color="#e437ea",minlen="3",penwidth="2"];
+	n490->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n495->n292[color="#e437ea",minlen="3",penwidth="2"];
+	n496->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n500->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n504->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n508->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n512->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n516->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n520->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n524->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n528->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n532->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n536->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n540->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n544->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n549->n163[color="#e437ea",minlen="3",penwidth="2"];
+	n550->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n555->n188[color="#e437ea",minlen="3",penwidth="2"];
+	n556->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n560->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n561->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n565->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n566->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n570->n605[color="#e437ea",minlen="3",penwidth="2"];
+	n571->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n575->n610[color="#e437ea",minlen="3",penwidth="2"];
+	n576->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n581->n325[color="#e437ea",minlen="3",penwidth="2"];
+	n581->n625[color="#e437ea",minlen="3",penwidth="2"];
+	n582->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n587->n330[color="#e437ea",minlen="3",penwidth="2"];
+	n587->n630[color="#e437ea",minlen="3",penwidth="2"];
+	n588->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n596->n169[color="#e437ea",minlen="3",penwidth="2"];
+	n597->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n601->n194[color="#e437ea",minlen="3",penwidth="2"];
+	n602->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n606->n309[color="#e437ea",minlen="3",penwidth="2"];
+	n606->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n606->n166[color="#e437ea",minlen="3",penwidth="2"];
+	n607->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n611->n317[color="#e437ea",minlen="3",penwidth="2"];
+	n611->n11[color="#e437ea",minlen="3",penwidth="2"];
+	n611->n191[color="#e437ea",minlen="3",penwidth="2"];
+	n612->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n616->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n617->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n621->n87[color="#e437ea",minlen="3",penwidth="2"];
+	n622->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n626->n18[color="#e437ea",minlen="3",penwidth="2"];
+	n626->n212[color="#e437ea",minlen="3",penwidth="2"];
+	n627->n591[color="#e437ea",minlen="3",penwidth="2"];
+	n631->n88[color="#e437ea",minlen="3",penwidth="2"];
+	n631->n216[color="#e437ea",minlen="3",penwidth="2"];
+	n632->n591[color="#e437ea",minlen="3",penwidth="2"];
 	
 }

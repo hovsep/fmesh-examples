@@ -2,339 +2,178 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"maps"
-	"slices"
+	"math"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 )
 
-// Port names.
+// The building.
 const (
-	portTick     = "tick"     // UI → cab: one second has passed
-	portPress    = "press"    // UI → floor: the hall call button was pressed
-	portButton   = "button"   // UI → cab: a floor button inside the cab was pressed
-	portCall     = "call"     // floor → dispatcher
-	portAssign   = "assign"   // dispatcher → cab: please stop at this floor
-	portServed   = "served"   // dispatcher → floor: a cab is here, the lamp goes off
-	portStatus   = "status"   // cab → dispatcher, display
-	portLamp     = "lamp"     // floor → display
-	portCmd      = "cmd"      // cab → motor, door
-	portDrive    = "drive"    // cab's output to its motor
-	portDoors    = "doors"    // cab's output to its door
-	portPosition = "position" // motor → cab
-	portState    = "state"    // door → cab
-	portView     = "view"     // display → UI
+	floors      = 6
+	floorHeight = 3.5                        // metres between landings
+	travel      = (floors - 1) * floorHeight // metres from the lowest landing to the top one
+	dt          = 0.05                       // simulated seconds per run of the mesh
+	ratedSpeed  = 1.6                        // m/s
+	sheaveDiam  = 0.5                        // m, so the motor turns at about 61 rpm at rated speed
+	ratedRPM    = ratedSpeed / (math.Pi * sheaveDiam) * 60
 )
 
-// Motor and door commands.
-const (
-	cmdUp    = "up"
-	cmdDown  = "down"
-	cmdHold  = "hold"
-	cmdOpen  = "open"
-	doorOpen = "open"
-	doorShut = "closed"
+var cabs = []string{"A", "B"}
 
-	doorOpenTicks = 3
+// Port names shared by many parts.
+const (
+	portTelemetry = "telemetry" // every part → panel: what the UI draws
+	portPress     = "press"     // UI → any button
+	portPressed   = "pressed"   // button → whoever it is wired to
+	portSet       = "set"       // → lamp, LED
+	portShow      = "show"      // → display, lantern
+	portTick      = "tick"      // clock → controllers, light curtains
+	portPulse     = "pulse"     // UI loop → clock
+	portFrame     = "frame"     // panel → UI
 )
 
-// CabStatus is what a cab tells the dispatcher and the display.
-type CabStatus struct {
-	Cab    string
-	Floor  int
-	Dir    int // +1 up, -1 down, 0 idle
-	Door   string
-	Stops  []int // floors it will stop at, sorted
-	Served int   // the floor whose doors just opened, or 0
+// floorPos is the height of a landing above the lowest one.
+func floorPos(f int) float64 { return float64(f-1) * floorHeight }
+
+// nearestFloor is the landing closest to a height in the shaft.
+func nearestFloor(pos float64) int {
+	return min(floors, max(1, int(pos/floorHeight+0.5)+1))
 }
 
-// Lamp is a floor's call lamp.
-type Lamp struct {
-	Floor int
-	On    bool
+// Report is one part's state on its way to the panel.
+type Report struct {
+	Part  string
+	State any
 }
 
-// View is everything the UI draws: the mesh's state, sent out as a signal.
-type View struct {
-	Cabs  map[string]CabStatus
-	Lamps map[int]bool
+// report sends a part's state to the panel. Every part has a telemetry
+// output, all of them piped into the one panel: the way state leaves the mesh.
+func report(this *component.Component, state any) error {
+	return this.OutputByName(portTelemetry).PutSignals(signal.New(Report{Part: this.Name(), State: state}))
 }
 
-func floorName(f int) string  { return fmt.Sprintf("floor-%d", f) }
-func cabName(c string) string { return "cab-" + c }
-
-// newFloor is the call button on one landing, with its lamp.
-func newFloor(f int) (*component.Component, error) {
-	return component.New(floorName(f),
-		component.WithDescription(fmt.Sprintf("hall call button and lamp on floor %d", f)),
-		component.WithInputs(portPress, portServed),
-		component.WithOutputs(portCall, portLamp),
-		component.WithInitialState(func(s component.State) { s.Set("lit", false) }),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			lit := this.State().GetOrDefault("lit", false).(bool)
-			if this.InputByName(portServed).HasSignals() {
-				lit = false
-			}
-			if this.InputByName(portPress).HasSignals() && !lit {
-				lit = true
-				if err := this.OutputByName(portCall).PutSignals(signal.New(f)); err != nil {
-					return err
-				}
-			}
-			this.State().Set("lit", lit)
-			return this.OutputByName(portLamp).PutSignals(signal.New(Lamp{Floor: f, On: lit}))
-		}),
-	)
-}
-
-// newDispatcher hands every hall call to one cab, and puts out the lamp of
-// a floor once a cab opens its doors there.
-func newDispatcher(cabs []string) (*component.Component, error) {
-	outputs := []string{}
-	for _, c := range cabs {
-		outputs = append(outputs, portAssign+"-"+c)
+// latest is the newest payload on a port, or def when it is empty. A part
+// that only listens on a port keeps the newest value it heard.
+func latest[T any](p *port.Port, def T) T {
+	all := p.Signals().All()
+	if len(all) == 0 {
+		return def
 	}
-	return component.New("dispatcher",
-		component.WithDescription("assigns each hall call to the cab that can get there first"),
-		component.WithInputs(portCall, portStatus),
-		component.WithOutputs(outputs...),
-		component.WithIndexedOutputs(portServed, 1, floors),
-		component.WithInitialState(func(s component.State) {
-			s.Set("cabs", map[string]CabStatus{})
-			s.Set("pending", map[int]string{}) // floor → cab it was given to
-		}),
+	return all[len(all)-1].PayloadOrDefault(def)
+}
+
+// newButton is any push button in the building: on a press it sends what it
+// stands for (a floor, a hall call, "open") to whatever it is wired to. Its
+// light, if it has one, is a separate lamp lit by a controller, as in a
+// real installation.
+func newButton(name, description string, sends any) (*component.Component, error) {
+	return component.New(name,
+		component.WithDescription(description),
+		component.WithInputs(portPress),
+		component.WithOutputs(portPressed),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			known := this.State().Get("cabs").(map[string]CabStatus)
-			pending := this.State().Get("pending").(map[int]string)
-
-			for _, sig := range this.InputByName(portStatus).Signals().All() {
-				st, err := sig.As[CabStatus]()
-				if err != nil {
-					return err
-				}
-				known[st.Cab] = st
-				if st.Served > 0 {
-					delete(pending, st.Served)
-					if err := this.OutputByName(fmt.Sprint(portServed, st.Served)).PutSignals(signal.New(st.Cab)); err != nil {
-						return err
-					}
-				}
-			}
-
-			for _, sig := range this.InputByName(portCall).Signals().All() {
-				f, err := sig.As[int]()
-				if err != nil {
-					return err
-				}
-				if _, ok := pending[f]; ok {
-					continue
-				}
-				best := slices.MinFunc(cabs, func(a, b string) int { return cost(known[a], f) - cost(known[b], f) })
-				pending[f] = best
-				if err := this.OutputByName(portAssign + "-" + best).PutSignals(signal.New(f)); err != nil {
-					return err
-				}
-			}
-			return nil
+			return this.OutputByName(portPressed).PutSignals(signal.New(sends))
 		}),
 	)
 }
 
-// cost estimates how long a cab would take to reach floor f.
-func cost(st CabStatus, f int) int {
-	c := abs(st.Floor-f) + 2*len(st.Stops)
-	if st.Dir != 0 && (f-st.Floor)*st.Dir < 0 {
-		c += 2 * floors // it is heading away and must turn around first
-	}
-	return c
+// LampState is what the UI knows about a lamp or an LED.
+type LampState struct {
+	On bool `json:"on"`
 }
 
-// newCab is a cab's controller: on every tick it decides whether to move,
-// stop or open the doors, and tells its motor and door. Between ticks it
-// listens: where the motor got to, what the door is doing, which floors the
-// dispatcher and the passengers want.
-func newCab(c string) (*component.Component, error) {
-	return component.New(cabName(c),
-		component.WithDescription("cab controller: drives the motor and the door, serves its stops"),
-		component.WithInputs(portTick, portButton, portAssign, portPosition, portState),
-		component.WithOutputs(portDrive, portDoors, portStatus),
-		component.WithInitialState(func(s component.State) {
-			s.Set("floor", 1)
-			s.Set("dir", 0)
-			s.Set("door", doorShut)
-			s.Set("stops", map[int]bool{})
-		}),
+// newLamp is an LED in a button ring or the light in a cab: on or off, as
+// it is told.
+func newLamp(name, description string) (*component.Component, error) {
+	return component.New(name,
+		component.WithDescription(description),
+		component.WithInputs(portSet),
+		component.WithOutputs(portTelemetry),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			floor := this.State().Get("floor").(int)
-			dir := this.State().Get("dir").(int)
-			door := this.State().Get("door").(string)
-			stops := this.State().Get("stops").(map[int]bool)
-			served := 0
-
-			// Listen: feedback from the motor and the door.
-			floor = this.InputByName(portPosition).Signals().FirstPayloadOrDefault(floor)
-			door = this.InputByName(portState).Signals().FirstPayloadOrDefault(door)
-
-			// Listen: new stops, from inside the cab and from the dispatcher.
-			for _, port := range []string{portButton, portAssign} {
-				for _, sig := range this.InputByName(port).Signals().All() {
-					f, err := sig.As[int]()
-					if err != nil {
-						return err
-					}
-					if f == floor && door == doorOpen {
-						served = f // already here with the doors open
-						continue
-					}
-					stops[f] = true
-				}
-			}
-
-			// Decide, once per tick.
-			if this.InputByName(portTick).HasSignals() {
-				drive, doors := cmdHold, cmdHold
-				if door == doorShut && stops[floor] {
-					delete(stops, floor)
-					doors, served = cmdOpen, floor
-				}
-				// The arrow shows where the cab goes next, even while it waits.
-				dir = direction(floor, dir, stops)
-				if door == doorShut && doors != cmdOpen {
-					switch dir {
-					case +1:
-						drive = cmdUp
-					case -1:
-						drive = cmdDown
-					}
-				}
-				if err := this.OutputByName(portDrive).PutSignals(signal.New(drive)); err != nil {
-					return err
-				}
-				if err := this.OutputByName(portDoors).PutSignals(signal.New(doors)); err != nil {
-					return err
-				}
-			}
-
-			this.State().Set("floor", floor)
-			this.State().Set("dir", dir)
-			this.State().Set("door", door)
-			this.State().Set("stops", stops)
-			return this.OutputByName(portStatus).PutSignals(signal.New(CabStatus{
-				Cab: c, Floor: floor, Dir: dir, Door: door, Served: served,
-				Stops: slices.Sorted(maps.Keys(stops)),
-			}))
+			return report(this, LampState{On: latest(this.InputByName(portSet), false)})
 		}),
 	)
 }
 
-// direction keeps going the way the cab is going while there are stops
-// ahead, then turns around: the rule real elevators follow.
-func direction(floor, dir int, stops map[int]bool) int {
-	ahead := func(d int) bool {
-		for f := range stops {
-			if (f-floor)*d > 0 {
-				return true
-			}
-		}
-		return false
-	}
-	switch {
-	case dir != 0 && ahead(dir):
-		return dir
-	case ahead(+1):
-		return +1
-	case ahead(-1):
-		return -1
-	}
-	return 0
+// Indicator is what a controller shows on its displays and lanterns.
+type Indicator struct {
+	Floor   int `json:"floor"`   // where the cab is
+	Dir     int `json:"dir"`     // +1 up, -1 down, 0 idle
+	Arrived int `json:"arrived"` // the floor where it stands with doors opening, or 0
 }
 
-// newMotor moves its cab one floor per tick.
-func newMotor(c string) (*component.Component, error) {
-	return component.New("motor-"+c,
-		component.WithDescription("hoist motor: one floor per tick, up or down"),
-		component.WithInputs(portCmd),
-		component.WithOutputs(portPosition),
-		component.WithInitialState(func(s component.State) { s.Set("floor", 1) }),
+// IndicatorState is what one display or lantern shows.
+type IndicatorState struct {
+	Floor int  `json:"floor"`
+	Dir   int  `json:"dir"`
+	Gong  bool `json:"gong"` // a lantern lights its arrow when the cab arrives at its floor
+}
+
+// newIndicator is a floor display: the one inside a cab (floor 0) or a hall
+// lantern above a landing door, which also lights its arrival arrow.
+func newIndicator(name, description string, floor int) (*component.Component, error) {
+	return component.New(name,
+		component.WithDescription(description),
+		component.WithInputs(portShow),
+		component.WithOutputs(portTelemetry),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			floor := this.State().Get("floor").(int)
-			switch this.InputByName(portCmd).Signals().FirstPayloadOrDefault(cmdHold) {
-			case cmdUp:
-				floor = min(floors, floor+1)
-			case cmdDown:
-				floor = max(1, floor-1)
-			}
-			this.State().Set("floor", floor)
-			return this.OutputByName(portPosition).PutSignals(signal.New(floor))
+			in := latest(this.InputByName(portShow), Indicator{Floor: 1})
+			return report(this, IndicatorState{Floor: in.Floor, Dir: in.Dir, Gong: floor > 0 && in.Arrived == floor})
 		}),
 	)
 }
 
-// newDoor opens on command and closes by itself a few ticks later.
-func newDoor(c string) (*component.Component, error) {
-	return component.New("door-"+c,
-		component.WithDescription("cab door: opens on command, closes by itself"),
-		component.WithInputs(portCmd),
-		component.WithOutputs(portState),
-		component.WithInitialState(func(s component.State) { s.Set("open for", 0) }),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			left := this.State().Get("open for").(int)
-			if this.InputByName(portCmd).Signals().FirstPayloadOrDefault(cmdHold) == cmdOpen {
-				left = doorOpenTicks
-			} else {
-				left = max(0, left-1)
-			}
-			this.State().Set("open for", left)
+// ClockState is the time of the building.
+type ClockState struct {
+	Tick    int     `json:"tick"`
+	Seconds float64 `json:"seconds"`
+}
 
-			state := doorShut
-			if left > 0 {
-				state = doorOpen
+// newClock turns one pulse from outside into one tick for every part that
+// keeps time: the start of every run.
+func newClock() (*component.Component, error) {
+	return component.New("clock",
+		component.WithDescription("one tick per run, fanned out to every part that keeps time"),
+		component.WithInputs(portPulse),
+		component.WithOutputs(portTick, portTelemetry),
+		component.WithInitialState(func(s component.State) { s.Set("tick", 0) }),
+		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
+			tick := this.State().Get("tick").(int) + 1
+			this.State().Set("tick", tick)
+			if err := this.OutputByName(portTick).PutSignals(signal.New(tick)); err != nil {
+				return err
 			}
-			return this.OutputByName(portState).PutSignals(signal.New(state))
+			return report(this, ClockState{Tick: tick, Seconds: float64(tick) * dt})
 		}),
 	)
 }
 
-// newDisplay gathers the state of every cab and lamp into one View for the
-// UI: the way state leaves the mesh.
-func newDisplay() (*component.Component, error) {
-	return component.New("display",
-		component.WithDescription("collects cab and lamp state into one view for the UI"),
-		component.WithInputs(portStatus, portLamp),
-		component.WithOutputs(portView),
-		component.WithInitialState(func(s component.State) {
-			s.Set("view", View{Cabs: map[string]CabStatus{}, Lamps: map[int]bool{}})
-		}),
+// Frame is the state of every part, keyed by part name.
+type Frame map[string]any
+
+// newPanel collects the reports of every part into one frame for the UI.
+func newPanel() (*component.Component, error) {
+	return component.New("panel",
+		component.WithDescription("collects every part's report into one frame for the UI"),
+		component.WithInputs(portTelemetry),
+		component.WithOutputs(portFrame),
+		component.WithInitialState(func(s component.State) { s.Set("frame", Frame{}) }),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			old := this.State().Get("view").(View)
-			// A fresh View every time: a payload that left the component is
+			// A fresh map every time: a payload that left the component is
 			// someone else's to read.
-			view := View{Cabs: maps.Clone(old.Cabs), Lamps: maps.Clone(old.Lamps)}
-			for _, sig := range this.InputByName(portStatus).Signals().All() {
-				st, err := sig.As[CabStatus]()
+			frame := maps.Clone(this.State().Get("frame").(Frame))
+			for _, sig := range this.InputByName(portTelemetry).Signals().All() {
+				r, err := sig.As[Report]()
 				if err != nil {
 					return err
 				}
-				view.Cabs[st.Cab] = st
+				frame[r.Part] = r.State
 			}
-			for _, sig := range this.InputByName(portLamp).Signals().All() {
-				l, err := sig.As[Lamp]()
-				if err != nil {
-					return err
-				}
-				view.Lamps[l.Floor] = l.On
-			}
-			this.State().Set("view", view)
-			return this.OutputByName(portView).PutSignals(signal.New(view))
+			this.State().Set("frame", frame)
+			return this.OutputByName(portFrame).PutSignals(signal.New(frame))
 		}),
 	)
-}
-
-func abs(n int) int {
-	if n < 0 {
-		return -n
-	}
-	return n
 }
