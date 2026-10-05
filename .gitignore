@@ -11,6 +11,7 @@
 /patterns/async_input/async_input
 /patterns/autodiff/autodiff
 /patterns/fibonacci/fibonacci
+/patterns/fpga/fpga
 /patterns/load_balancer/load_balancer
 /patterns/nesting/nesting
 /patterns/tree_search/tree_search
