@@ -59,7 +59,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | Example | Description |
 |---------|-------------|
 | [Electric Circuit](./simulation/electric_circuit) | A supply/demand feedback loop with degrading state |
-| [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine: fuel, current and rotation as flows, with the crankshaft driving the next stroke |
+| [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine you drive from the browser, part by part: 41 components from the valves to the fuse box, with the crankshaft driving the next stroke |
 | [Basic CAN Bus](./simulation/can_bus/basic) | One bus fanning every frame out to all connected ECUs |
 | [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
 | [Elevator](./simulation/elevator) | Two cabs, six floors: a terminal UI sends button presses in, the mesh sends the building's state back out |
