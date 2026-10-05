@@ -27,11 +27,14 @@ func NewLaptop(name string) (*Laptop, error) {
 		component.WithInputs(portUSBIn, portProgrammaticIn),
 		component.WithOutputs(portUSBOut),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
+			err := this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
 				return sig.Meta().ValueIs(labelTo, labelUSB)
 			}, func(sig *signal.Signal) error {
 				return this.OutputByName(portUSBOut).PutSignals(sig)
 			})
+			if err != nil {
+				return err
+			}
 
 			this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
 				this.Logger().Printf("Got data on USB port: %v", sig.Payload())
@@ -50,8 +53,8 @@ func NewLaptop(name string) (*Laptop, error) {
 	}, nil
 }
 
-func (l *Laptop) SendDataToUSB(payloads ...any) {
-	l.laptopComponent.InputByName(portProgrammaticIn).
+func (l *Laptop) SendDataToUSB(payloads ...any) error {
+	return l.laptopComponent.InputByName(portProgrammaticIn).
 		PutSignalGroups(
 			signal.NewGroup(payloads...).Map(func(sig *signal.Signal) *signal.Signal {
 				return sig.WithMeta(labelTo, labelUSB)

@@ -37,7 +37,10 @@ func main() {
 	}
 
 	fmt.Println("Starting engine...")
-	fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch"))
+	if err := fm.ComponentByName("engine").InputByName("start").PutSignals(signal.New("launch")); err != nil {
+		fmt.Println("Failed to start the engine:", err)
+		os.Exit(1)
+	}
 
 	runtimeInfo, err := fm.Run(context.Background())
 	if err != nil {
@@ -65,16 +68,16 @@ func main() {
 
 	fmt.Println("Also you can create a graph representation of each activation cycle ! (activated components will be highlighted with different color)")
 	// RuntimeInfo.Cycles holds every cycle of the run.
-	for cycleNum, c := range runtimeInfo.Cycles.All() {
+	for _, c := range runtimeInfo.Cycles.All() {
 		cycleGraph, err := graphviz.ExportCycle(fm, c)
 		if err != nil {
 			fmt.Println("can not export cycle graph:", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Cycle #%d graph:\n", cycleNum)
+		fmt.Printf("Cycle #%d graph:\n", c.Number())
 		fmt.Println(string(cycleGraph))
 		// Zero-padded, so the frames sort in cycle order when globbed into a GIF
-		if err := writeGraphToFile(cycleGraph, fmt.Sprintf("cycle-%03d.dot", cycleNum)); err != nil {
+		if err := writeGraphToFile(cycleGraph, fmt.Sprintf("cycle-%03d.dot", c.Number())); err != nil {
 			fmt.Println("failed to write cycle graph:", err)
 		}
 	}
@@ -96,8 +99,7 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithOutputs("rotation"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			revolution := signal.New(10).WithMeta("direction", "clockwise")
-			this.OutputByName("rotation").PutSignals(revolution)
-			return nil
+			return this.OutputByName("rotation").PutSignals(revolution)
 		}),
 	)
 	if err != nil {

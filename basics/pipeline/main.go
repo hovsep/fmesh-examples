@@ -45,9 +45,13 @@ func main() {
 	}
 
 	fmt.Println("Starting the pipeline: reading user input from stdin...")
-	fm.Components().FindAny(func(c *component.Component) bool {
+	err = fm.Components().FindAny(func(c *component.Component) bool {
 		return c.Meta().ValueIs("stage", "1")
 	}).InputByName(portIn).PutSignals(signal.New("start"))
+	if err != nil {
+		fmt.Println("Failed to put the start signal:", err)
+		os.Exit(1)
+	}
 
 	_, err = fm.Run(context.Background())
 	if err != nil {
@@ -138,8 +142,7 @@ func getFileReader(name string) (*component.Component, error) {
 				return err
 			}
 
-			this.OutputByName(portOut).PutSignals(signal.New(string(contents)))
-			return nil
+			return this.OutputByName(portOut).PutSignals(signal.New(string(contents)))
 		}),
 	)
 }
@@ -175,8 +178,7 @@ func getFileWriter(name string) (*component.Component, error) {
 			}
 
 			fmt.Printf("  Stage %s → %s: wrote data\n", stageLabel, this.Name())
-			this.OutputByName(portOut).PutSignals(signal.New(fileName))
-			return nil
+			return this.OutputByName(portOut).PutSignals(signal.New(fileName))
 		}),
 	)
 }
@@ -192,7 +194,7 @@ func getStdInReader(name, prompt string) (*component.Component, error) {
 			}
 			input := scanner.Text()
 			if input != "" {
-				this.OutputByName(portOut).PutSignals(signal.New(input))
+				return this.OutputByName(portOut).PutSignals(signal.New(input))
 			}
 			return nil
 		}),
@@ -217,7 +219,9 @@ func getTokenizer(name, delimiter string) (*component.Component, error) {
 					continue
 				}
 				tokenCount++
-				this.OutputByName(portOut).PutSignals(signal.New(t))
+				if err := this.OutputByName(portOut).PutSignals(signal.New(t)); err != nil {
+					return err
+				}
 			}
 			fmt.Printf("  Stage 4 → tokenize: tokenization complete, %d token(s)\n", tokenCount)
 			return nil
@@ -239,8 +243,7 @@ func getFilter(name string, blockList map[string]bool) (*component.Component, er
 				}
 				return nil
 			})
-			this.OutputByName(portOut).PutSignalGroups(filtered)
-			return nil
+			return this.OutputByName(portOut).PutSignalGroups(filtered)
 		}),
 	)
 }
@@ -255,7 +258,9 @@ func getTokenCounter(name string) (*component.Component, error) {
 				return nil
 			})
 			for t, count := range counters {
-				this.OutputByName(portOut).PutSignals(signal.New(fmt.Sprintf("%s:%d", t, count)))
+				if err := this.OutputByName(portOut).PutSignals(signal.New(fmt.Sprintf("%s:%d", t, count))); err != nil {
+					return err
+				}
 			}
 			return nil
 		}),
@@ -282,10 +287,8 @@ func buildPipeline(name string, components ...*component.Component) (*fmesh.FMes
 		return nil, fmt.Errorf("new mesh: %w", err)
 	}
 
-	for _, c := range components {
-		if err := fm.AddComponents(c); err != nil {
-			return nil, fmt.Errorf("add %s: %w", c.Name(), err)
-		}
+	if err := fm.AddComponents(components...); err != nil {
+		return nil, fmt.Errorf("add components: %w", err)
 	}
 
 	stageIndex = 1

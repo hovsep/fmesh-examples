@@ -1,3 +1,26 @@
 .idea
 .cursor
 .DS_Store
+
+# Binaries built by `make build`, one per example, named after its directory
+/basics/filter/filter
+/basics/pipeline/pipeline
+/basics/string_processing/string_processing
+/graphics/graphviz/graphviz
+/graphics/ray_tracer/ray_tracer
+/patterns/async_input/async_input
+/patterns/fibonacci/fibonacci
+/patterns/load_balancer/load_balancer
+/patterns/nesting/nesting
+/patterns/retry/retry
+/patterns/state_machine/state_machine
+/simulation/can_bus/advanced/advanced
+/simulation/can_bus/basic/basic
+/simulation/electric_circuit/electric_circuit
+/simulation/life/life
+
+# Files written by running the examples
+/basics/pipeline/stage-*
+/graphics/graphviz/static_graph.dot
+/graphics/graphviz/cycle-*.dot
+/graphics/graphviz/cycle-*.png

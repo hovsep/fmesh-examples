@@ -29,11 +29,12 @@ Typing always goes to the command line, so navigation uses modifiers and the mou
 - **↑ / ↓**: command history · **PgUp / PgDn**: scroll the transcript
 - **Ctrl+← / Ctrl+→** or **Alt+1‑7** or **mouse click**: switch tabs
 - **Alt+s**: split vs overlaid lungs (Respiratory view)
+- **Alt+c**: grow or shrink the console pane
 - **Ctrl+↑ / Ctrl+↓**: faster / slower repaint
 - **exit** or **Ctrl+C**: quit
 
 ## Views
 
-Cardiovascular (ECG + gases), Respiratory (breathing waveforms), Nervous,
-Metabolic, Affect, Body, and an Overview. Most screens are generated from the
+Overview, Cardiovascular (ECG + gases), Respiratory (breathing waveforms),
+Nervous, Metabolic, Feelings and Body. Most screens are generated from the
 telemetry catalog, so a new metric appears without any UI code changing.

@@ -9,7 +9,7 @@ This example demonstrates signal filtering by metadata. It models a song filter:
 
 Wiring: `pop-filter.dropped → dropped-printer.in` and `pop-filter.passed → passed-printer.in`, all added to one mesh (`demo-filter`) with `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)`. Nine songs are loaded onto `pop-filter`'s `in` port as a `signal.Group` before the mesh runs.
 
-Notable APIs: `meta.New()` to build a metadata rule set and `Meta.All`/`signal.Meta().ValueIs` to match against it, `signal.MapPayload` to transform a signal's payload while routing it, and `signal.NewGroup().With(...)` to seed multiple signals carrying metadata (`WithMetaMany`) onto one input port at once.
+Notable APIs: `meta.New()` to build a metadata rule set and `Meta.All`/`sig.Meta().ValueIs` to match against it, `sig.MapPayload` to transform a signal's payload while routing it, and `signal.NewGroup().With(...)` to seed multiple signals carrying metadata (`WithMetaMany`) onto one input port at once.
 
 ![Mesh graph](./demo-filter-graph.svg)
 

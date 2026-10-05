@@ -49,7 +49,7 @@ func main() {
 	fmt.Println("Sending diagnostic requests from laptop via OBD-II...")
 	fmt.Println()
 
-	laptopInstance.SendDataToUSB(
+	err = laptopInstance.SendDataToUSB(
 		diagnostics.FrameGetEngineDTCs,
 		diagnostics.FrameGetSpeed,
 		diagnostics.FrameGetRPM,
@@ -58,6 +58,10 @@ func main() {
 		diagnostics.FrameGetVIN,
 		diagnostics.FrameGetTransmissionFluidTemperature,
 	)
+	if err != nil {
+		fmt.Println("Failed to send data to USB:", err)
+		os.Exit(1)
+	}
 
 	fmt.Println("Path: Laptop → USB → OBD Socket → CAN Bus → ECUs")
 	fmt.Println("ECUs with matching IDs will process and respond.")

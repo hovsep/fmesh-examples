@@ -11,7 +11,7 @@ The mesh models a drivetrain chain: `engine -> clutch -> gearbox -> wheels`. Sta
 The example creates one exporter with `dot.New()`. After `fm.Run(...)` completes, it:
 
 - calls `exporter.Export(fm)` for a static DOT graph of the topology, written to `static_graph.dot`
-- calls `exporter.ExportCycle(fm, c)` for every cycle in `runtimeInfo.Cycles`: one DOT graph per activation cycle, each with the activated components highlighted, written to `cycle-000.dot`, `cycle-001.dot`, ... (each run overwrites the previous one's files)
+- calls `exporter.ExportCycle(fm, c)` for every cycle in `runtimeInfo.Cycles`: one DOT graph per activation cycle, each with the activated components highlighted, written to `cycle-001.dot`, `cycle-002.dot`, ... (each run overwrites the previous one's files)
 
 Separately, `internal.HandleGraphFlag` (shared by every example via `FMESH_GRAPH=1`) exports the mesh's static topology and, if the `dot` binary is on `PATH`, converts it to `graph-graph.svg` — the image below.
 

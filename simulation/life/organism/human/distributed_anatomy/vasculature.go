@@ -2,6 +2,7 @@ package da
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hovsep/fmesh-examples/simulation/life/autonomic"
@@ -202,8 +203,7 @@ func circulate(_ context.Context, this *component.Component) error {
 		if dt, err := simtime.TickDurationInSec(this.InputByName(sim.TimePort).Signals().First()); err == nil {
 			this.State().Set(stateVascDt, dt)
 		}
-		publishCirculation(this)
-		return nil
+		return publishCirculation(this)
 	}
 
 	// Phase B: fold in whatever has arrived.
@@ -302,13 +302,15 @@ func ResistanceAt(tone float64) float64 {
 	return NormalSVR * (1 + vasoconstrictionGain*(tone-restingVascularTone))
 }
 
-func publishCirculation(this *component.Component) {
+func publishCirculation(this *component.Component) error {
 	get := func(key string) float64 { return this.State().Get(key).(float64) }
 
-	this.OutputByName("map").PutSignals(
-		signal.New(get(stateMAP)).WithMeta("category", "circulation"),
+	return errors.Join(
+		this.OutputByName("map").PutSignals(
+			signal.New(get(stateMAP)).WithMeta("category", "circulation"),
+		),
+		this.OutputByName("cardiac_output").PutPayloads(get(stateCardiacOutput)),
+		this.OutputByName("svr").PutPayloads(get(stateSVR)),
+		this.OutputByName("stroke_volume").PutPayloads(get(stateStrokeVolume)),
 	)
-	this.OutputByName("cardiac_output").PutPayloads(get(stateCardiacOutput))
-	this.OutputByName("svr").PutPayloads(get(stateSVR))
-	this.OutputByName("stroke_volume").PutPayloads(get(stateStrokeVolume))
 }

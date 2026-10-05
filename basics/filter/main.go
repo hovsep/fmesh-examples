@@ -38,7 +38,10 @@ func main() {
 	}
 
 	signalsToFilter := getSignals()
-	fm.ComponentByName("pop-filter").InputByName(portIn).PutSignalGroups(signalsToFilter)
+	if err := fm.ComponentByName("pop-filter").InputByName(portIn).PutSignalGroups(signalsToFilter); err != nil {
+		fmt.Println("Failed to put input signals:", err)
+		os.Exit(1)
+	}
 
 	_, err = fm.Run(context.Background())
 	if err != nil {

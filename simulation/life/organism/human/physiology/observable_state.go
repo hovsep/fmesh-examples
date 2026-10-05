@@ -75,8 +75,7 @@ func GetObservableState() (*component.Component, error) {
 // body is dead.
 func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	if this.State().Get(stateDead).(bool) {
-		this.OutputByName("is_alive").PutPayloads(0.0)
-		return nil
+		return this.OutputByName("is_alive").PutPayloads(0.0)
 	}
 
 	if !this.InputByName("brain_activity").HasSignals() {
@@ -87,7 +86,9 @@ func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	this.State().Set(stateSawBrain, true)
 
 	// Telemetry is numeric end to end, so liveness travels as 1/0 rather than a bool.
-	this.OutputByName("is_alive").PutPayloads(1.0)
+	if err := this.OutputByName("is_alive").PutPayloads(1.0); err != nil {
+		return err
+	}
 
 	// Calculate brain activity trend
 	currentBrainActivity, err := this.InputByName("brain_activity").Signals().First().As[float64]()
@@ -102,7 +103,9 @@ func handleBrainSignals(ctx context.Context, this *component.Component) error {
 	brainActivityTrend := ema.ClassifyTrend(currentBrainActivity)
 
 	this.State().Set(LastBrainActivity, smoothedBrainActivity)
-	this.OutputByName("brain_activity").PutPayloads(smoothedBrainActivity)
+	if err := this.OutputByName("brain_activity").PutPayloads(smoothedBrainActivity); err != nil {
+		return err
+	}
 	// The trend rides as a number so it survives telemetry; the human-readable
 	// name stays available in-mesh as a label.
 	return this.OutputByName("brain_activity_trend").PutSignals(
@@ -127,9 +130,9 @@ func checkDeath(_ context.Context, this *component.Component) error {
 	case everAlive && !sawBrain:
 		// A full tick with no brain activity: the brain has stopped.
 		this.State().Set(stateDead, true)
-		this.OutputByName("is_alive").PutPayloads(0.0)
+		return this.OutputByName("is_alive").PutPayloads(0.0)
 	case everAlive:
-		this.OutputByName("is_alive").PutPayloads(1.0)
+		return this.OutputByName("is_alive").PutPayloads(1.0)
 	}
 	return nil
 }

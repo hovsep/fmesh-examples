@@ -70,8 +70,7 @@ func newWatchdog(name string) (*component.Component, error) {
 			if !allControllersAreIdle && idleCycleCount >= triggerBusAfterIdleCycles {
 				this.State().Set(stateKeyObservedIdleCycles, 0)
 				this.Logger().Printf("The bus is idle for %d consecutive cycles. I will request 1 recessive bit", idleCycleCount)
-				this.OutputByName(portRecessiveBitRequest).PutSignals(signal.New(1))
-				return nil
+				return this.OutputByName(portRecessiveBitRequest).PutSignals(signal.New(1))
 			}
 
 			if allControllersAreIdle && idleCycleCount >= stopBusAfterIdleCycles {
@@ -79,8 +78,7 @@ func newWatchdog(name string) (*component.Component, error) {
 				return nil
 			}
 
-			this.OutputByName(common.PortSelfActivation).PutSignals(signal.New(true))
-			return nil
+			return this.OutputByName(common.PortSelfActivation).PutSignals(signal.New(true))
 		}),
 	)
 	if err != nil {

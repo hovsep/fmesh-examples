@@ -117,8 +117,7 @@ func oscillateHeart(_ context.Context, this *component.Component) error {
 
 	// Compute cardiac activation
 	act := cardiacActivationWave(nextPhase)
-	this.OutputByName("cardiac_activation").PutPayloads(act)
-	return nil
+	return this.OutputByName("cardiac_activation").PutPayloads(act)
 }
 
 // stateCoreTemperature is the last core temperature the body reported.
@@ -181,6 +180,5 @@ func handleCardiacBias(_ context.Context, this *component.Component) error {
 		return mathx.DecayToward(v.(float64), demanded, dt, cardiacRateHalfLifeSec)
 	})
 	this.State().Set(stateRate, int(math.Round(this.State().Get(stateRateExact).(float64))))
-	this.OutputByName("rate").PutPayloads(this.State().Get(stateRate).(int))
-	return nil
+	return this.OutputByName("rate").PutPayloads(this.State().Get(stateRate).(int))
 }

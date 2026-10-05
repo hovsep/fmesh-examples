@@ -54,8 +54,12 @@ func handleTxPath(_ context.Context, this *component.Component) error {
 			resultingLVoltage, resultingHVoltage = physical.DominantLowVoltage, physical.DominantHighVoltage
 		}
 
-		this.OutputByName(common.PortCANL).PutSignals(signal.New(resultingLVoltage))
-		this.OutputByName(common.PortCANH).PutSignals(signal.New(resultingHVoltage))
+		if err := this.OutputByName(common.PortCANL).PutSignals(signal.New(resultingLVoltage)); err != nil {
+			return err
+		}
+		if err := this.OutputByName(common.PortCANH).PutSignals(signal.New(resultingHVoltage)); err != nil {
+			return err
+		}
 
 		this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
 		return nil
@@ -81,7 +85,7 @@ func handleRxPath(_ context.Context, this *component.Component) error {
 
 		bitRead := physical.VoltageToBit(vLow.(physical.Voltage), vHigh.(physical.Voltage))
 		this.Logger().Printf("convert voltages L:%v / H:%v to bit: %s", vLow, vHigh, bitRead)
-		this.OutputByName(common.PortCANRx).PutSignals(signal.New(bitRead))
+		return this.OutputByName(common.PortCANRx).PutSignals(signal.New(bitRead))
 	}
 	return nil
 }

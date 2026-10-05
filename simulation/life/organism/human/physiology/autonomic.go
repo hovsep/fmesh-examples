@@ -236,10 +236,9 @@ func GetAutonomicCoordination() (*component.Component, error) {
 			paO2, _ := this.State().Get(stateLastPaO2).(float64)
 			exertion, _ := this.State().Get(stateLastExertion).(float64)
 			arousal, _ := this.State().Get(stateLastArousal).(float64)
-			this.OutputByName("autonomic_tone").PutSignals(
+			return this.OutputByName("autonomic_tone").PutSignals(
 				getAutonomicToneSignal(neuralDrive, pressure, paCO2, paO2,
 					sympatheticDemand(exertion, arousal)))
-			return nil
 		}),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateLastMAP, da.NormalMAP)

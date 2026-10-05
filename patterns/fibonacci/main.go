@@ -34,8 +34,14 @@ func main() {
 
 	f0, f1 := signal.New(0), signal.New(1)
 
-	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0)
-	fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_cur").PutSignals(f1)
+	if err := fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_prev").PutSignals(f0); err != nil {
+		fmt.Println("Failed to put seed signals:", err)
+		os.Exit(1)
+	}
+	if err := fm.ComponentByName("fibonacci number generator").Inputs().ByName("i_cur").PutSignals(f1); err != nil {
+		fmt.Println("Failed to put seed signals:", err)
+		os.Exit(1)
+	}
 
 	fmt.Printf("Seeds: F(0) = %v, F(1) = %v\n", f0.Payload(), f1.Payload())
 
@@ -58,8 +64,12 @@ func getMesh() (*fmesh.FMesh, error) {
 
 			if next < 100 {
 				fmt.Printf("  Fibonacci: %d\n", next)
-				this.OutputByName("o_cur").PutSignals(signal.New(next))
-				this.OutputByName("o_prev").PutSignals(signal.New(cur))
+				if err := this.OutputByName("o_cur").PutSignals(signal.New(next)); err != nil {
+					return err
+				}
+				if err := this.OutputByName("o_prev").PutSignals(signal.New(cur)); err != nil {
+					return err
+				}
 			} else {
 				fmt.Printf("  %d >= 100, sequence complete\n", next)
 			}

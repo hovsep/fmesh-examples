@@ -59,7 +59,9 @@ func newWires(name string) (*component.Component, error) {
 
 	// Initially drive the bus with 11 recessive bits to simulate a passive idle state,
 	// ensuring all CAN controllers detect bus idle condition.
-	wires.InputByName(portRecessiveBitRequest).PutSignals(signal.New(initialRecessiveBitsRequest))
+	if err := wires.InputByName(portRecessiveBitRequest).PutSignals(signal.New(initialRecessiveBitsRequest)); err != nil {
+		return nil, fmt.Errorf("put initial recessive bits %s: %w", name, err)
+	}
 
 	return wires, nil
 }
@@ -75,7 +77,9 @@ func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, 
 
 		// Self-activate
 		if recessivesCount > 1 {
-			this.OutputByName(portRecessiveBitRequest).PutSignals(signal.New(recessivesCount - 1))
+			if err := this.OutputByName(portRecessiveBitRequest).PutSignals(signal.New(recessivesCount - 1)); err != nil {
+				return nil, nil, err
+			}
 		}
 	}
 	return allLow, allHigh, nil
@@ -149,7 +153,8 @@ func doWiredAND(this *component.Component, allLow, allHigh []physical.Voltage) e
 
 	this.Logger().Printf("bus voltage is L:%v / H:%v", busLow, busHigh)
 
-	this.OutputByName(common.PortCANL).PutSignals(signal.New(busLow))
-	this.OutputByName(common.PortCANH).PutSignals(signal.New(busHigh))
-	return nil
+	if err := this.OutputByName(common.PortCANL).PutSignals(signal.New(busLow)); err != nil {
+		return err
+	}
+	return this.OutputByName(common.PortCANH).PutSignals(signal.New(busHigh))
 }

@@ -2,6 +2,7 @@ package organ
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -118,11 +119,11 @@ func handleMechanics(_ context.Context, this *component.Component) error {
 
 	this.State().Set(stateVolume, Vnext)
 
-	this.OutputByName("volume").PutPayloads(Vnext)
-	this.OutputByName("flow").PutPayloads(flow)
-	this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure)
-
-	return nil
+	return errors.Join(
+		this.OutputByName("volume").PutPayloads(Vnext),
+		this.OutputByName("flow").PutPayloads(flow),
+		this.OutputByName("alveolar_pressure").PutPayloads(alveolarPressure),
+	)
 }
 
 func handleGasExchange(_ context.Context, this *component.Component) error {
@@ -233,7 +234,9 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 		WithMeta("composition:carbon_dioxide", co2Frac).
 		WithMeta("temperature", tempNew).
 		WithMeta("humidity", humidNew)
-	this.OutputByName("exhaled_gas").PutSignals(exhaled)
+	if err := this.OutputByName("exhaled_gas").PutSignals(exhaled); err != nil {
+		return err
+	}
 
 	// Emit alveolar_gas (actual gas VOLUMES per tick, mL)
 	alveolar := signal.New("alveolar_gas").
@@ -246,9 +249,7 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 		WithMeta("tick_volume", tickVolume).
 		WithMeta("temperature", tempNew).
 		WithMeta("humidity", humidNew)
-	this.OutputByName("alveolar_gas").PutSignals(alveolar)
-
-	return nil
+	return this.OutputByName("alveolar_gas").PutSignals(alveolar)
 }
 
 // strongestInspiratoryEffort returns the most negative pleural pressure offered,

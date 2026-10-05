@@ -41,7 +41,10 @@ func main() {
 		return
 	}
 
-	fm.ComponentByName("lightbulb").InputByName("start_power_demand").PutSignals(signal.New("start"))
+	if err := fm.ComponentByName("lightbulb").InputByName("start_power_demand").PutSignals(signal.New("start")); err != nil {
+		fmt.Println("Failed to put the start signal:", err)
+		os.Exit(1)
+	}
 
 	runResult, err := fm.Run(context.Background())
 	if err != nil {
@@ -80,7 +83,9 @@ func getMesh() (*fmesh.FMesh, error) {
 				demandedCurrent := this.InputByName("power_demand").Signals().FirstPayloadOrDefault(0)
 				suppliedCurrent := min(level, demandedCurrent)
 				if suppliedCurrent > 0 {
-					this.OutputByName("power_supply").PutSignals(signal.New(suppliedCurrent))
+					if err := this.OutputByName("power_supply").PutSignals(signal.New(suppliedCurrent)); err != nil {
+						return err
+					}
 					if suppliedCurrent < demandedCurrent {
 						this.Logger().Println("LOW BATTERY")
 					}
@@ -116,7 +121,9 @@ func getMesh() (*fmesh.FMesh, error) {
 						this.Logger().Println("OVERHEATING. LIGHT EMISSION WILL SIGNIFICANTLY DEGRADE")
 						lightEmission *= lightbulbOverheatDegradation
 					}
-					this.OutputByName("light_supply").PutSignals(signal.New(lightEmission))
+					if err := this.OutputByName("light_supply").PutSignals(signal.New(lightEmission)); err != nil {
+						return err
+					}
 					temperature += lightBulbWarmingPerCycle
 					if temperature > lightbulbMaxWorkingTemperature {
 						this.Logger().Println("BURNOUT")
@@ -127,8 +134,7 @@ func getMesh() (*fmesh.FMesh, error) {
 				}
 			}
 
-			this.OutputByName("power_demand").PutSignals(signal.New(lightBulbPowerConsumption))
-			return nil
+			return this.OutputByName("power_demand").PutSignals(signal.New(lightBulbPowerConsumption))
 		}),
 	)
 	if err != nil {

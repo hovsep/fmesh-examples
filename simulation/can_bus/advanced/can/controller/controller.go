@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/hovsep/fmesh-examples/simulation/can_bus/advanced/can/codec"
 	"github.com/hovsep/fmesh-examples/simulation/can_bus/advanced/can/common"
@@ -30,6 +32,8 @@ var (
 // which converts frames to bits and vice versa
 func New(unitName string) (*component.Component, error) {
 	c, err := component.New("can_controller-"+unitName,
+		// Own logger, because refreshLoggerPrefix changes the prefix and the mesh logger is shared by all components
+		component.WithLogger(log.New(os.Stdout, "", log.LstdFlags|log.Lmsgprefix)),
 		component.WithInputs(common.PortCANTx, common.PortCANRx),                              // Frame in, bits in
 		component.WithOutputs(common.PortCANTx, common.PortCANRx, common.PortControllerState), // Bits out, frame out, notify when bus is idle
 		component.WithInitialState(func(state component.State) {
@@ -39,18 +43,19 @@ func New(unitName string) (*component.Component, error) {
 			state.Set(stateKeyConsecutiveRecessiveBitsObserved, 0)
 			state.Set(stateKeyBitsExpected, 0)
 		}),
-		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
+		component.WithActivationFunc(func(ctx context.Context, this *component.Component) (err error) {
 			defer func() {
 				// Report current state to bus watchdog
 				ctlState := this.State().Get(stateKeyControllerState).(State)
-				this.OutputByName(common.PortControllerState).PutSignals(signal.New(StateMap{
+				reportErr := this.OutputByName(common.PortControllerState).PutSignals(signal.New(StateMap{
 					this.Name(): ctlState,
 				}))
+				err = errors.Join(err, reportErr)
 			}()
 
 			refreshLoggerPrefix(this)
 
-			err := handleIncomingFrames(ctx, this)
+			err = handleIncomingFrames(ctx, this)
 			if err != nil {
 				return fmt.Errorf("failed to handle incoming frames: %w", err)
 			}
@@ -261,7 +266,9 @@ func handleArbitrationState(this *component.Component, previousState State, curr
 
 	txBit := txItem.Buf.NextBit()
 
-	this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
+	if err := this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit)); err != nil {
+		return StateArbitration, err
+	}
 	txItem.Buf.IncreaseOffset()
 
 	return StateArbitration, nil
@@ -335,7 +342,9 @@ func handleReceiveState(this *component.Component, previousState State, currentB
 
 			this.Logger().Println("received frame:", rxFrame)
 
-			this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame))
+			if err := this.OutputByName(common.PortCANRx).PutSignals(signal.New(rxFrame)); err != nil {
+				return StateReceive, err
+			}
 			return StateIdle, nil
 		}
 	}
@@ -364,7 +373,9 @@ func handleTransmitState(this *component.Component, previousState State) (State,
 	}
 
 	txBit := txItem.Buf.NextBit()
-	this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit))
+	if err := this.OutputByName(common.PortCANTx).PutSignals(signal.New(txBit)); err != nil {
+		return StateTransmit, err
+	}
 	txItem.Buf.IncreaseOffset()
 
 	return StateTransmit, nil
