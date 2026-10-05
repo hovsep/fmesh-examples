@@ -1,0 +1,411 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>a 2-2-1 network learning XOR: one component per operation, gradients on reverse pipes</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="b1";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="b1",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="b1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n7[fontname="Courier New",group="b1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="b1",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n6->n4;
+		n4->n7;
+		
+	}
+	subgraph cluster_s8 {
+		color="black";label="b2";margin="20";penwidth="5";style="rounded";
+		n10[fontname="Courier New",group="b2",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n11[fontname="Courier New",group="b2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[fontname="Courier New",group="b2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n9[color="#9dddea",fontname="Courier New",group="b2",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n10->n9;
+		n11->n9;
+		n9->n12;
+		
+	}
+	subgraph cluster_s13 {
+		color="black";label="c";margin="20";penwidth="5";style="rounded";
+		n15[fontname="Courier New",group="c",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[fontname="Courier New",group="c",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n17[fontname="Courier New",group="c",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[color="#9dddea",fontname="Courier New",group="c",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n15->n14;
+		n16->n14;
+		n14->n17;
+		
+	}
+	subgraph cluster_s18 {
+		color="black";label="h1";margin="20";penwidth="5";style="rounded";
+		n20[fontname="Courier New",group="h1",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n21[fontname="Courier New",group="h1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="h1",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n23[fontname="Courier New",group="h1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n19[color="#9dddea",fontname="Courier New",group="h1",height="1.0",label="tanh",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n20->n19;
+		n21->n19;
+		n19->n22;
+		n19->n23;
+		
+	}
+	subgraph cluster_s24 {
+		color="black";label="h2";margin="20";penwidth="5";style="rounded";
+		n26[fontname="Courier New",group="h2",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n27[fontname="Courier New",group="h2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[fontname="Courier New",group="h2",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n29[fontname="Courier New",group="h2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n25[color="#9dddea",fontname="Courier New",group="h2",height="1.0",label="tanh",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n26->n25;
+		n27->n25;
+		n25->n28;
+		n25->n29;
+		
+	}
+	subgraph cluster_s30 {
+		color="black";label="loss";margin="20";penwidth="5";style="rounded";
+		n32[fontname="Courier New",group="loss",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n33[fontname="Courier New",group="loss",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[fontname="Courier New",group="loss",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n35[fontname="Courier New",group="loss",height="1.0",label="loss",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n31[color="#9dddea",fontname="Courier New",group="loss",height="1.0",label="mean squared error",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n32->n31;
+		n33->n31;
+		n31->n34;
+		n31->n35;
+		
+	}
+	subgraph cluster_s36 {
+		color="black";label="v1";margin="20";penwidth="5";style="rounded";
+		n38[fontname="Courier New",group="v1",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n39[fontname="Courier New",group="v1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[fontname="Courier New",group="v1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n37[color="#9dddea",fontname="Courier New",group="v1",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n38->n37;
+		n39->n37;
+		n37->n40;
+		
+	}
+	subgraph cluster_s41 {
+		color="black";label="v1·h1";margin="20";penwidth="5";style="rounded";
+		n43[fontname="Courier New",group="v1·h1",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[fontname="Courier New",group="v1·h1",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n45[fontname="Courier New",group="v1·h1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="v1·h1",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n47[fontname="Courier New",group="v1·h1",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[fontname="Courier New",group="v1·h1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[color="#9dddea",fontname="Courier New",group="v1·h1",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n43->n42;
+		n44->n42;
+		n45->n42;
+		n42->n46;
+		n42->n47;
+		n42->n48;
+		
+	}
+	subgraph cluster_s49 {
+		color="black";label="v2";margin="20";penwidth="5";style="rounded";
+		n51[fontname="Courier New",group="v2",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[fontname="Courier New",group="v2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n53[fontname="Courier New",group="v2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[color="#9dddea",fontname="Courier New",group="v2",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n51->n50;
+		n52->n50;
+		n50->n53;
+		
+	}
+	subgraph cluster_s54 {
+		color="black";label="v2·h2";margin="20";penwidth="5";style="rounded";
+		n56[fontname="Courier New",group="v2·h2",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n57[fontname="Courier New",group="v2·h2",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="v2·h2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n59[fontname="Courier New",group="v2·h2",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[fontname="Courier New",group="v2·h2",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n61[fontname="Courier New",group="v2·h2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n55[color="#9dddea",fontname="Courier New",group="v2·h2",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n56->n55;
+		n57->n55;
+		n58->n55;
+		n55->n59;
+		n55->n60;
+		n55->n61;
+		
+	}
+	subgraph cluster_s62 {
+		color="black";label="w11";margin="20";penwidth="5";style="rounded";
+		n64[fontname="Courier New",group="w11",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n65[fontname="Courier New",group="w11",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[fontname="Courier New",group="w11",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n63[color="#9dddea",fontname="Courier New",group="w11",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n64->n63;
+		n65->n63;
+		n63->n66;
+		
+	}
+	subgraph cluster_s67 {
+		color="black";label="w11·x1";margin="20";penwidth="5";style="rounded";
+		n69[fontname="Courier New",group="w11·x1",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="w11·x1",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n71[fontname="Courier New",group="w11·x1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[fontname="Courier New",group="w11·x1",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n73[fontname="Courier New",group="w11·x1",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[fontname="Courier New",group="w11·x1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n68[color="#9dddea",fontname="Courier New",group="w11·x1",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n69->n68;
+		n70->n68;
+		n71->n68;
+		n68->n72;
+		n68->n73;
+		n68->n74;
+		
+	}
+	subgraph cluster_s75 {
+		color="black";label="w12";margin="20";penwidth="5";style="rounded";
+		n77[fontname="Courier New",group="w12",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[fontname="Courier New",group="w12",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n79[fontname="Courier New",group="w12",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[color="#9dddea",fontname="Courier New",group="w12",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n77->n76;
+		n78->n76;
+		n76->n79;
+		
+	}
+	subgraph cluster_s80 {
+		color="black";label="w12·x2";margin="20";penwidth="5";style="rounded";
+		n82[fontname="Courier New",group="w12·x2",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n83[fontname="Courier New",group="w12·x2",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[fontname="Courier New",group="w12·x2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n85[fontname="Courier New",group="w12·x2",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n86[fontname="Courier New",group="w12·x2",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n87[fontname="Courier New",group="w12·x2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n81[color="#9dddea",fontname="Courier New",group="w12·x2",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n82->n81;
+		n83->n81;
+		n84->n81;
+		n81->n85;
+		n81->n86;
+		n81->n87;
+		
+	}
+	subgraph cluster_s88 {
+		color="black";label="w21";margin="20";penwidth="5";style="rounded";
+		n90[fontname="Courier New",group="w21",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n91[fontname="Courier New",group="w21",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n92[fontname="Courier New",group="w21",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n89[color="#9dddea",fontname="Courier New",group="w21",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n90->n89;
+		n91->n89;
+		n89->n92;
+		
+	}
+	subgraph cluster_s93 {
+		color="black";label="w21·x1";margin="20";penwidth="5";style="rounded";
+		n95[fontname="Courier New",group="w21·x1",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n96[fontname="Courier New",group="w21·x1",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n97[fontname="Courier New",group="w21·x1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n98[fontname="Courier New",group="w21·x1",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n99[fontname="Courier New",group="w21·x1",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n100[fontname="Courier New",group="w21·x1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n94[color="#9dddea",fontname="Courier New",group="w21·x1",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n95->n94;
+		n96->n94;
+		n97->n94;
+		n94->n98;
+		n94->n99;
+		n94->n100;
+		
+	}
+	subgraph cluster_s101 {
+		color="black";label="w22";margin="20";penwidth="5";style="rounded";
+		n103[fontname="Courier New",group="w22",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n104[fontname="Courier New",group="w22",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n105[fontname="Courier New",group="w22",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n102[color="#9dddea",fontname="Courier New",group="w22",height="1.0",label="learned weight",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n103->n102;
+		n104->n102;
+		n102->n105;
+		
+	}
+	subgraph cluster_s106 {
+		color="black";label="w22·x2";margin="20";penwidth="5";style="rounded";
+		n108[fontname="Courier New",group="w22·x2",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n109[fontname="Courier New",group="w22·x2",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n110[fontname="Courier New",group="w22·x2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n111[fontname="Courier New",group="w22·x2",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n112[fontname="Courier New",group="w22·x2",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n113[fontname="Courier New",group="w22·x2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n107[color="#9dddea",fontname="Courier New",group="w22·x2",height="1.0",label="×",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n108->n107;
+		n109->n107;
+		n110->n107;
+		n107->n111;
+		n107->n112;
+		n107->n113;
+		
+	}
+	subgraph cluster_s114 {
+		color="black";label="x1";margin="20";penwidth="5";style="rounded";
+		n116[fontname="Courier New",group="x1",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n117[fontname="Courier New",group="x1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n115[color="#9dddea",fontname="Courier New",group="x1",height="1.0",label="[0 0 1 1]",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n116->n115;
+		n115->n117;
+		
+	}
+	subgraph cluster_s118 {
+		color="black";label="x2";margin="20";penwidth="5";style="rounded";
+		n120[fontname="Courier New",group="x2",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n121[fontname="Courier New",group="x2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n119[color="#9dddea",fontname="Courier New",group="x2",height="1.0",label="[0 1 0 1]",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n120->n119;
+		n119->n121;
+		
+	}
+	subgraph cluster_s122 {
+		color="black";label="y";margin="20";penwidth="5";style="rounded";
+		n124[fontname="Courier New",group="y",height="1.0",label="go",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n125[fontname="Courier New",group="y",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n123[color="#9dddea",fontname="Courier New",group="y",height="1.0",label="[0 1 1 0]",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n124->n123;
+		n123->n125;
+		
+	}
+	subgraph cluster_s126 {
+		color="black";label="ŷ";margin="20";penwidth="5";style="rounded";
+		n128[fontname="Courier New",group="ŷ",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n129[fontname="Courier New",group="ŷ",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n130[fontname="Courier New",group="ŷ",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n131[fontname="Courier New",group="ŷ",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n127[color="#9dddea",fontname="Courier New",group="ŷ",height="1.0",label="σ",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n128->n127;
+		n129->n127;
+		n127->n130;
+		n127->n131;
+		
+	}
+	subgraph cluster_s132 {
+		color="black";label="Σ1";margin="20";penwidth="5";style="rounded";
+		n134[fontname="Courier New",group="Σ1",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n135[fontname="Courier New",group="Σ1",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n136[fontname="Courier New",group="Σ1",height="1.0",label="c",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n137[fontname="Courier New",group="Σ1",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n138[fontname="Courier New",group="Σ1",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n139[fontname="Courier New",group="Σ1",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n140[fontname="Courier New",group="Σ1",height="1.0",label="dc",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n141[fontname="Courier New",group="Σ1",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n133[color="#9dddea",fontname="Courier New",group="Σ1",height="1.0",label="+",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n134->n133;
+		n135->n133;
+		n136->n133;
+		n137->n133;
+		n133->n138;
+		n133->n139;
+		n133->n140;
+		n133->n141;
+		
+	}
+	subgraph cluster_s142 {
+		color="black";label="Σ2";margin="20";penwidth="5";style="rounded";
+		n144[fontname="Courier New",group="Σ2",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n145[fontname="Courier New",group="Σ2",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n146[fontname="Courier New",group="Σ2",height="1.0",label="c",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n147[fontname="Courier New",group="Σ2",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n148[fontname="Courier New",group="Σ2",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n149[fontname="Courier New",group="Σ2",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n150[fontname="Courier New",group="Σ2",height="1.0",label="dc",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n151[fontname="Courier New",group="Σ2",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n143[color="#9dddea",fontname="Courier New",group="Σ2",height="1.0",label="+",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n144->n143;
+		n145->n143;
+		n146->n143;
+		n147->n143;
+		n143->n148;
+		n143->n149;
+		n143->n150;
+		n143->n151;
+		
+	}
+	subgraph cluster_s152 {
+		color="black";label="Σ3";margin="20";penwidth="5";style="rounded";
+		n154[fontname="Courier New",group="Σ3",height="1.0",label="a",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n155[fontname="Courier New",group="Σ3",height="1.0",label="b",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n156[fontname="Courier New",group="Σ3",height="1.0",label="c",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n157[fontname="Courier New",group="Σ3",height="1.0",label="grad",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n158[fontname="Courier New",group="Σ3",height="1.0",label="da",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n159[fontname="Courier New",group="Σ3",height="1.0",label="db",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n160[fontname="Courier New",group="Σ3",height="1.0",label="dc",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n161[fontname="Courier New",group="Σ3",height="1.0",label="out",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n153[color="#9dddea",fontname="Courier New",group="Σ3",height="1.0",label="+",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n154->n153;
+		n155->n153;
+		n156->n153;
+		n157->n153;
+		n153->n158;
+		n153->n159;
+		n153->n160;
+		n153->n161;
+		
+	}
+	layout="dot";splines="ortho";
+	n7->n136[color="#e437ea",minlen="3",penwidth="2"];
+	n12->n146[color="#e437ea",minlen="3",penwidth="2"];
+	n17->n156[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n137[color="#e437ea",minlen="3",penwidth="2"];
+	n23->n44[color="#e437ea",minlen="3",penwidth="2"];
+	n28->n147[color="#e437ea",minlen="3",penwidth="2"];
+	n29->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n34->n129[color="#e437ea",minlen="3",penwidth="2"];
+	n40->n43[color="#e437ea",minlen="3",penwidth="2"];
+	n46->n39[color="#e437ea",minlen="3",penwidth="2"];
+	n47->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n48->n154[color="#e437ea",minlen="3",penwidth="2"];
+	n53->n56[color="#e437ea",minlen="3",penwidth="2"];
+	n59->n52[color="#e437ea",minlen="3",penwidth="2"];
+	n60->n27[color="#e437ea",minlen="3",penwidth="2"];
+	n61->n155[color="#e437ea",minlen="3",penwidth="2"];
+	n66->n69[color="#e437ea",minlen="3",penwidth="2"];
+	n72->n65[color="#e437ea",minlen="3",penwidth="2"];
+	n74->n134[color="#e437ea",minlen="3",penwidth="2"];
+	n79->n82[color="#e437ea",minlen="3",penwidth="2"];
+	n85->n78[color="#e437ea",minlen="3",penwidth="2"];
+	n87->n135[color="#e437ea",minlen="3",penwidth="2"];
+	n92->n95[color="#e437ea",minlen="3",penwidth="2"];
+	n98->n91[color="#e437ea",minlen="3",penwidth="2"];
+	n100->n144[color="#e437ea",minlen="3",penwidth="2"];
+	n105->n108[color="#e437ea",minlen="3",penwidth="2"];
+	n111->n104[color="#e437ea",minlen="3",penwidth="2"];
+	n113->n145[color="#e437ea",minlen="3",penwidth="2"];
+	n117->n70[color="#e437ea",minlen="3",penwidth="2"];
+	n117->n96[color="#e437ea",minlen="3",penwidth="2"];
+	n121->n83[color="#e437ea",minlen="3",penwidth="2"];
+	n121->n109[color="#e437ea",minlen="3",penwidth="2"];
+	n125->n33[color="#e437ea",minlen="3",penwidth="2"];
+	n130->n157[color="#e437ea",minlen="3",penwidth="2"];
+	n131->n32[color="#e437ea",minlen="3",penwidth="2"];
+	n138->n71[color="#e437ea",minlen="3",penwidth="2"];
+	n139->n84[color="#e437ea",minlen="3",penwidth="2"];
+	n140->n6[color="#e437ea",minlen="3",penwidth="2"];
+	n141->n20[color="#e437ea",minlen="3",penwidth="2"];
+	n148->n97[color="#e437ea",minlen="3",penwidth="2"];
+	n149->n110[color="#e437ea",minlen="3",penwidth="2"];
+	n150->n11[color="#e437ea",minlen="3",penwidth="2"];
+	n151->n26[color="#e437ea",minlen="3",penwidth="2"];
+	n158->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n159->n58[color="#e437ea",minlen="3",penwidth="2"];
+	n160->n16[color="#e437ea",minlen="3",penwidth="2"];
+	n161->n128[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
