@@ -13,12 +13,6 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
-// tablePort is the host's output port that leads to the table with the given
-// index, e.g. "table3": F-Mesh names indexed ports "<prefix><index>".
-func tablePort(index int) string {
-	return fmt.Sprintf("table%d", index)
-}
-
 // newFIFOHost seats parties first come, first served: each party takes the
 // first free table where it fits, in table order. A couple can take the 6-top.
 func newFIFOHost(numberOfTables int) (*component.Component, error) {
@@ -74,7 +68,8 @@ func newHost(policy string, description string, numberOfTables int,
 			waiting := slices.Collect(this.InputByName("waiting").Signals().All())
 			for index, party := range choose(waiting, free) {
 				delete(free, index)
-				if err := this.OutputByName(tablePort(index)).PutSignals(party); err != nil {
+				// Indexed outputs are named "<prefix><index>", so table 3 is "table3".
+				if err := this.OutputByName(fmt.Sprintf("table%d", index)).PutSignals(party); err != nil {
 					return err
 				}
 				if err := this.OutputByName("seated").PutSignals(party); err != nil {
