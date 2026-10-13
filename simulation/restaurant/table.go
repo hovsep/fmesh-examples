@@ -25,11 +25,11 @@ const (
 // component name is "table-<index>"; the seats are also kept as metadata so
 // diagrams and reports can read them.
 func newTable(index int, seats int) (*component.Component, error) {
-	return component.New(tableName(index),
+	return component.New(fmt.Sprintf("table-%d", index),
 		component.WithDescription(fmt.Sprintf("table for %d", seats)),
-		component.WithMeta(metaSeats, float64(seats)),
-		component.WithInputs(portSeat, portTick),
-		component.WithOutputs(portFree, portServed),
+		component.WithMeta("seats", float64(seats)),
+		component.WithInputs("seat", "tick"),
+		component.WithOutputs("free", "served"),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateIndex, index)
 			state.Set(stateSeats, seats)
@@ -40,12 +40,12 @@ func newTable(index int, seats int) (*component.Component, error) {
 			state.Set(stateMinute, 0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			if this.InputByName(portTick).HasSignals() {
+			if this.InputByName("tick").HasSignals() {
 				if err := tableTick(this); err != nil {
 					return err
 				}
 			}
-			if this.InputByName(portSeat).HasSignals() {
+			if this.InputByName("seat").HasSignals() {
 				return tableSeat(this)
 			}
 			return nil
@@ -56,7 +56,7 @@ func newTable(index int, seats int) (*component.Component, error) {
 // tableTick is one minute passing at the table.
 func tableTick(this *component.Component) error {
 	state := this.State()
-	minute, err := firstPayload[int](this.InputByName(portTick))
+	minute, err := firstPayload[int](this.InputByName("tick"))
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func tableTick(this *component.Component) error {
 		WaitedMinutes: state.Get(stateWaited).(int),
 		LeftAt:        minute,
 	}
-	if err := this.OutputByName(portServed).PutPayloads(served); err != nil {
+	if err := this.OutputByName("served").PutPayloads(served); err != nil {
 		return err
 	}
 	state.Set(stateParty, (*Party)(nil))
@@ -94,7 +94,7 @@ func tableTick(this *component.Component) error {
 // tableSeat is the host bringing a party to the table.
 func tableSeat(this *component.Component) error {
 	state := this.State()
-	seating, err := firstPayload[Seating](this.InputByName(portSeat))
+	seating, err := firstPayload[Seating](this.InputByName("seat"))
 	if err != nil {
 		return err
 	}
@@ -111,5 +111,5 @@ func announceFree(this *component.Component) error {
 	state := this.State()
 	state.Set(stateAnnounced, true)
 	announcement := TableFree{Index: state.Get(stateIndex).(int), Seats: state.Get(stateSeats).(int)}
-	return this.OutputByName(portFree).PutPayloads(announcement)
+	return this.OutputByName("free").PutPayloads(announcement)
 }

@@ -1,6 +1,6 @@
 # Restaurant
 
-This example simulates one day in a restaurant as an F-Mesh and uses it to answer a business question: should the owner hire a smarter host, add two tables, or both? It was written for the ESM 2026 tutorial on F-Mesh, for an audience of engineers and non-programmers alike, so the code is meant to read like prose.
+This example simulates one day in a restaurant as an F-Mesh and prints the bookkeeper's report for that day. Change a number, or swap the host for a smarter one, and run it again to see what the owner's choices are worth. It was written for the ESM 2026 tutorial on F-Mesh, for an audience of engineers and non-programmers alike, so the code is meant to read like prose.
 
 The scenario: parties of one to six guests arrive at the door, more of them around lunch and dinner. A host seats them at the tables that are free; a party that waits more than 20 minutes gives up and leaves. Every seated party eats for 45 to 90 minutes, pays 25 EUR per guest and goes. A bookkeeper counts served and lost parties, waiting time, table utilisation and revenue.
 
@@ -34,21 +34,23 @@ table-<i>.served      -> report.served
 
 One run is a few activation cycles. In the first cycle every component with a tick activates: a table whose party has finished emits `served` and `free`, the waiting list drops impatient parties and emits the queue, the arrivals may emit a new party. In the second cycle the host receives the queue and the free tables and seats whom it can; the report receives the served and lost parties; the waiting list receives the new arrivals. In the third cycle the tables receive their seatings and the waiting list forgets the seated parties. Nothing is left to deliver, so the run stops and the next minute begins.
 
-### What-if and the decision
+### What-if
 
-`main.go` runs the same day — same seed, so the same guests at the same minutes — four times: with the FIFO and the best-fit host, each with today's eight tables (four 2-tops, three 4-tops, one 6-top) and with two extra 4-tops. It prints one row per run and a closing sentence that reads the table as a decision: the option with the highest revenue after paying 60 EUR a day for each extra table (`extraTableDailyCost`).
+`main.go` runs one day and prints the report. The simulation does not know about alternatives: to ask a what-if question you change the restaurant in `mesh.go` and run the day again. The seed is fixed, so the same guests arrive at the same minutes in every run and the reports are comparable.
 
 ```
-policy    tables  served  lost  avg wait   util  revenue  lost rev
-fifo           8      40     9     4.5 m    48% 2650 EUR  1000 EUR
-fifo          10      44     5     3.8 m    43% 3050 EUR   600 EUR
-best-fit       8      41     8     4.7 m    50% 2775 EUR   875 EUR
-best-fit      10      46     3     3.7 m    44% 3300 EUR   350 EUR
-
-Decision: a best-fit host with 10 tables earns the most, 3180 EUR net per day, 530 EUR more than today's fifo host with 8 tables; the 2 extra tables pay for themselves at 60 EUR a day each.
+The day with 8 tables:
+  Parties served :   40  (106 guests)
+  Parties lost   :    9  (40 guests)
+  Average wait   :    4.5 min
+  Utilisation    :   48.3 %
+  Revenue        : 2650 EUR
+  Lost revenue   : 1000 EUR
 ```
 
-Change `defaultConfig()` in `mesh.go` (tables, patience, opening hours, revenue, seed) or the arrival rates in `arrivals.go` to ask your own questions.
+- **A smarter host.** In `newRestaurant`, replace `newFIFOHost` with `newBestFitHost`. The two hosts have the same ports, so nothing else changes: 41 parties served instead of 40, 2775 EUR instead of 2650.
+- **More tables.** Append to `tableSeats`; two extra 4-tops serve 44 parties and earn 3050 EUR under the FIFO host.
+- **Anything else.** The constants at the top of `mesh.go` (patience, opening hours, revenue per guest, seed) and the arrival rates in `arrivals.go` are there to be edited.
 
 Notable APIs: `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, `component.WithMeta` for the table size, `port.MultiPipe` for wiring, `sig.As[T]()` and `Signals().FirstAs[T]()` for typed payloads, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
 

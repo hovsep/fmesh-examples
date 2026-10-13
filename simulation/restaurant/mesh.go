@@ -1,5 +1,6 @@
-// This file holds the configuration of a restaurant and the wiring that turns
-// the components into one mesh.
+// This file holds the restaurant as it is today and the wiring that turns the
+// components into one mesh. To ask a what-if question, change a number here or
+// swap the host in newRestaurant and run the day again.
 package main
 
 import (
@@ -10,44 +11,16 @@ import (
 	"github.com/hovsep/fmesh/port"
 )
 
-// The two seating policies a host can follow.
+// The restaurant and its day.
 const (
-	policyFIFO    = "fifo"
-	policyBestFit = "best-fit"
+	patienceMinutes = 20      // a party gives up after waiting this long
+	openingMinutes  = 12 * 60 // open from 11:00 to 23:00
+	revenuePerGuest = 25      // euros per served guest
+	seed            = 1       // any fixed seed makes the day reproducible
 )
 
-// Defaults of a restaurant day.
-const (
-	defaultPatienceMinutes = 20      // a party gives up after waiting this long
-	defaultOpeningMinutes  = 12 * 60 // open from 11:00 to 23:00
-	defaultRevenuePerGuest = 25      // euros per served guest
-	defaultSeed            = 1       // any fixed seed makes the day reproducible
-)
-
-// defaultTables is the seating plan: four 2-tops, three 4-tops and one 6-top.
-var defaultTables = []int{2, 2, 2, 2, 4, 4, 4, 6}
-
-// Config describes one restaurant and one day.
-type Config struct {
-	Tables          []int  // seats per table
-	HostPolicy      string // policyFIFO or policyBestFit
-	PatienceMinutes int
-	OpeningMinutes  int
-	RevenuePerGuest int
-	Seed            int64
-}
-
-// defaultConfig is the restaurant as it is today, run by a first-come-first-served host.
-func defaultConfig() Config {
-	return Config{
-		Tables:          defaultTables,
-		HostPolicy:      policyFIFO,
-		PatienceMinutes: defaultPatienceMinutes,
-		OpeningMinutes:  defaultOpeningMinutes,
-		RevenuePerGuest: defaultRevenuePerGuest,
-		Seed:            defaultSeed,
-	}
-}
+// tableSeats is the seating plan: four 2-tops, three 4-tops and one 6-top.
+var tableSeats = []int{2, 2, 2, 2, 4, 4, 4, 6}
 
 // newRestaurant builds the mesh: every component plus the pipes between them.
 //
@@ -58,24 +31,26 @@ func defaultConfig() Config {
 //	host.table<i>         -> table-<i>.seat        (for every table)
 //	table-<i>.free        -> host.free
 //	table-<i>.served      -> report.served
-func newRestaurant(cfg Config) (*fmesh.FMesh, error) {
-	arrivals, err := newArrivals(cfg.Seed)
+func newRestaurant() (*fmesh.FMesh, error) {
+	arrivals, err := newArrivals(seed)
 	if err != nil {
 		return nil, err
 	}
-	waitingList, err := newWaitingList(cfg.PatienceMinutes)
+	waitingList, err := newWaitingList(patienceMinutes)
 	if err != nil {
 		return nil, err
 	}
-	host, err := newHostForPolicy(cfg.HostPolicy, len(cfg.Tables))
+	// The host is the one component with an alternative: newBestFitHost has
+	// the same ports, so swapping it here changes nothing else.
+	host, err := newFIFOHost(len(tableSeats))
 	if err != nil {
 		return nil, err
 	}
-	report, err := newReport(len(cfg.Tables), cfg.RevenuePerGuest)
+	report, err := newReport(len(tableSeats), revenuePerGuest)
 	if err != nil {
 		return nil, err
 	}
-	tables, err := newTables(cfg.Tables)
+	tables, err := newTables(tableSeats)
 	if err != nil {
 		return nil, err
 	}
@@ -95,19 +70,19 @@ func newRestaurant(cfg Config) (*fmesh.FMesh, error) {
 	}
 
 	err = port.MultiPipe(
-		port.Pipe{From: arrivals.OutputByName(portParty), To: waitingList.InputByName(portParty)},
-		port.Pipe{From: waitingList.OutputByName(portWaiting), To: host.InputByName(portWaiting)},
-		port.Pipe{From: waitingList.OutputByName(portLost), To: report.InputByName(portLost)},
-		port.Pipe{From: host.OutputByName(portSeated), To: waitingList.InputByName(portSeated)},
+		port.Pipe{From: arrivals.OutputByName("party"), To: waitingList.InputByName("party")},
+		port.Pipe{From: waitingList.OutputByName("waiting"), To: host.InputByName("waiting")},
+		port.Pipe{From: waitingList.OutputByName("lost"), To: report.InputByName("lost")},
+		port.Pipe{From: host.OutputByName("seated"), To: waitingList.InputByName("seated")},
 	)
 	if err != nil {
 		return nil, err
 	}
 	for i, table := range tables {
 		err = port.MultiPipe(
-			port.Pipe{From: host.OutputByName(tablePortName(i)), To: table.InputByName(portSeat)},
-			port.Pipe{From: table.OutputByName(portFree), To: host.InputByName(portFree)},
-			port.Pipe{From: table.OutputByName(portServed), To: report.InputByName(portServed)},
+			port.Pipe{From: host.OutputByName(tablePort(i)), To: table.InputByName("seat")},
+			port.Pipe{From: table.OutputByName("free"), To: host.InputByName("free")},
+			port.Pipe{From: table.OutputByName("served"), To: report.InputByName("served")},
 		)
 		if err != nil {
 			return nil, err
@@ -132,7 +107,7 @@ func newTables(seats []int) ([]*component.Component, error) {
 // seedTick puts the current minute on the "tick" input of every component that has one.
 func seedTick(fm *fmesh.FMesh, minute int) error {
 	return fm.Components().ForEach(func(c *component.Component) error {
-		tick := c.InputByName(portTick)
+		tick := c.InputByName("tick")
 		if tick == nil {
 			return nil
 		}

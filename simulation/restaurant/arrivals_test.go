@@ -11,14 +11,14 @@ import (
 )
 
 func TestArrivalsProducePlausibleParties(t *testing.T) {
-	arrivals, err := newArrivals(defaultSeed)
+	arrivals, err := newArrivals(seed)
 	require.NoError(t, err)
 	fm := alone(t, arrivals)
 
 	var parties []Party
-	for minute := range defaultOpeningMinutes {
+	for minute := range openingMinutes {
 		tick(t, fm, arrivals, minute)
-		for _, party := range outputs[Party](t, arrivals.OutputByName(portParty)) {
+		for _, party := range outputs[Party](t, arrivals.OutputByName("party")) {
 			assert.Equal(t, minute, party.ArrivedAt, "a party is stamped with its arrival minute")
 			parties = append(parties, party)
 		}

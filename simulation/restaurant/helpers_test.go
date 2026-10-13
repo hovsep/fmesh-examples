@@ -35,7 +35,7 @@ func activate(t *testing.T, fm *fmesh.FMesh, c *component.Component, inputs map[
 // tick activates the component with just the minute on its "tick" input.
 func tick(t *testing.T, fm *fmesh.FMesh, c *component.Component, minute int) {
 	t.Helper()
-	activate(t, fm, c, map[string][]any{portTick: {minute}})
+	activate(t, fm, c, map[string][]any{"tick": {minute}})
 }
 
 // outputs reads every payload on an output port as T.
