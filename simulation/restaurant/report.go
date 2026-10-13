@@ -38,58 +38,70 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 			state.Set("revenue", 0)
 			state.Set("lost-revenue", 0)
 		}),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			state := this.State()
-			minutes := state.Get("minutes-open").(int)
-			partiesServed := state.Get("parties-served").(int)
-			guestsServed := state.Get("guests-served").(int)
-			partiesLost := state.Get("parties-lost").(int)
-			guestsLost := state.Get("guests-lost").(int)
-			waitMinutes := state.Get("wait-minutes").(int)
-			busyTableMinutes := state.Get("busy-table-minutes").(int)
-
-			minutes += this.InputByName("tick").Signals().Len()
-
-			// A served party carries its whole story in its labels.
-			for party := range this.InputByName("served").Signals().All() {
-				guests, err := party.As[int]()
-				if err != nil {
-					return err
-				}
-				labels := party.Meta()
-				partiesServed++
-				guestsServed += guests
-				waitMinutes += labels.ValueOrDefault("seated-at", 0) - labels.ValueOrDefault("arrived-at", 0)
-				busyTableMinutes += labels.ValueOrDefault("meal-minutes", 0)
-			}
-
-			for party := range this.InputByName("lost").Signals().All() {
-				guests, err := party.As[int]()
-				if err != nil {
-					return err
-				}
-				partiesLost++
-				guestsLost += guests
-			}
-
-			state.Set("minutes-open", minutes)
-			state.Set("parties-served", partiesServed)
-			state.Set("guests-served", guestsServed)
-			state.Set("parties-lost", partiesLost)
-			state.Set("guests-lost", guestsLost)
-			state.Set("wait-minutes", waitMinutes)
-			state.Set("busy-table-minutes", busyTableMinutes)
-
-			// The figures the owner asks for, kept up to date.
-			if partiesServed > 0 {
-				state.Set("average-wait", float64(waitMinutes)/float64(partiesServed))
-			}
-			if minutes > 0 {
-				state.Set("utilisation", 100*float64(busyTableMinutes)/float64(numberOfTables*minutes))
-			}
-			state.Set("revenue", guestsServed*revenuePerGuest)
-			state.Set("lost-revenue", guestsLost*revenuePerGuest)
-			return nil
-		}),
+		component.WithActivationFunc(component.Sequential(
+			countTheMinutes,
+			countServedParties,
+			countLostParties,
+			updateTheFigures(numberOfTables, revenuePerGuest),
+		)),
 	)
+}
+
+// countTheMinutes adds the ticks to the minutes open.
+func countTheMinutes(_ context.Context, this *component.Component) error {
+	add(this.State(), "minutes-open", this.InputByName("tick").Signals().Len())
+	return nil
+}
+
+// countServedParties books every party that ate and paid. A served party
+// carries its whole story in its labels.
+func countServedParties(_ context.Context, this *component.Component) error {
+	for party := range this.InputByName("served").Signals().All() {
+		guests, err := party.As[int]()
+		if err != nil {
+			return err
+		}
+		labels := party.Meta()
+		add(this.State(), "parties-served", 1)
+		add(this.State(), "guests-served", guests)
+		add(this.State(), "wait-minutes", labels.ValueOrDefault("seated-at", 0)-labels.ValueOrDefault("arrived-at", 0))
+		add(this.State(), "busy-table-minutes", labels.ValueOrDefault("meal-minutes", 0))
+	}
+	return nil
+}
+
+// countLostParties books every party that gave up waiting.
+func countLostParties(_ context.Context, this *component.Component) error {
+	for party := range this.InputByName("lost").Signals().All() {
+		guests, err := party.As[int]()
+		if err != nil {
+			return err
+		}
+		add(this.State(), "parties-lost", 1)
+		add(this.State(), "guests-lost", guests)
+	}
+	return nil
+}
+
+// updateTheFigures keeps the figures the owner asks for up to date.
+func updateTheFigures(numberOfTables int, revenuePerGuest int) component.ActivationFunc {
+	return func(_ context.Context, this *component.Component) error {
+		state := this.State()
+		minutes := state.Get("minutes-open").(int)
+		partiesServed := state.Get("parties-served").(int)
+		if partiesServed > 0 {
+			state.Set("average-wait", float64(state.Get("wait-minutes").(int))/float64(partiesServed))
+		}
+		if minutes > 0 {
+			state.Set("utilisation", 100*float64(state.Get("busy-table-minutes").(int))/float64(numberOfTables*minutes))
+		}
+		state.Set("revenue", state.Get("guests-served").(int)*revenuePerGuest)
+		state.Set("lost-revenue", state.Get("guests-lost").(int)*revenuePerGuest)
+		return nil
+	}
+}
+
+// add increases one of the counters in the state.
+func add(state component.State, key string, n int) {
+	state.Set(key, state.Get(key).(int)+n)
 }

@@ -1,6 +1,6 @@
 // This file holds the "waiting-list" component: the queue at the door. It
 // remembers who is waiting, shows the list to the host every minute and lets
-// impatient parties leave. The queue is a signal group.
+// impatient parties leave. The queue is a signal group kept in the state.
 package main
 
 import (
@@ -18,50 +18,66 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 		component.WithInputs("party", "seated", "tick"),
 		component.WithOutputs("waiting", "lost"),
 		component.WithInitialState(func(state component.State) {
-			state.Set("waiting", signal.NewGroup())
+			state.Set("queue", signal.NewGroup())
 		}),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			waiting, err := this.State().GetTyped[*signal.Group]("waiting")
-			if err != nil {
-				return err
-			}
-
-			// New arrivals join the end of the queue.
-			waiting = waiting.Join(this.InputByName("party").Signals())
-
-			// Parties the host has seated leave the queue (matched by id).
-			for seated := range this.InputByName("seated").Signals().All() {
-				id := seated.Meta().ValueOrDefault("id", 0)
-				waiting = waiting.Filter(signal.Not(signal.MetaEquals("id", id)))
-			}
-
-			// On a tick: impatient parties leave, then the host gets the current list.
-			if this.InputByName("tick").HasSignals() {
-				minute, err := this.InputByName("tick").Signals().FirstAs[int]()
-				if err != nil {
-					return err
-				}
-				lost := signal.NewGroup()
-				staying := signal.NewGroup()
-				for party := range waiting.All() {
-					arrived := party.Meta().ValueOrDefault("arrived-at", 0)
-					if minute-arrived > patienceMinutes {
-						lost = lost.With(party)
-					} else {
-						staying = staying.With(party)
-					}
-				}
-				waiting = staying
-				if err := this.OutputByName("lost").PutSignalGroups(lost); err != nil {
-					return err
-				}
-				if err := this.OutputByName("waiting").PutSignalGroups(waiting); err != nil {
-					return err
-				}
-			}
-
-			this.State().Set("waiting", waiting)
-			return nil
-		}),
+		component.WithActivationFunc(component.Sequential(
+			admitArrivals,
+			forgetSeatedParties,
+			component.When(component.HasSignalsOn("tick"), showTheQueue(patienceMinutes)),
+		)),
 	)
+}
+
+// admitArrivals puts the new parties at the end of the queue.
+func admitArrivals(_ context.Context, this *component.Component) error {
+	queue, err := this.State().GetTyped[*signal.Group]("queue")
+	if err != nil {
+		return err
+	}
+	this.State().Set("queue", queue.Join(this.InputByName("party").Signals()))
+	return nil
+}
+
+// forgetSeatedParties takes the parties the host has seated out of the queue,
+// matched by id.
+func forgetSeatedParties(_ context.Context, this *component.Component) error {
+	queue, err := this.State().GetTyped[*signal.Group]("queue")
+	if err != nil {
+		return err
+	}
+	for seated := range this.InputByName("seated").Signals().All() {
+		id := seated.Meta().ValueOrDefault("id", 0)
+		queue = queue.Filter(signal.Not(signal.MetaEquals("id", id)))
+	}
+	this.State().Set("queue", queue)
+	return nil
+}
+
+// showTheQueue runs on a tick: the parties past their patience leave on
+// "lost", and the rest go out on "waiting" for the host to choose from.
+func showTheQueue(patienceMinutes int) component.ActivationFunc {
+	return func(_ context.Context, this *component.Component) error {
+		queue, err := this.State().GetTyped[*signal.Group]("queue")
+		if err != nil {
+			return err
+		}
+		minute, err := this.InputByName("tick").Signals().FirstAs[int]()
+		if err != nil {
+			return err
+		}
+		lost := signal.NewGroup()
+		staying := signal.NewGroup()
+		for party := range queue.All() {
+			if minute-party.Meta().ValueOrDefault("arrived-at", 0) > patienceMinutes {
+				lost = lost.With(party)
+			} else {
+				staying = staying.With(party)
+			}
+		}
+		this.State().Set("queue", staying)
+		if err := this.OutputByName("lost").PutSignalGroups(lost); err != nil {
+			return err
+		}
+		return this.OutputByName("waiting").PutSignalGroups(staying)
+	}
 }
