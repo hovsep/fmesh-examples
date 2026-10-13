@@ -25,6 +25,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 	return component.New("report",
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
 		component.WithInputs("served", "lost", "tick"),
+		// No outputs: the state is the result, read by the program after the day.
 		component.WithInitialState(func(state component.State) {
 			state.Set("minutes-open", 0)
 			state.Set("parties-served", 0)

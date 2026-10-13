@@ -1,6 +1,13 @@
 // This file holds the program: it builds the restaurant, exports the diagram
 // when asked, and otherwise lets a whole day pass minute by minute and prints
 // the bookkeeper's report.
+//
+// If F-Mesh is new to you: a mesh is a set of components joined by pipes.
+// Signals travel the pipes. A component wakes up when a signal reaches one of
+// its inputs, does its work and may put signals on its outputs, which the pipes
+// deliver in the next round. fm.Run repeats rounds until no signal is left,
+// then returns. Components keep their state from one run to the next, which
+// is why calling Run once per minute adds up to a day.
 package main
 
 import (
@@ -34,7 +41,6 @@ func main() {
 
 	// One run is one minute: the clock ticks, every component that keeps time
 	// hears the minute, and the mesh runs until all signals have been handled.
-	// Components keep their state between runs, so the day builds up.
 	for minute := range openingMinutes {
 		if _, err := fm.Run(context.Background()); err != nil {
 			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
@@ -42,7 +48,8 @@ func main() {
 		}
 	}
 
-	// The bookkeeper's state is the report.
+	// A component's state is plain data the program can read: the bookkeeper's
+	// state is the report.
 	report := fm.ComponentByName("report").State()
 	fmt.Printf("  Host policy    : %s\n", fm.ComponentByName("host").Meta().ValueOrDefault("policy", "?"))
 	fmt.Printf("  Tables         : %4d\n", len(tableSeats))

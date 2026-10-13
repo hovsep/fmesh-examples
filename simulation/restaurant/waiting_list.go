@@ -20,6 +20,10 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set("queue", signal.NewGroup())
 		}),
+		// An activation function can be composed from smaller ones: Sequential
+		// runs them in order, and When runs one only if the named input has
+		// signals. The queue admits arrivals and forgets seated parties whenever
+		// it wakes up, and shows itself to the host only on a tick.
 		component.WithActivationFunc(component.Sequential(
 			admitArrivals,
 			forgetSeatedParties,
@@ -28,7 +32,8 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 	)
 }
 
-// admitArrivals puts the new parties at the end of the queue.
+// admitArrivals puts the new parties at the end of the queue. A signal group
+// is an ordered set of signals; Join appends another group to it.
 func admitArrivals(_ context.Context, this *component.Component) error {
 	queue, err := this.State().GetTyped[*signal.Group]("queue")
 	if err != nil {
@@ -38,8 +43,9 @@ func admitArrivals(_ context.Context, this *component.Component) error {
 	return nil
 }
 
-// forgetSeatedParties takes the parties the host has seated out of the queue,
-// matched by id.
+// forgetSeatedParties takes the parties the host has seated out of the queue.
+// Filter keeps the signals that match; here, every party but the seated one,
+// matched by its "id" label.
 func forgetSeatedParties(_ context.Context, this *component.Component) error {
 	queue, err := this.State().GetTyped[*signal.Group]("queue")
 	if err != nil {

@@ -35,7 +35,8 @@ var tableSeats = []int{2, 2, 2, 2, 4, 4, 4, 6}
 //	table-<i>.free        -> host.free
 //	table-<i>.served      -> report.served
 //
-// The clock is nudged by a hook before every run, so one run is one minute.
+// Every component is created by its own constructor in its own file; this
+// function only puts them together.
 func buildMesh() (*fmesh.FMesh, error) {
 	clock, err := newClock()
 	if err != nil {
@@ -66,6 +67,8 @@ func buildMesh() (*fmesh.FMesh, error) {
 		}
 	}
 
+	// A mesh is created with options, like a component. StopOnFirstErrorOrPanic
+	// ends the run at the first error, so a bug cannot hide in a half-done minute.
 	fm, err := fmesh.New("restaurant",
 		fmesh.WithDescription("a restaurant for one day: parties arrive, wait, eat and leave, one mesh run per minute"),
 		fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic),
@@ -80,6 +83,8 @@ func buildMesh() (*fmesh.FMesh, error) {
 		return nil, err
 	}
 
+	// A pipe joins an output port to an input port: whatever a component puts
+	// on the output is delivered to the input in the next round.
 	err = port.MultiPipe(
 		port.Pipe{From: arrivals.OutputByName("party"), To: waitingList.InputByName("party")},
 		port.Pipe{From: waitingList.OutputByName("waiting"), To: host.InputByName("waiting")},
@@ -100,7 +105,8 @@ func buildMesh() (*fmesh.FMesh, error) {
 		}
 	}
 
-	// The clock ticks to every component that keeps time: one output, many pipes.
+	// One output can feed many pipes: every component with a "tick" input
+	// hears the same minute from the clock.
 	for c := range fm.Components().All() {
 		if tick := c.InputByName("tick"); tick != nil {
 			if err := clock.OutputByName("tick").PipeTo(tick); err != nil {
@@ -108,8 +114,9 @@ func buildMesh() (*fmesh.FMesh, error) {
 			}
 		}
 	}
-	// Nobody inside the mesh can start the clock, so the program does it
-	// before every run: nudge the clock, and the minute goes out.
+	// A hook runs code at a moment in the mesh's life. Nobody inside the mesh
+	// can start the clock, so before every run this hook nudges it, and the
+	// minute goes out. That is what makes one run one minute.
 	fm.SetupHooks(func(hooks *fmesh.Hooks) {
 		hooks.BeforeRun(func(_ context.Context, _ *fmesh.FMesh) error {
 			return clock.InputByName("advance").PutPayloads(true)

@@ -30,19 +30,18 @@ func newBestFitHost(numberOfTables int) (*component.Component, error) {
 	return newHost("best-fit", "seats the party that fits each free table best, keeping big tables for big parties", numberOfTables, chooseBestFit)
 }
 
-// newHost creates a host with the given seating policy. The host learns which
-// tables are free from their announcements and, whenever it sees the waiting
-// list, seats as many parties as the policy allows. The policy name is kept as
-// metadata so the program can print which host ran the day.
+// newHost creates a host with the given seating policy. The policy name is
+// kept as component metadata so the program can print which host ran the day.
 func newHost(policy string, description string, numberOfTables int, choose seatingPolicy) (*component.Component, error) {
 	return component.New("host",
 		component.WithDescription("the host "+description),
 		component.WithMeta("policy", policy),
 		component.WithInputs("waiting", "free", "tick"),
 		component.WithOutputs("seated"),
+		// One output per table, named "table0", "table1", and so on.
 		component.WithIndexedOutputs("table", 0, numberOfTables-1),
 		component.WithInitialState(func(state component.State) {
-			state.Set("free-tables", map[int]int{})
+			state.Set("free-tables", map[int]int{}) // table index -> seats
 		}),
 		component.WithActivationFunc(component.Sequential(
 			learnFreeTables,
@@ -82,7 +81,6 @@ func seatParties(choose seatingPolicy) component.ActivationFunc {
 		waiting := slices.Collect(this.InputByName("waiting").Signals().All())
 		for index, party := range choose(waiting, free) {
 			delete(free, index)
-			// Indexed outputs are named "<prefix><index>", so table 3 is "table3".
 			if err := this.OutputByName(fmt.Sprintf("table%d", index)).PutSignals(party); err != nil {
 				return err
 			}
