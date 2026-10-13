@@ -32,7 +32,7 @@ table-<i>.served      -> report.served
 
 ### How a minute works
 
-One run is a few activation cycles. In the first cycle every component with a tick activates: a table whose party has finished emits `served` and `free`, the waiting list drops impatient parties and emits the queue, the arrivals may emit a new party. In the second cycle the host receives the queue and the free tables and seats whom it can; the report receives the served and lost parties; the waiting list receives the new arrivals. In the third cycle the tables receive their seatings and the waiting list forgets the seated parties. Nothing is left to deliver, so the run stops and the next minute begins. Run `tutorial/step2` to watch one minute signal by signal.
+One run is a few activation cycles. In the first cycle every component with a tick activates: a table whose party has finished emits `served` and `free`, the waiting list drops impatient parties and emits the queue, the arrivals may emit a new party. In the second cycle the host receives the queue and the free tables and seats whom it can; the report receives the served and lost parties; the waiting list receives the new arrivals. In the third cycle the tables receive their seatings and the waiting list forgets the seated parties. Nothing is left to deliver, so the run stops and the next minute begins.
 
 ### What-if and the decision
 
@@ -52,16 +52,6 @@ Change `defaultConfig()` in `mesh.go` (tables, patience, opening hours, revenue,
 
 Notable APIs: `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, `component.WithMeta` for the table size, `port.MultiPipe` for wiring, `sig.As[T]()` and `Signals().FirstAs[T]()` for typed payloads, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
 
-## Tutorial
-
-The same example rebuilt in five self-contained steps under [`tutorial/`](./tutorial) (see its [README](./tutorial/README.md)); each is its own program whose `main.go` starts with a comment on what it adds and what to look at. From step 2 on, a step mirrors the file layout of this directory, each file holding only what the step needs.
-
-1. [`step1`](./tutorial/step1) — **Components.** One table, activated by hand for a few minutes; see what comes out of `free` and `served`.
-2. [`step2`](./tutorial/step2) — **Wiring.** Arrivals, waiting list, FIFO host and three tables wired into a mesh. Runs one minute and prints every signal, cycle by cycle. `FMESH_GRAPH=1` exports the diagram.
-3. [`step3`](./tutorial/step3) — **Run.** The run loop over a whole day and the report component; prints the report.
-4. [`step4`](./tutorial/step4) — **What-if.** The best-fit host; both hosts run the same day, reports side by side.
-5. [`step5`](./tutorial/step5) — **Analyze.** The what-if table over policies and seating plans, and the decision sentence.
-
 ## Run
 
 ```bash
@@ -72,12 +62,4 @@ FMESH_GRAPH=1 go run .
 
 # Tests, one file per component plus a whole-day test
 go test -race .
-
-# Tutorial steps
-go run ./tutorial/step1
-go run ./tutorial/step2
-FMESH_GRAPH=1 go run ./tutorial/step2
-go run ./tutorial/step3
-go run ./tutorial/step4
-go run ./tutorial/step5
 ```
