@@ -15,14 +15,9 @@ import (
 // bookkeeper's state.
 func runDay(t *testing.T) component.State {
 	t.Helper()
-	fm, err := newRestaurant()
+	fm, err := buildMesh()
 	require.NoError(t, err)
 	for minute := range openingMinutes {
-		for c := range fm.Components().All() {
-			if tick := c.InputByName("tick"); tick != nil {
-				require.NoError(t, tick.PutPayloads(minute))
-			}
-		}
 		_, err := fm.Run(context.Background())
 		require.NoError(t, err, "minute %d", minute)
 	}

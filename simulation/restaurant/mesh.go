@@ -1,9 +1,10 @@
 // This file holds the restaurant as it is today and the wiring that turns the
 // components into one mesh. To ask a what-if question, change a number here or
-// swap the host in newRestaurant and run the day again.
+// swap the host in buildMesh and run the day again.
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hovsep/fmesh"
@@ -23,8 +24,9 @@ const (
 // tableSeats is the seating plan: four 2-tops, three 4-tops and one 6-top.
 var tableSeats = []int{2, 2, 2, 2, 4, 4, 4, 6}
 
-// newRestaurant builds the mesh: every component plus the pipes between them.
+// buildMesh builds the mesh: every component plus the pipes between them.
 //
+//	clock.tick            -> <every component>.tick
 //	arrivals.party        -> waiting-list.party
 //	waiting-list.waiting  -> host.waiting
 //	waiting-list.lost     -> report.lost
@@ -32,7 +34,13 @@ var tableSeats = []int{2, 2, 2, 2, 4, 4, 4, 6}
 //	host.table<i>         -> table-<i>.seat        (for every table)
 //	table-<i>.free        -> host.free
 //	table-<i>.served      -> report.served
-func newRestaurant() (*fmesh.FMesh, error) {
+//
+// The clock is nudged by a hook before every run, so one run is one minute.
+func buildMesh() (*fmesh.FMesh, error) {
+	clock, err := newClock()
+	if err != nil {
+		return nil, err
+	}
 	arrivals, err := newArrivals(seed)
 	if err != nil {
 		return nil, err
@@ -65,7 +73,7 @@ func newRestaurant() (*fmesh.FMesh, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := fm.AddComponents(arrivals, waitingList, host, report); err != nil {
+	if err := fm.AddComponents(clock, arrivals, waitingList, host, report); err != nil {
 		return nil, err
 	}
 	if err := fm.AddComponents(tables...); err != nil {
@@ -91,5 +99,21 @@ func newRestaurant() (*fmesh.FMesh, error) {
 			return nil, err
 		}
 	}
+
+	// The clock ticks to every component that keeps time: one output, many pipes.
+	for c := range fm.Components().All() {
+		if tick := c.InputByName("tick"); tick != nil {
+			if err := clock.OutputByName("tick").PipeTo(tick); err != nil {
+				return nil, err
+			}
+		}
+	}
+	// Nobody inside the mesh can start the clock, so the program does it
+	// before every run: nudge the clock, and the minute goes out.
+	fm.SetupHooks(func(hooks *fmesh.Hooks) {
+		hooks.BeforeRun(func(_ context.Context, _ *fmesh.FMesh) error {
+			return clock.InputByName("advance").PutPayloads(true)
+		})
+	})
 	return fm, nil
 }

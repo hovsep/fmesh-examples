@@ -4,7 +4,7 @@ This example simulates one day in a restaurant as an F-Mesh and prints the bookk
 
 The scenario: parties of one to six guests arrive at the door, more of them around lunch and dinner. A host seats them at the tables that are free; a party that waits more than 20 minutes gives up and leaves. Every seated party eats for 45 to 90 minutes, pays 25 EUR per guest and goes. A bookkeeper counts served and lost parties, waiting time, table utilisation and revenue.
 
-Time is discrete: **one mesh run is one simulated minute**. A run loop puts the current minute on the `tick` input of every component and calls `fm.Run(ctx)`, 720 times for a day from 11:00 to 23:00. Components keep their state between runs, so the day builds up minute by minute.
+Time is discrete: **one mesh run is one simulated minute**. A `clock` component is nudged by a `BeforeRun` hook and puts the minute of the day on its `tick` output, which is piped to every component that keeps time. `main.go` just calls `fm.Run(ctx)` 720 times for a day from 11:00 to 23:00. Components keep their state between runs, so the day builds up minute by minute.
 
 ## How it works
 
@@ -12,6 +12,7 @@ Everything that moves through the mesh is a plain F-Mesh signal; there are no cu
 
 | Component | Inputs | Outputs | State | Behaviour |
 |-----------|--------|---------|-------|-----------|
+| `clock` | `advance` | `tick` | the minute of the day | Nudged on `advance` by the mesh's `BeforeRun` hook, it emits the current minute on `tick` and moves on by one. One output, piped to every `tick` input. |
 | `arrivals` | `tick` | `party` | seeded random generator, next id | Each minute decides how many parties walk in (two draws against a rate that peaks at lunch and dinner), gives each a size (couples are the most common) and a meal duration, and emits one party signal per arrival. |
 | `waiting-list` | `party`, `seated`, `tick` | `waiting`, `lost` | the queue, a `signal.Group` in arrival order | New parties `Join` the queue, seated ones are filtered out by `id`. On every tick the parties past their patience go out on `lost` and the rest go out on `waiting`, one signal per party, for the host to choose from. |
 | `host` | `waiting`, `free`, `tick` | `seated`, `table0` ... `table<n-1>` | free tables (index -> seats) | Learns which tables are free from their announcements. When the waiting list arrives it seats parties according to its policy: the party signal goes unchanged to the matching indexed `table<i>` output and back on `seated`. Two hosts share this code and differ only in the policy function: **FIFO** (`newFIFOHost`) walks the parties in arrival order and gives each the first free table where it fits; **best fit** (`newBestFitHost`) walks the free tables from small to large and gives each the party that leaves the fewest empty seats, so big tables are kept for big parties. The policy name is component metadata, which is how `main.go` prints it. |
@@ -21,6 +22,7 @@ Everything that moves through the mesh is a plain F-Mesh signal; there are no cu
 The wiring (`mesh.go`):
 
 ```
+clock.tick            -> <every component>.tick
 arrivals.party        -> waiting-list.party
 waiting-list.waiting  -> host.waiting
 waiting-list.lost     -> report.lost
@@ -34,7 +36,7 @@ table-<i>.served      -> report.served
 
 ### How a minute works
 
-One run is a few activation cycles. In the first cycle every component with a tick activates: a table whose party has finished emits `served` and `free`, the waiting list drops impatient parties and emits the queue, the arrivals may emit a new party. In the second cycle the host receives the queue and the free tables and seats whom it can; the report receives the served and lost parties; the waiting list receives the new arrivals. In the third cycle the tables receive their seatings and the waiting list forgets the seated parties. Nothing is left to deliver, so the run stops and the next minute begins.
+One run is a few activation cycles. In the first cycle only the clock activates and emits the minute. In the second every component with a tick activates: a table whose party has finished emits `served` and `free`, the waiting list drops impatient parties and emits the queue, the arrivals may emit a new party. In the third the host receives the queue and the free tables and seats whom it can; the report receives the served and lost parties; the waiting list receives the new arrivals. In the fourth the tables receive their seatings and the waiting list forgets the seated parties. Nothing is left to deliver, so the run stops and the next minute begins.
 
 ### What-if
 
@@ -51,11 +53,11 @@ One run is a few activation cycles. In the first cycle every component with a ti
   Lost revenue   : 1000 EUR
 ```
 
-- **A smarter host.** In `newRestaurant`, replace `newFIFOHost` with `newBestFitHost`. The two hosts have the same ports, so nothing else changes: 41 parties served instead of 40, 2775 EUR instead of 2650.
+- **A smarter host.** In `buildMesh`, replace `newFIFOHost` with `newBestFitHost`. The two hosts have the same ports, so nothing else changes: 41 parties served instead of 40, 2775 EUR instead of 2650.
 - **More tables.** Append to `tableSeats`; two extra 4-tops serve 44 parties and earn 3050 EUR under the FIFO host.
 - **Anything else.** The constants at the top of `mesh.go` (patience, opening hours, revenue per guest, seed) and the arrival rates in `arrivals.go` are there to be edited.
 
-Notable APIs: `signal.New(...).WithMetaMany(...)` and `WithMeta` for labelled signals, `Meta().ValueOrDefault` to read a label, `signal.Group` with `Join`, `Filter`, `signal.Not` and `signal.MetaEquals` for the queue, `Signals().FirstAs[T]()` / `As[T]()` for typed payloads, `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, with `GetTyped[T]`, `Has` and `Delete` (the report's state is the report), `component.WithMeta` for the table size and the host's policy name, `port.MultiPipe` for wiring, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
+Notable APIs: `signal.New(...).WithMetaMany(...)` and `WithMeta` for labelled signals, `Meta().ValueOrDefault` to read a label, `signal.Group` with `Join`, `Filter`, `signal.Not` and `signal.MetaEquals` for the queue, `Signals().FirstAs[T]()` / `As[T]()` for typed payloads, `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, with `GetTyped[T]`, `Has` and `Delete` (the report's state is the report), `component.WithMeta` for the table size and the host's policy name, `port.MultiPipe` for wiring and `PipeTo` to fan the clock out to many inputs, `fm.SetupHooks` with `hooks.BeforeRun` to nudge the clock before every run, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
 
 ## Run
 
