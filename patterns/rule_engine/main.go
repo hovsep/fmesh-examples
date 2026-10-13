@@ -110,7 +110,7 @@ func apply(fm *fmesh.FMesh, emails []Email) (map[string][]string, error) {
 	}
 
 	actions := make(map[string][]string)
-	for _, sig := range fm.ComponentByName("outbox").OutputByName(portOut).Signals().All() {
+	for sig := range fm.ComponentByName("outbox").OutputByName(portOut).Signals().All() {
 		id := sig.PayloadOrDefault("")
 		actions[id] = append(actions[id], sig.Meta().ValueOrDefault(keyAction, ""))
 	}
@@ -235,7 +235,7 @@ func newRule(r Rule) (*component.Component, error) {
 			first := make(map[string]*signal.Signal)
 			order := make([]string, 0)
 			for _, name := range conditions {
-				for _, sig := range this.InputByName(name).Signals().All() {
+				for sig := range this.InputByName(name).Signals().All() {
 					id := sig.PayloadOrDefault("")
 					if passed[id] == 0 {
 						first[id] = sig
@@ -266,7 +266,7 @@ func newAction(name string) (*component.Component, error) {
 		component.WithOutputs(portOut),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			seen := make(map[string]bool)
-			for _, sig := range this.InputByName(portIn).Signals().All() {
+			for sig := range this.InputByName(portIn).Signals().All() {
 				id := sig.PayloadOrDefault("")
 				if seen[id] {
 					continue

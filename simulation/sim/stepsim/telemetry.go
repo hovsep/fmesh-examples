@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // PortLines returns a snapshot function reading telemetry from a component's
@@ -36,10 +35,9 @@ func PortLines(fm *fmesh.FMesh, componentName, portName string) (func() []string
 		signals := c.OutputByName(portName).Signals()
 
 		lines := make([]string, 0, signals.Len())
-		_ = signals.ForEach(func(sig *signal.Signal) error {
+		for sig := range signals.All() {
 			lines = append(lines, fmt.Sprint(sig.Payload()))
-			return nil
-		})
+		}
 		return lines
 	}, nil
 }

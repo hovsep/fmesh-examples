@@ -246,7 +246,7 @@ func fire(fm *fmesh.FMesh, event string, sig ...*signal.Signal) {
 }
 
 func fireEvent(fm *fmesh.FMesh, event string, sig ...*signal.Signal) error {
-	known := fm.Components().AnyMatch(func(c *component.Component) bool {
+	known := fm.Components().Any(func(c *component.Component) bool {
 		return c.InputByName(portEvent) != nil && c.OutputByName(event) != nil
 	})
 	if !known {

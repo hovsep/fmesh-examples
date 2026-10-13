@@ -5,7 +5,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // GetProgress returns the component reporting rendering progress.
@@ -16,11 +15,11 @@ func GetProgress() *component.Component {
 		component.WithDescription("Reports rendering progress"),
 		component.WithInputs(common.PortIn),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortIn).Signals().All() {
 				this.Logger().Printf("rendered frame %d/%d",
 					common.ScalarInt(sig, common.ScalarFrame)+1, common.TotalFrames)
-				return nil
-			})
+			}
+			return nil
 		}),
 	))
 }

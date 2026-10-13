@@ -32,7 +32,7 @@ func InnerMesh(c *component.Component) *fmesh.FMesh {
 // the name belongs to the person -- there is a Leon in the habitat, not a
 // "human" -- and anything looking for a body should not have to know who it is.
 func Find(fm *fmesh.FMesh) *component.Component {
-	return fm.Components().FindAny(func(c *component.Component) bool {
+	return fm.Components().Find(func(c *component.Component) bool {
 		return c.Meta().ValueIs("role", "organism") &&
 			c.Meta().ValueIs("genus", "homo") &&
 			c.Meta().ValueIs("species", "sapiens")
@@ -115,14 +115,14 @@ func sense(mesh *fmesh.FMesh) component.ActivationFunc {
 		// list from the ports themselves makes that impossible. The habitat wires
 		// its own factors the same way (see env/habitat.go).
 		tick := this.InputByName("habitat_time_tick")
-		if err := mesh.Components().ForEach(func(c *component.Component) error {
+		for c := range mesh.Components().All() {
 			timePort := c.InputByName(sim.TimePort)
 			if timePort == nil {
-				return nil
+				continue
 			}
-			return port.ForwardSignals(ctx, tick, timePort)
-		}); err != nil {
-			return fmt.Errorf("failed to distribute time in human mesh: %w", err)
+			if err := port.ForwardSignals(ctx, tick, timePort); err != nil {
+				return fmt.Errorf("failed to distribute time in human mesh: %w", err)
+			}
 		}
 
 		// Environmental air enters through the airway, and also reaches the skin,

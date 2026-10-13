@@ -88,10 +88,10 @@ func getMesh() (*fmesh.FMesh, error) {
 		return nil, err
 	}
 	for _, chain := range []*component.Collection{raygens, intersectors, shadowCasters, shaders} {
-		if err := chain.ForEach(func(worker *component.Component) error {
-			return fm.AddComponents(worker)
-		}); err != nil {
-			return nil, err
+		for worker := range chain.All() {
+			if err := fm.AddComponents(worker); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return fm, nil

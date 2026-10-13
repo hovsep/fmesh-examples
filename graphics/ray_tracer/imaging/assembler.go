@@ -22,16 +22,12 @@ func GetAssembler() *component.Component {
 
 			// Merge all the tiles which arrived in this cycle,
 			// each tile knows its own place in the frame
-			err := this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortIn).Signals().All() {
 				frame = common.ScalarInt(sig, common.ScalarFrame)
 				copy(img.Pix[common.ScalarInt(sig, common.ScalarYFrom)*img.Stride:], sig.Payload().([]byte))
-				return nil
-			})
-			if err != nil {
-				return err
 			}
 
-			err = this.OutputByName(common.PortFrameOut).PutSignals(
+			err := this.OutputByName(common.PortFrameOut).PutSignals(
 				signal.New(img).WithMeta(common.ScalarFrame, float64(frame)))
 			if err != nil {
 				return err

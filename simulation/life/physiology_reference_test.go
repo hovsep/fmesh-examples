@@ -220,13 +220,12 @@ func TestReference_WholeBodyOxygenConsumption(t *testing.T) {
 
 	var total float64
 	perfused := map[string]float64{}
-	require.NoError(t, inner.Components().ForEach(func(c *component.Component) error {
+	for c := range inner.Components().All() {
 		if demand := perfusion.O2PerMinute(c); demand > 0 {
 			perfused[c.Name()] = demand
 			total += demand
 		}
-		return nil
-	}))
+	}
 
 	assert.Len(t, perfused, 10,
 		"brain, heart, kidney, liver, pancreas, diaphragm, adrenals, gut, skin and muscle should be perfused")

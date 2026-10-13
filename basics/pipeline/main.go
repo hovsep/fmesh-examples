@@ -45,7 +45,7 @@ func main() {
 	}
 
 	fmt.Println("Starting the pipeline: reading user input from stdin...")
-	err = fm.Components().FindAny(func(c *component.Component) bool {
+	err = fm.Components().Find(func(c *component.Component) bool {
 		return c.Meta().ValueIs("stage", "1")
 	}).InputByName(portIn).PutSignals(signal.New("start"))
 	if err != nil {
@@ -62,7 +62,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("Pipeline finished successfully")
 
-	resultFileName := fm.Components().FindAny(func(c *component.Component) bool {
+	resultFileName := fm.Components().Find(func(c *component.Component) bool {
 		return c.Meta().ValueIs("stage", strconv.Itoa(fm.Components().Len()))
 	}).OutputByName(portOut).Signals().FirstPayloadOrDefault("")
 
@@ -165,12 +165,11 @@ func getFileWriter(name string) (*component.Component, error) {
 			}
 			defer file.Close()
 
-			writeErr := this.InputByName(portIn).Signals().ForEach(func(s *signal.Signal) error {
+			for s := range this.InputByName(portIn).Signals().All() {
 				_, err = file.WriteString(s.Payload().(string) + "\n")
-				return err
-			})
-			if writeErr != nil {
-				return writeErr
+				if err != nil {
+					return err
+				}
 			}
 
 			if err := file.Sync(); err != nil {
@@ -236,13 +235,12 @@ func getFilter(name string, blockList map[string]bool) (*component.Component, er
 			allSignals := this.InputByName(portIn).Signals()
 
 			filtered := signal.NewGroup()
-			allSignals.ForEach(func(sig *signal.Signal) error {
+			for sig := range allSignals.All() {
 				word := sig.Payload().(string)
 				if !blockList[word] {
 					filtered = filtered.With(sig)
 				}
-				return nil
-			})
+			}
 			return this.OutputByName(portOut).PutSignalGroups(filtered)
 		}),
 	)
@@ -253,10 +251,9 @@ func getTokenCounter(name string) (*component.Component, error) {
 		component.WithDescription("count tokens"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			counters := make(map[string]int)
-			this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(portIn).Signals().All() {
 				counters[sig.Payload().(string)]++
-				return nil
-			})
+			}
 			for t, count := range counters {
 				if err := this.OutputByName(portOut).PutSignals(signal.New(fmt.Sprintf("%s:%d", t, count))); err != nil {
 					return err

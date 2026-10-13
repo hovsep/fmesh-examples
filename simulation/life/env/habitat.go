@@ -54,16 +54,16 @@ func NewHabitat(factors *component.Collection) (*Habitat, error) {
 
 // addFactors adds all exposure factors to the habitat mesh
 func (h *Habitat) addFactors(factors *component.Collection) (*Habitat, error) {
-	if !factors.AnyMatch(func(factor *component.Component) bool {
+	if !factors.Any(func(factor *component.Component) bool {
 		return factor.Name() == "time"
 	}) {
 		return nil, fmt.Errorf("time factor is required for the habitat mesh")
 	}
 
-	if err := factors.ForEach(func(c *component.Component) error {
-		return h.FM.AddComponents(c)
-	}); err != nil {
-		return nil, fmt.Errorf("failed to add factors to habitat mesh: %w", err)
+	for c := range factors.All() {
+		if err := h.FM.AddComponents(c); err != nil {
+			return nil, fmt.Errorf("failed to add factors to habitat mesh: %w", err)
+		}
 	}
 	return h, nil
 }

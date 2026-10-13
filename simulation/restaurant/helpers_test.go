@@ -47,12 +47,10 @@ func tick(t *testing.T, fm *fmesh.FMesh, c *component.Component, minute int) {
 
 // party builds a party signal the way the arrivals do.
 func party(id int, size int, arrived int, meal int) *signal.Signal {
-	return signal.New(size).WithMetaMany(map[string]float64{
-		"id": float64(id), "arrived": float64(arrived), "meal": float64(meal),
-	})
+	return signal.New(size).WithMetaMany(map[string]int{"id": id, "arrived": arrived, "meal": meal})
 }
 
 // freeTable builds a "free" announcement the way a table does.
 func freeTable(index int, seats int) *signal.Signal {
-	return signal.New(index).WithMeta("seats", float64(seats))
+	return signal.New(index).WithMeta("seats", seats)
 }

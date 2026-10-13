@@ -95,16 +95,13 @@ func acceptSwallowed(_ context.Context, this *component.Component) error {
 			continue
 		}
 
-		if err := in.Signals().ForEach(func(sig *signal.Signal) error {
+		for sig := range in.Signals().All() {
 			this.State().Update(StateStomachKcal, func(v any) any {
 				return v.(float64) + sig.Meta().ValueOrDefault(body.GlucoseKcal, 0.0)
 			})
 			this.State().Update(StateStomachMl, func(v any) any {
 				return v.(float64) + sig.Meta().ValueOrDefault(body.WaterMl, 0.0)
 			})
-			return nil
-		}); err != nil {
-			return err
 		}
 	}
 	return nil

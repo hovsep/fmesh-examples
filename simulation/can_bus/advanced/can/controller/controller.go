@@ -84,7 +84,7 @@ func handleIncomingFrames(_ context.Context, this *component.Component) error {
 		this.State().Set(stateKeyTxQueue, txQueue)
 	}()
 
-	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName(common.PortCANTx).Signals().All() {
 		frame, ok := sig.Payload().(*codec.Frame)
 		if !ok || !frame.IsValid() {
 			return errors.New("received corrupted frame")
@@ -100,8 +100,8 @@ func handleIncomingFrames(_ context.Context, this *component.Component) error {
 			Buf: codec.NewBitBuffer(frameBits.WithIFS().WithBits(codec.ProtocolRecessiveBit)),
 		})
 		this.Logger().Printf("got a frame from MCU to send: %s items in tx-queue: %d", frame, len(txQueue))
-		return nil
-	})
+	}
+	return nil
 }
 
 func getCurrentBit(this *component.Component) (codec.Bit, error) {

@@ -58,7 +58,7 @@ func newDispatcher() (*component.Component, error) {
 			known := this.State().Get("cabs").(map[string]CabStatus)
 			pending := this.State().Get("pending").(map[HallCall]string)
 
-			for _, sig := range this.InputByName(portStatus).Signals().All() {
+			for sig := range this.InputByName(portStatus).Signals().All() {
 				st, err := sig.As[CabStatus]()
 				if err != nil {
 					return err
@@ -75,7 +75,7 @@ func newDispatcher() (*component.Component, error) {
 				}
 			}
 
-			for _, sig := range this.InputByName(portCall).Signals().All() {
+			for sig := range this.InputByName(portCall).Signals().All() {
 				call, err := sig.As[HallCall]()
 				if err != nil {
 					return err

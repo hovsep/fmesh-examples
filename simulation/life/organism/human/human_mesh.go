@@ -38,10 +38,10 @@ func getHumanMesh() (*fmesh.FMesh, error) {
 		return nil, fmt.Errorf("getComponents: %w", err)
 	}
 	// Add components to the mesh
-	if err := components.ForEach(func(c *component.Component) error {
-		return mesh.AddComponents(c)
-	}); err != nil {
-		return nil, fmt.Errorf("failed to add components to human mesh: %w", err)
+	for c := range components.All() {
+		if err := mesh.AddComponents(c); err != nil {
+			return nil, fmt.Errorf("failed to add components to human mesh: %w", err)
+		}
 	}
 
 	// Do the wiring.
@@ -109,10 +109,10 @@ func wireBrain(components *component.Collection) error {
 func wireCirculation(components *component.Collection) error {
 	blood := components.ByName("da:blood_system")
 
-	return components.ForEach(func(c *component.Component) error {
+	for c := range components.All() {
 		perfused := perfusion.IsPerfused(c)
 		if c == blood || !(perfused || receptor.Listens(c)) {
-			return nil
+			continue
 		}
 
 		// The tissue reads what is being delivered...
@@ -120,14 +120,14 @@ func wireCirculation(components *component.Collection) error {
 			return fmt.Errorf("supplying %s: %w", c.Name(), err)
 		}
 		if !perfused {
-			return nil
+			continue
 		}
 		// ...and, if it consumes any of it, returns what it has used and produced.
 		if err := c.OutputByName(perfusion.ReturnPort).PipeTo(blood.InputByName("secretions")); err != nil {
 			return fmt.Errorf("draining %s: %w", c.Name(), err)
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 // wireVasculature closes the loop that defends blood pressure.

@@ -113,10 +113,9 @@ func exchangeBloodGases(_ context.Context, this *component.Component) error {
 	// part that matters: what is lost is not water but carrying capacity.
 	if in := this.InputByName("blood_loss"); in.HasSignals() {
 		var lost float64
-		in.Signals().ForEach(func(sig *signal.Signal) error {
+		for sig := range in.Signals().All() {
 			lost += sig.Float64OrDefault(0)
-			return nil
-		})
+		}
 		bleed(this, lost)
 	}
 
@@ -201,10 +200,9 @@ func updateBloodLevels(this *component.Component) {
 
 	// Net airflow across both lungs.
 	var netFlow float64
-	this.InputByName("airflow").Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName("airflow").Signals().All() {
 		netFlow += sig.Float64OrDefault(0)
-		return nil
-	})
+	}
 
 	// On inhale, fresh air loads the blood toward what the lungs can offer:
 	// saturation toward what alveolar tension (less the alveolar-arterial
@@ -259,7 +257,7 @@ func updateBloodLevels(this *component.Component) {
 	// good.
 	var o2DrawPerSec, co2LoadPerSec, coLoad float64
 	hormoneRates := map[string]float64{}
-	this.InputByName("secretions").Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName("secretions").Signals().All() {
 		rate := sig.Float64OrDefault(0)
 		switch sig.Meta().ValueOrDefault(bloodstream.SubstanceLabel, "") {
 		case bloodstream.SubstanceO2Draw:
@@ -273,8 +271,7 @@ func updateBloodLevels(this *component.Component) {
 		case bloodstream.SubstanceHormone:
 			hormoneRates[sig.Meta().ValueOrDefault(bloodstream.HormoneLabel, "")] += rate
 		}
-		return nil
-	})
+	}
 
 	accumulateHormones(this, hormoneRates, dt)
 
@@ -471,11 +468,10 @@ func alveolarPO2(this *component.Component) float64 {
 
 	var sum float64
 	var n int
-	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range in.Signals().All() {
 		sum += sig.Float64OrDefault(bloodstream.SeaLevelAlveolarPO2)
 		n++
-		return nil
-	})
+	}
 	if n == 0 {
 		return bloodstream.SeaLevelAlveolarPO2
 	}

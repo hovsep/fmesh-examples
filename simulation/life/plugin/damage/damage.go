@@ -105,10 +105,9 @@ func (d *Damage) onActivation(ctx context.Context, this *component.Component) er
 	// its inputs waiting for others (e.g. the lungs).
 	var insult float64
 	if in := this.InputByName(InputPort); in != nil && in.HasSignals() {
-		_ = in.Signals().ForEach(func(sig *signal.Signal) error {
+		for sig := range in.Signals().All() {
 			insult += sig.Float64OrDefault(0)
-			return nil
-		})
+		}
 		if err := in.Clear(ctx); err != nil {
 			return err
 		}

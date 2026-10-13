@@ -83,12 +83,15 @@ func ForEach(c *component.Component, portName string, fn func(name string, args 
 		return nil
 	}
 
-	return in.Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range in.Signals().All() {
 		name, args, err := Unpack(sig)
 		if err != nil {
 			c.Logger().Println("ignoring non-command signal:", err)
-			return nil
+			continue
 		}
-		return fn(name, args)
-	})
+		if err := fn(name, args); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -427,7 +427,7 @@ func newSafetyChain(c string, contacts []string) (*component.Component, error) {
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			closed := this.State().Get("closed").(map[string]bool)
-			for _, sig := range this.InputByName(portContact).Signals().All() {
+			for sig := range this.InputByName(portContact).Signals().All() {
 				ct, err := sig.As[Contact]()
 				if err != nil {
 					return err

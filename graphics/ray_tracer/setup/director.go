@@ -17,7 +17,7 @@ func GetDirector() *component.Component {
 		component.WithInputs(common.PortIn),
 		component.WithIndexedOutputs(common.PortTileOut, 0, common.NumChains-1),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortIn).Signals().All() {
 				cam := sig.Payload().(render.Camera)
 
 				rowsPerTile := common.FrameHeight / common.NumChains
@@ -37,8 +37,8 @@ func GetDirector() *component.Component {
 						return err
 					}
 				}
-				return nil
-			})
+			}
+			return nil
 		}),
 	))
 }

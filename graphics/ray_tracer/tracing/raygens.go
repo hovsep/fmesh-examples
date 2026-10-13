@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // GetRayGenerators returns the collection of components turning tiles into
@@ -19,7 +18,7 @@ func GetRayGenerators() *component.Collection {
 			component.WithInputs(common.PortIn),
 			component.WithOutputs(common.PortOut),
 			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-				return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+				for sig := range this.InputByName(common.PortIn).Signals().All() {
 					yFrom := common.ScalarInt(sig, common.ScalarYFrom)
 					yTo := common.ScalarInt(sig, common.ScalarYTo)
 
@@ -27,8 +26,11 @@ func GetRayGenerators() *component.Collection {
 						return render.GenerateRays(p.(render.Camera), common.FrameWidth, common.FrameHeight, yFrom, yTo)
 					}).WithMeta(common.ScalarBounce, 0.0)
 
-					return this.OutputByName(common.PortOut).PutSignals(wave)
-				})
+					if err := this.OutputByName(common.PortOut).PutSignals(wave); err != nil {
+						return err
+					}
+				}
+				return nil
 			}),
 		))))
 	}

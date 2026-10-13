@@ -80,10 +80,10 @@ func newArrivals(seed int64) (*component.Component, error) {
 				if random.Float64() >= arrivalRate(minute)/arrivalDraws {
 					continue
 				}
-				party := signal.New(randomPartySize(random)).WithMetaMany(map[string]float64{
-					"id":      float64(nextID),
-					"arrived": float64(minute),
-					"meal":    float64(minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1)),
+				party := signal.New(randomPartySize(random)).WithMetaMany(map[string]int{
+					"id":      nextID,
+					"arrived": minute,
+					"meal":    minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
 				})
 				nextID++
 				if err := this.OutputByName("party").PutSignals(party); err != nil {

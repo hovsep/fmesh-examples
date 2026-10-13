@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/hovsep/fmesh"
-	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
 	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,14 +43,13 @@ func (tr *trip) run(t *testing.T, script func(stroke int, d *DriverInput)) {
 		h.AfterCycle(func(_ context.Context, cc *fmesh.CycleContext) error {
 			// Every part waits for one signal per stroke on each input: two
 			// on one port would mean a part fell a stroke behind.
-			for _, c := range tr.fm.Components().AllOrdered() {
-				_ = c.Inputs().ForEach(func(p *port.Port) error {
+			for c := range tr.fm.Components().All() {
+				for p := range c.Inputs().All() {
 					assert.LessOrEqual(t, p.Signals().Len(), 1, "%s.%s", c.Name(), p.Name())
-					return nil
-				})
+				}
 			}
 			for i := 1; i <= cylinders; i++ {
-				if r := cc.Cycle.ActivationResults().ByName(cylinderName(i)); r != nil && !component.IsWaitingForInput(r) && state[bool](tr.fm, cylinderName(i), "fired") {
+				if r := cc.Cycle.ActivationResults().ByName(cylinderName(i)); r != nil && !r.IsWaiting() && state[bool](tr.fm, cylinderName(i), "fired") {
 					tr.fired[state[Crank](tr.fm, "crankshaft", "crank").Stroke] = i
 				}
 			}

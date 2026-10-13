@@ -116,15 +116,15 @@ func ask(fm *fmesh.FMesh, company *Person, skill, framesDir string) error {
 		return err
 	}
 
-	for _, c := range info.Cycles.All() {
+	for c := range info.Cycles.All() {
 		results := c.ActivationResults()
 		if results.IsEmpty() {
 			continue
 		}
 		byLevel := map[int]int{}
 		waiting := 0
-		for _, r := range results.AllOrdered() {
-			if component.IsWaitingForInput(r) {
+		for r := range results.All() {
+			if r.IsWaiting() {
 				waiting++
 				continue
 			}

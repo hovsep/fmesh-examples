@@ -58,12 +58,12 @@ func newHost(policy string, description string, numberOfTables int,
 
 			// Tables announce themselves when they become free: the payload is
 			// the table index, the "seats" label says how big it is.
-			for _, announcement := range this.InputByName("free").Signals().All() {
+			for announcement := range this.InputByName("free").Signals().All() {
 				index, err := announcement.As[int]()
 				if err != nil {
 					return err
 				}
-				free[index] = int(announcement.Meta().ValueOrDefault("seats", 0.0))
+				free[index] = announcement.Meta().ValueOrDefault("seats", 0)
 			}
 
 			// The tick itself carries nothing the host needs: the waiting list
@@ -71,7 +71,7 @@ func newHost(policy string, description string, numberOfTables int,
 			if !this.InputByName("waiting").HasSignals() {
 				return nil
 			}
-			waiting := this.InputByName("waiting").Signals().All()
+			waiting := slices.Collect(this.InputByName("waiting").Signals().All())
 			for index, party := range choose(waiting, free) {
 				delete(free, index)
 				if err := this.OutputByName(tablePort(index)).PutSignals(party); err != nil {

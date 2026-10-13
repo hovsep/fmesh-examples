@@ -41,11 +41,10 @@ func newWatchdog(name string) (*component.Component, error) {
 
 			if this.InputByName(common.PortControllerState).HasSignals() {
 
-				this.InputByName(common.PortControllerState).Signals().ForEach(func(sig *signal.Signal) error {
+				for sig := range this.InputByName(common.PortControllerState).Signals().All() {
 					ctlStateMap := sig.Payload().(controller.StateMap)
 					ctlStates = ctlStates.MergeFrom(ctlStateMap)
-					return nil
-				})
+				}
 
 				this.State().Set(stateKeyControllerStates, ctlStates)
 			}

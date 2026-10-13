@@ -21,7 +21,7 @@ import (
 func newTable(index int, seats int) (*component.Component, error) {
 	return component.New(fmt.Sprintf("table-%d", index),
 		component.WithDescription(fmt.Sprintf("table for %d", seats)),
-		component.WithMeta("seats", float64(seats)),
+		component.WithMeta("seats", seats),
 		component.WithInputs("seat", "tick"),
 		component.WithOutputs("free", "served"),
 		component.WithInitialState(func(state component.State) {
@@ -42,7 +42,7 @@ func newTable(index int, seats int) (*component.Component, error) {
 					// The day starts: tell the host once that this table is free.
 					// The announcement is the table index, labelled with its size.
 					if minute == 0 {
-						announcement := signal.New(index).WithMeta("seats", float64(seats))
+						announcement := signal.New(index).WithMeta("seats", seats)
 						if err := this.OutputByName("free").PutSignals(announcement); err != nil {
 							return err
 						}
@@ -64,7 +64,7 @@ func newTable(index int, seats int) (*component.Component, error) {
 							return err
 						}
 						state.Delete("party")
-						announcement := signal.New(index).WithMeta("seats", float64(seats))
+						announcement := signal.New(index).WithMeta("seats", seats)
 						if err := this.OutputByName("free").PutSignals(announcement); err != nil {
 							return err
 						}
@@ -78,9 +78,9 @@ func newTable(index int, seats int) (*component.Component, error) {
 				if err != nil {
 					return err
 				}
-				party := this.InputByName("seat").Signals().First().WithMeta("seated", float64(minute))
+				party := this.InputByName("seat").Signals().First().WithMeta("seated", minute)
 				state.Set("party", party)
-				state.Set("minutes-left", int(party.Meta().ValueOrDefault("meal", 0.0)))
+				state.Set("minutes-left", party.Meta().ValueOrDefault("meal", 0))
 			}
 			return nil
 		}),

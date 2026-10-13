@@ -122,7 +122,7 @@ func (k *cabControl) listen(this *component.Component) error {
 	k.beam = latest(this.InputByName(portBeam), k.beam)
 	k.chain = latest(this.InputByName(portChain), k.chain)
 
-	for _, sig := range this.InputByName(portDoorBtn).Signals().All() {
+	for sig := range this.InputByName(portDoorBtn).Signals().All() {
 		switch sig.PayloadOrDefault("") {
 		case doorOpen:
 			k.open = true
@@ -132,7 +132,7 @@ func (k *cabControl) listen(this *component.Component) error {
 	}
 
 	for _, name := range []string{portCarCall, portAssign} {
-		for _, sig := range this.InputByName(name).Signals().All() {
+		for sig := range this.InputByName(name).Signals().All() {
 			f, err := sig.As[int]()
 			if err != nil {
 				return err

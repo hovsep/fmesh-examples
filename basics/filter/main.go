@@ -93,10 +93,10 @@ func getPrinter(name string) (*component.Component, error) {
 		component.WithDescription("Simple stdout printer"),
 		component.WithInputs(portIn),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(portIn).Signals().All() {
 				fmt.Printf("  [%s] %v\n", this.Name(), sig.Payload())
-				return nil
-			})
+			}
+			return nil
 		}),
 	)
 }
@@ -107,7 +107,7 @@ func getFilter(name string, disallowedMeta *meta.Meta) (*component.Component, er
 		component.WithInputs(portIn),
 		component.WithOutputs("dropped", "passed"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(portIn).Signals().All() {
 				var why string
 				for k, v := range disallowedMeta.All() {
 					if want, ok := v.(string); ok && sig.Meta().ValueIs(k, want) {
@@ -118,10 +118,16 @@ func getFilter(name string, disallowedMeta *meta.Meta) (*component.Component, er
 					dropped := sig.MapPayload(func(p any) any {
 						return fmt.Sprintf("DROPPED: '%v' excluded because %s", p, why)
 					})
-					return this.OutputByName("dropped").PutSignals(dropped)
+					if err := this.OutputByName("dropped").PutSignals(dropped); err != nil {
+						return err
+					}
+					continue
 				}
-				return this.OutputByName("passed").PutSignals(sig)
-			})
+				if err := this.OutputByName("passed").PutSignals(sig); err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 }

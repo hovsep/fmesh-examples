@@ -31,7 +31,7 @@ type LogicDescriptor struct {
 
 func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 	af := func(_ context.Context, this *component.Component) error {
-		return this.InputByName(common.PortCANRx).Signals().ForEach(func(sig *signal.Signal) error {
+		for sig := range this.InputByName(common.PortCANRx).Signals().All() {
 			frame, ok := sig.Payload().(*codec.Frame)
 			if !ok {
 				return errors.New("failed to cast payload to CAN frame")
@@ -54,7 +54,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 					"skipping request: frame ID 0x%03X does not match physical address 0x%02X(AddressingMode: %v)",
 					frame.Id, ld.PhysicalAddress, addressingMode,
 				)
-				return nil
+				continue
 			}
 
 			services, ok := ld.Table[addressingMode]
@@ -70,7 +70,7 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 			reqHandler, ok := params[isoReq.PID]
 			if !ok {
 				this.Logger().Printf("skipping request: parameter 0x%02X (%s) is not supported", isoReq.PID, isoReq.PID.ToString())
-				return nil
+				continue
 			}
 
 			isoResp, err := reqHandler(addressingMode, isoReq, this)
@@ -87,9 +87,9 @@ func (ld LogicDescriptor) ToActivationFunc() component.ActivationFunc {
 				return err
 			}
 			this.Logger().Printf("sending ISO-TP response: addressing mode: %s, req address: 0x%03X, sid: 0x%02X, pid: 0x%02X", addressingMode, respCANFrame.Id, isoResp.ServiceID, isoResp.PID)
+		}
 
-			return nil
-		})
+		return nil
 	}
 
 	return af

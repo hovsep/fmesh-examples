@@ -2,6 +2,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/hovsep/fmesh/signal"
@@ -24,14 +25,14 @@ func TestWaitingListShowsPartiesEveryTickUntilTheyGiveUp(t *testing.T) {
 	// Within the patience the couple is on the list every minute and nobody is lost.
 	for minute := 10; minute <= 10+testPatience; minute++ {
 		tick(t, fm, list, minute)
-		assert.Equal(t, []*signal.Signal{couple}, waiting.Signals().All(), "minute %d", minute)
+		assert.Equal(t, []*signal.Signal{couple}, slices.Collect(waiting.Signals().All()), "minute %d", minute)
 		assert.True(t, lost.Signals().IsEmpty(), "minute %d", minute)
 	}
 
 	// One minute past the patience the couple leaves.
 	tick(t, fm, list, 10+testPatience+1)
 	assert.True(t, waiting.Signals().IsEmpty())
-	assert.Equal(t, []*signal.Signal{couple}, lost.Signals().All())
+	assert.Equal(t, []*signal.Signal{couple}, slices.Collect(lost.Signals().All()))
 
 	// And it is gone for good.
 	tick(t, fm, list, 10+testPatience+2)
@@ -52,10 +53,10 @@ func TestWaitingListKeepsArrivalOrderAndDropsSeatedParties(t *testing.T) {
 	activate(t, fm, list, map[string][]any{"party": {third}})
 
 	tick(t, fm, list, 1)
-	assert.Equal(t, []*signal.Signal{first, second, third}, waiting.Signals().All())
+	assert.Equal(t, []*signal.Signal{first, second, third}, slices.Collect(waiting.Signals().All()))
 
 	// The host seats the second party: it disappears, the others keep their order.
 	activate(t, fm, list, map[string][]any{"seated": {second}})
 	tick(t, fm, list, 2)
-	assert.Equal(t, []*signal.Signal{first, third}, waiting.Signals().All())
+	assert.Equal(t, []*signal.Signal{first, third}, slices.Collect(waiting.Signals().All()))
 }

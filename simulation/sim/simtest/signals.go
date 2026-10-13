@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"slices"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/signal"
@@ -36,7 +37,7 @@ func FromPort(componentName, portName string) SignalSource {
 			if p == nil || !p.HasSignals() {
 				return nil
 			}
-			return p.Signals().All()
+			return slices.Collect(p.Signals().All())
 		},
 	}
 }

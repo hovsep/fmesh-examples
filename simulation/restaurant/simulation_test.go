@@ -18,14 +18,12 @@ func runDay(t *testing.T) component.State {
 	fm, err := newRestaurant()
 	require.NoError(t, err)
 	for minute := range openingMinutes {
-		err := fm.Components().ForEach(func(c *component.Component) error {
+		for c := range fm.Components().All() {
 			if tick := c.InputByName("tick"); tick != nil {
-				return tick.PutPayloads(minute)
+				require.NoError(t, tick.PutPayloads(minute))
 			}
-			return nil
-		})
-		require.NoError(t, err)
-		_, err = fm.Run(context.Background())
+		}
+		_, err := fm.Run(context.Background())
 		require.NoError(t, err, "minute %d", minute)
 	}
 	return fm.ComponentByName("report").State()
