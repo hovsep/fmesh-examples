@@ -18,7 +18,7 @@ func main() {
 	fmt.Println("Written for the ESM 2026 tutorial on F-Mesh.")
 	fmt.Println()
 
-	fm, err := newRestaurant()
+	fm, err := buildMesh()
 	if err != nil {
 		fmt.Println("Failed to build mesh:", err)
 		os.Exit(1)
@@ -32,20 +32,10 @@ func main() {
 		return
 	}
 
-	// The clock: every minute, each component with a "tick" input hears the
-	// minute, then the mesh runs until all signals have been handled.
+	// One run is one minute: the clock ticks, every component that keeps time
+	// hears the minute, and the mesh runs until all signals have been handled.
 	// Components keep their state between runs, so the day builds up.
 	for minute := range openingMinutes {
-		for c := range fm.Components().All() {
-			tick := c.InputByName("tick")
-			if tick == nil {
-				continue
-			}
-			if err := tick.PutPayloads(minute); err != nil {
-				fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
-				os.Exit(1)
-			}
-		}
 		if _, err := fm.Run(context.Background()); err != nil {
 			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
 			os.Exit(1)
