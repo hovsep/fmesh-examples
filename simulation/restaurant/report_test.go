@@ -19,14 +19,14 @@ func TestReportAddsUpTheDay(t *testing.T) {
 	activate(t, fm, report, map[string][]any{
 		"tick": {1},
 		"served": {
-			party(1, 2, 0, 50).WithMeta("seated", 4),
-			party(2, 4, 0, 70).WithMeta("seated", 8),
+			party(1, 2, 0, 50).WithMeta("seated-at", 4),
+			party(2, 4, 0, 70).WithMeta("seated-at", 8),
 		},
 		"lost": {party(3, 5, 0, 60)},
 	})
 
 	assert.Equal(t, component.State{
-		"minutes": 2, "parties-served": 2, "guests-served": 6, "parties-lost": 1, "guests-lost": 5,
+		"minutes-open": 2, "parties-served": 2, "guests-served": 6, "parties-lost": 1, "guests-lost": 5,
 		"wait-minutes": 12, "busy-table-minutes": 120,
 		"average-wait": 6.0,
 		"utilisation":  3000.0, // 120 busy table-minutes over 2 tables * 2 minutes: a tiny day, so far above 100 %

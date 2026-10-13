@@ -46,7 +46,7 @@ func TestTableAnnouncesServesAndFreesUp(t *testing.T) {
 			// stamped on, and the table is free again.
 			tick(t, fm, table, 8)
 			assert.Equal(t, []any{seats}, slices.Collect(served.Signals().Payloads()))
-			assert.Equal(t, map[string]any{"id": 7, "arrived": 2, "meal": 3, "seated": 5},
+			assert.Equal(t, map[string]any{"id": 7, "arrived-at": 2, "meal-minutes": 3, "seated-at": 5},
 				served.Signals().First().Meta().All())
 			assert.Equal(t, []any{index}, slices.Collect(free.Signals().Payloads()))
 		})

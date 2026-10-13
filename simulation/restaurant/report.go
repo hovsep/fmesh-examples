@@ -13,7 +13,7 @@ import (
 //
 // State, all counts since the day began:
 //
-//	minutes             minutes the restaurant has been open
+//	minutes-open        minutes the restaurant has been open
 //	parties-served      parties that ate and paid, and guests-served
 //	parties-lost        parties that gave up waiting, and guests-lost
 //	wait-minutes        waiting minutes summed over served parties
@@ -26,7 +26,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
 		component.WithInputs("served", "lost", "tick"),
 		component.WithInitialState(func(state component.State) {
-			state.Set("minutes", 0)
+			state.Set("minutes-open", 0)
 			state.Set("parties-served", 0)
 			state.Set("guests-served", 0)
 			state.Set("parties-lost", 0)
@@ -40,7 +40,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			state := this.State()
-			minutes := state.Get("minutes").(int)
+			minutes := state.Get("minutes-open").(int)
 			partiesServed := state.Get("parties-served").(int)
 			guestsServed := state.Get("guests-served").(int)
 			partiesLost := state.Get("parties-lost").(int)
@@ -59,8 +59,8 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				labels := party.Meta()
 				partiesServed++
 				guestsServed += guests
-				waitMinutes += labels.ValueOrDefault("seated", 0) - labels.ValueOrDefault("arrived", 0)
-				busyTableMinutes += labels.ValueOrDefault("meal", 0)
+				waitMinutes += labels.ValueOrDefault("seated-at", 0) - labels.ValueOrDefault("arrived-at", 0)
+				busyTableMinutes += labels.ValueOrDefault("meal-minutes", 0)
 			}
 
 			for party := range this.InputByName("lost").Signals().All() {
@@ -72,7 +72,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				guestsLost += guests
 			}
 
-			state.Set("minutes", minutes)
+			state.Set("minutes-open", minutes)
 			state.Set("parties-served", partiesServed)
 			state.Set("guests-served", guestsServed)
 			state.Set("parties-lost", partiesLost)

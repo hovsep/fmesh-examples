@@ -37,7 +37,7 @@ func TestADayAddsUp(t *testing.T) {
 	report := runDay(t)
 
 	served, lost := report.Get("parties-served").(int), report.Get("parties-lost").(int)
-	assert.Equal(t, openingMinutes, report.Get("minutes"))
+	assert.Equal(t, openingMinutes, report.Get("minutes-open"))
 	assert.Greater(t, served, 0)
 	assert.Greater(t, lost, 0, "the peaks should be busy enough to lose some parties")
 	assert.Less(t, report.Get("average-wait"), float64(patienceMinutes), "nobody who was served waited past their patience")

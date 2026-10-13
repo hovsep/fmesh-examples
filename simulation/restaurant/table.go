@@ -78,9 +78,9 @@ func newTable(index int, seats int) (*component.Component, error) {
 				if err != nil {
 					return err
 				}
-				party := this.InputByName("seat").Signals().First().WithMeta("seated", minute)
+				party := this.InputByName("seat").Signals().First().WithMeta("seated-at", minute)
 				state.Set("party", party)
-				state.Set("minutes-left", party.Meta().ValueOrDefault("meal", 0))
+				state.Set("minutes-left", party.Meta().ValueOrDefault("meal-minutes", 0))
 			}
 			return nil
 		}),
