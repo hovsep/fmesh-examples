@@ -1,45 +1,43 @@
 // This file holds the "report" component, the bookkeeper of the day: it adds
-// up every served and every lost party, and the Report type that prints the
-// result.
+// up every served and every lost party and keeps the figures a restaurant
+// owner asks for in its state, where the program reads them after the day.
 package main
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
 )
 
-// Report is the day's bookkeeping. Totals grow during the day; the methods
-// turn them into the figures a restaurant owner asks for.
-type Report struct {
-	Tables          int // number of tables in the restaurant
-	RevenuePerGuest int // euros one served guest brings in
-	Minutes         int // minutes the restaurant has been open
-
-	PartiesServed    int
-	GuestsServed     int
-	PartiesLost      int
-	GuestsLost       int
-	TotalWaitMinutes int // summed over served parties
-	BusyTableMinutes int // table-minutes with a party at the table
-}
-
 // newReport creates the bookkeeper for a restaurant with that many tables.
+//
+// State, all counts since the day began:
+//
+//	minutes             minutes the restaurant has been open
+//	parties-served      parties that ate and paid, and guests-served
+//	parties-lost        parties that gave up waiting, and guests-lost
+//	wait-minutes        waiting minutes summed over served parties
+//	busy-table-minutes  table-minutes with a party at the table
+//
+// and the figures derived from them: average-wait (minutes per served party),
+// utilisation (percent of table-minutes in use), revenue and lost-revenue (euros).
 func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, error) {
 	return component.New("report",
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
 		component.WithInputs("served", "lost", "tick"),
 		component.WithInitialState(func(state component.State) {
-			state.Set("report", Report{Tables: numberOfTables, RevenuePerGuest: revenuePerGuest})
+			for _, key := range []string{"minutes", "parties-served", "guests-served", "parties-lost", "guests-lost",
+				"wait-minutes", "busy-table-minutes", "revenue", "lost-revenue"} {
+				state.Set(key, 0)
+			}
+			state.Set("average-wait", 0.0)
+			state.Set("utilisation", 0.0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			report := this.State().Get("report").(Report)
-			defer func() { this.State().Set("report", report) }()
+			state := this.State()
+			add := func(key string, n int) { state.Set(key, state.Get(key).(int)+n) }
 
-			report.Minutes += this.InputByName("tick").Signals().Len()
+			add("minutes", this.InputByName("tick").Signals().Len())
 
 			// A served party carries its whole story in its labels.
 			for _, party := range this.InputByName("served").Signals().All() {
@@ -48,10 +46,10 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 					return err
 				}
 				labels := party.Meta()
-				report.PartiesServed++
-				report.GuestsServed += guests
-				report.TotalWaitMinutes += int(labels.ValueOrDefault("seated", 0.0) - labels.ValueOrDefault("arrived", 0.0))
-				report.BusyTableMinutes += int(labels.ValueOrDefault("meal", 0.0))
+				add("parties-served", 1)
+				add("guests-served", guests)
+				add("wait-minutes", int(labels.ValueOrDefault("seated", 0.0)-labels.ValueOrDefault("arrived", 0.0)))
+				add("busy-table-minutes", int(labels.ValueOrDefault("meal", 0.0)))
 			}
 
 			for _, party := range this.InputByName("lost").Signals().All() {
@@ -59,54 +57,20 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				if err != nil {
 					return err
 				}
-				report.PartiesLost++
-				report.GuestsLost += guests
+				add("parties-lost", 1)
+				add("guests-lost", guests)
 			}
+
+			// The figures the owner asks for, kept up to date.
+			if served := state.Get("parties-served").(int); served > 0 {
+				state.Set("average-wait", float64(state.Get("wait-minutes").(int))/float64(served))
+			}
+			if minutes := state.Get("minutes").(int); minutes > 0 {
+				state.Set("utilisation", 100*float64(state.Get("busy-table-minutes").(int))/float64(numberOfTables*minutes))
+			}
+			state.Set("revenue", state.Get("guests-served").(int)*revenuePerGuest)
+			state.Set("lost-revenue", state.Get("guests-lost").(int)*revenuePerGuest)
 			return nil
 		}),
 	)
-}
-
-// readReport takes the Report out of the mesh after the day.
-func readReport(fm *fmesh.FMesh) Report {
-	return fm.ComponentByName("report").State().Get("report").(Report)
-}
-
-// AverageWait is the mean waiting time of a served party, in minutes.
-func (r Report) AverageWait() float64 {
-	if r.PartiesServed == 0 {
-		return 0
-	}
-	return float64(r.TotalWaitMinutes) / float64(r.PartiesServed)
-}
-
-// Utilisation is the share of table-minutes that had a party at the table, 0..1.
-func (r Report) Utilisation() float64 {
-	available := r.Tables * r.Minutes
-	if available == 0 {
-		return 0
-	}
-	return float64(r.BusyTableMinutes) / float64(available)
-}
-
-// Revenue is what the served guests paid, in euros.
-func (r Report) Revenue() int {
-	return r.GuestsServed * r.RevenuePerGuest
-}
-
-// LostRevenue is what the guests who left without eating would have paid.
-func (r Report) LostRevenue() int {
-	return r.GuestsLost * r.RevenuePerGuest
-}
-
-// String prints the report as a short, aligned summary.
-func (r Report) String() string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "  Parties served : %4d  (%d guests)\n", r.PartiesServed, r.GuestsServed)
-	fmt.Fprintf(&b, "  Parties lost   : %4d  (%d guests)\n", r.PartiesLost, r.GuestsLost)
-	fmt.Fprintf(&b, "  Average wait   : %6.1f min\n", r.AverageWait())
-	fmt.Fprintf(&b, "  Utilisation    : %6.1f %%\n", 100*r.Utilisation())
-	fmt.Fprintf(&b, "  Revenue        : %4d EUR\n", r.Revenue())
-	fmt.Fprintf(&b, "  Lost revenue   : %4d EUR\n", r.LostRevenue())
-	return b.String()
 }

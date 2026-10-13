@@ -1,16 +1,16 @@
-// Tests for the report component and the Report figures.
+// Tests for the report component.
 package main
 
 import (
 	"testing"
 
+	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReportAddsUpTheDay(t *testing.T) {
-	const tables, revenuePerGuest = 2, 10
-	report, err := newReport(tables, revenuePerGuest)
+	report, err := newReport(2, 10)
 	require.NoError(t, err)
 	fm := alone(t, report)
 
@@ -25,34 +25,23 @@ func TestReportAddsUpTheDay(t *testing.T) {
 		"lost": {party(3, 5, 0, 60)},
 	})
 
-	got := readReport(fm)
-	want := Report{
-		Tables: tables, RevenuePerGuest: revenuePerGuest, Minutes: 2,
-		PartiesServed: 2, GuestsServed: 6, PartiesLost: 1, GuestsLost: 5,
-		TotalWaitMinutes: 12, BusyTableMinutes: 120,
-	}
-	assert.Equal(t, want, got)
-	assert.Equal(t, 6.0, got.AverageWait())
-	assert.Equal(t, 30.0, got.Utilisation(), "120 busy table-minutes over 2 tables * 2 minutes (a tiny day, so far above 100 %)")
-	assert.Equal(t, 60, got.Revenue())
-	assert.Equal(t, 50, got.LostRevenue())
-}
-
-func TestReportStringShowsTheKeyNumbers(t *testing.T) {
-	r := Report{Tables: 8, RevenuePerGuest: 25, Minutes: 720,
-		PartiesServed: 40, GuestsServed: 100, PartiesLost: 5, GuestsLost: 12,
-		TotalWaitMinutes: 200, BusyTableMinutes: 2880}
-
-	text := r.String()
-	assert.Contains(t, text, "Parties served :   40  (100 guests)")
-	assert.Contains(t, text, "Parties lost   :    5  (12 guests)")
-	assert.Contains(t, text, "Average wait   :    5.0 min")
-	assert.Contains(t, text, "Utilisation    :   50.0 %")
-	assert.Contains(t, text, "Revenue        : 2500 EUR")
-	assert.Contains(t, text, "Lost revenue   :  300 EUR")
+	assert.Equal(t, component.State{
+		"minutes": 2, "parties-served": 2, "guests-served": 6, "parties-lost": 1, "guests-lost": 5,
+		"wait-minutes": 12, "busy-table-minutes": 120,
+		"average-wait": 6.0,
+		"utilisation":  3000.0, // 120 busy table-minutes over 2 tables * 2 minutes: a tiny day, so far above 100 %
+		"revenue":      60,
+		"lost-revenue": 50,
+	}, report.State())
 }
 
 func TestEmptyReportHasNoAverages(t *testing.T) {
-	assert.Equal(t, 0.0, Report{}.AverageWait())
-	assert.Equal(t, 0.0, Report{}.Utilisation())
+	report, err := newReport(2, 10)
+	require.NoError(t, err)
+	fm := alone(t, report)
+
+	tick(t, fm, report, 0)
+	assert.Equal(t, 0.0, report.State().Get("average-wait"))
+	assert.Equal(t, 0.0, report.State().Get("utilisation"))
+	assert.Equal(t, 0, report.State().Get("revenue"))
 }
