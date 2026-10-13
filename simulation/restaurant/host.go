@@ -31,21 +31,23 @@ type seatingPolicy func(waiting []Party, free freeTables) []Seating
 // newFIFOHost seats parties first come, first served: each party takes the
 // first free table where it fits, in table order. A couple can take the 6-top.
 func newFIFOHost(numberOfTables int) (*component.Component, error) {
-	return newHost("seats parties first come, first served at the first table where they fit", numberOfTables, chooseFirstFit)
+	return newHost("fifo", "seats parties first come, first served at the first table where they fit", numberOfTables, chooseFirstFit)
 }
 
 // newBestFitHost gives every free table to the waiting party that wastes the
 // fewest seats, so big tables are kept for big parties.
 func newBestFitHost(numberOfTables int) (*component.Component, error) {
-	return newHost("seats the party that fits each free table best, keeping big tables for big parties", numberOfTables, chooseBestFit)
+	return newHost("best-fit", "seats the party that fits each free table best, keeping big tables for big parties", numberOfTables, chooseBestFit)
 }
 
 // newHost creates a host with the given seating policy. The host learns which
 // tables are free from their announcements and, whenever it sees the waiting
-// list, seats as many parties as the policy allows.
-func newHost(description string, numberOfTables int, choose seatingPolicy) (*component.Component, error) {
+// list, seats as many parties as the policy allows. The policy name is kept
+// as metadata so the program can print which host ran the day.
+func newHost(policy string, description string, numberOfTables int, choose seatingPolicy) (*component.Component, error) {
 	return component.New("host",
 		component.WithDescription("the host "+description),
+		component.WithMeta("policy", policy),
 		component.WithInputs("waiting", "free", "tick"),
 		component.WithOutputs("seated"),
 		component.WithIndexedOutputs("table", 0, numberOfTables-1),
