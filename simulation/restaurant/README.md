@@ -39,7 +39,7 @@ One run is a few activation cycles. In the first cycle every component with a ti
 `main.go` runs one day and prints the report. The simulation does not know about alternatives: to ask a what-if question you change the restaurant in `mesh.go` and run the day again. The seed is fixed, so the same guests arrive at the same minutes in every run and the reports are comparable.
 
 ```
-The day with 8 tables:
+The day with 8 tables, where the host seats parties first come, first served at the first table where they fit:
   Parties served :   40  (106 guests)
   Parties lost   :    9  (40 guests)
   Average wait   :    4.5 min

@@ -36,7 +36,7 @@ func main() {
 		fmt.Println("Simulation failed:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("The day with %d tables:\n", len(tableSeats))
+	fmt.Printf("The day with %d tables, where %s:\n", len(tableSeats), fm.ComponentByName("host").Description())
 	fmt.Print(report)
 	fmt.Println("=== Simulation Complete ===")
 }
