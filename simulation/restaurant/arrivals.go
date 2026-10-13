@@ -77,24 +77,34 @@ func newArrivals(seed int64) (*component.Component, error) {
 			}
 
 			for range arrivalDraws {
-				if random.Float64() >= arrivalRate(minute)/arrivalDraws {
+				if !aPartyWalksIn(random, minute) {
 					continue
 				}
-				party := signal.New(randomPartySize(random)).WithMetaMany(map[string]int{
-					"id":           nextID,
-					"arrived-at":   minute,
-					"meal-minutes": minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
-				})
-				nextID++
-				if err := this.OutputByName("party").PutSignals(party); err != nil {
+				if err := this.OutputByName("party").PutSignals(newParty(random, nextID, minute)); err != nil {
 					return err
 				}
+				nextID++
 			}
-
 			this.State().Set("next-id", nextID)
 			return nil
 		}),
 	)
+}
+
+// aPartyWalksIn is one draw: true with the probability that gives, over all
+// the draws of the minute, the arrival rate for that time of day.
+func aPartyWalksIn(random *rand.Rand, minute int) bool {
+	return random.Float64() < arrivalRate(minute)/arrivalDraws
+}
+
+// newParty builds the signal for a party arriving now: a random size as the
+// payload, and its id, arrival minute and a random meal duration as labels.
+func newParty(random *rand.Rand, id int, minute int) *signal.Signal {
+	return signal.New(randomPartySize(random)).WithMetaMany(map[string]int{
+		"id":           id,
+		"arrived-at":   minute,
+		"meal-minutes": minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
+	})
 }
 
 // arrivalRate is the expected number of parties per minute at that minute of the day.
