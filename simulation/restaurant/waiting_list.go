@@ -1,7 +1,6 @@
 // This file holds the "waiting-list" component: the queue at the door. It
 // remembers who is waiting, shows the list to the host every minute and lets
-// impatient parties leave. The queue is a signal group, so joining, leaving
-// and giving up are group operations.
+// impatient parties leave. The queue is a signal group.
 package main
 
 import (
@@ -23,35 +22,43 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			waiting := this.State().Get("waiting").(*signal.Group)
-			defer func() { this.State().Set("waiting", waiting) }()
 
 			// New arrivals join the end of the queue.
 			waiting = waiting.Join(this.InputByName("party").Signals())
 
 			// Parties the host has seated leave the queue (matched by id).
-			seated := this.InputByName("seated").Signals()
-			waiting = waiting.Filter(func(party *signal.Signal) bool {
-				id := party.Meta().ValueOrDefault("id", 0.0)
-				return seated.Filter(signal.MetaEquals("id", id)).IsEmpty()
-			})
+			for _, seated := range this.InputByName("seated").Signals().All() {
+				id := seated.Meta().ValueOrDefault("id", 0.0)
+				waiting = waiting.Filter(signal.Not(signal.MetaEquals("id", id)))
+			}
 
 			// On a tick: impatient parties leave, then the host gets the current list.
-			if !this.InputByName("tick").HasSignals() {
-				return nil
+			if this.InputByName("tick").HasSignals() {
+				minute, err := this.InputByName("tick").Signals().FirstAs[int]()
+				if err != nil {
+					return err
+				}
+				lost := signal.NewGroup()
+				staying := signal.NewGroup()
+				for _, party := range waiting.All() {
+					arrived := int(party.Meta().ValueOrDefault("arrived", 0.0))
+					if minute-arrived > patienceMinutes {
+						lost = lost.With(party)
+					} else {
+						staying = staying.With(party)
+					}
+				}
+				waiting = staying
+				if err := this.OutputByName("lost").PutSignalGroups(lost); err != nil {
+					return err
+				}
+				if err := this.OutputByName("waiting").PutSignalGroups(waiting); err != nil {
+					return err
+				}
 			}
-			minute, err := this.InputByName("tick").Signals().FirstAs[int]()
-			if err != nil {
-				return err
-			}
-			impatient := func(party *signal.Signal) bool {
-				arrived := int(party.Meta().ValueOrDefault("arrived", 0.0))
-				return minute-arrived > patienceMinutes
-			}
-			if err := this.OutputByName("lost").PutSignalGroups(waiting.Filter(impatient)); err != nil {
-				return err
-			}
-			waiting = waiting.Filter(signal.Not(impatient))
-			return this.OutputByName("waiting").PutSignalGroups(waiting)
+
+			this.State().Set("waiting", waiting)
+			return nil
 		}),
 	)
 }

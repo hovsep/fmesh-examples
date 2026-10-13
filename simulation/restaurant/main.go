@@ -43,10 +43,11 @@ func main() {
 			}
 			return nil
 		})
-		if err == nil {
-			_, err = fm.Run(context.Background())
-		}
 		if err != nil {
+			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
+			os.Exit(1)
+		}
+		if _, err := fm.Run(context.Background()); err != nil {
 			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
 			os.Exit(1)
 		}

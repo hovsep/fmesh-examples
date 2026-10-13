@@ -31,10 +31,6 @@ func newTable(index int, seats int) (*component.Component, error) {
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			state := this.State()
-			// "I am free": the table index, labelled with its size.
-			announceFree := func() error {
-				return this.OutputByName("free").PutSignals(signal.New(index).WithMeta("seats", float64(seats)))
-			}
 
 			// One minute passes at the table.
 			if this.InputByName("tick").HasSignals() {
@@ -45,25 +41,28 @@ func newTable(index int, seats int) (*component.Component, error) {
 				state.Set("minute", minute)
 
 				party := state.Get("party").(*signal.Signal)
-				switch {
-				case party == nil && minute == 0:
+				if party == nil {
 					// The day starts: tell the host once that this table is free.
-					if err := announceFree(); err != nil {
-						return err
+					// The announcement is the table index, labelled with its size.
+					if minute == 0 {
+						announcement := signal.New(index).WithMeta("seats", float64(seats))
+						if err := this.OutputByName("free").PutSignals(announcement); err != nil {
+							return err
+						}
 					}
-				case party != nil:
+				} else {
 					minutesLeft := state.Get("minutes-left").(int) - 1
 					state.Set("minutes-left", minutesLeft)
-					if minutesLeft > 0 {
-						break
-					}
-					// The meal is over: the party pays and leaves, and the table is free again.
-					if err := this.OutputByName("served").PutSignals(party); err != nil {
-						return err
-					}
-					state.Set("party", (*signal.Signal)(nil))
-					if err := announceFree(); err != nil {
-						return err
+					if minutesLeft == 0 {
+						// The meal is over: the party pays and leaves, and the table is free again.
+						if err := this.OutputByName("served").PutSignals(party); err != nil {
+							return err
+						}
+						state.Set("party", (*signal.Signal)(nil))
+						announcement := signal.New(index).WithMeta("seats", float64(seats))
+						if err := this.OutputByName("free").PutSignals(announcement); err != nil {
+							return err
+						}
 					}
 				}
 			}
