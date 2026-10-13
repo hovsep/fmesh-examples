@@ -1,0 +1,75 @@
+# A chemical plant as a directed hypergraph.
+#
+# Every reaction is a hyperedge: it joins MANY reactants to MANY products at
+# once, and it only happens when every reactant is there. A plain graph edge
+# joins one node to one node and cannot say "all of these, together".
+#
+# Lines are either
+#   formula = common name          (a substance, i.e. a node)
+#   reaction name: A + B -> C + D  (a reaction, i.e. a hyperedge)
+#
+# Coefficients are left out on purpose: the mesh answers whether something can
+# be made, not how much of it.
+
+air = air
+N2 = nitrogen
+O2 = oxygen
+H2O = water
+CH4 = natural gas
+CO = carbon monoxide
+H2 = hydrogen
+CO2 = carbon dioxide
+CaCO3 = limestone
+CaO = quicklime
+NaCl = salt
+NaOH = caustic soda
+Cl2 = chlorine
+NH3 = ammonia
+NO = nitric oxide
+NO2 = nitrogen dioxide
+HNO3 = nitric acid
+NH4NO3 = ammonium nitrate (fertilizer)
+urea = urea (fertilizer)
+S = sulfur
+SO2 = sulfur dioxide
+SO3 = sulfur trioxide
+H2SO4 = sulfuric acid
+(NH4)2SO4 = ammonium sulfate (fertilizer)
+HCl = hydrochloric acid
+NaClO = bleach
+CH3OH = methanol
+HCHO = formaldehyde
+NaHCO3 = baking soda
+NH4Cl = ammonium chloride
+Na2CO3 = soda ash
+CaCl2 = calcium chloride
+SiO2 = sand
+glass = glass
+Ca3(PO4)2 = phosphate rock
+Ca(H2PO4)2 = superphosphate (fertilizer)
+CaSO4 = gypsum
+
+air separation:         air -> N2 + O2
+steam reforming:        CH4 + H2O -> CO + H2
+water-gas shift:        CO + H2O -> CO2 + H2
+lime kiln:              CaCO3 -> CaO + CO2
+chlor-alkali:           NaCl + H2O -> NaOH + Cl2 + H2
+Haber process:          N2 + H2 -> NH3
+Ostwald process:        NH3 + O2 -> NO + H2O
+NO oxidation:           NO + O2 -> NO2
+nitric acid tower:      NO2 + H2O -> HNO3 + NO
+ammonium nitrate plant: NH3 + HNO3 -> NH4NO3
+urea plant:             NH3 + CO2 -> urea + H2O
+sulfur burner:          S + O2 -> SO2
+contact process:        SO2 + O2 -> SO3
+sulfuric acid tower:    SO3 + H2O -> H2SO4
+ammonium sulfate plant: NH3 + H2SO4 -> (NH4)2SO4
+HCl burner:             H2 + Cl2 -> HCl
+bleach plant:           Cl2 + NaOH -> NaClO + NaCl + H2O
+methanol synthesis:     CO + H2 -> CH3OH
+formaldehyde plant:     CH3OH + O2 -> HCHO + H2O
+Solvay tower:           NaCl + NH3 + CO2 + H2O -> NaHCO3 + NH4Cl
+soda ash calciner:      NaHCO3 -> Na2CO3 + CO2 + H2O
+ammonia recovery:       NH4Cl + CaO -> NH3 + CaCl2 + H2O
+glass furnace:          Na2CO3 + CaCO3 + SiO2 -> glass + CO2
+superphosphate plant:   Ca3(PO4)2 + H2SO4 -> Ca(H2PO4)2 + CaSO4
