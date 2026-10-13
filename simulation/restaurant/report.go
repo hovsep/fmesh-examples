@@ -40,9 +40,15 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			state := this.State()
-			add := func(key string, n int) { state.Set(key, state.Get(key).(int)+n) }
+			minutes := state.Get("minutes").(int)
+			partiesServed := state.Get("parties-served").(int)
+			guestsServed := state.Get("guests-served").(int)
+			partiesLost := state.Get("parties-lost").(int)
+			guestsLost := state.Get("guests-lost").(int)
+			waitMinutes := state.Get("wait-minutes").(int)
+			busyTableMinutes := state.Get("busy-table-minutes").(int)
 
-			add("minutes", this.InputByName("tick").Signals().Len())
+			minutes += this.InputByName("tick").Signals().Len()
 
 			// A served party carries its whole story in its labels.
 			for _, party := range this.InputByName("served").Signals().All() {
@@ -51,10 +57,10 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 					return err
 				}
 				labels := party.Meta()
-				add("parties-served", 1)
-				add("guests-served", guests)
-				add("wait-minutes", int(labels.ValueOrDefault("seated", 0.0)-labels.ValueOrDefault("arrived", 0.0)))
-				add("busy-table-minutes", int(labels.ValueOrDefault("meal", 0.0)))
+				partiesServed++
+				guestsServed += guests
+				waitMinutes += int(labels.ValueOrDefault("seated", 0.0) - labels.ValueOrDefault("arrived", 0.0))
+				busyTableMinutes += int(labels.ValueOrDefault("meal", 0.0))
 			}
 
 			for _, party := range this.InputByName("lost").Signals().All() {
@@ -62,19 +68,27 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				if err != nil {
 					return err
 				}
-				add("parties-lost", 1)
-				add("guests-lost", guests)
+				partiesLost++
+				guestsLost += guests
 			}
 
+			state.Set("minutes", minutes)
+			state.Set("parties-served", partiesServed)
+			state.Set("guests-served", guestsServed)
+			state.Set("parties-lost", partiesLost)
+			state.Set("guests-lost", guestsLost)
+			state.Set("wait-minutes", waitMinutes)
+			state.Set("busy-table-minutes", busyTableMinutes)
+
 			// The figures the owner asks for, kept up to date.
-			if served := state.Get("parties-served").(int); served > 0 {
-				state.Set("average-wait", float64(state.Get("wait-minutes").(int))/float64(served))
+			if partiesServed > 0 {
+				state.Set("average-wait", float64(waitMinutes)/float64(partiesServed))
 			}
-			if minutes := state.Get("minutes").(int); minutes > 0 {
-				state.Set("utilisation", 100*float64(state.Get("busy-table-minutes").(int))/float64(numberOfTables*minutes))
+			if minutes > 0 {
+				state.Set("utilisation", 100*float64(busyTableMinutes)/float64(numberOfTables*minutes))
 			}
-			state.Set("revenue", state.Get("guests-served").(int)*revenuePerGuest)
-			state.Set("lost-revenue", state.Get("guests-lost").(int)*revenuePerGuest)
+			state.Set("revenue", guestsServed*revenuePerGuest)
+			state.Set("lost-revenue", guestsLost*revenuePerGuest)
 			return nil
 		}),
 	)

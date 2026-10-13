@@ -4,7 +4,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"maps"
@@ -109,7 +108,10 @@ func chooseBestFit(waiting []*signal.Signal, free map[int]int) map[int]*signal.S
 	// Smallest table first; tables of the same size in index order, so that the
 	// result does not depend on Go's random map order.
 	bySize := slices.SortedFunc(maps.Keys(free), func(a, b int) int {
-		return cmp.Or(free[a]-free[b], a-b)
+		if free[a] != free[b] {
+			return free[a] - free[b]
+		}
+		return a - b
 	})
 
 	seatings := map[int]*signal.Signal{}
