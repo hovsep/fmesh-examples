@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -25,7 +26,7 @@ func seatingsOf(t *testing.T, host *component.Component, numberOfTables int) map
 	t.Helper()
 	result := map[int][]*signal.Signal{}
 	for i := range numberOfTables {
-		if items := slices.Collect(host.OutputByName(tablePort(i)).Signals().All()); len(items) > 0 {
+		if items := slices.Collect(host.OutputByName(fmt.Sprintf("table%d", i)).Signals().All()); len(items) > 0 {
 			result[i] = items
 		}
 	}

@@ -4,6 +4,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -81,7 +83,7 @@ func newRestaurant() (*fmesh.FMesh, error) {
 	}
 	for i, table := range tables {
 		err = port.MultiPipe(
-			port.Pipe{From: host.OutputByName(tablePort(i)), To: table.InputByName("seat")},
+			port.Pipe{From: host.OutputByName(fmt.Sprintf("table%d", i)), To: table.InputByName("seat")},
 			port.Pipe{From: table.OutputByName("free"), To: host.InputByName("free")},
 			port.Pipe{From: table.OutputByName("served"), To: report.InputByName("served")},
 		)
