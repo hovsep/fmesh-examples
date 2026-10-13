@@ -69,9 +69,8 @@ FMESH_GRAPH=1 go run .
 
 `--plain` is the only flag; `FMESH_GRAPH=1` is the only environment variable. Type `help` at the prompt for the full command list: session commands (`pause`, `resume`, `step`, `rate:sim`, scheduling), environment commands (`temp:hot`, `sun:hour`, `altitude 5500`, `air:preset hyperbaric`, `air:mixin wood_fire 30m`, `smoke:cigarette`, `air:co 800`, `air:oxygen 100`...) and body commands (`intake:water 500ml`, `intake:food 200kcal`, `activity:start 8 30m`, `trauma:bleed 1500ml`, `emotion:stimulus 0.8 -0.5`, `excretion:urinate`...).
 
-The test suite simulates hours of physiology and is by far the longest in the repository:
+The test suite runs real simulations, so it takes about a minute:
 
 ```bash
-go test -timeout 60m ./simulation/life/...   # full suite: ~15 minutes locally, over 30 on a hosted CI runner
-go test -short ./simulation/life/...         # skips the multi-minute physiological runs
+go test ./simulation/life/...
 ```

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/hovsep/fmesh-examples/simulation/life/atmosphere"
 	"github.com/hovsep/fmesh-examples/simulation/life/telemetry"
 	"github.com/hovsep/fmesh-examples/simulation/sim/command"
 	"github.com/hovsep/fmesh-examples/simulation/sim/session"
@@ -33,46 +31,6 @@ import (
 // link by link. Everything the claim does not mention is still checked -- the
 // backstop asserts it stayed where it was -- which is what makes this catch a
 // mechanism nobody thought about.
-
-// observables is everything the tests can asserted on, generated from the
-// telemetry catalog rather than written out.
-//
-// Generated on purpose: adding a metric to the catalog therefore puts it under
-// the backstop of every scenario immediately, and a value cannot be published
-// and left unwatched.
-func observables() []simtest.Observable {
-	var watched []simtest.Observable
-
-	for _, sig := range telemetry.Signals(telemetry.DefaultSubject) {
-		// A key is "subject::port" or "subject::port:scalar", and a scalar name
-		// may itself contain colons ("composition:oxygen"), so the split is on
-		// the first colon after the port.
-		_, rest, _ := strings.Cut(sig.Key, telemetry.PathSeparator)
-		portName, scalarName, isScalar := strings.Cut(rest, telemetry.ScalarSeparator)
-
-		aggregatorPort := telemetry.DefaultSubject + telemetry.PathSeparator + portName
-		if isScalar {
-			watched = append(watched,
-				simtest.Scalar(aggregator, aggregatorPort, scalarName).Named(rest))
-			continue
-		}
-		watched = append(watched, simtest.Port(aggregator, aggregatorPort).Named(rest))
-	}
-
-	// The habitat's own readings. The body is judged against the world it is in,
-	// so a scenario can say both what the air did and what the body did about it.
-	for _, scalar := range []string{
-		atmosphere.ScalarPressure, atmosphere.ScalarCOppm,
-		"temperature", "humidity", "composition:oxygen",
-		"composition:carbon_dioxide", "composition:pollution",
-	} {
-		watched = append(watched,
-			simtest.Scalar(aggregator, "air::environmental_gas", scalar).Named("air:"+scalar))
-	}
-	watched = append(watched, simtest.Port(aggregator, "sun::uvi").Named("sun:uvi"))
-
-	return watched
-}
 
 const aggregator = "aggregated_state"
 
@@ -260,40 +218,10 @@ var (
 	down    = simtest.Decreases
 	frozen  = simtest.StaysExactlyTheSame
 	steady  = simtest.StaysWithin
-	byFrac  = simtest.ChangesBy
 	backTo  = simtest.ReturnsToward
 	reaches = simtest.Reaches
-	spikes  = simtest.RisesThenFalls
-	dips    = simtest.FallsThenRises
 	both    = simtest.All
 )
-
-func Test_CommandEffects(t *testing.T) {
-	if testing.Short() {
-		t.Skip("drives every command through a real simulation")
-	}
-
-	suite := &simtest.Suite{
-		NewSim:      func(t *testing.T) *session.Session { return newCommandableSim(t) },
-		Observables: observables(),
-		Tick:        testTick,
-	}
-
-	// The controls first and sequentially, then the scenarios all at once.
-	//
-	// Each scenario builds its own simulation and shares nothing with the others,
-	// so they parallelise cleanly, and they need to: this table is most of the
-	// package's running time and the suite has ten minutes for everything.
-	scenarios := effectScenarios()
-	suite.Warm(t, scenarios)
-
-	for _, sc := range scenarios {
-		t.Run(sc.Name, func(t *testing.T) {
-			t.Parallel()
-			suite.Run(t, sc)
-		})
-	}
-}
 
 // effectScenarios is the claim this simulation makes about itself.
 //

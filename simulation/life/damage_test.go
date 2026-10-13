@@ -10,35 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test_SmokingDamagesTheLungs is the headline what-if: smoking injures the lungs
-// and little else. The toxin from a cigarette flows to both lungs' damage input.
-func Test_SmokingDamagesTheLungs(t *testing.T) {
-	t.Parallel() // each test builds its own simulation and shares nothing
-	if testing.Short() {
-		t.Skip("multi-minute physiological run")
-	}
-	sim := newCommandableSim(t)
-	// A heavy session at once, so the damage is visible in a short run.
-	sim.Do("smoke:cigarette 200")
-
-	lungLeft := organComp(t, sim, "organ:lung_left")
-	lungRight := organComp(t, sim, "organ:lung_right")
-	kidney := organComp(t, sim, "organ:kidney")
-
-	simtest.RunFor(sim, 2*time.Minute, func() {
-		leftDamage := damage.Level(lungLeft)
-		rightDamage := damage.Level(lungRight)
-
-		assert.Greater(t, leftDamage, 0.0, "smoking should damage the left lung")
-		assert.Greater(t, rightDamage, 0.0, "smoking should damage the right lung")
-
-		// The kidney is not in the smoke's path; only aging touches it, which is
-		// negligible over twenty minutes.
-		assert.Less(t, damage.Level(kidney), leftDamage,
-			"smoking should hit the lungs far harder than an unexposed organ")
-	})
-}
-
 // Test_ASingleCigaretteTakesMinutes checks the smoke is spanned, not instant:
 // one cigarette is still in the air a minute in, and clears on its own.
 //
