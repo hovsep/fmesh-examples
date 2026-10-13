@@ -55,7 +55,7 @@ One run is a few activation cycles. In the first cycle every component with a ti
 - **More tables.** Append to `tableSeats`; two extra 4-tops serve 44 parties and earn 3050 EUR under the FIFO host.
 - **Anything else.** The constants at the top of `mesh.go` (patience, opening hours, revenue per guest, seed) and the arrival rates in `arrivals.go` are there to be edited.
 
-Notable APIs: `signal.New(...).WithMetaMany(...)` and `WithMeta` for labelled signals, `Meta().ValueOrDefault` to read a label, `signal.Group` with `Join`, `Filter`, `signal.Not` and `signal.MetaEquals` for the queue, `Signals().FirstAs[T]()` / `As[T]()` for typed payloads, `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state (the report's state is the report), `component.WithMeta` for the table size and the host's policy name, `port.MultiPipe` for wiring, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
+Notable APIs: `signal.New(...).WithMetaMany(...)` and `WithMeta` for labelled signals, `Meta().ValueOrDefault` to read a label, `signal.Group` with `Join`, `Filter`, `signal.Not` and `signal.MetaEquals` for the queue, `Signals().FirstAs[T]()` / `As[T]()` for typed payloads, `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, with `GetTyped[T]`, `Has` and `Delete` (the report's state is the report), `component.WithMeta` for the table size and the host's policy name, `port.MultiPipe` for wiring, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
 
 ## Run
 

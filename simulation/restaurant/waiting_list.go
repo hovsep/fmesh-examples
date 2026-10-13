@@ -21,7 +21,10 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 			state.Set("waiting", signal.NewGroup())
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			waiting := this.State().Get("waiting").(*signal.Group)
+			waiting, err := this.State().GetTyped[*signal.Group]("waiting")
+			if err != nil {
+				return err
+			}
 
 			// New arrivals join the end of the queue.
 			waiting = waiting.Join(this.InputByName("party").Signals())

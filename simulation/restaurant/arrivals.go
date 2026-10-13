@@ -67,8 +67,14 @@ func newArrivals(seed int64) (*component.Component, error) {
 			if err != nil {
 				return err
 			}
-			random := this.State().Get("random").(*rand.Rand)
-			nextID := this.State().Get("next-id").(int)
+			random, err := this.State().GetTyped[*rand.Rand]("random")
+			if err != nil {
+				return err
+			}
+			nextID, err := this.State().GetTyped[int]("next-id")
+			if err != nil {
+				return err
+			}
 
 			for range arrivalDraws {
 				if random.Float64() >= arrivalRate(minute)/arrivalDraws {
