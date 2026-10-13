@@ -17,12 +17,12 @@ func TestReportAddsUpTheDay(t *testing.T) {
 	// Two minutes pass; in the second one two parties leave and one gives up.
 	tick(t, fm, report, 0)
 	activate(t, fm, report, map[string][]any{
-		portTick: {1},
-		portServed: {
+		"tick": {1},
+		"served": {
 			Served{Party: Party{ID: 1, Size: 2, MealDuration: 50}, Seats: 2, WaitedMinutes: 4, LeftAt: 1},
 			Served{Party: Party{ID: 2, Size: 4, MealDuration: 70}, Seats: 4, WaitedMinutes: 8, LeftAt: 1},
 		},
-		portLost: {Party{ID: 3, Size: 5}},
+		"lost": {Party{ID: 3, Size: 5}},
 	})
 
 	got := readReport(fm)

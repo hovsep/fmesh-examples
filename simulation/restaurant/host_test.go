@@ -23,7 +23,7 @@ func seatingsOf(t *testing.T, host *component.Component, numberOfTables int) map
 	t.Helper()
 	result := map[int][]Seating{}
 	for i := range numberOfTables {
-		if items := outputs[Seating](t, host.OutputByName(tablePortName(i))); len(items) > 0 {
+		if items := outputs[Seating](t, host.OutputByName(tablePort(i))); len(items) > 0 {
 			result[i] = items
 		}
 	}
@@ -36,13 +36,13 @@ func TestFIFOHostWastesTheBigTableOnTheCouple(t *testing.T) {
 	fm := alone(t, host)
 
 	activate(t, fm, host, map[string][]any{
-		portFree:    {sixTop, twoTop},
-		portWaiting: {couple, five},
+		"free":    {sixTop, twoTop},
+		"waiting": {couple, five},
 	})
 
 	// The couple came first and the 6-top is the first table it fits; the five do not fit the 2-top.
 	assert.Equal(t, map[int][]Seating{0: {{Party: couple, TableIndex: 0}}}, seatingsOf(t, host, 2))
-	assert.Equal(t, []Party{couple}, outputs[Party](t, host.OutputByName(portSeated)))
+	assert.Equal(t, []Party{couple}, outputs[Party](t, host.OutputByName("seated")))
 }
 
 func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
@@ -51,15 +51,15 @@ func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
 	fm := alone(t, host)
 
 	activate(t, fm, host, map[string][]any{
-		portFree:    {sixTop, twoTop},
-		portWaiting: {couple, five},
+		"free":    {sixTop, twoTop},
+		"waiting": {couple, five},
 	})
 
 	assert.Equal(t, map[int][]Seating{
 		0: {{Party: five, TableIndex: 0}},
 		1: {{Party: couple, TableIndex: 1}},
 	}, seatingsOf(t, host, 2))
-	assert.ElementsMatch(t, []Party{couple, five}, outputs[Party](t, host.OutputByName(portSeated)))
+	assert.ElementsMatch(t, []Party{couple, five}, outputs[Party](t, host.OutputByName("seated")))
 }
 
 func TestHostRemembersFreeTablesAcrossMinutes(t *testing.T) {
@@ -68,19 +68,19 @@ func TestHostRemembersFreeTablesAcrossMinutes(t *testing.T) {
 	fm := alone(t, host)
 
 	// Minute 1: the tables announce themselves, nobody is waiting yet.
-	activate(t, fm, host, map[string][]any{portFree: {sixTop, twoTop}, portTick: {1}})
+	activate(t, fm, host, map[string][]any{"free": {sixTop, twoTop}, "tick": {1}})
 	assert.Empty(t, seatingsOf(t, host, 2))
 
 	// Minute 2: the couple shows up and gets a table; the table is then taken.
-	activate(t, fm, host, map[string][]any{portWaiting: {couple}})
+	activate(t, fm, host, map[string][]any{"waiting": {couple}})
 	assert.Len(t, seatingsOf(t, host, 2), 1)
 
 	// Minute 3: the couple is still on the list (it leaves it a moment later), the five arrive.
-	activate(t, fm, host, map[string][]any{portWaiting: {five}})
+	activate(t, fm, host, map[string][]any{"waiting": {five}})
 	assert.Equal(t, map[int][]Seating{}, seatingsOf(t, host, 2), "no free table fits five")
 
 	// The 6-top frees up again.
-	activate(t, fm, host, map[string][]any{portFree: {sixTop}, portWaiting: {five}})
+	activate(t, fm, host, map[string][]any{"free": {sixTop}, "waiting": {five}})
 	assert.Equal(t, map[int][]Seating{0: {{Party: five, TableIndex: 0}}}, seatingsOf(t, host, 2))
 }
 
@@ -126,9 +126,4 @@ func TestSeatingPolicies(t *testing.T) {
 			assert.Equal(t, c.want, c.choose(c.waiting, c.free))
 		})
 	}
-}
-
-func TestUnknownPolicyIsAnError(t *testing.T) {
-	_, err := newHostForPolicy("random", 2)
-	assert.Error(t, err)
 }

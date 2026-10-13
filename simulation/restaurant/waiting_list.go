@@ -16,10 +16,10 @@ const stateWaiting = "waiting"
 // newWaitingList creates the queue. A party that has waited longer than
 // patienceMinutes gives up and is reported as lost.
 func newWaitingList(patienceMinutes int) (*component.Component, error) {
-	return component.New(waitingListName,
+	return component.New("waiting-list",
 		component.WithDescription("the queue at the door: parties wait for a table or give up"),
-		component.WithInputs(portParty, portSeated, portTick),
-		component.WithOutputs(portWaiting, portLost),
+		component.WithInputs("party", "seated", "tick"),
+		component.WithOutputs("waiting", "lost"),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateWaiting, []Party{})
 		}),
@@ -28,36 +28,36 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 			defer func() { this.State().Set(stateWaiting, waiting) }()
 
 			// New arrivals join the end of the queue.
-			arrived, err := payloads[Party](this.InputByName(portParty))
+			arrived, err := payloads[Party](this.InputByName("party"))
 			if err != nil {
 				return err
 			}
 			waiting = append(waiting, arrived...)
 
 			// Parties the host has seated leave the queue.
-			seated, err := payloads[Party](this.InputByName(portSeated))
+			seated, err := payloads[Party](this.InputByName("seated"))
 			if err != nil {
 				return err
 			}
 			waiting = removeParties(waiting, seated)
 
 			// On a tick: impatient parties leave, then the host gets the current list.
-			if !this.InputByName(portTick).HasSignals() {
+			if !this.InputByName("tick").HasSignals() {
 				return nil
 			}
-			minute, err := firstPayload[int](this.InputByName(portTick))
+			minute, err := firstPayload[int](this.InputByName("tick"))
 			if err != nil {
 				return err
 			}
 			var lost []Party
 			waiting, lost = splitImpatient(waiting, minute, patienceMinutes)
 			for _, party := range lost {
-				if err := this.OutputByName(portLost).PutPayloads(party); err != nil {
+				if err := this.OutputByName("lost").PutPayloads(party); err != nil {
 					return err
 				}
 			}
 			for _, party := range waiting {
-				if err := this.OutputByName(portWaiting).PutPayloads(party); err != nil {
+				if err := this.OutputByName("waiting").PutPayloads(party); err != nil {
 					return err
 				}
 			}

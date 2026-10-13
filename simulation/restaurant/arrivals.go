@@ -48,16 +48,16 @@ const (
 
 // newArrivals creates the front door. The seed makes every day reproducible.
 func newArrivals(seed int64) (*component.Component, error) {
-	return component.New(arrivalsName,
+	return component.New("arrivals",
 		component.WithDescription("the front door: parties of guests arrive, more at lunch and dinner"),
-		component.WithInputs(portTick),
-		component.WithOutputs(portParty),
+		component.WithInputs("tick"),
+		component.WithOutputs("party"),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateRandom, rand.New(rand.NewSource(seed)))
 			state.Set(stateNextID, 1)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			minute, err := firstPayload[int](this.InputByName(portTick))
+			minute, err := firstPayload[int](this.InputByName("tick"))
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,7 @@ func newArrivals(seed int64) (*component.Component, error) {
 				}
 				party := randomParty(random, nextID, minute)
 				nextID++
-				if err := this.OutputByName(portParty).PutPayloads(party); err != nil {
+				if err := this.OutputByName("party").PutPayloads(party); err != nil {
 					return err
 				}
 			}

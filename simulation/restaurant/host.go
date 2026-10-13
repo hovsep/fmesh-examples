@@ -15,6 +15,12 @@ import (
 // Key of the host's state: the free tables, table index -> number of seats.
 const stateFreeTables = "free-tables"
 
+// tablePort is the host's output port that leads to the table with the given
+// index, e.g. "table3": F-Mesh names indexed ports "<prefix><index>".
+func tablePort(index int) string {
+	return fmt.Sprintf("table%d", index)
+}
+
 // freeTables maps the index of every free table to its number of seats.
 type freeTables map[int]int
 
@@ -34,27 +40,15 @@ func newBestFitHost(numberOfTables int) (*component.Component, error) {
 	return newHost("seats the party that fits each free table best, keeping big tables for big parties", numberOfTables, chooseBestFit)
 }
 
-// newHostForPolicy creates the host named in the configuration.
-func newHostForPolicy(policy string, numberOfTables int) (*component.Component, error) {
-	switch policy {
-	case policyFIFO:
-		return newFIFOHost(numberOfTables)
-	case policyBestFit:
-		return newBestFitHost(numberOfTables)
-	default:
-		return nil, fmt.Errorf("unknown host policy %q", policy)
-	}
-}
-
 // newHost creates a host with the given seating policy. The host learns which
 // tables are free from their announcements and, whenever it sees the waiting
 // list, seats as many parties as the policy allows.
 func newHost(description string, numberOfTables int, choose seatingPolicy) (*component.Component, error) {
-	return component.New(hostName,
+	return component.New("host",
 		component.WithDescription("the host "+description),
-		component.WithInputs(portWaiting, portFree, portTick),
-		component.WithOutputs(portSeated),
-		component.WithIndexedOutputs(tablePortPrefix, 0, numberOfTables-1),
+		component.WithInputs("waiting", "free", "tick"),
+		component.WithOutputs("seated"),
+		component.WithIndexedOutputs("table", 0, numberOfTables-1),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateFreeTables, freeTables{})
 		}),
@@ -62,7 +56,7 @@ func newHost(description string, numberOfTables int, choose seatingPolicy) (*com
 			free := this.State().Get(stateFreeTables).(freeTables)
 
 			// Tables announce themselves when they become free.
-			announcements, err := payloads[TableFree](this.InputByName(portFree))
+			announcements, err := payloads[TableFree](this.InputByName("free"))
 			if err != nil {
 				return err
 			}
@@ -72,19 +66,19 @@ func newHost(description string, numberOfTables int, choose seatingPolicy) (*com
 
 			// The tick itself carries nothing the host needs: the waiting list
 			// arrives a moment later in the same minute and triggers the seating.
-			if !this.InputByName(portWaiting).HasSignals() {
+			if !this.InputByName("waiting").HasSignals() {
 				return nil
 			}
-			waiting, err := payloads[Party](this.InputByName(portWaiting))
+			waiting, err := payloads[Party](this.InputByName("waiting"))
 			if err != nil {
 				return err
 			}
 			for _, seating := range choose(waiting, free) {
 				delete(free, seating.TableIndex)
-				if err := this.OutputByName(tablePortName(seating.TableIndex)).PutPayloads(seating); err != nil {
+				if err := this.OutputByName(tablePort(seating.TableIndex)).PutPayloads(seating); err != nil {
 					return err
 				}
-				if err := this.OutputByName(portSeated).PutPayloads(seating.Party); err != nil {
+				if err := this.OutputByName("seated").PutPayloads(seating.Party); err != nil {
 					return err
 				}
 			}

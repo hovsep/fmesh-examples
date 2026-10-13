@@ -32,9 +32,9 @@ type Report struct {
 
 // newReport creates the bookkeeper for a restaurant with that many tables.
 func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, error) {
-	return component.New(reportName,
+	return component.New("report",
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
-		component.WithInputs(portServed, portLost, portTick),
+		component.WithInputs("served", "lost", "tick"),
 		component.WithInitialState(func(state component.State) {
 			state.Set(stateReport, Report{Tables: numberOfTables, RevenuePerGuest: revenuePerGuest})
 		}),
@@ -42,9 +42,9 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 			report := this.State().Get(stateReport).(Report)
 			defer func() { this.State().Set(stateReport, report) }()
 
-			report.Minutes += this.InputByName(portTick).Signals().Len()
+			report.Minutes += this.InputByName("tick").Signals().Len()
 
-			served, err := payloads[Served](this.InputByName(portServed))
+			served, err := payloads[Served](this.InputByName("served"))
 			if err != nil {
 				return err
 			}
@@ -55,7 +55,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				report.BusyTableMinutes += visit.Party.MealDuration
 			}
 
-			lost, err := payloads[Party](this.InputByName(portLost))
+			lost, err := payloads[Party](this.InputByName("lost"))
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 
 // readReport takes the Report out of the mesh after the day.
 func readReport(fm *fmesh.FMesh) Report {
-	return fm.ComponentByName(reportName).State().Get(stateReport).(Report)
+	return fm.ComponentByName("report").State().Get(stateReport).(Report)
 }
 
 // AverageWait is the mean waiting time of a served party, in minutes.

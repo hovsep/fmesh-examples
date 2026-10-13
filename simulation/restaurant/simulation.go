@@ -24,13 +24,13 @@ func clockTime(minute int) string {
 }
 
 // runDay builds the restaurant, lets a whole day pass minute by minute and
-// returns the bookkeeper's report. The same Config always gives the same Report.
-func runDay(cfg Config) (Report, error) {
-	fm, err := newRestaurant(cfg)
+// returns the bookkeeper's report. The same seed always gives the same Report.
+func runDay() (Report, error) {
+	fm, err := newRestaurant()
 	if err != nil {
 		return Report{}, err
 	}
-	for minute := range cfg.OpeningMinutes {
+	for minute := range openingMinutes {
 		if err := runMinute(fm, minute); err != nil {
 			return Report{}, fmt.Errorf("minute %s: %w", clockTime(minute), err)
 		}
