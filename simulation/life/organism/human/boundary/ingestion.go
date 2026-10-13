@@ -48,7 +48,7 @@ func handleIngestion(_ context.Context, this *component.Component) error {
 		return nil
 	}
 
-	return in.Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range in.Signals().All() {
 		water := sig.Meta().ValueOrDefault(ScalarWaterMl, 0.0)
 		food := sig.Meta().ValueOrDefault(ScalarFoodKcal, 0.0)
 
@@ -78,8 +78,8 @@ func handleIngestion(_ context.Context, this *component.Component) error {
 		if water == 0 && food == 0 {
 			this.Logger().Println("ingestion intent carried nothing to swallow")
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 // mealWaterMlPerKcal is how much fluid comes along with food. Roughly a

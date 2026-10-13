@@ -14,7 +14,7 @@ The scenario is prime factorization. The outer mesh takes a number (315), filter
 - **Inner mesh** ("prime factors algo"): `starter` → `d2` → `dodd` → `final_prime`, each of `d2`/`dodd`/`final_prime` also emitting factors onto a shared `factor` port that fans into `results`, which forwards them to its `factors` output.
   - `d2` strips even factors, `dodd` strips odd factors from 3 upward, and `final_prime` catches any prime remainder greater than 1.
 
-Signals cross the outer/inner boundary manually inside `factorizer`'s activation function — there's no pipe between the two meshes; instead the code calls `PutSignals` on the inner mesh's input port and reads `Signals().AllPayloads()` off its output port after `Run(ctx)` returns. Notable APIs: `component.WithActivationFunc` building and driving a nested `fmesh.FMesh`, `port.ForwardSignals`, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on both meshes.
+Signals cross the outer/inner boundary manually inside `factorizer`'s activation function — there's no pipe between the two meshes; instead the code calls `PutSignals` on the inner mesh's input port and ranges over `Signals().All()` on its output port after `Run(ctx)` returns. Notable APIs: `component.WithActivationFunc` building and driving a nested `fmesh.FMesh`, `port.ForwardSignals`, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on both meshes.
 
 ![Mesh graph](./outer-graph.svg)
 

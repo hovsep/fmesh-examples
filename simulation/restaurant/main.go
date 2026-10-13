@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/hovsep/fmesh-examples/internal"
-	"github.com/hovsep/fmesh/component"
 )
 
 func main() {
@@ -37,15 +36,15 @@ func main() {
 	// minute, then the mesh runs until all signals have been handled.
 	// Components keep their state between runs, so the day builds up.
 	for minute := range openingMinutes {
-		err := fm.Components().ForEach(func(c *component.Component) error {
-			if tick := c.InputByName("tick"); tick != nil {
-				return tick.PutPayloads(minute)
+		for c := range fm.Components().All() {
+			tick := c.InputByName("tick")
+			if tick == nil {
+				continue
 			}
-			return nil
-		})
-		if err != nil {
-			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
-			os.Exit(1)
+			if err := tick.PutPayloads(minute); err != nil {
+				fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
+				os.Exit(1)
+			}
 		}
 		if _, err := fm.Run(context.Background()); err != nil {
 			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)

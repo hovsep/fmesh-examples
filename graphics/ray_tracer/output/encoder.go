@@ -10,7 +10,6 @@ import (
 
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // GetEncoder returns the component accumulating paletted frames in its state
@@ -25,27 +24,35 @@ func GetEncoder() *component.Component {
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			anim := this.State().Get("animation").(*gif.GIF)
 
-			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortIn).Signals().All() {
 				anim.Image = append(anim.Image, sig.Payload().(*image.Paletted))
 				anim.Delay = append(anim.Delay, common.GifDelay)
 
 				if common.ScalarInt(sig, common.ScalarFrame) < common.TotalFrames-1 {
-					return nil
+					continue
 				}
 
-				f, err := os.Create(common.OutputFile)
-				if err != nil {
+				if err := writeAnimation(anim); err != nil {
 					return err
 				}
-				defer f.Close()
-
-				if err := gif.EncodeAll(f, anim); err != nil {
-					return err
-				}
-				absPath, _ := filepath.Abs(common.OutputFile)
-				fmt.Println("Animation written to", absPath)
-				return nil
-			})
+			}
+			return nil
 		}),
 	))
+}
+
+// writeAnimation encodes the accumulated frames into the output GIF file
+func writeAnimation(anim *gif.GIF) error {
+	f, err := os.Create(common.OutputFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := gif.EncodeAll(f, anim); err != nil {
+		return err
+	}
+	absPath, _ := filepath.Abs(common.OutputFile)
+	fmt.Println("Animation written to", absPath)
+	return nil
 }

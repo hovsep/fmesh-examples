@@ -242,7 +242,7 @@ func applyAbsorption(this *component.Component) {
 		return
 	}
 
-	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range in.Signals().All() {
 		addHydration(this, sig.Meta().ValueOrDefault(body.WaterMl, 0.0))
 
 		// Absorbed food arrives in the blood, and only in the blood. Getting into
@@ -257,8 +257,7 @@ func applyAbsorption(this *component.Component) {
 		this.State().Update(StateGlycemia, func(v any) any {
 			return mathx.Clamp(v.(float64)+kcal*GlucosePerKcal, MinGlycemia, MaxGlycemia)
 		})
-		return nil
-	})
+	}
 }
 
 func applyLosses(this *component.Component) {
@@ -267,10 +266,9 @@ func applyLosses(this *component.Component) {
 		return
 	}
 
-	_ = in.Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range in.Signals().All() {
 		addHydration(this, -sig.Meta().ValueOrDefault(body.WaterMl, 0.0))
-		return nil
-	})
+	}
 }
 
 // applyExertion burns fuel at a rate set by what the body is doing, and warms it

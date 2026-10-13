@@ -70,23 +70,22 @@ func main() {
 	fmt.Printf("Injecting %d CAN frames into the bus...\n", frames.Len())
 	fmt.Println()
 
-	err = frames.ForEach(func(sig *signal.Signal) error {
-		if err := fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig); err != nil {
-			return err
+	for sig := range frames.All() {
+		if err = fm.ComponentByName(componentBus).InputByName(portIn).PutSignals(sig); err != nil {
+			break
 		}
 
 		fm.Logger().Println("======================")
 		fm.Logger().Printf("Run #%d", runCycle)
 		fm.Logger().Println("======================")
 
-		if _, err := fm.Run(context.Background()); err != nil {
-			return err
+		if _, err = fm.Run(context.Background()); err != nil {
+			break
 		}
 
 		time.Sleep(delayBetweenFrames)
 		runCycle++
-		return nil
-	})
+	}
 	if err != nil {
 		fmt.Println("Error running mesh:", err)
 		os.Exit(1)
@@ -164,11 +163,11 @@ func getNode(name string, id int) (*component.Component, error) {
 			myId := this.State().Get(stateNodeId).(int)
 			validFrames := make([]CanFrame, 0)
 
-			err := this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(portIn).Signals().All() {
 				canFrame, ok := sig.Payload().(CanFrame)
 				if !ok {
 					this.Logger().Printf("Invalid frame received, skipping: %v", sig.Payload())
-					return this.OutputByName(portOut).PutSignals(
+					if err := this.OutputByName(portOut).PutSignals(
 						signal.New(
 							CanFrame{
 								Id:   4,
@@ -178,19 +177,18 @@ func getNode(name string, id int) (*component.Component, error) {
 								"from":       this.Name(),
 								"detectedAt": time.Now().Format(time.RFC3339Nano),
 							}),
-					)
+					); err != nil {
+						return err
+					}
+					continue
 				}
 
 				if canFrame.Id != myId {
 					this.Logger().Printf("Frame ID mismatch: expected %d, got %d", myId, canFrame.Id)
-					return nil
+					continue
 				}
 
 				validFrames = append(validFrames, canFrame)
-				return nil
-			})
-			if err != nil {
-				return err
 			}
 
 			if len(validFrames) == 0 {

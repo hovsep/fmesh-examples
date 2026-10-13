@@ -87,7 +87,7 @@ func main() {
 // pass, the backward pass and the weight update on its own. It returns the
 // loss before the update.
 func trainStep(fm *fmesh.FMesh) (float64, error) {
-	for _, c := range fm.Components().AllOrdered() {
+	for c := range fm.Components().All() {
 		if c.InputByName(portGo) == nil {
 			continue
 		}

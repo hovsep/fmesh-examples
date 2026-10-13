@@ -51,7 +51,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 			minutes += this.InputByName("tick").Signals().Len()
 
 			// A served party carries its whole story in its labels.
-			for _, party := range this.InputByName("served").Signals().All() {
+			for party := range this.InputByName("served").Signals().All() {
 				guests, err := party.As[int]()
 				if err != nil {
 					return err
@@ -59,11 +59,11 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 				labels := party.Meta()
 				partiesServed++
 				guestsServed += guests
-				waitMinutes += int(labels.ValueOrDefault("seated", 0.0) - labels.ValueOrDefault("arrived", 0.0))
-				busyTableMinutes += int(labels.ValueOrDefault("meal", 0.0))
+				waitMinutes += labels.ValueOrDefault("seated", 0) - labels.ValueOrDefault("arrived", 0)
+				busyTableMinutes += labels.ValueOrDefault("meal", 0)
 			}
 
-			for _, party := range this.InputByName("lost").Signals().All() {
+			for party := range this.InputByName("lost").Signals().All() {
 				guests, err := party.As[int]()
 				if err != nil {
 					return err

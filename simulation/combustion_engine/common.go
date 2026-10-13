@@ -152,7 +152,7 @@ func listen(ports ...string) component.ActivationFunc {
 			if !p.HasSignals() {
 				continue
 			}
-			payloads := p.Signals().AllPayloads()
+			payloads := slices.Collect(p.Signals().Payloads())
 			this.State().Set(name, payloads[len(payloads)-1])
 			if err := p.Clear(ctx); err != nil {
 				return err

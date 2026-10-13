@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/hovsep/fmesh"
@@ -73,7 +74,7 @@ func main() {
 
 			if fm.Components().ByName("web crawler").OutputByName("headers").HasSignals() {
 				// No need to clear the port: the next Run starts by clearing every output
-				resultsChan <- fm.Components().ByName("web crawler").OutputByName("headers").Signals().AllPayloads()
+				resultsChan <- slices.Collect(fm.Components().ByName("web crawler").OutputByName("headers").Signals().Payloads())
 			}
 		}
 	}()
@@ -108,9 +109,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("url"),
 		component.WithOutputs("errors", "headers"),
 		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
-			allUrls := this.InputByName("url").Signals().AllPayloads()
+			allUrls := this.InputByName("url").Signals().Payloads()
 
-			for _, urlVal := range allUrls {
+			for urlVal := range allUrls {
 				url := urlVal.(string)
 				request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 				if err != nil {
@@ -156,9 +157,9 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("logs http errors"),
 		component.WithInputs("error"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			allErrors := this.InputByName("error").Signals().AllPayloads()
+			allErrors := this.InputByName("error").Signals().Payloads()
 
-			for _, errVal := range allErrors {
+			for errVal := range allErrors {
 				e := errVal.(error)
 				if e != nil {
 					fmt.Println("Error logger says:", e)

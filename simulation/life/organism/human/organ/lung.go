@@ -256,16 +256,12 @@ func handleGasExchange(_ context.Context, this *component.Component) error {
 // since a lower pressure is a stronger pull on the chest.
 func strongestInspiratoryEffort(signals *signal.Group) (float64, error) {
 	strongest := math.Inf(1)
-	err := signals.ForEach(func(sig *signal.Signal) error {
+	for sig := range signals.All() {
 		p, err := sig.As[float64]()
 		if err != nil {
-			return err
+			return 0, err
 		}
 		strongest = min(strongest, p)
-		return nil
-	})
-	if err != nil {
-		return 0, err
 	}
 	if math.IsInf(strongest, 1) {
 		return 0, fmt.Errorf("no pleural pressure offered")

@@ -18,18 +18,22 @@ func GetOrbit() *component.Component {
 		component.WithInputs(common.PortNextFrame),
 		component.WithOutputs(common.PortOut),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName(common.PortNextFrame).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortNextFrame).Signals().All() {
 				frame := sig.Payload().(int)
 				if frame >= common.TotalFrames {
 					// Animation finished: no output means no further activations,
 					// so the mesh naturally comes to a halt
-					return nil
+					continue
 				}
 
 				viewpoint := render.OrbitPosition(frame, common.TotalFrames)
-				return this.OutputByName(common.PortOut).PutSignals(
+				err := this.OutputByName(common.PortOut).PutSignals(
 					signal.New(viewpoint).WithMeta(common.ScalarFrame, float64(frame)))
-			})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	))
 }

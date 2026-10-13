@@ -65,10 +65,9 @@ func main() {
 		}
 
 		fmt.Println("Responses:")
-		results.ForEach(func(sig *signal.Signal) error {
+		for sig := range results.All() {
 			fmt.Println(sig.Payload().(string))
-			return nil
-		})
+		}
 	}
 
 	fmt.Println("=== Load Balancing Complete ===")
@@ -107,11 +106,14 @@ func getWorkers(namePrefix string, number int) ([]*component.Component, error) {
 			component.WithInputs(portIn),
 			component.WithOutputs(portOut),
 			component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-				return this.InputByName(portIn).Signals().ForEach(func(sig *signal.Signal) error {
+				for sig := range this.InputByName(portIn).Signals().All() {
 					request := sig.Payload().(string)
 					response := fmt.Sprintf("Request: %s processed by %s", request, this.Name())
-					return this.OutputByName(portOut).PutSignals(signal.New(response))
-				})
+					if err := this.OutputByName(portOut).PutSignals(signal.New(response)); err != nil {
+						return err
+					}
+				}
+				return nil
 			}),
 		)
 		if err != nil {
@@ -144,17 +146,13 @@ func getLoadBalancer(name string, workers []*component.Component) (*component.Co
 			lastWorkerIndex := this.State().GetOrDefault("last_worker_index", 0).(int)
 			workersNum := this.State().Get("workers_number").(int)
 
-			err := ingressPort.Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range ingressPort.Signals().All() {
 				lastWorkerIndex %= workersNum
 				this.Logger().Printf("Routing %q -> worker-%d (%s)\n", sig.Payload(), lastWorkerIndex, indexedPortName("downstream", lastWorkerIndex))
 				if err := this.OutputByName(indexedPortName("downstream", lastWorkerIndex)).PutSignals(sig); err != nil {
 					return err
 				}
 				lastWorkerIndex++
-				return nil
-			})
-			if err != nil {
-				return err
 			}
 
 			this.State().Set("last_worker_index", lastWorkerIndex)

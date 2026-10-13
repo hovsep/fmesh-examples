@@ -170,7 +170,7 @@ func (s *server) timeScale() float64 {
 // never reads a state that a part is writing.
 func (s *server) publish() {
 	parts := map[string]component.State{}
-	for _, c := range s.fm.Components().AllOrdered() {
+	for c := range s.fm.Components().All() {
 		parts[c.Name()] = c.State()
 	}
 	data, err := json.Marshal(parts)

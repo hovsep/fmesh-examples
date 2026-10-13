@@ -30,8 +30,8 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 			waiting = waiting.Join(this.InputByName("party").Signals())
 
 			// Parties the host has seated leave the queue (matched by id).
-			for _, seated := range this.InputByName("seated").Signals().All() {
-				id := seated.Meta().ValueOrDefault("id", 0.0)
+			for seated := range this.InputByName("seated").Signals().All() {
+				id := seated.Meta().ValueOrDefault("id", 0)
 				waiting = waiting.Filter(signal.Not(signal.MetaEquals("id", id)))
 			}
 
@@ -43,8 +43,8 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 				}
 				lost := signal.NewGroup()
 				staying := signal.NewGroup()
-				for _, party := range waiting.All() {
-					arrived := int(party.Meta().ValueOrDefault("arrived", 0.0))
+				for party := range waiting.All() {
+					arrived := party.Meta().ValueOrDefault("arrived", 0)
 					if minute-arrived > patienceMinutes {
 						lost = lost.With(party)
 					} else {

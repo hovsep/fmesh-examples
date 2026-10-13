@@ -87,30 +87,28 @@ func processRecessiveBitRequest(this *component.Component) ([]physical.Voltage, 
 
 // Collect CAN_L voltages
 func collectLow(this *component.Component, allLow []physical.Voltage) ([]physical.Voltage, error) {
-	this.InputByName(common.PortCANL).Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName(common.PortCANL).Signals().All() {
 		v, ok := sig.Payload().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_L wire")
 		}
 
 		allLow = append(allLow, v)
-		return nil
-	})
+	}
 
 	return allLow, nil
 }
 
 // Collect CAN_H voltages
 func collectHigh(this *component.Component, allHigh []physical.Voltage) ([]physical.Voltage, error) {
-	this.InputByName(common.PortCANH).Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName(common.PortCANH).Signals().All() {
 		v, ok := sig.Payload().(physical.Voltage)
 		if !ok {
 			this.Logger().Println("bus received corrupted voltage on CAN_H wire")
 		}
 
 		allHigh = append(allHigh, v)
-		return nil
-	})
+	}
 
 	return allHigh, nil
 }

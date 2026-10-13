@@ -27,19 +27,18 @@ func NewLaptop(name string) (*Laptop, error) {
 		component.WithInputs(portUSBIn, portProgrammaticIn),
 		component.WithOutputs(portUSBOut),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			err := this.InputByName(portProgrammaticIn).Signals().ForEachIf(func(sig *signal.Signal) bool {
-				return sig.Meta().ValueIs(labelTo, labelUSB)
-			}, func(sig *signal.Signal) error {
-				return this.OutputByName(portUSBOut).PutSignals(sig)
-			})
-			if err != nil {
-				return err
+			for sig := range this.InputByName(portProgrammaticIn).Signals().All() {
+				if !sig.Meta().ValueIs(labelTo, labelUSB) {
+					continue
+				}
+				if err := this.OutputByName(portUSBOut).PutSignals(sig); err != nil {
+					return err
+				}
 			}
 
-			this.InputByName(portUSBIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(portUSBIn).Signals().All() {
 				this.Logger().Printf("Got data on USB port: %v", sig.Payload())
-				return nil
-			})
+			}
 
 			return nil
 		}),

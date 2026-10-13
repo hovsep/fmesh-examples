@@ -19,8 +19,8 @@ func TestReportAddsUpTheDay(t *testing.T) {
 	activate(t, fm, report, map[string][]any{
 		"tick": {1},
 		"served": {
-			party(1, 2, 0, 50).WithMeta("seated", 4.0),
-			party(2, 4, 0, 70).WithMeta("seated", 8.0),
+			party(1, 2, 0, 50).WithMeta("seated", 4),
+			party(2, 4, 0, 70).WithMeta("seated", 8),
 		},
 		"lost": {party(3, 5, 0, 60)},
 	})

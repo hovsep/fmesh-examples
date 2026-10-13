@@ -7,7 +7,6 @@ import (
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // GetAccumulator returns the stateful component summing the contribution
@@ -24,21 +23,25 @@ func GetAccumulator() *component.Component {
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			buffers := this.State().Get("buffers").(map[string][]render.Vec3)
 
-			return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName(common.PortIn).Signals().All() {
 				key := fmt.Sprintf("%d/%d",
 					common.ScalarInt(sig, common.ScalarFrame), common.ScalarInt(sig, common.ScalarYFrom))
 				buffers[key] = render.Accumulate(buffers[key], sig.Payload().([]render.Contribution))
 
 				if common.ScalarInt(sig, common.ScalarBounce) < render.MaxBounces {
-					return nil
+					continue
 				}
 
 				// Last wave of the tile: release the finished samples
 				samples := buffers[key]
 				delete(buffers, key)
-				return this.OutputByName(common.PortOut).PutSignals(
+				err := this.OutputByName(common.PortOut).PutSignals(
 					sig.MapPayload(func(any) any { return samples }).WithoutMeta(common.ScalarBounce))
-			})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	))
 }

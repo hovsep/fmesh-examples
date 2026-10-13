@@ -129,7 +129,7 @@ func collectGrad(this *component.Component) ([]float64, bool, error) {
 		return nil, false, component.ErrWaitKeepingInputs
 	}
 	var total []float64
-	for _, sig := range signals.All() {
+	for sig := range signals.All() {
 		g, err := sig.As[[]float64]()
 		if err != nil {
 			return nil, false, err

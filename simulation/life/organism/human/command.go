@@ -58,20 +58,20 @@ func routeCommands(mesh *fmesh.FMesh) component.ActivationFunc {
 			return nil
 		}
 
-		return ctl.Signals().ForEach(func(sig *signal.Signal) error {
+		for sig := range ctl.Signals().All() {
 			name, _, err := command.Unpack(sig)
 			if err != nil {
 				// Not addressed to us. Ignore rather than fail: an activation
 				// error stops the whole mesh run, and a stray signal should
 				// never be able to halt a living body.
 				this.Logger().Println("ignoring non-command signal on ctl port:", err)
-				return nil
+				continue
 			}
 
 			componentName, ok := commandRoutes[command.Namespace(name)]
 			if !ok {
 				this.Logger().Printf("no controller owns command %q (known namespaces: %v)\n", name, CommandNamespaces())
-				return nil
+				continue
 			}
 
 			target := mesh.ComponentByName(componentName)
@@ -79,7 +79,10 @@ func routeCommands(mesh *fmesh.FMesh) component.ActivationFunc {
 				return fmt.Errorf("command %q routes to %q, which is not in the mesh", name, componentName)
 			}
 
-			return target.InputByName(ControlPort).PutSignals(sig)
-		})
+			if err := target.InputByName(ControlPort).PutSignals(sig); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }

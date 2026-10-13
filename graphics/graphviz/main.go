@@ -68,7 +68,7 @@ func main() {
 
 	fmt.Println("Also you can create a graph representation of each activation cycle ! (activated components will be highlighted with different color)")
 	// RuntimeInfo.Cycles holds every cycle of the run.
-	for _, c := range runtimeInfo.Cycles.All() {
+	for c := range runtimeInfo.Cycles.All() {
 		cycleGraph, err := graphviz.ExportCycle(fm, c)
 		if err != nil {
 			fmt.Println("can not export cycle graph:", err)
@@ -123,12 +123,15 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithInputs("rotation"),
 		component.WithOutputs("rotation"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName("rotation").Signals().ForEach(func(s *signal.Signal) error {
+			for s := range this.InputByName("rotation").Signals().All() {
 				rotationAfter := s.MapPayload(func(payload any) any {
 					return payload.(int) / 2
 				})
-				return this.OutputByName("rotation").PutSignals(rotationAfter)
-			})
+				if err := this.OutputByName("rotation").PutSignals(rotationAfter); err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 	if err != nil {

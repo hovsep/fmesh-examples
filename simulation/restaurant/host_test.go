@@ -3,6 +3,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/hovsep/fmesh/component"
@@ -24,7 +25,7 @@ func seatingsOf(t *testing.T, host *component.Component, numberOfTables int) map
 	t.Helper()
 	result := map[int][]*signal.Signal{}
 	for i := range numberOfTables {
-		if items := host.OutputByName(tablePort(i)).Signals().All(); len(items) > 0 {
+		if items := slices.Collect(host.OutputByName(tablePort(i)).Signals().All()); len(items) > 0 {
 			result[i] = items
 		}
 	}
@@ -43,7 +44,7 @@ func TestFIFOHostWastesTheBigTableOnTheCouple(t *testing.T) {
 
 	// The couple came first and the 6-top is the first table it fits; the five do not fit the 2-top.
 	assert.Equal(t, map[int][]*signal.Signal{0: {couple}}, seatingsOf(t, host, 2))
-	assert.Equal(t, []*signal.Signal{couple}, host.OutputByName("seated").Signals().All())
+	assert.Equal(t, []*signal.Signal{couple}, slices.Collect(host.OutputByName("seated").Signals().All()))
 }
 
 func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
@@ -57,7 +58,7 @@ func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
 	})
 
 	assert.Equal(t, map[int][]*signal.Signal{0: {five}, 1: {couple}}, seatingsOf(t, host, 2))
-	assert.ElementsMatch(t, []*signal.Signal{couple, five}, host.OutputByName("seated").Signals().All())
+	assert.ElementsMatch(t, []*signal.Signal{couple, five}, slices.Collect(host.OutputByName("seated").Signals().All()))
 }
 
 func TestHostRemembersFreeTablesAcrossMinutes(t *testing.T) {

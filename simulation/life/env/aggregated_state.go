@@ -19,7 +19,7 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 		component.WithMeta("role", "aggregator"),
 		component.WithOutputs("aggregated_state"),
 		component.WithActivationFunc(func(ctx context.Context, this *component.Component) error {
-			return this.Inputs().ForEach(func(in *port.Port) error {
+			for in := range this.Inputs().All() {
 				// Add all signals from the input port to the aggregated state (for later publishing)
 				err := port.ForwardWithMap(ctx, in, this.OutputByName("aggregated_state"), func(sig *signal.Signal) *signal.Signal {
 					return sig.MapPayload(func(p any) any { return p }).WithMeta("from", in.Name())
@@ -30,8 +30,11 @@ func newAggregator(name string, fm *fmesh.FMesh, inputPaths []string) (*componen
 				}
 
 				// Just proxy "in -> out" with the same port name
-				return port.ForwardSignals(ctx, in, this.OutputByName(in.Name()))
-			})
+				if err := port.ForwardSignals(ctx, in, this.OutputByName(in.Name())); err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 	if err != nil {
@@ -144,7 +147,7 @@ func (h *Habitat) AddAggregatedState() (*Habitat, error) {
 }
 
 func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
-	agg := h.FM.Components().FindAny(func(c *component.Component) bool {
+	agg := h.FM.Components().Find(func(c *component.Component) bool {
 		return c.Meta().ValueIs("role", "aggregator")
 	})
 
@@ -158,13 +161,15 @@ func (h *Habitat) AddAggregatedStatePublisher() (*Habitat, error) {
 		component.WithInputs("aggregated_state"),
 		component.WithOutputs("stream"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			err := this.InputByName("aggregated_state").Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName("aggregated_state").Signals().All() {
 				if !sig.Meta().Has("from") {
 					return fmt.Errorf("missing 'from' label")
 				}
-				return publishSignal(this.OutputByName("stream"), sig.Meta().ValueOrDefault("from", "unknown"), sig)
-			})
-			return err
+				if err := publishSignal(this.OutputByName("stream"), sig.Meta().ValueOrDefault("from", "unknown"), sig); err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 	if err != nil {

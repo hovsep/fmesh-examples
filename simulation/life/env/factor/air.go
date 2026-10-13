@@ -2,7 +2,6 @@ package factor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -166,23 +165,22 @@ func GetAirComponent() (*component.Component, error) {
 // The component can receive control signals and change internal state
 func handleControlSignals(_ context.Context, this *component.Component) error {
 	// Handle commands
-	this.InputByName("ctl").
+	// An unknown command, mixin or preset is logged and skipped.
+	for ctlSig := range this.InputByName("ctl").
 		Signals().
 		Filter(func(s *signal.Signal) bool {
 			return s.Meta().Has("cmd")
-		}).ForEach(func(ctlSig *signal.Signal) error {
+		}).All() {
 		switch ctlSig.Meta().ValueOrDefault("cmd", "") {
 		case "change_temperature":
 			setShade(this, this.State().Get(StateShadeTemperature).(float64)+
 				ctlSig.Float64OrDefault(0.0))
-			return nil
 		case cmdSetAltitude:
 			metres := ctlSig.Float64OrDefault(0.0)
 			this.State().Set(StateAltitude, metres)
 			this.State().Set(StatePressure, atmosphere.PressureAtAltitude(metres))
 			this.Logger().Printf("moved to %.0f m: barometric pressure %.0f mmHg",
 				metres, atmosphere.PressureAtAltitude(metres))
-			return nil
 		case cmdSetPressure:
 			// The floor is not arithmetic tidiness but a safety feature: below
 			// the vapour pressure of water at body temperature the alveolar gas
@@ -192,16 +190,15 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			this.State().Set(StatePressure, pressure)
 			this.Logger().Printf("air at %.0f mmHg (%.2f atmospheres)",
 				pressure, pressure/atmosphere.SeaLevelPressure)
-			return nil
 		case cmdSetOxygen:
 			oxygen := min(max(ctlSig.Float64OrDefault(21.0), 1.0), 100.0)
 			this.State().Set(StateOxygenPct, oxygen)
 			this.Logger().Printf("mixture now %.0f%% oxygen", oxygen)
-			return nil
 		case cmdAddMixin:
 			name := ctlSig.Meta().ValueOrDefault("mixin", "")
 			if _, ok := mixins[name]; !ok {
-				return fmt.Errorf("unknown mixin %q (have %v)", name, MixinNames())
+				this.Logger().Printf("unknown mixin %q (have %v)", name, MixinNames())
+				continue
 			}
 			seconds := max(ctlSig.Float64OrDefault(0), 0)
 			this.State().Update(StateMixins, func(v any) any {
@@ -212,16 +209,15 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 				return active
 			})
 			this.Logger().Printf("%s in the air for %.0f s", name, seconds)
-			return nil
 		case cmdClearMixins:
 			this.State().Set(StateMixins, map[string]float64{})
 			this.Logger().Println("the air is clear again")
-			return nil
 		case cmdSetPreset:
 			name := ctlSig.Meta().ValueOrDefault("preset", "")
 			p, ok := presets[name]
 			if !ok {
-				return fmt.Errorf("unknown preset %q (have %v)", name, PresetNames())
+				this.Logger().Printf("unknown preset %q (have %v)", name, PresetNames())
+				continue
 			}
 			this.State().Set(StatePressure, p.pressure)
 			this.State().Set(StateOxygenPct, p.oxygenPct)
@@ -230,22 +226,18 @@ func handleControlSignals(_ context.Context, this *component.Component) error {
 			this.State().Set("humidity", p.humidity)
 			this.Logger().Printf("air is now %q: %.0f mmHg, %.0f%% oxygen, %.0f C",
 				name, p.pressure, p.oxygenPct, p.temperature)
-			return nil
 		case cmdSetCO:
 			ppm := max(ctlSig.Float64OrDefault(0.0), 0)
 			this.State().Set(StateCOppm, ppm)
 			this.Logger().Printf("carbon monoxide in the air: %.0f ppm", ppm)
-			return nil
 		case "set_temperature":
 			shade := ctlSig.Float64OrDefault(0.0)
 			this.Logger().Printf("shade temperature now %.1f C; the sun adds to it", shade)
 			setShade(this, shade)
-			return nil
 		default:
-			return errors.New("unknown command")
+			this.Logger().Printf("unknown command %q", ctlSig.Meta().ValueOrDefault("cmd", ""))
 		}
-
-	})
+	}
 
 	return nil
 }

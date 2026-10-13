@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh-examples/internal"
@@ -43,11 +44,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	outerMesh.Components().ByName("factorizer").OutputByName("out").Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range outerMesh.Components().ByName("factorizer").OutputByName("out").Signals().All() {
 		result := sig.Payload().(factorizedNumber)
 		fmt.Printf("Factors of number %d : %v \n", result.Num, result.Factors)
-		return nil
-	})
+	}
 }
 
 func getMesh() (*fmesh.FMesh, error) {
@@ -71,12 +71,16 @@ func getMesh() (*fmesh.FMesh, error) {
 			// Below 2 there is nothing to factorize, and the inner mesh's d2 stage
 			// would loop forever on 0
 			isValid := func(num int) bool { return num > 1 && num < 1000 }
-			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName("in").Signals().All() {
+				target := this.OutputByName("log")
 				if isValid(sig.Payload().(int)) {
-					return this.OutputByName("out").PutSignals(sig)
+					target = this.OutputByName("out")
 				}
-				return this.OutputByName("log").PutSignals(sig)
-			})
+				if err := target.PutSignals(sig); err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 	if err != nil {
@@ -87,10 +91,10 @@ func getMesh() (*fmesh.FMesh, error) {
 		component.WithDescription("Simple logger"),
 		component.WithInputs("in"),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName("in").Signals().All() {
 				this.Logger().Println(sig.Payload())
-				return nil
-			})
+			}
+			return nil
 		}),
 	)
 	if err != nil {
@@ -107,7 +111,7 @@ func getMesh() (*fmesh.FMesh, error) {
 				return fmt.Errorf("build sub-mesh: %w", err)
 			}
 
-			return this.InputByName("in").Signals().ForEach(func(sig *signal.Signal) error {
+			for sig := range this.InputByName("in").Signals().All() {
 				if err := factorization.Components().ByName("starter").InputByName("in").PutSignals(sig); err != nil {
 					return err
 				}
@@ -115,13 +119,17 @@ func getMesh() (*fmesh.FMesh, error) {
 				if err != nil {
 					return fmt.Errorf("inner mesh failed: %w", err)
 				}
-				factors := factorization.Components().ByName("results").OutputByName("factors").Signals().AllPayloads()
+				factors := slices.Collect(factorization.Components().ByName("results").OutputByName("factors").Signals().Payloads())
 				number := sig.Payload().(int)
-				return this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
+				err = this.OutputByName("out").PutSignals(signal.New(factorizedNumber{
 					Num:     number,
 					Factors: factors,
 				}))
-			})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		}),
 	)
 	if err != nil {

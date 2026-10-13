@@ -140,14 +140,14 @@ func synthesize(fm *fmesh.FMesh, hg *Hypergraph, raw []string) (*Result, error) 
 	}
 
 	res := &Result{Waiting: map[int][]string{}, MadeBy: map[string][]string{}}
-	for _, c := range info.Cycles.All() {
+	for c := range info.Cycles.All() {
 		var fired, waiting []string
-		for _, r := range c.ActivationResults().AllOrdered() {
+		for r := range c.ActivationResults().All() {
 			if !isReaction[r.ComponentName()] {
 				continue
 			}
-			if component.IsWaitingForInput(r) {
-				waiting = append(waiting, r.ComponentName()+" ("+missingOf(r.ActivationError())+")")
+			if r.IsWaiting() {
+				waiting = append(waiting, r.ComponentName()+" ("+missingOf(r.Err())+")")
 				continue
 			}
 			fired = append(fired, r.ComponentName())
@@ -240,7 +240,7 @@ func newSubstance(formula, name string, hg *Hypergraph) (*component.Component, e
 				return nil // made again by another reaction: nothing new to tell
 			}
 			var by []string
-			for _, p := range this.InputByName(portMade).Signals().AllPayloads() {
+			for p := range this.InputByName(portMade).Signals().Payloads() {
 				by = append(by, p.(string))
 			}
 			this.State().Set("madeBy", inFileOrder(hg, by))
@@ -266,7 +266,7 @@ func newReaction(r Reaction) (*component.Component, error) {
 			if err != nil {
 				return err
 			}
-			for _, p := range this.InputByName(portReactants).Signals().AllPayloads() {
+			for p := range this.InputByName(portReactants).Signals().Payloads() {
 				have[p.(string)] = true
 			}
 			if fired, _ := this.State().GetTyped[bool]("fired"); fired {

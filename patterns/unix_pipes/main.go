@@ -78,9 +78,9 @@ func main() {
 				return nil
 			}
 			ran := make([]string, 0)
-			for _, r := range cc.Cycle.ActivationResults().AllOrdered() {
+			for r := range cc.Cycle.ActivationResults().All() {
 				name := r.ComponentName()
-				if component.IsWaitingForInput(r) {
+				if r.IsWaiting() {
 					name += " (waiting)"
 				}
 				ran = append(ran, name)
@@ -218,7 +218,7 @@ func newCommand(name string, argv []string, inputs ...string) (*component.Compon
 			component.RequireInputs(inputs...),
 			func(ctx context.Context, this *component.Component) error {
 				var stdin strings.Builder
-				for _, sig := range this.Inputs().Signals().All() {
+				for sig := range this.Inputs().Signals().All() {
 					text, err := sig.As[string]()
 					if err != nil {
 						return err

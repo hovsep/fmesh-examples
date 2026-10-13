@@ -6,7 +6,6 @@ import (
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/common"
 	"github.com/hovsep/fmesh-examples/graphics/ray_tracer/render"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/signal"
 )
 
 // GetShaders returns the collection of components converting hits into color
@@ -27,7 +26,7 @@ func GetShaders() *component.Collection {
 				adoptLight(this)
 				light := lightFromState(this)
 
-				return this.InputByName(common.PortIn).Signals().ForEach(func(sig *signal.Signal) error {
+				for sig := range this.InputByName(common.PortIn).Signals().All() {
 					bounce := common.ScalarInt(sig, common.ScalarBounce)
 					contribs, secondaries := render.Shade(light, sig.Payload().([]render.HitResult), bounce)
 
@@ -38,12 +37,16 @@ func GetShaders() *component.Collection {
 					}
 
 					if bounce >= render.MaxBounces {
-						return nil
+						continue
 					}
-					return this.OutputByName(common.PortSecondaryOut).PutSignals(
+					err = this.OutputByName(common.PortSecondaryOut).PutSignals(
 						sig.MapPayload(func(any) any { return secondaries }).
 							WithMeta(common.ScalarBounce, float64(bounce+1)))
-				})
+					if err != nil {
+						return err
+					}
+				}
+				return nil
 			}),
 		))))
 	}

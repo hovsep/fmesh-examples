@@ -165,7 +165,7 @@ func ComponentPorts(fm *fmesh.FMesh, componentName string) []Observable {
 	}
 
 	var observables []Observable
-	for _, p := range c.Outputs().AllOrdered() {
+	for p := range c.Outputs().All() {
 		observables = append(observables, Port(componentName, p.Name()))
 	}
 	return observables

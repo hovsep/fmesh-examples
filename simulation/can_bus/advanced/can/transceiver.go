@@ -40,7 +40,7 @@ func NewTransceiver(unitName string) (*component.Component, error) {
 
 // Write path: transceiver -> bus
 func handleTxPath(_ context.Context, this *component.Component) error {
-	return this.InputByName(common.PortCANTx).Signals().ForEach(func(sig *signal.Signal) error {
+	for sig := range this.InputByName(common.PortCANTx).Signals().All() {
 		bit, ok := sig.Payload().(codec.Bit)
 		if !ok {
 			this.Logger().Println("received corrupted bit")
@@ -62,8 +62,8 @@ func handleTxPath(_ context.Context, this *component.Component) error {
 		}
 
 		this.Logger().Printf("convert bit: %s to voltages L:%v / H:%v", bit, resultingLVoltage, resultingHVoltage)
-		return nil
-	})
+	}
+	return nil
 }
 
 // Read path: transceiver <- bus (exactly one bit)

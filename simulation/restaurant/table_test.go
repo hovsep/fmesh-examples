@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,12 +22,12 @@ func TestTableAnnouncesServesAndFreesUp(t *testing.T) {
 
 			assert.Equal(t, fmt.Sprintf("table-%d", index), table.Name())
 			assert.Equal(t, fmt.Sprintf("table for %d", seats), table.Description())
-			assert.Equal(t, float64(seats), table.Meta().ValueOrDefault("seats", 0.0))
+			assert.Equal(t, seats, table.Meta().ValueOrDefault("seats", 0))
 
 			// The first tick: the table says it is free, once.
 			tick(t, fm, table, 0)
-			assert.Equal(t, []any{index}, free.Signals().AllPayloads())
-			assert.Equal(t, float64(seats), free.Signals().First().Meta().ValueOrDefault("seats", 0.0))
+			assert.Equal(t, []any{index}, slices.Collect(free.Signals().Payloads()))
+			assert.Equal(t, seats, free.Signals().First().Meta().ValueOrDefault("seats", 0))
 			tick(t, fm, table, 1)
 			assert.True(t, free.Signals().IsEmpty(), "no need to repeat it")
 
@@ -44,10 +45,10 @@ func TestTableAnnouncesServesAndFreesUp(t *testing.T) {
 			// Minute 8: the meal is over, the party leaves with its seating minute
 			// stamped on, and the table is free again.
 			tick(t, fm, table, 8)
-			assert.Equal(t, []any{seats}, served.Signals().AllPayloads())
-			assert.Equal(t, map[string]any{"id": 7.0, "arrived": 2.0, "meal": 3.0, "seated": 5.0},
+			assert.Equal(t, []any{seats}, slices.Collect(served.Signals().Payloads()))
+			assert.Equal(t, map[string]any{"id": 7, "arrived": 2, "meal": 3, "seated": 5},
 				served.Signals().First().Meta().All())
-			assert.Equal(t, []any{index}, free.Signals().AllPayloads())
+			assert.Equal(t, []any{index}, slices.Collect(free.Signals().Payloads()))
 		})
 	}
 }

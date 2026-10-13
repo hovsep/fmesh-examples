@@ -88,15 +88,15 @@ func TestMeshIsTheDiagram(t *testing.T) {
 	fm := newMachine(t, "created")
 
 	names := make([]string, 0)
-	for name := range fm.Components().All() {
-		names = append(names, name)
+	for c := range fm.Components().All() {
+		names = append(names, c.Name())
 	}
 	assert.ElementsMatch(t, []string{"created", "paid", "shipped", "delivered", "cancelled", "pay?"}, names)
 
 	outputs := func(name string) []string {
 		ports := make([]string, 0)
-		for portName := range fm.ComponentByName(name).Outputs().All() {
-			ports = append(ports, portName)
+		for p := range fm.ComponentByName(name).Outputs().All() {
+			ports = append(ports, p.Name())
 		}
 		return ports
 	}

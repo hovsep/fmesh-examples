@@ -58,11 +58,11 @@ func report(this *component.Component, state any) error {
 // latest is the newest payload on a port, or def when it is empty. A part
 // that only listens on a port keeps the newest value it heard.
 func latest[T any](p *port.Port, def T) T {
-	all := p.Signals().All()
-	if len(all) == 0 {
+	sigs := p.Signals()
+	if sigs.IsEmpty() {
 		return def
 	}
-	return all[len(all)-1].PayloadOrDefault(def)
+	return sigs.Last().PayloadOrDefault(def)
 }
 
 // newButton is any push button in the building: on a press it sends what it
@@ -165,7 +165,7 @@ func newPanel() (*component.Component, error) {
 			// A fresh map every time: a payload that left the component is
 			// someone else's to read.
 			frame := maps.Clone(this.State().Get("frame").(Frame))
-			for _, sig := range this.InputByName(portTelemetry).Signals().All() {
+			for sig := range this.InputByName(portTelemetry).Signals().All() {
 				r, err := sig.As[Report]()
 				if err != nil {
 					return err
