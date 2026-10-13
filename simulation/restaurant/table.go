@@ -1,6 +1,6 @@
 // This file holds the "table" component. One constructor makes every table,
 // whatever its size: a table announces when it is free, hosts a party for the
-// length of its meal and reports the visit when the party leaves.
+// length of its meal and hands the party to the report when it leaves.
 package main
 
 import (
@@ -8,22 +8,16 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh/component"
-)
-
-// Keys of a table's state.
-const (
-	stateIndex       = "index"        // the table's number
-	stateSeats       = "seats"        // how many guests fit
-	stateParty       = "party"        // the seated Party, or nil when the table is free
-	stateMinutesLeft = "minutes-left" // minutes until the seated party leaves
-	stateWaited      = "waited"       // how long the seated party waited for the table
-	stateAnnounced   = "announced"    // has the host been told that this table is free?
-	stateMinute      = "minute"       // the current minute, remembered from the last tick
+	"github.com/hovsep/fmesh/signal"
 )
 
 // newTable creates the table with the given index and number of seats. Its
 // component name is "table-<index>"; the seats are also kept as metadata so
-// diagrams and reports can read them.
+// diagrams can show them.
+//
+// State: the seated party (nil when the table is free), the minutes left of
+// its meal, and the current minute, remembered from the last tick because the
+// party is seated a moment after the tick.
 func newTable(index int, seats int) (*component.Component, error) {
 	return component.New(fmt.Sprintf("table-%d", index),
 		component.WithDescription(fmt.Sprintf("table for %d", seats)),
@@ -31,85 +25,57 @@ func newTable(index int, seats int) (*component.Component, error) {
 		component.WithInputs("seat", "tick"),
 		component.WithOutputs("free", "served"),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateIndex, index)
-			state.Set(stateSeats, seats)
-			state.Set(stateParty, (*Party)(nil))
-			state.Set(stateMinutesLeft, 0)
-			state.Set(stateWaited, 0)
-			state.Set(stateAnnounced, false)
-			state.Set(stateMinute, 0)
+			state.Set("party", (*signal.Signal)(nil))
+			state.Set("minutes-left", 0)
+			state.Set("minute", 0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
+			state := this.State()
+			// "I am free": the table index, labelled with its size.
+			announceFree := func() error {
+				return this.OutputByName("free").PutSignals(signal.New(index).WithMeta("seats", float64(seats)))
+			}
+
+			// One minute passes at the table.
 			if this.InputByName("tick").HasSignals() {
-				if err := tableTick(this); err != nil {
+				minute, err := this.InputByName("tick").Signals().FirstAs[int]()
+				if err != nil {
 					return err
 				}
+				state.Set("minute", minute)
+
+				party := state.Get("party").(*signal.Signal)
+				switch {
+				case party == nil && minute == 0:
+					// The day starts: tell the host once that this table is free.
+					if err := announceFree(); err != nil {
+						return err
+					}
+				case party != nil:
+					minutesLeft := state.Get("minutes-left").(int) - 1
+					state.Set("minutes-left", minutesLeft)
+					if minutesLeft > 0 {
+						break
+					}
+					// The meal is over: the party pays and leaves, and the table is free again.
+					if err := this.OutputByName("served").PutSignals(party); err != nil {
+						return err
+					}
+					state.Set("party", (*signal.Signal)(nil))
+					if err := announceFree(); err != nil {
+						return err
+					}
+				}
 			}
+
+			// The host brings a party: stamp the minute on it and start the meal.
 			if this.InputByName("seat").HasSignals() {
-				return tableSeat(this)
+				minute := state.Get("minute").(int)
+				party := this.InputByName("seat").Signals().First().WithMeta("seated", float64(minute))
+				state.Set("party", party)
+				state.Set("minutes-left", int(party.Meta().ValueOrDefault("meal", 0.0)))
 			}
 			return nil
 		}),
 	)
-}
-
-// tableTick is one minute passing at the table.
-func tableTick(this *component.Component) error {
-	state := this.State()
-	minute, err := firstPayload[int](this.InputByName("tick"))
-	if err != nil {
-		return err
-	}
-	state.Set(stateMinute, minute)
-
-	party := state.Get(stateParty).(*Party)
-	if party == nil {
-		// A free table tells the host once; it tells again after every visit.
-		if state.Get(stateAnnounced).(bool) {
-			return nil
-		}
-		return announceFree(this)
-	}
-
-	minutesLeft := state.Get(stateMinutesLeft).(int) - 1
-	state.Set(stateMinutesLeft, minutesLeft)
-	if minutesLeft > 0 {
-		return nil
-	}
-
-	// The meal is over: the party pays and leaves, and the table is free again.
-	served := Served{
-		Party:         *party,
-		Seats:         state.Get(stateSeats).(int),
-		WaitedMinutes: state.Get(stateWaited).(int),
-		LeftAt:        minute,
-	}
-	if err := this.OutputByName("served").PutPayloads(served); err != nil {
-		return err
-	}
-	state.Set(stateParty, (*Party)(nil))
-	return announceFree(this)
-}
-
-// tableSeat is the host bringing a party to the table.
-func tableSeat(this *component.Component) error {
-	state := this.State()
-	seating, err := firstPayload[Seating](this.InputByName("seat"))
-	if err != nil {
-		return err
-	}
-	party := seating.Party
-	state.Set(stateParty, &party)
-	state.Set(stateMinutesLeft, party.MealDuration)
-	state.Set(stateWaited, state.Get(stateMinute).(int)-party.ArrivedAt)
-	state.Set(stateAnnounced, false)
-	return nil
-}
-
-// announceFree tells the host that this table can take a party.
-func announceFree(this *component.Component) error {
-	state := this.State()
-	state.Set(stateAnnounced, true)
-	announcement := TableFree{Index: state.Get(stateIndex).(int), Seats: state.Get(stateSeats).(int)}
-	return this.OutputByName("free").PutPayloads(announcement)
 }

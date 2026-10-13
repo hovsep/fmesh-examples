@@ -1,17 +1,15 @@
 // This file holds the "waiting-list" component: the queue at the door. It
 // remembers who is waiting, shows the list to the host every minute and lets
-// impatient parties leave.
+// impatient parties leave. The queue is a signal group, so joining, leaving
+// and giving up are group operations.
 package main
 
 import (
 	"context"
-	"slices"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
-
-// Key of the waiting list's state: the parties waiting, in arrival order.
-const stateWaiting = "waiting"
 
 // newWaitingList creates the queue. A party that has waited longer than
 // patienceMinutes gives up and is reported as lost.
@@ -21,67 +19,39 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 		component.WithInputs("party", "seated", "tick"),
 		component.WithOutputs("waiting", "lost"),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateWaiting, []Party{})
+			state.Set("waiting", signal.NewGroup())
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			waiting := this.State().Get(stateWaiting).([]Party)
-			defer func() { this.State().Set(stateWaiting, waiting) }()
+			waiting := this.State().Get("waiting").(*signal.Group)
+			defer func() { this.State().Set("waiting", waiting) }()
 
 			// New arrivals join the end of the queue.
-			arrived, err := payloads[Party](this.InputByName("party"))
-			if err != nil {
-				return err
-			}
-			waiting = append(waiting, arrived...)
+			waiting = waiting.Join(this.InputByName("party").Signals())
 
-			// Parties the host has seated leave the queue.
-			seated, err := payloads[Party](this.InputByName("seated"))
-			if err != nil {
-				return err
-			}
-			waiting = removeParties(waiting, seated)
+			// Parties the host has seated leave the queue (matched by id).
+			seated := this.InputByName("seated").Signals()
+			waiting = waiting.Filter(func(party *signal.Signal) bool {
+				id := party.Meta().ValueOrDefault("id", 0.0)
+				return seated.Filter(signal.MetaEquals("id", id)).IsEmpty()
+			})
 
 			// On a tick: impatient parties leave, then the host gets the current list.
 			if !this.InputByName("tick").HasSignals() {
 				return nil
 			}
-			minute, err := firstPayload[int](this.InputByName("tick"))
+			minute, err := this.InputByName("tick").Signals().FirstAs[int]()
 			if err != nil {
 				return err
 			}
-			var lost []Party
-			waiting, lost = splitImpatient(waiting, minute, patienceMinutes)
-			for _, party := range lost {
-				if err := this.OutputByName("lost").PutPayloads(party); err != nil {
-					return err
-				}
+			impatient := func(party *signal.Signal) bool {
+				arrived := int(party.Meta().ValueOrDefault("arrived", 0.0))
+				return minute-arrived > patienceMinutes
 			}
-			for _, party := range waiting {
-				if err := this.OutputByName("waiting").PutPayloads(party); err != nil {
-					return err
-				}
+			if err := this.OutputByName("lost").PutSignalGroups(waiting.Filter(impatient)); err != nil {
+				return err
 			}
-			return nil
+			waiting = waiting.Filter(signal.Not(impatient))
+			return this.OutputByName("waiting").PutSignalGroups(waiting)
 		}),
 	)
-}
-
-// removeParties returns the waiting list without the given parties (matched by ID).
-func removeParties(waiting []Party, gone []Party) []Party {
-	return slices.DeleteFunc(slices.Clone(waiting), func(candidate Party) bool {
-		return slices.ContainsFunc(gone, func(g Party) bool { return g.ID == candidate.ID })
-	})
-}
-
-// splitImpatient separates the parties still willing to wait from the ones
-// that have waited longer than their patience and leave.
-func splitImpatient(waiting []Party, minute int, patienceMinutes int) (staying []Party, lost []Party) {
-	for _, party := range waiting {
-		if minute-party.ArrivedAt > patienceMinutes {
-			lost = append(lost, party)
-		} else {
-			staying = append(staying, party)
-		}
-	}
-	return staying, lost
 }

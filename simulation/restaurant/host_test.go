@@ -6,24 +6,25 @@ import (
 	"testing"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	couple = Party{ID: 1, Size: 2, ArrivedAt: 0, MealDuration: 60}
-	five   = Party{ID: 2, Size: 5, ArrivedAt: 1, MealDuration: 60}
+	couple = party(1, 2, 0, 60)
+	five   = party(2, 5, 1, 60)
 
-	sixTop = TableFree{Index: 0, Seats: 6}
-	twoTop = TableFree{Index: 1, Seats: 2}
+	sixTop = freeTable(0, 6)
+	twoTop = freeTable(1, 2)
 )
 
 // seatingsOf returns what the host sent to each table output.
-func seatingsOf(t *testing.T, host *component.Component, numberOfTables int) map[int][]Seating {
+func seatingsOf(t *testing.T, host *component.Component, numberOfTables int) map[int][]*signal.Signal {
 	t.Helper()
-	result := map[int][]Seating{}
+	result := map[int][]*signal.Signal{}
 	for i := range numberOfTables {
-		if items := outputs[Seating](t, host.OutputByName(tablePort(i))); len(items) > 0 {
+		if items := host.OutputByName(tablePort(i)).Signals().All(); len(items) > 0 {
 			result[i] = items
 		}
 	}
@@ -41,8 +42,8 @@ func TestFIFOHostWastesTheBigTableOnTheCouple(t *testing.T) {
 	})
 
 	// The couple came first and the 6-top is the first table it fits; the five do not fit the 2-top.
-	assert.Equal(t, map[int][]Seating{0: {{Party: couple, TableIndex: 0}}}, seatingsOf(t, host, 2))
-	assert.Equal(t, []Party{couple}, outputs[Party](t, host.OutputByName("seated")))
+	assert.Equal(t, map[int][]*signal.Signal{0: {couple}}, seatingsOf(t, host, 2))
+	assert.Equal(t, []*signal.Signal{couple}, host.OutputByName("seated").Signals().All())
 }
 
 func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
@@ -55,11 +56,8 @@ func TestBestFitHostKeepsTheBigTableForTheBigParty(t *testing.T) {
 		"waiting": {couple, five},
 	})
 
-	assert.Equal(t, map[int][]Seating{
-		0: {{Party: five, TableIndex: 0}},
-		1: {{Party: couple, TableIndex: 1}},
-	}, seatingsOf(t, host, 2))
-	assert.ElementsMatch(t, []Party{couple, five}, outputs[Party](t, host.OutputByName("seated")))
+	assert.Equal(t, map[int][]*signal.Signal{0: {five}, 1: {couple}}, seatingsOf(t, host, 2))
+	assert.ElementsMatch(t, []*signal.Signal{couple, five}, host.OutputByName("seated").Signals().All())
 }
 
 func TestHostRemembersFreeTablesAcrossMinutes(t *testing.T) {
@@ -77,48 +75,48 @@ func TestHostRemembersFreeTablesAcrossMinutes(t *testing.T) {
 
 	// Minute 3: the couple is still on the list (it leaves it a moment later), the five arrive.
 	activate(t, fm, host, map[string][]any{"waiting": {five}})
-	assert.Equal(t, map[int][]Seating{}, seatingsOf(t, host, 2), "no free table fits five")
+	assert.Empty(t, seatingsOf(t, host, 2), "no free table fits five")
 
 	// The 6-top frees up again.
 	activate(t, fm, host, map[string][]any{"free": {sixTop}, "waiting": {five}})
-	assert.Equal(t, map[int][]Seating{0: {{Party: five, TableIndex: 0}}}, seatingsOf(t, host, 2))
+	assert.Equal(t, map[int][]*signal.Signal{0: {five}}, seatingsOf(t, host, 2))
 }
 
 func TestSeatingPolicies(t *testing.T) {
 	cases := []struct {
 		name    string
-		choose  seatingPolicy
-		waiting []Party
-		free    freeTables
-		want    []Seating
+		choose  func(waiting []*signal.Signal, free map[int]int) map[int]*signal.Signal
+		waiting []*signal.Signal
+		free    map[int]int
+		want    map[int]*signal.Signal
 	}{
 		{
 			name:    "fifo takes the first fitting table in index order",
 			choose:  chooseFirstFit,
-			waiting: []Party{couple, five},
-			free:    freeTables{0: 6, 1: 2},
-			want:    []Seating{{Party: couple, TableIndex: 0}},
+			waiting: []*signal.Signal{couple, five},
+			free:    map[int]int{0: 6, 1: 2},
+			want:    map[int]*signal.Signal{0: couple},
 		},
 		{
 			name:    "best fit fills small tables first and keeps the 6-top for the five",
 			choose:  chooseBestFit,
-			waiting: []Party{couple, five},
-			free:    freeTables{0: 6, 1: 2},
-			want:    []Seating{{Party: couple, TableIndex: 1}, {Party: five, TableIndex: 0}},
+			waiting: []*signal.Signal{couple, five},
+			free:    map[int]int{0: 6, 1: 2},
+			want:    map[int]*signal.Signal{1: couple, 0: five},
 		},
 		{
 			name:    "best fit prefers the earlier party among equal sizes",
 			choose:  chooseBestFit,
-			waiting: []Party{{ID: 1, Size: 2}, {ID: 2, Size: 2}},
-			free:    freeTables{3: 4},
-			want:    []Seating{{Party: Party{ID: 1, Size: 2}, TableIndex: 3}},
+			waiting: []*signal.Signal{party(1, 2, 0, 60), party(2, 2, 0, 60)},
+			free:    map[int]int{3: 4},
+			want:    map[int]*signal.Signal{3: party(1, 2, 0, 60)},
 		},
 		{
 			name:    "nobody fits",
 			choose:  chooseBestFit,
-			waiting: []Party{five},
-			free:    freeTables{1: 2},
-			want:    nil,
+			waiting: []*signal.Signal{five},
+			free:    map[int]int{1: 2},
+			want:    map[int]*signal.Signal{},
 		},
 	}
 	for _, c := range cases {

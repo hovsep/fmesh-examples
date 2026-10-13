@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,11 +16,11 @@ func TestArrivalsProducePlausibleParties(t *testing.T) {
 	require.NoError(t, err)
 	fm := alone(t, arrivals)
 
-	var parties []Party
+	var parties []*signal.Signal
 	for minute := range openingMinutes {
 		tick(t, fm, arrivals, minute)
-		for _, party := range outputs[Party](t, arrivals.OutputByName("party")) {
-			assert.Equal(t, minute, party.ArrivedAt, "a party is stamped with its arrival minute")
+		for _, party := range arrivals.OutputByName("party").Signals().All() {
+			assert.Equal(t, float64(minute), party.Meta().ValueOrDefault("arrived", -1.0), "a party is labelled with its arrival minute")
 			parties = append(parties, party)
 		}
 	}
@@ -29,11 +30,14 @@ func TestArrivalsProducePlausibleParties(t *testing.T) {
 	assert.LessOrEqual(t, len(parties), 80, "but not an absurd one")
 
 	for i, party := range parties {
-		assert.Equal(t, i+1, party.ID, "IDs run from 1 in arrival order")
-		assert.GreaterOrEqual(t, party.Size, 1)
-		assert.LessOrEqual(t, party.Size, 6)
-		assert.GreaterOrEqual(t, party.MealDuration, minMealMinutes)
-		assert.LessOrEqual(t, party.MealDuration, maxMealMinutes)
+		labels := party.Meta()
+		assert.Equal(t, float64(i+1), labels.ValueOrDefault("id", 0.0), "ids run from 1 in arrival order")
+		size, err := party.As[int]()
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, size, 1)
+		assert.LessOrEqual(t, size, 6)
+		assert.GreaterOrEqual(t, labels.ValueOrDefault("meal", 0.0), float64(minMealMinutes))
+		assert.LessOrEqual(t, labels.ValueOrDefault("meal", 0.0), float64(maxMealMinutes))
 	}
 }
 
