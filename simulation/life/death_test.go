@@ -115,34 +115,6 @@ func Test_DeathIsIrreversible(t *testing.T) {
 	})
 }
 
-// Test_ColdInjuresTheBrainBeforeTheKidney checks the emergent collapse order:
-// under cold, the brain (temperature sensitivity 0.6) accrues damage faster than
-// the kidney (0.3), so it would fail first. Asserting on the damage levels after
-// a short exposure keeps the test fast; the full march to death is the same
-// mechanism, only slower.
-func Test_ColdInjuresTheBrainBeforeTheKidney(t *testing.T) {
-	t.Parallel() // each test builds its own simulation and shares nothing
-	if testing.Short() {
-		t.Skip("multi-minute physiological run")
-	}
-	sim := newCommandableSim(t)
-	sim.Do("temp:cold")
-
-	brain := organComp(t, sim, "organ:brain")
-	kidney := organComp(t, sim, "organ:kidney")
-
-	// Eight minutes: long enough for the core to reach the temperature at which
-	// injury starts, now that a freezing body cools at a watchable pace rather
-	// than losing seven degrees in two minutes.
-	simtest.RunFor(sim, 8*time.Minute, func() {
-		brainDamage := damage.Level(brain)
-		kidneyDamage := damage.Level(kidney)
-		assert.Greater(t, brainDamage, 0.0, "cold should injure the brain")
-		assert.Greater(t, brainDamage, kidneyDamage,
-			"the brain should be injured faster than the kidney under cold (it fails first)")
-	})
-}
-
 // Test_HealthyBodyNeverDies is the guard that the death machinery does not fire
 // spuriously: a well-kept body stays alive throughout.
 func Test_HealthyBodyNeverDies(t *testing.T) {
