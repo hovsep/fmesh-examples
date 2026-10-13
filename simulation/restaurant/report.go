@@ -26,12 +26,17 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
 		component.WithInputs("served", "lost", "tick"),
 		component.WithInitialState(func(state component.State) {
-			for _, key := range []string{"minutes", "parties-served", "guests-served", "parties-lost", "guests-lost",
-				"wait-minutes", "busy-table-minutes", "revenue", "lost-revenue"} {
-				state.Set(key, 0)
-			}
+			state.Set("minutes", 0)
+			state.Set("parties-served", 0)
+			state.Set("guests-served", 0)
+			state.Set("parties-lost", 0)
+			state.Set("guests-lost", 0)
+			state.Set("wait-minutes", 0)
+			state.Set("busy-table-minutes", 0)
 			state.Set("average-wait", 0.0)
 			state.Set("utilisation", 0.0)
+			state.Set("revenue", 0)
+			state.Set("lost-revenue", 0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			state := this.State()
