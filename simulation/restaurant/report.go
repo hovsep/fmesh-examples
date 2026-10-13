@@ -12,9 +12,6 @@ import (
 	"github.com/hovsep/fmesh/component"
 )
 
-// Key of the report's state: the Report so far.
-const stateReport = "report"
-
 // Report is the day's bookkeeping. Totals grow during the day; the methods
 // turn them into the figures a restaurant owner asks for.
 type Report struct {
@@ -36,32 +33,34 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 		component.WithDescription("the bookkeeper: counts served and lost parties, waiting time and revenue"),
 		component.WithInputs("served", "lost", "tick"),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateReport, Report{Tables: numberOfTables, RevenuePerGuest: revenuePerGuest})
+			state.Set("report", Report{Tables: numberOfTables, RevenuePerGuest: revenuePerGuest})
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			report := this.State().Get(stateReport).(Report)
-			defer func() { this.State().Set(stateReport, report) }()
+			report := this.State().Get("report").(Report)
+			defer func() { this.State().Set("report", report) }()
 
 			report.Minutes += this.InputByName("tick").Signals().Len()
 
-			served, err := payloads[Served](this.InputByName("served"))
-			if err != nil {
-				return err
-			}
-			for _, visit := range served {
+			// A served party carries its whole story in its labels.
+			for _, party := range this.InputByName("served").Signals().All() {
+				guests, err := party.As[int]()
+				if err != nil {
+					return err
+				}
+				labels := party.Meta()
 				report.PartiesServed++
-				report.GuestsServed += visit.Party.Size
-				report.TotalWaitMinutes += visit.WaitedMinutes
-				report.BusyTableMinutes += visit.Party.MealDuration
+				report.GuestsServed += guests
+				report.TotalWaitMinutes += int(labels.ValueOrDefault("seated", 0.0) - labels.ValueOrDefault("arrived", 0.0))
+				report.BusyTableMinutes += int(labels.ValueOrDefault("meal", 0.0))
 			}
 
-			lost, err := payloads[Party](this.InputByName("lost"))
-			if err != nil {
-				return err
-			}
-			for _, party := range lost {
+			for _, party := range this.InputByName("lost").Signals().All() {
+				guests, err := party.As[int]()
+				if err != nil {
+					return err
+				}
 				report.PartiesLost++
-				report.GuestsLost += party.Size
+				report.GuestsLost += guests
 			}
 			return nil
 		}),
@@ -70,7 +69,7 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 
 // readReport takes the Report out of the mesh after the day.
 func readReport(fm *fmesh.FMesh) Report {
-	return fm.ComponentByName("report").State().Get(stateReport).(Report)
+	return fm.ComponentByName("report").State().Get("report").(Report)
 }
 
 // AverageWait is the mean waiting time of a served party, in minutes.

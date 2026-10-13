@@ -1,4 +1,4 @@
-// Tests for a whole day: determinism, bookkeeping that adds up, and the clock.
+// Tests for a whole day: determinism and bookkeeping that adds up.
 package main
 
 import (
@@ -30,10 +30,4 @@ func TestADayAddsUp(t *testing.T) {
 
 	lostShare := float64(report.PartiesLost) / float64(report.PartiesLost+report.PartiesServed)
 	assert.InDelta(t, 0.125, lostShare, 0.075, "aim for 5-20 %% of parties lost under FIFO with 8 tables")
-}
-
-func TestClockTime(t *testing.T) {
-	assert.Equal(t, "11:00", clockTime(0))
-	assert.Equal(t, "12:05", clockTime(65))
-	assert.Equal(t, "22:59", clockTime(openingMinutes-1))
 }

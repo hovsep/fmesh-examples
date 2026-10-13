@@ -1,5 +1,5 @@
 // This file holds helpers shared by the component tests: run one component on
-// its own, as a one-component mesh, and read its outputs.
+// its own, as a one-component mesh, and build the signals it is fed.
 package main
 
 import (
@@ -8,7 +8,7 @@ import (
 
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
-	"github.com/hovsep/fmesh/port"
+	"github.com/hovsep/fmesh/signal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,12 +21,19 @@ func alone(t *testing.T, c *component.Component) *fmesh.FMesh {
 	return fm
 }
 
-// activate puts the given payloads on the named inputs and runs the mesh once.
-// Outputs have no pipes, so the signals stay on the output ports to be read.
+// activate puts the given signals (or plain payloads) on the named inputs and
+// runs the mesh once. Outputs have no pipes, so the signals stay on the output
+// ports to be read.
 func activate(t *testing.T, fm *fmesh.FMesh, c *component.Component, inputs map[string][]any) {
 	t.Helper()
 	for name, items := range inputs {
-		require.NoError(t, c.InputByName(name).PutPayloads(items...))
+		for _, item := range items {
+			if s, ok := item.(*signal.Signal); ok {
+				require.NoError(t, c.InputByName(name).PutSignals(s))
+			} else {
+				require.NoError(t, c.InputByName(name).PutPayloads(item))
+			}
+		}
 	}
 	_, err := fm.Run(context.Background())
 	require.NoError(t, err)
@@ -38,10 +45,14 @@ func tick(t *testing.T, fm *fmesh.FMesh, c *component.Component, minute int) {
 	activate(t, fm, c, map[string][]any{"tick": {minute}})
 }
 
-// outputs reads every payload on an output port as T.
-func outputs[T any](t *testing.T, p *port.Port) []T {
-	t.Helper()
-	items, err := payloads[T](p)
-	require.NoError(t, err)
-	return items
+// party builds a party signal the way the arrivals do.
+func party(id int, size int, arrived int, meal int) *signal.Signal {
+	return signal.New(size).WithMetaMany(map[string]float64{
+		"id": float64(id), "arrived": float64(arrived), "meal": float64(meal),
+	})
+}
+
+// freeTable builds a "free" announcement the way a table does.
+func freeTable(index int, seats int) *signal.Signal {
+	return signal.New(index).WithMeta("seats", float64(seats))
 }

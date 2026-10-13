@@ -19,10 +19,10 @@ func TestReportAddsUpTheDay(t *testing.T) {
 	activate(t, fm, report, map[string][]any{
 		"tick": {1},
 		"served": {
-			Served{Party: Party{ID: 1, Size: 2, MealDuration: 50}, Seats: 2, WaitedMinutes: 4, LeftAt: 1},
-			Served{Party: Party{ID: 2, Size: 4, MealDuration: 70}, Seats: 4, WaitedMinutes: 8, LeftAt: 1},
+			party(1, 2, 0, 50).WithMeta("seated", 4.0),
+			party(2, 4, 0, 70).WithMeta("seated", 8.0),
 		},
-		"lost": {Party{ID: 3, Size: 5}},
+		"lost": {party(3, 5, 0, 60)},
 	})
 
 	got := readReport(fm)

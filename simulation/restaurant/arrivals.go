@@ -1,6 +1,17 @@
 // This file holds the "arrivals" component: the front door. Every minute it
 // decides, with a seeded random generator, how many parties walk in, how big
 // they are and how long they will stay.
+//
+// A party is one signal. Its payload is the number of guests and its labels
+// (signal metadata) say who it is and when it came:
+//
+//	id       running number, assigned on arrival
+//	arrived  minute of the day when the party arrived
+//	meal     how many minutes the party stays once seated
+//
+// The same signal travels the whole restaurant: the waiting list shows it to
+// the host, the host passes it to a table, the table stamps "seated" on it and
+// hands it to the report when the party leaves.
 package main
 
 import (
@@ -8,11 +19,12 @@ import (
 	"math/rand"
 
 	"github.com/hovsep/fmesh/component"
+	"github.com/hovsep/fmesh/signal"
 )
 
-// Opening hours on the wall clock (the day starts at openingHour, see simulation.go).
+// Opening hours on the wall clock, in minutes since midnight.
 const (
-	lunchStart  = 12 * 60 // 12:00, in minutes since midnight
+	lunchStart  = 12 * 60 // 12:00
 	lunchEnd    = 14 * 60 // 14:00
 	dinnerStart = 18 * 60 // 18:00
 	dinnerEnd   = 21 * 60 // 21:00
@@ -40,12 +52,6 @@ const (
 // Couples are the most common, then tables of four.
 var partySizeWeights = map[int]int{1: 12, 2: 40, 3: 10, 4: 25, 5: 8, 6: 5}
 
-// Keys of the arrivals' state.
-const (
-	stateRandom = "random"  // the seeded *rand.Rand
-	stateNextID = "next-id" // the ID the next party will get
-)
-
 // newArrivals creates the front door. The seed makes every day reproducible.
 func newArrivals(seed int64) (*component.Component, error) {
 	return component.New("arrivals",
@@ -53,29 +59,33 @@ func newArrivals(seed int64) (*component.Component, error) {
 		component.WithInputs("tick"),
 		component.WithOutputs("party"),
 		component.WithInitialState(func(state component.State) {
-			state.Set(stateRandom, rand.New(rand.NewSource(seed)))
-			state.Set(stateNextID, 1)
+			state.Set("random", rand.New(rand.NewSource(seed)))
+			state.Set("next-id", 1)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			minute, err := firstPayload[int](this.InputByName("tick"))
+			minute, err := this.InputByName("tick").Signals().FirstAs[int]()
 			if err != nil {
 				return err
 			}
-			random := this.State().Get(stateRandom).(*rand.Rand)
-			nextID := this.State().Get(stateNextID).(int)
+			random := this.State().Get("random").(*rand.Rand)
+			nextID := this.State().Get("next-id").(int)
 
 			for range arrivalDraws {
 				if random.Float64() >= arrivalRate(minute)/arrivalDraws {
 					continue
 				}
-				party := randomParty(random, nextID, minute)
+				party := signal.New(randomPartySize(random)).WithMetaMany(map[string]float64{
+					"id":      float64(nextID),
+					"arrived": float64(minute),
+					"meal":    float64(minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1)),
+				})
 				nextID++
-				if err := this.OutputByName("party").PutPayloads(party); err != nil {
+				if err := this.OutputByName("party").PutSignals(party); err != nil {
 					return err
 				}
 			}
 
-			this.State().Set(stateNextID, nextID)
+			this.State().Set("next-id", nextID)
 			return nil
 		}),
 	)
@@ -83,7 +93,7 @@ func newArrivals(seed int64) (*component.Component, error) {
 
 // arrivalRate is the expected number of parties per minute at that minute of the day.
 func arrivalRate(minute int) float64 {
-	clock := clockMinute(minute)
+	clock := openingHour*60 + minute // minutes since midnight
 	switch {
 	case clock >= lunchStart && clock < lunchEnd:
 		return lunchRate
@@ -91,16 +101,6 @@ func arrivalRate(minute int) float64 {
 		return dinnerRate
 	default:
 		return offPeakRate
-	}
-}
-
-// randomParty draws the size and the meal duration of a party arriving now.
-func randomParty(random *rand.Rand, id int, minute int) Party {
-	return Party{
-		ID:           id,
-		Size:         randomPartySize(random),
-		ArrivedAt:    minute,
-		MealDuration: minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
 	}
 }
 

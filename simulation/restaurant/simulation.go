@@ -7,21 +7,8 @@ import (
 	"fmt"
 
 	"github.com/hovsep/fmesh"
+	"github.com/hovsep/fmesh/component"
 )
-
-// openingHour is when the day starts: minute 0 of the simulation is 11:00.
-const openingHour = 11
-
-// clockMinute converts a simulation minute into minutes since midnight.
-func clockMinute(minute int) int {
-	return openingHour*60 + minute
-}
-
-// clockTime prints a simulation minute as wall-clock time, e.g. "12:05".
-func clockTime(minute int) string {
-	clock := clockMinute(minute)
-	return fmt.Sprintf("%02d:%02d", clock/60, clock%60)
-}
 
 // runDay builds the restaurant, lets a whole day pass minute by minute and
 // returns the bookkeeper's report. The same seed always gives the same Report.
@@ -32,18 +19,24 @@ func runDay() (Report, error) {
 	}
 	for minute := range openingMinutes {
 		if err := runMinute(fm, minute); err != nil {
-			return Report{}, fmt.Errorf("minute %s: %w", clockTime(minute), err)
+			return Report{}, fmt.Errorf("minute %d: %w", minute, err)
 		}
 	}
 	return readReport(fm), nil
 }
 
-// runMinute is one tick of the clock: every component hears the minute, then
-// the mesh runs until all signals have been handled.
+// runMinute is one tick of the clock: every component with a "tick" input
+// hears the minute, then the mesh runs until all signals have been handled.
 func runMinute(fm *fmesh.FMesh, minute int) error {
-	if err := seedTick(fm, minute); err != nil {
+	err := fm.Components().ForEach(func(c *component.Component) error {
+		if tick := c.InputByName("tick"); tick != nil {
+			return tick.PutPayloads(minute)
+		}
+		return nil
+	})
+	if err != nil {
 		return err
 	}
-	_, err := fm.Run(context.Background())
+	_, err = fm.Run(context.Background())
 	return err
 }

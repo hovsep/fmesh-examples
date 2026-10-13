@@ -16,6 +16,8 @@ func TestTableAnnouncesServesAndFreesUp(t *testing.T) {
 			table, err := newTable(index, seats)
 			require.NoError(t, err)
 			fm := alone(t, table)
+			free := table.OutputByName("free")
+			served := table.OutputByName("served")
 
 			assert.Equal(t, fmt.Sprintf("table-%d", index), table.Name())
 			assert.Equal(t, fmt.Sprintf("table for %d", seats), table.Description())
@@ -23,27 +25,29 @@ func TestTableAnnouncesServesAndFreesUp(t *testing.T) {
 
 			// The first tick: the table says it is free, once.
 			tick(t, fm, table, 0)
-			assert.Equal(t, []TableFree{{Index: index, Seats: seats}}, outputs[TableFree](t, table.OutputByName("free")))
+			assert.Equal(t, []any{index}, free.Signals().AllPayloads())
+			assert.Equal(t, float64(seats), free.Signals().First().Meta().ValueOrDefault("seats", 0.0))
 			tick(t, fm, table, 1)
-			assert.Empty(t, outputs[TableFree](t, table.OutputByName("free")), "no need to repeat it")
+			assert.True(t, free.Signals().IsEmpty(), "no need to repeat it")
 
 			// Minute 5: a party that arrived at minute 2 sits down for a 3-minute meal.
-			party := Party{ID: 7, Size: seats, ArrivedAt: 2, MealDuration: 3}
 			tick(t, fm, table, 5)
-			activate(t, fm, table, map[string][]any{"seat": {Seating{Party: party, TableIndex: index}}})
+			activate(t, fm, table, map[string][]any{"seat": {party(7, seats, 2, 3)}})
 
 			// Minutes 6 and 7 pass quietly.
 			for minute := 6; minute <= 7; minute++ {
 				tick(t, fm, table, minute)
-				assert.Empty(t, outputs[Served](t, table.OutputByName("served")), "minute %d", minute)
-				assert.Empty(t, outputs[TableFree](t, table.OutputByName("free")), "minute %d", minute)
+				assert.True(t, served.Signals().IsEmpty(), "minute %d", minute)
+				assert.True(t, free.Signals().IsEmpty(), "minute %d", minute)
 			}
 
-			// Minute 8: the meal is over, the party leaves and the table is free again.
+			// Minute 8: the meal is over, the party leaves with its seating minute
+			// stamped on, and the table is free again.
 			tick(t, fm, table, 8)
-			assert.Equal(t, []Served{{Party: party, Seats: seats, WaitedMinutes: 3, LeftAt: 8}},
-				outputs[Served](t, table.OutputByName("served")))
-			assert.Equal(t, []TableFree{{Index: index, Seats: seats}}, outputs[TableFree](t, table.OutputByName("free")))
+			assert.Equal(t, []any{seats}, served.Signals().AllPayloads())
+			assert.Equal(t, map[string]any{"id": 7.0, "arrived": 2.0, "meal": 3.0, "seated": 5.0},
+				served.Signals().First().Meta().All())
+			assert.Equal(t, []any{index}, free.Signals().AllPayloads())
 		})
 	}
 }

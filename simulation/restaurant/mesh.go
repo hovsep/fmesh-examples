@@ -4,8 +4,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/hovsep/fmesh"
 	"github.com/hovsep/fmesh/component"
 	"github.com/hovsep/fmesh/port"
@@ -14,7 +12,8 @@ import (
 // The restaurant and its day.
 const (
 	patienceMinutes = 20      // a party gives up after waiting this long
-	openingMinutes  = 12 * 60 // open from 11:00 to 23:00
+	openingHour     = 11      // minute 0 of the day is 11:00
+	openingMinutes  = 12 * 60 // open until 23:00
 	revenuePerGuest = 25      // euros per served guest
 	seed            = 1       // any fixed seed makes the day reproducible
 )
@@ -50,9 +49,11 @@ func newRestaurant() (*fmesh.FMesh, error) {
 	if err != nil {
 		return nil, err
 	}
-	tables, err := newTables(tableSeats)
-	if err != nil {
-		return nil, err
+	tables := make([]*component.Component, len(tableSeats))
+	for i, seats := range tableSeats {
+		if tables[i], err = newTable(i, seats); err != nil {
+			return nil, err
+		}
 	}
 
 	fm, err := fmesh.New("restaurant",
@@ -89,28 +90,4 @@ func newRestaurant() (*fmesh.FMesh, error) {
 		}
 	}
 	return fm, nil
-}
-
-// newTables creates one table component per entry of seats.
-func newTables(seats []int) ([]*component.Component, error) {
-	tables := make([]*component.Component, len(seats))
-	for i, s := range seats {
-		table, err := newTable(i, s)
-		if err != nil {
-			return nil, fmt.Errorf("table %d: %w", i, err)
-		}
-		tables[i] = table
-	}
-	return tables, nil
-}
-
-// seedTick puts the current minute on the "tick" input of every component that has one.
-func seedTick(fm *fmesh.FMesh, minute int) error {
-	return fm.Components().ForEach(func(c *component.Component) error {
-		tick := c.InputByName("tick")
-		if tick == nil {
-			return nil
-		}
-		return tick.PutPayloads(minute)
-	})
 }
