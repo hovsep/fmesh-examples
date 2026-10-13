@@ -39,7 +39,8 @@ One run is a few activation cycles. In the first cycle every component with a ti
 `main.go` runs one day and prints the report. The simulation does not know about alternatives: to ask a what-if question you change the restaurant in `mesh.go` and run the day again. The seed is fixed, so the same guests arrive at the same minutes in every run and the reports are comparable.
 
 ```
-The day with 8 tables, where the host seats parties first come, first served at the first table where they fit:
+  Host policy    : fifo
+  Tables         :    8
   Parties served :   40  (106 guests)
   Parties lost   :    9  (40 guests)
   Average wait   :    4.5 min
@@ -52,7 +53,7 @@ The day with 8 tables, where the host seats parties first come, first served at 
 - **More tables.** Append to `tableSeats`; two extra 4-tops serve 44 parties and earn 3050 EUR under the FIFO host.
 - **Anything else.** The constants at the top of `mesh.go` (patience, opening hours, revenue per guest, seed) and the arrival rates in `arrivals.go` are there to be edited.
 
-Notable APIs: `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, `component.WithMeta` for the table size, `port.MultiPipe` for wiring, `sig.As[T]()` and `Signals().FirstAs[T]()` for typed payloads, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
+Notable APIs: `component.WithIndexedOutputs` for the host's one-port-per-table, `component.WithInitialState` / `this.State()` for per-component state, `component.WithMeta` for the table size and the host's policy name, `port.MultiPipe` for wiring, `sig.As[T]()` and `Signals().FirstAs[T]()` for typed payloads, and `fmesh.WithErrorHandlingStrategy(fmesh.StopOnFirstErrorOrPanic)` on the mesh.
 
 ## Run
 
