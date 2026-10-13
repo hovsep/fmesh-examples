@@ -49,37 +49,56 @@ func newReport(numberOfTables int, revenuePerGuest int) (*component.Component, e
 
 // countTheMinutes adds the ticks to the minutes open.
 func countTheMinutes(_ context.Context, this *component.Component) error {
-	add(this.State(), "minutes-open", this.InputByName("tick").Signals().Len())
+	state := this.State()
+	state.Set("minutes-open", state.Get("minutes-open").(int)+this.InputByName("tick").Signals().Len())
 	return nil
 }
 
 // countServedParties books every party that ate and paid. A served party
 // carries its whole story in its labels.
 func countServedParties(_ context.Context, this *component.Component) error {
+	state := this.State()
+	partiesServed := state.Get("parties-served").(int)
+	guestsServed := state.Get("guests-served").(int)
+	waitMinutes := state.Get("wait-minutes").(int)
+	busyTableMinutes := state.Get("busy-table-minutes").(int)
+
 	for party := range this.InputByName("served").Signals().All() {
 		guests, err := party.As[int]()
 		if err != nil {
 			return err
 		}
 		labels := party.Meta()
-		add(this.State(), "parties-served", 1)
-		add(this.State(), "guests-served", guests)
-		add(this.State(), "wait-minutes", labels.ValueOrDefault("seated-at", 0)-labels.ValueOrDefault("arrived-at", 0))
-		add(this.State(), "busy-table-minutes", labels.ValueOrDefault("meal-minutes", 0))
+		partiesServed++
+		guestsServed += guests
+		waitMinutes += labels.ValueOrDefault("seated-at", 0) - labels.ValueOrDefault("arrived-at", 0)
+		busyTableMinutes += labels.ValueOrDefault("meal-minutes", 0)
 	}
+
+	state.Set("parties-served", partiesServed)
+	state.Set("guests-served", guestsServed)
+	state.Set("wait-minutes", waitMinutes)
+	state.Set("busy-table-minutes", busyTableMinutes)
 	return nil
 }
 
 // countLostParties books every party that gave up waiting.
 func countLostParties(_ context.Context, this *component.Component) error {
+	state := this.State()
+	partiesLost := state.Get("parties-lost").(int)
+	guestsLost := state.Get("guests-lost").(int)
+
 	for party := range this.InputByName("lost").Signals().All() {
 		guests, err := party.As[int]()
 		if err != nil {
 			return err
 		}
-		add(this.State(), "parties-lost", 1)
-		add(this.State(), "guests-lost", guests)
+		partiesLost++
+		guestsLost += guests
 	}
+
+	state.Set("parties-lost", partiesLost)
+	state.Set("guests-lost", guestsLost)
 	return nil
 }
 
@@ -99,9 +118,4 @@ func updateTheFigures(numberOfTables int, revenuePerGuest int) component.Activat
 		state.Set("lost-revenue", state.Get("guests-lost").(int)*revenuePerGuest)
 		return nil
 	}
-}
-
-// add increases one of the counters in the state.
-func add(state component.State, key string, n int) {
-	state.Set(key, state.Get(key).(int)+n)
 }
