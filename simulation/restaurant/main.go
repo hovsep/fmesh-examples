@@ -52,8 +52,15 @@ func main() {
 		}
 	}
 
+	// The bookkeeper's state is the report.
+	report := fm.ComponentByName("report").State()
 	fmt.Printf("  Host policy    : %s\n", fm.ComponentByName("host").Meta().ValueOrDefault("policy", "?"))
 	fmt.Printf("  Tables         : %4d\n", len(tableSeats))
-	fmt.Print(readReport(fm))
+	fmt.Printf("  Parties served : %4d  (%d guests)\n", report.Get("parties-served"), report.Get("guests-served"))
+	fmt.Printf("  Parties lost   : %4d  (%d guests)\n", report.Get("parties-lost"), report.Get("guests-lost"))
+	fmt.Printf("  Average wait   : %6.1f min\n", report.Get("average-wait"))
+	fmt.Printf("  Utilisation    : %6.1f %%\n", report.Get("utilisation"))
+	fmt.Printf("  Revenue        : %4d EUR\n", report.Get("revenue"))
+	fmt.Printf("  Lost revenue   : %4d EUR\n", report.Get("lost-revenue"))
 	fmt.Println("=== Simulation Complete ===")
 }
