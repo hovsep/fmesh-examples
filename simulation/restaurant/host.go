@@ -51,7 +51,10 @@ func newHost(policy string, description string, numberOfTables int,
 			state.Set("free", map[int]int{})
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			free := this.State().Get("free").(map[int]int)
+			free, err := this.State().GetTyped[map[int]int]("free")
+			if err != nil {
+				return err
+			}
 
 			// Tables announce themselves when they become free: the payload is
 			// the table index, the "seats" label says how big it is.

@@ -15,9 +15,9 @@ import (
 // component name is "table-<index>"; the seats are also kept as metadata so
 // diagrams can show them.
 //
-// State: the seated party (nil when the table is free), the minutes left of
-// its meal, and the current minute, remembered from the last tick because the
-// party is seated a moment after the tick.
+// State: the seated party (no "party" key while the table is free), the
+// minutes left of its meal, and the current minute, remembered from the last
+// tick because the party is seated a moment after the tick.
 func newTable(index int, seats int) (*component.Component, error) {
 	return component.New(fmt.Sprintf("table-%d", index),
 		component.WithDescription(fmt.Sprintf("table for %d", seats)),
@@ -25,8 +25,6 @@ func newTable(index int, seats int) (*component.Component, error) {
 		component.WithInputs("seat", "tick"),
 		component.WithOutputs("free", "served"),
 		component.WithInitialState(func(state component.State) {
-			state.Set("party", (*signal.Signal)(nil))
-			state.Set("minutes-left", 0)
 			state.Set("minute", 0)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
@@ -40,8 +38,7 @@ func newTable(index int, seats int) (*component.Component, error) {
 				}
 				state.Set("minute", minute)
 
-				party := state.Get("party").(*signal.Signal)
-				if party == nil {
+				if !state.Has("party") {
 					// The day starts: tell the host once that this table is free.
 					// The announcement is the table index, labelled with its size.
 					if minute == 0 {
@@ -51,14 +48,22 @@ func newTable(index int, seats int) (*component.Component, error) {
 						}
 					}
 				} else {
-					minutesLeft := state.Get("minutes-left").(int) - 1
+					minutesLeft, err := state.GetTyped[int]("minutes-left")
+					if err != nil {
+						return err
+					}
+					minutesLeft--
 					state.Set("minutes-left", minutesLeft)
 					if minutesLeft == 0 {
 						// The meal is over: the party pays and leaves, and the table is free again.
+						party, err := state.GetTyped[*signal.Signal]("party")
+						if err != nil {
+							return err
+						}
 						if err := this.OutputByName("served").PutSignals(party); err != nil {
 							return err
 						}
-						state.Set("party", (*signal.Signal)(nil))
+						state.Delete("party")
 						announcement := signal.New(index).WithMeta("seats", float64(seats))
 						if err := this.OutputByName("free").PutSignals(announcement); err != nil {
 							return err
@@ -69,7 +74,10 @@ func newTable(index int, seats int) (*component.Component, error) {
 
 			// The host brings a party: stamp the minute on it and start the meal.
 			if this.InputByName("seat").HasSignals() {
-				minute := state.Get("minute").(int)
+				minute, err := state.GetTyped[int]("minute")
+				if err != nil {
+					return err
+				}
 				party := this.InputByName("seat").Signals().First().WithMeta("seated", float64(minute))
 				state.Set("party", party)
 				state.Set("minutes-left", int(party.Meta().ValueOrDefault("meal", 0.0)))
