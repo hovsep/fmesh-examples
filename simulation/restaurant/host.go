@@ -13,6 +13,11 @@ import (
 	"github.com/hovsep/fmesh/signal"
 )
 
+// A seatingPolicy gets the waiting parties in arrival order and the free
+// tables (index -> seats), and returns who sits where: table index -> party.
+// It must not use a table twice.
+type seatingPolicy func(waiting []*signal.Signal, free map[int]int) map[int]*signal.Signal
+
 // newFIFOHost seats parties first come, first served: each party takes the
 // first free table where it fits, in table order. A couple can take the 6-top.
 func newFIFOHost(numberOfTables int) (*component.Component, error) {
@@ -26,15 +31,10 @@ func newBestFitHost(numberOfTables int) (*component.Component, error) {
 }
 
 // newHost creates a host with the given seating policy. The host learns which
-// tables are free from their announcements (table index -> seats) and, whenever
-// it sees the waiting list, seats as many parties as the policy allows. The
-// policy name is kept as metadata so the program can print which host ran the day.
-//
-// A policy gets the waiting parties in arrival order and the free tables, and
-// returns who sits where: table index -> party. It must not use a table twice.
-func newHost(policy string, description string, numberOfTables int,
-	choose func(waiting []*signal.Signal, free map[int]int) map[int]*signal.Signal,
-) (*component.Component, error) {
+// tables are free from their announcements and, whenever it sees the waiting
+// list, seats as many parties as the policy allows. The policy name is kept as
+// metadata so the program can print which host ran the day.
+func newHost(policy string, description string, numberOfTables int, choose seatingPolicy) (*component.Component, error) {
 	return component.New("host",
 		component.WithDescription("the host "+description),
 		component.WithMeta("policy", policy),
@@ -44,41 +44,54 @@ func newHost(policy string, description string, numberOfTables int,
 		component.WithInitialState(func(state component.State) {
 			state.Set("free-tables", map[int]int{})
 		}),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			free, err := this.State().GetTyped[map[int]int]("free-tables")
-			if err != nil {
-				return err
-			}
-
-			// Tables announce themselves when they become free: the payload is
-			// the table index, the "seats" label says how big it is.
-			for announcement := range this.InputByName("free").Signals().All() {
-				index, err := announcement.As[int]()
-				if err != nil {
-					return err
-				}
-				free[index] = announcement.Meta().ValueOrDefault("seats", 0)
-			}
-
+		component.WithActivationFunc(component.Sequential(
+			learnFreeTables,
 			// The tick itself carries nothing the host needs: the waiting list
 			// arrives a moment later in the same minute and triggers the seating.
-			if !this.InputByName("waiting").HasSignals() {
-				return nil
-			}
-			waiting := slices.Collect(this.InputByName("waiting").Signals().All())
-			for index, party := range choose(waiting, free) {
-				delete(free, index)
-				// Indexed outputs are named "<prefix><index>", so table 3 is "table3".
-				if err := this.OutputByName(fmt.Sprintf("table%d", index)).PutSignals(party); err != nil {
-					return err
-				}
-				if err := this.OutputByName("seated").PutSignals(party); err != nil {
-					return err
-				}
-			}
-			return nil
-		}),
+			component.When(component.HasSignalsOn("waiting"), seatParties(choose)),
+		)),
 	)
+}
+
+// learnFreeTables notes every table that announced itself free: the payload
+// is the table index, the "seats" label says how big it is.
+func learnFreeTables(_ context.Context, this *component.Component) error {
+	free, err := this.State().GetTyped[map[int]int]("free-tables")
+	if err != nil {
+		return err
+	}
+	for announcement := range this.InputByName("free").Signals().All() {
+		index, err := announcement.As[int]()
+		if err != nil {
+			return err
+		}
+		free[index] = announcement.Meta().ValueOrDefault("seats", 0)
+	}
+	return nil
+}
+
+// seatParties lets the policy match the waiting parties to the free tables,
+// then sends every seated party to its table and, so the queue can forget it,
+// out on "seated".
+func seatParties(choose seatingPolicy) component.ActivationFunc {
+	return func(_ context.Context, this *component.Component) error {
+		free, err := this.State().GetTyped[map[int]int]("free-tables")
+		if err != nil {
+			return err
+		}
+		waiting := slices.Collect(this.InputByName("waiting").Signals().All())
+		for index, party := range choose(waiting, free) {
+			delete(free, index)
+			// Indexed outputs are named "<prefix><index>", so table 3 is "table3".
+			if err := this.OutputByName(fmt.Sprintf("table%d", index)).PutSignals(party); err != nil {
+				return err
+			}
+			if err := this.OutputByName("seated").PutSignals(party); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }
 
 // chooseFirstFit is the FIFO policy: walk the parties in arrival order and give
