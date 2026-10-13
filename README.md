@@ -64,6 +64,7 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
 | [Elevator](./simulation/elevator) | Two elevators down to the last button, LED, door lock and brake: 123 components, played in the browser, every click a signal into the mesh |
 | [Life](./simulation/life) | A step simulation of human physiology inside a habitat |
+| [Restaurant](./simulation/restaurant) | One day in a restaurant, one mesh run per minute: parties arrive, wait, eat and leave; swap the host or add tables and read the what-if table as a business decision. Comes with a five-step tutorial (ESM 2026) |
 
 These share [`simulation/sim`](./simulation/sim) — a small library for building simulations on an f-mesh (engines, simulated time, commands, scheduling, telemetry). It is a library, not an example.
 

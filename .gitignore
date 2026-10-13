@@ -25,6 +25,12 @@
 /simulation/electric_circuit/electric_circuit
 /simulation/elevator/elevator
 /simulation/life/life
+/simulation/restaurant/restaurant
+/simulation/restaurant/tutorial/step1/step1
+/simulation/restaurant/tutorial/step2/step2
+/simulation/restaurant/tutorial/step3/step3
+/simulation/restaurant/tutorial/step4/step4
+/simulation/restaurant/tutorial/step5/step5
 
 # Files written by running the examples
 /basics/pipeline/stage-*
