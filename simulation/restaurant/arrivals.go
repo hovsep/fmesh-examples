@@ -63,6 +63,7 @@ func newArrivals(seed int64) (*component.Component, error) {
 			state.Set("next-id", 1)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
+			// FirstAs reads the payload of the first signal on the port as an int.
 			minute, err := this.InputByName("tick").Signals().FirstAs[int]()
 			if err != nil {
 				return err
@@ -99,6 +100,8 @@ func aPartyWalksIn(random *rand.Rand, minute int) bool {
 
 // newParty builds the signal for a party arriving now: a random size as the
 // payload, and its id, arrival minute and a random meal duration as labels.
+// A label is a named value that travels with the signal, and any component
+// on the way can read it or add one.
 func newParty(random *rand.Rand, id int, minute int) *signal.Signal {
 	return signal.New(randomPartySize(random)).WithMetaMany(map[string]int{
 		"id":           id,

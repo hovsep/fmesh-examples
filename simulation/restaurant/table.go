@@ -15,9 +15,9 @@ import (
 // component name is "table-<index>"; the seats are also kept as metadata so
 // diagrams can show them.
 //
-// State: the seated party (no "party" key while the table is free), the
-// minutes left of its meal, and the current minute, remembered from the last
-// tick because the party is seated a moment after the tick.
+// The table has no "party" key in its state while it is free. The current
+// minute is remembered from the last tick, because the host seats a party a
+// moment after the tick, in a later round of the same run.
 func newTable(index int, seats int) (*component.Component, error) {
 	onTick := component.HasSignalsOn("tick")
 	return component.New(fmt.Sprintf("table-%d", index),
@@ -28,6 +28,8 @@ func newTable(index int, seats int) (*component.Component, error) {
 		component.WithInitialState(func(state component.State) {
 			state.Set("minute", 0)
 		}),
+		// Two kinds of input reach a table: the tick, and the host bringing a
+		// party. Each step answers one of them.
 		component.WithActivationFunc(component.Sequential(
 			component.When(onTick, rememberTheMinute),
 			component.When(onTick, openTheDay(index, seats)),
