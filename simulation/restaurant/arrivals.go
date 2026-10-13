@@ -5,12 +5,12 @@
 // A party is one signal. Its payload is the number of guests and its labels
 // (signal metadata) say who it is and when it came:
 //
-//	id       running number, assigned on arrival
-//	arrived  minute of the day when the party arrived
-//	meal     how many minutes the party stays once seated
+//	id            running number, assigned on arrival
+//	arrived-at    minute of the day when the party arrived
+//	meal-minutes  how many minutes the party stays once seated
 //
 // The same signal travels the whole restaurant: the waiting list shows it to
-// the host, the host passes it to a table, the table stamps "seated" on it and
+// the host, the host passes it to a table, the table stamps "seated-at" on it and
 // hands it to the report when the party leaves.
 package main
 
@@ -81,9 +81,9 @@ func newArrivals(seed int64) (*component.Component, error) {
 					continue
 				}
 				party := signal.New(randomPartySize(random)).WithMetaMany(map[string]int{
-					"id":      nextID,
-					"arrived": minute,
-					"meal":    minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
+					"id":           nextID,
+					"arrived-at":   minute,
+					"meal-minutes": minMealMinutes + random.Intn(maxMealMinutes-minMealMinutes+1),
 				})
 				nextID++
 				if err := this.OutputByName("party").PutSignals(party); err != nil {

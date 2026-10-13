@@ -42,10 +42,10 @@ func newHost(policy string, description string, numberOfTables int,
 		component.WithOutputs("seated"),
 		component.WithIndexedOutputs("table", 0, numberOfTables-1),
 		component.WithInitialState(func(state component.State) {
-			state.Set("free", map[int]int{})
+			state.Set("free-tables", map[int]int{})
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			free, err := this.State().GetTyped[map[int]int]("free")
+			free, err := this.State().GetTyped[map[int]int]("free-tables")
 			if err != nil {
 				return err
 			}

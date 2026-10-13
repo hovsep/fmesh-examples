@@ -20,7 +20,7 @@ func TestArrivalsProducePlausibleParties(t *testing.T) {
 	for minute := range openingMinutes {
 		tick(t, fm, arrivals, minute)
 		for party := range arrivals.OutputByName("party").Signals().All() {
-			assert.Equal(t, minute, party.Meta().ValueOrDefault("arrived", -1), "a party is labelled with its arrival minute")
+			assert.Equal(t, minute, party.Meta().ValueOrDefault("arrived-at", -1), "a party is labelled with its arrival minute")
 			parties = append(parties, party)
 		}
 	}
@@ -36,8 +36,8 @@ func TestArrivalsProducePlausibleParties(t *testing.T) {
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, size, 1)
 		assert.LessOrEqual(t, size, 6)
-		assert.GreaterOrEqual(t, labels.ValueOrDefault("meal", 0), minMealMinutes)
-		assert.LessOrEqual(t, labels.ValueOrDefault("meal", 0), maxMealMinutes)
+		assert.GreaterOrEqual(t, labels.ValueOrDefault("meal-minutes", 0), minMealMinutes)
+		assert.LessOrEqual(t, labels.ValueOrDefault("meal-minutes", 0), maxMealMinutes)
 	}
 }
 

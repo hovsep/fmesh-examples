@@ -44,7 +44,7 @@ func newWaitingList(patienceMinutes int) (*component.Component, error) {
 				lost := signal.NewGroup()
 				staying := signal.NewGroup()
 				for party := range waiting.All() {
-					arrived := party.Meta().ValueOrDefault("arrived", 0)
+					arrived := party.Meta().ValueOrDefault("arrived-at", 0)
 					if minute-arrived > patienceMinutes {
 						lost = lost.With(party)
 					} else {
