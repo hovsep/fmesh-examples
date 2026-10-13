@@ -1,0 +1,661 @@
+digraph  {
+	subgraph cluster_s1 {
+		fillcolor="#e2c6fc";style="dashed,filled";
+		n2[color="green",fontname="Courier New",label=<
+	<table border="0" cellborder="0" cellspacing="10">
+			
+			<tr>
+				<td>Description:</td><td>a directed hypergraph: substances are nodes, reactions are hyperedges</td>
+			</tr>
+			
+		
+			
+
+			
+	</table>
+	>,shape="plaintext"];
+		
+	}
+	subgraph cluster_s3 {
+		color="black";label="(NH4)2SO4";margin="20";penwidth="5";style="rounded";
+		n5[fontname="Courier New",group="(NH4)2SO4",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n6[fontname="Courier New",group="(NH4)2SO4",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n4[color="#9dddea",fontname="Courier New",group="(NH4)2SO4",height="1.0",label="ammonium sulfate (fertilizer)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n5->n4;
+		n4->n6;
+		
+	}
+	subgraph cluster_s7 {
+		color="black";label="CH3OH";margin="20";penwidth="5";style="rounded";
+		n9[fontname="Courier New",group="CH3OH",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n10[fontname="Courier New",group="CH3OH",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n8[color="#9dddea",fontname="Courier New",group="CH3OH",height="1.0",label="methanol",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n9->n8;
+		n8->n10;
+		
+	}
+	subgraph cluster_s11 {
+		color="black";label="CH4";margin="20";penwidth="5";style="rounded";
+		n13[fontname="Courier New",group="CH4",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n14[fontname="Courier New",group="CH4",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n12[color="#9dddea",fontname="Courier New",group="CH4",height="1.0",label="natural gas · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n13->n12;
+		n12->n14;
+		
+	}
+	subgraph cluster_s15 {
+		color="black";label="CO";margin="20";penwidth="5";style="rounded";
+		n17[fontname="Courier New",group="CO",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n18[fontname="Courier New",group="CO",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n16[color="#9dddea",fontname="Courier New",group="CO",height="1.0",label="carbon monoxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n17->n16;
+		n16->n18;
+		
+	}
+	subgraph cluster_s19 {
+		color="black";label="CO2";margin="20";penwidth="5";style="rounded";
+		n21[fontname="Courier New",group="CO2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n22[fontname="Courier New",group="CO2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n20[color="#9dddea",fontname="Courier New",group="CO2",height="1.0",label="carbon dioxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n21->n20;
+		n20->n22;
+		
+	}
+	subgraph cluster_s23 {
+		color="black";label="Ca(H2PO4)2";margin="20";penwidth="5";style="rounded";
+		n25[fontname="Courier New",group="Ca(H2PO4)2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n26[fontname="Courier New",group="Ca(H2PO4)2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n24[color="#9dddea",fontname="Courier New",group="Ca(H2PO4)2",height="1.0",label="superphosphate (fertilizer)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n25->n24;
+		n24->n26;
+		
+	}
+	subgraph cluster_s27 {
+		color="black";label="Ca3(PO4)2";margin="20";penwidth="5";style="rounded";
+		n29[fontname="Courier New",group="Ca3(PO4)2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n30[fontname="Courier New",group="Ca3(PO4)2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n28[color="#9dddea",fontname="Courier New",group="Ca3(PO4)2",height="1.0",label="phosphate rock",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n29->n28;
+		n28->n30;
+		
+	}
+	subgraph cluster_s31 {
+		color="black";label="CaCO3";margin="20";penwidth="5";style="rounded";
+		n33[fontname="Courier New",group="CaCO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n34[fontname="Courier New",group="CaCO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n32[color="#9dddea",fontname="Courier New",group="CaCO3",height="1.0",label="limestone · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n33->n32;
+		n32->n34;
+		
+	}
+	subgraph cluster_s35 {
+		color="black";label="CaCl2";margin="20";penwidth="5";style="rounded";
+		n37[fontname="Courier New",group="CaCl2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n38[fontname="Courier New",group="CaCl2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n36[color="#9dddea",fontname="Courier New",group="CaCl2",height="1.0",label="calcium chloride",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n37->n36;
+		n36->n38;
+		
+	}
+	subgraph cluster_s39 {
+		color="black";label="CaO";margin="20";penwidth="5";style="rounded";
+		n41[fontname="Courier New",group="CaO",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n42[fontname="Courier New",group="CaO",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n40[color="#9dddea",fontname="Courier New",group="CaO",height="1.0",label="quicklime",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n41->n40;
+		n40->n42;
+		
+	}
+	subgraph cluster_s43 {
+		color="black";label="CaSO4";margin="20";penwidth="5";style="rounded";
+		n45[fontname="Courier New",group="CaSO4",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n46[fontname="Courier New",group="CaSO4",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n44[color="#9dddea",fontname="Courier New",group="CaSO4",height="1.0",label="gypsum",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n45->n44;
+		n44->n46;
+		
+	}
+	subgraph cluster_s47 {
+		color="black";label="Cl2";margin="20";penwidth="5";style="rounded";
+		n49[fontname="Courier New",group="Cl2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n50[fontname="Courier New",group="Cl2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n48[color="#9dddea",fontname="Courier New",group="Cl2",height="1.0",label="chlorine",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n49->n48;
+		n48->n50;
+		
+	}
+	subgraph cluster_s51 {
+		color="black";label="H2";margin="20";penwidth="5";style="rounded";
+		n53[fontname="Courier New",group="H2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n54[fontname="Courier New",group="H2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n52[color="#9dddea",fontname="Courier New",group="H2",height="1.0",label="hydrogen",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n53->n52;
+		n52->n54;
+		
+	}
+	subgraph cluster_s55 {
+		color="black";label="H2O";margin="20";penwidth="5";style="rounded";
+		n57[fontname="Courier New",group="H2O",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n58[fontname="Courier New",group="H2O",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n56[color="#9dddea",fontname="Courier New",group="H2O",height="1.0",label="water · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n57->n56;
+		n56->n58;
+		
+	}
+	subgraph cluster_s59 {
+		color="black";label="H2SO4";margin="20";penwidth="5";style="rounded";
+		n61[fontname="Courier New",group="H2SO4",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n62[fontname="Courier New",group="H2SO4",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n60[color="#9dddea",fontname="Courier New",group="H2SO4",height="1.0",label="sulfuric acid",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n61->n60;
+		n60->n62;
+		
+	}
+	subgraph cluster_s63 {
+		color="black";label="HCHO";margin="20";penwidth="5";style="rounded";
+		n65[fontname="Courier New",group="HCHO",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n66[fontname="Courier New",group="HCHO",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n64[color="#9dddea",fontname="Courier New",group="HCHO",height="1.0",label="formaldehyde",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n65->n64;
+		n64->n66;
+		
+	}
+	subgraph cluster_s67 {
+		color="black";label="HCl";margin="20";penwidth="5";style="rounded";
+		n69[fontname="Courier New",group="HCl",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n70[fontname="Courier New",group="HCl",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n68[color="#9dddea",fontname="Courier New",group="HCl",height="1.0",label="hydrochloric acid",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n69->n68;
+		n68->n70;
+		
+	}
+	subgraph cluster_s71 {
+		color="black";label="HCl burner";margin="20";penwidth="5";style="rounded";
+		n73[fontname="Courier New",group="HCl burner",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n74[fontname="Courier New",group="HCl burner",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n72[color="#9dddea",fontname="Courier New",group="HCl burner",height="1.0",label="H2 + Cl2 → HCl",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n73->n72;
+		n72->n74;
+		
+	}
+	subgraph cluster_s75 {
+		color="black";label="HNO3";margin="20";penwidth="5";style="rounded";
+		n77[fontname="Courier New",group="HNO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n78[fontname="Courier New",group="HNO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n76[color="#9dddea",fontname="Courier New",group="HNO3",height="1.0",label="nitric acid",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n77->n76;
+		n76->n78;
+		
+	}
+	subgraph cluster_s79 {
+		color="black";label="Haber process";margin="20";penwidth="5";style="rounded";
+		n81[fontname="Courier New",group="Haber process",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n82[fontname="Courier New",group="Haber process",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n80[color="#9dddea",fontname="Courier New",group="Haber process",height="1.0",label="N2 + H2 → NH3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n81->n80;
+		n80->n82;
+		
+	}
+	subgraph cluster_s83 {
+		color="black";label="N2";margin="20";penwidth="5";style="rounded";
+		n85[fontname="Courier New",group="N2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n86[fontname="Courier New",group="N2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n84[color="#9dddea",fontname="Courier New",group="N2",height="1.0",label="nitrogen",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n85->n84;
+		n84->n86;
+		
+	}
+	subgraph cluster_s87 {
+		color="black";label="NH3";margin="20";penwidth="5";style="rounded";
+		n89[fontname="Courier New",group="NH3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n90[fontname="Courier New",group="NH3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n88[color="#9dddea",fontname="Courier New",group="NH3",height="1.0",label="ammonia",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n89->n88;
+		n88->n90;
+		
+	}
+	subgraph cluster_s91 {
+		color="black";label="NH4Cl";margin="20";penwidth="5";style="rounded";
+		n93[fontname="Courier New",group="NH4Cl",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n94[fontname="Courier New",group="NH4Cl",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n92[color="#9dddea",fontname="Courier New",group="NH4Cl",height="1.0",label="ammonium chloride",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n93->n92;
+		n92->n94;
+		
+	}
+	subgraph cluster_s95 {
+		color="black";label="NH4NO3";margin="20";penwidth="5";style="rounded";
+		n97[fontname="Courier New",group="NH4NO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n98[fontname="Courier New",group="NH4NO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n96[color="#9dddea",fontname="Courier New",group="NH4NO3",height="1.0",label="ammonium nitrate (fertilizer)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n97->n96;
+		n96->n98;
+		
+	}
+	subgraph cluster_s99 {
+		color="black";label="NO";margin="20";penwidth="5";style="rounded";
+		n101[fontname="Courier New",group="NO",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n102[fontname="Courier New",group="NO",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n100[color="#9dddea",fontname="Courier New",group="NO",height="1.0",label="nitric oxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n101->n100;
+		n100->n102;
+		
+	}
+	subgraph cluster_s103 {
+		color="black";label="NO oxidation";margin="20";penwidth="5";style="rounded";
+		n105[fontname="Courier New",group="NO oxidation",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n106[fontname="Courier New",group="NO oxidation",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n104[color="#9dddea",fontname="Courier New",group="NO oxidation",height="1.0",label="NO + O2 → NO2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n105->n104;
+		n104->n106;
+		
+	}
+	subgraph cluster_s107 {
+		color="black";label="NO2";margin="20";penwidth="5";style="rounded";
+		n109[fontname="Courier New",group="NO2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n110[fontname="Courier New",group="NO2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n108[color="#9dddea",fontname="Courier New",group="NO2",height="1.0",label="nitrogen dioxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n109->n108;
+		n108->n110;
+		
+	}
+	subgraph cluster_s111 {
+		color="black";label="Na2CO3";margin="20";penwidth="5";style="rounded";
+		n113[fontname="Courier New",group="Na2CO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n114[fontname="Courier New",group="Na2CO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n112[color="#9dddea",fontname="Courier New",group="Na2CO3",height="1.0",label="soda ash",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n113->n112;
+		n112->n114;
+		
+	}
+	subgraph cluster_s115 {
+		color="black";label="NaCl";margin="20";penwidth="5";style="rounded";
+		n117[fontname="Courier New",group="NaCl",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n118[fontname="Courier New",group="NaCl",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n116[color="#9dddea",fontname="Courier New",group="NaCl",height="1.0",label="salt · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n117->n116;
+		n116->n118;
+		
+	}
+	subgraph cluster_s119 {
+		color="black";label="NaClO";margin="20";penwidth="5";style="rounded";
+		n121[fontname="Courier New",group="NaClO",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n122[fontname="Courier New",group="NaClO",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n120[color="#9dddea",fontname="Courier New",group="NaClO",height="1.0",label="bleach",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n121->n120;
+		n120->n122;
+		
+	}
+	subgraph cluster_s123 {
+		color="black";label="NaHCO3";margin="20";penwidth="5";style="rounded";
+		n125[fontname="Courier New",group="NaHCO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n126[fontname="Courier New",group="NaHCO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n124[color="#9dddea",fontname="Courier New",group="NaHCO3",height="1.0",label="baking soda",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n125->n124;
+		n124->n126;
+		
+	}
+	subgraph cluster_s127 {
+		color="black";label="NaOH";margin="20";penwidth="5";style="rounded";
+		n129[fontname="Courier New",group="NaOH",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n130[fontname="Courier New",group="NaOH",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n128[color="#9dddea",fontname="Courier New",group="NaOH",height="1.0",label="caustic soda",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n129->n128;
+		n128->n130;
+		
+	}
+	subgraph cluster_s131 {
+		color="black";label="O2";margin="20";penwidth="5";style="rounded";
+		n133[fontname="Courier New",group="O2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n134[fontname="Courier New",group="O2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n132[color="#9dddea",fontname="Courier New",group="O2",height="1.0",label="oxygen",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n133->n132;
+		n132->n134;
+		
+	}
+	subgraph cluster_s135 {
+		color="black";label="Ostwald process";margin="20";penwidth="5";style="rounded";
+		n137[fontname="Courier New",group="Ostwald process",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n138[fontname="Courier New",group="Ostwald process",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n136[color="#9dddea",fontname="Courier New",group="Ostwald process",height="1.0",label="NH3 + O2 → NO + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n137->n136;
+		n136->n138;
+		
+	}
+	subgraph cluster_s139 {
+		color="black";label="S";margin="20";penwidth="5";style="rounded";
+		n141[fontname="Courier New",group="S",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n142[fontname="Courier New",group="S",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n140[color="#9dddea",fontname="Courier New",group="S",height="1.0",label="sulfur · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n141->n140;
+		n140->n142;
+		
+	}
+	subgraph cluster_s143 {
+		color="black";label="SO2";margin="20";penwidth="5";style="rounded";
+		n145[fontname="Courier New",group="SO2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n146[fontname="Courier New",group="SO2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n144[color="#9dddea",fontname="Courier New",group="SO2",height="1.0",label="sulfur dioxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n145->n144;
+		n144->n146;
+		
+	}
+	subgraph cluster_s147 {
+		color="black";label="SO3";margin="20";penwidth="5";style="rounded";
+		n149[fontname="Courier New",group="SO3",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n150[fontname="Courier New",group="SO3",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n148[color="#9dddea",fontname="Courier New",group="SO3",height="1.0",label="sulfur trioxide",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n149->n148;
+		n148->n150;
+		
+	}
+	subgraph cluster_s151 {
+		color="black";label="SiO2";margin="20";penwidth="5";style="rounded";
+		n153[fontname="Courier New",group="SiO2",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n154[fontname="Courier New",group="SiO2",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n152[color="#9dddea",fontname="Courier New",group="SiO2",height="1.0",label="sand · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n153->n152;
+		n152->n154;
+		
+	}
+	subgraph cluster_s155 {
+		color="black";label="Solvay tower";margin="20";penwidth="5";style="rounded";
+		n157[fontname="Courier New",group="Solvay tower",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n158[fontname="Courier New",group="Solvay tower",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n156[color="#9dddea",fontname="Courier New",group="Solvay tower",height="1.0",label="NaCl + NH3 + CO2 + H2O → NaHCO3 + NH4Cl",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n157->n156;
+		n156->n158;
+		
+	}
+	subgraph cluster_s159 {
+		color="black";label="air";margin="20";penwidth="5";style="rounded";
+		n161[fontname="Courier New",group="air",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n162[fontname="Courier New",group="air",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n160[color="#9dddea",fontname="Courier New",group="air",height="1.0",label="air · on the shelf",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n161->n160;
+		n160->n162;
+		
+	}
+	subgraph cluster_s163 {
+		color="black";label="air separation";margin="20";penwidth="5";style="rounded";
+		n165[fontname="Courier New",group="air separation",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n166[fontname="Courier New",group="air separation",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n164[color="#9dddea",fontname="Courier New",group="air separation",height="1.0",label="air → N2 + O2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n165->n164;
+		n164->n166;
+		
+	}
+	subgraph cluster_s167 {
+		color="black";label="ammonia recovery";margin="20";penwidth="5";style="rounded";
+		n169[fontname="Courier New",group="ammonia recovery",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n170[fontname="Courier New",group="ammonia recovery",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n168[color="#9dddea",fontname="Courier New",group="ammonia recovery",height="1.0",label="NH4Cl + CaO → NH3 + CaCl2 + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n169->n168;
+		n168->n170;
+		
+	}
+	subgraph cluster_s171 {
+		color="black";label="ammonium nitrate plant";margin="20";penwidth="5";style="rounded";
+		n173[fontname="Courier New",group="ammonium nitrate plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n174[fontname="Courier New",group="ammonium nitrate plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n172[color="#9dddea",fontname="Courier New",group="ammonium nitrate plant",height="1.0",label="NH3 + HNO3 → NH4NO3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n173->n172;
+		n172->n174;
+		
+	}
+	subgraph cluster_s175 {
+		color="black";label="ammonium sulfate plant";margin="20";penwidth="5";style="rounded";
+		n177[fontname="Courier New",group="ammonium sulfate plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n178[fontname="Courier New",group="ammonium sulfate plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n176[color="#9dddea",fontname="Courier New",group="ammonium sulfate plant",height="1.0",label="NH3 + H2SO4 → (NH4)2SO4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n177->n176;
+		n176->n178;
+		
+	}
+	subgraph cluster_s179 {
+		color="black";label="bleach plant";margin="20";penwidth="5";style="rounded";
+		n181[fontname="Courier New",group="bleach plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n182[fontname="Courier New",group="bleach plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n180[color="#9dddea",fontname="Courier New",group="bleach plant",height="1.0",label="Cl2 + NaOH → NaClO + NaCl + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n181->n180;
+		n180->n182;
+		
+	}
+	subgraph cluster_s183 {
+		color="black";label="chlor-alkali";margin="20";penwidth="5";style="rounded";
+		n185[fontname="Courier New",group="chlor-alkali",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n186[fontname="Courier New",group="chlor-alkali",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n184[color="#9dddea",fontname="Courier New",group="chlor-alkali",height="1.0",label="NaCl + H2O → NaOH + Cl2 + H2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n185->n184;
+		n184->n186;
+		
+	}
+	subgraph cluster_s187 {
+		color="black";label="contact process";margin="20";penwidth="5";style="rounded";
+		n189[fontname="Courier New",group="contact process",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n190[fontname="Courier New",group="contact process",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n188[color="#9dddea",fontname="Courier New",group="contact process",height="1.0",label="SO2 + O2 → SO3",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n189->n188;
+		n188->n190;
+		
+	}
+	subgraph cluster_s191 {
+		color="black";label="formaldehyde plant";margin="20";penwidth="5";style="rounded";
+		n193[fontname="Courier New",group="formaldehyde plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n194[fontname="Courier New",group="formaldehyde plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n192[color="#9dddea",fontname="Courier New",group="formaldehyde plant",height="1.0",label="CH3OH + O2 → HCHO + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n193->n192;
+		n192->n194;
+		
+	}
+	subgraph cluster_s195 {
+		color="black";label="glass";margin="20";penwidth="5";style="rounded";
+		n197[fontname="Courier New",group="glass",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n198[fontname="Courier New",group="glass",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n196[color="#9dddea",fontname="Courier New",group="glass",height="1.0",label="glass",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n197->n196;
+		n196->n198;
+		
+	}
+	subgraph cluster_s199 {
+		color="black";label="glass furnace";margin="20";penwidth="5";style="rounded";
+		n201[fontname="Courier New",group="glass furnace",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n202[fontname="Courier New",group="glass furnace",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n200[color="#9dddea",fontname="Courier New",group="glass furnace",height="1.0",label="Na2CO3 + CaCO3 + SiO2 → glass + CO2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n201->n200;
+		n200->n202;
+		
+	}
+	subgraph cluster_s203 {
+		color="black";label="lime kiln";margin="20";penwidth="5";style="rounded";
+		n205[fontname="Courier New",group="lime kiln",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n206[fontname="Courier New",group="lime kiln",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n204[color="#9dddea",fontname="Courier New",group="lime kiln",height="1.0",label="CaCO3 → CaO + CO2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n205->n204;
+		n204->n206;
+		
+	}
+	subgraph cluster_s207 {
+		color="black";label="methanol synthesis";margin="20";penwidth="5";style="rounded";
+		n209[fontname="Courier New",group="methanol synthesis",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n210[fontname="Courier New",group="methanol synthesis",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n208[color="#9dddea",fontname="Courier New",group="methanol synthesis",height="1.0",label="CO + H2 → CH3OH",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n209->n208;
+		n208->n210;
+		
+	}
+	subgraph cluster_s211 {
+		color="black";label="nitric acid tower";margin="20";penwidth="5";style="rounded";
+		n213[fontname="Courier New",group="nitric acid tower",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n214[fontname="Courier New",group="nitric acid tower",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n212[color="#9dddea",fontname="Courier New",group="nitric acid tower",height="1.0",label="NO2 + H2O → HNO3 + NO",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n213->n212;
+		n212->n214;
+		
+	}
+	subgraph cluster_s215 {
+		color="black";label="soda ash calciner";margin="20";penwidth="5";style="rounded";
+		n217[fontname="Courier New",group="soda ash calciner",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n218[fontname="Courier New",group="soda ash calciner",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n216[color="#9dddea",fontname="Courier New",group="soda ash calciner",height="1.0",label="NaHCO3 → Na2CO3 + CO2 + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n217->n216;
+		n216->n218;
+		
+	}
+	subgraph cluster_s219 {
+		color="black";label="steam reforming";margin="20";penwidth="5";style="rounded";
+		n221[fontname="Courier New",group="steam reforming",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n222[fontname="Courier New",group="steam reforming",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n220[color="#9dddea",fontname="Courier New",group="steam reforming",height="1.0",label="CH4 + H2O → CO + H2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n221->n220;
+		n220->n222;
+		
+	}
+	subgraph cluster_s223 {
+		color="black";label="sulfur burner";margin="20";penwidth="5";style="rounded";
+		n225[fontname="Courier New",group="sulfur burner",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n226[fontname="Courier New",group="sulfur burner",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n224[color="#9dddea",fontname="Courier New",group="sulfur burner",height="1.0",label="S + O2 → SO2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n225->n224;
+		n224->n226;
+		
+	}
+	subgraph cluster_s227 {
+		color="black";label="sulfuric acid tower";margin="20";penwidth="5";style="rounded";
+		n229[fontname="Courier New",group="sulfuric acid tower",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n230[fontname="Courier New",group="sulfuric acid tower",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n228[color="#9dddea",fontname="Courier New",group="sulfuric acid tower",height="1.0",label="SO3 + H2O → H2SO4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n229->n228;
+		n228->n230;
+		
+	}
+	subgraph cluster_s231 {
+		color="black";label="superphosphate plant";margin="20";penwidth="5";style="rounded";
+		n233[fontname="Courier New",group="superphosphate plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n234[fontname="Courier New",group="superphosphate plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n232[color="#9dddea",fontname="Courier New",group="superphosphate plant",height="1.0",label="Ca3(PO4)2 + H2SO4 → Ca(H2PO4)2 + CaSO4",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n233->n232;
+		n232->n234;
+		
+	}
+	subgraph cluster_s235 {
+		color="black";label="urea";margin="20";penwidth="5";style="rounded";
+		n237[fontname="Courier New",group="urea",height="1.0",label="made",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n238[fontname="Courier New",group="urea",height="1.0",label="present",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n236[color="#9dddea",fontname="Courier New",group="urea",height="1.0",label="urea (fertilizer)",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n237->n236;
+		n236->n238;
+		
+	}
+	subgraph cluster_s239 {
+		color="black";label="urea plant";margin="20";penwidth="5";style="rounded";
+		n241[fontname="Courier New",group="urea plant",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n242[fontname="Courier New",group="urea plant",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n240[color="#9dddea",fontname="Courier New",group="urea plant",height="1.0",label="NH3 + CO2 → urea + H2O",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n241->n240;
+		n240->n242;
+		
+	}
+	subgraph cluster_s243 {
+		color="black";label="water-gas shift";margin="20";penwidth="5";style="rounded";
+		n245[fontname="Courier New",group="water-gas shift",height="1.0",label="reactants",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n246[fontname="Courier New",group="water-gas shift",height="1.0",label="products",penwidth="2.5",shape="circle",style="filled",width="1.0"];
+		n244[color="#9dddea",fontname="Courier New",group="water-gas shift",height="1.0",label="CO + H2O → CO2 + H2",penwidth="2.5",shape="rect",style="filled",width="1.0"];
+		n245->n244;
+		n244->n246;
+		
+	}
+	layout="dot";splines="ortho";
+	n10->n193[color="#e437ea",minlen="3",penwidth="2"];
+	n14->n221[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n245[color="#e437ea",minlen="3",penwidth="2"];
+	n18->n209[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n241[color="#e437ea",minlen="3",penwidth="2"];
+	n22->n157[color="#e437ea",minlen="3",penwidth="2"];
+	n30->n233[color="#e437ea",minlen="3",penwidth="2"];
+	n34->n205[color="#e437ea",minlen="3",penwidth="2"];
+	n34->n201[color="#e437ea",minlen="3",penwidth="2"];
+	n42->n169[color="#e437ea",minlen="3",penwidth="2"];
+	n50->n73[color="#e437ea",minlen="3",penwidth="2"];
+	n50->n181[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n81[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n73[color="#e437ea",minlen="3",penwidth="2"];
+	n54->n209[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n221[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n245[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n185[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n213[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n229[color="#e437ea",minlen="3",penwidth="2"];
+	n58->n157[color="#e437ea",minlen="3",penwidth="2"];
+	n62->n177[color="#e437ea",minlen="3",penwidth="2"];
+	n62->n233[color="#e437ea",minlen="3",penwidth="2"];
+	n74->n69[color="#e437ea",minlen="3",penwidth="2"];
+	n78->n173[color="#e437ea",minlen="3",penwidth="2"];
+	n82->n89[color="#e437ea",minlen="3",penwidth="2"];
+	n86->n81[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n137[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n173[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n241[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n177[color="#e437ea",minlen="3",penwidth="2"];
+	n90->n157[color="#e437ea",minlen="3",penwidth="2"];
+	n94->n169[color="#e437ea",minlen="3",penwidth="2"];
+	n106->n109[color="#e437ea",minlen="3",penwidth="2"];
+	n102->n105[color="#e437ea",minlen="3",penwidth="2"];
+	n110->n213[color="#e437ea",minlen="3",penwidth="2"];
+	n114->n201[color="#e437ea",minlen="3",penwidth="2"];
+	n118->n185[color="#e437ea",minlen="3",penwidth="2"];
+	n118->n157[color="#e437ea",minlen="3",penwidth="2"];
+	n126->n217[color="#e437ea",minlen="3",penwidth="2"];
+	n130->n181[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n137[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n105[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n225[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n189[color="#e437ea",minlen="3",penwidth="2"];
+	n134->n193[color="#e437ea",minlen="3",penwidth="2"];
+	n138->n101[color="#e437ea",minlen="3",penwidth="2"];
+	n138->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n142->n225[color="#e437ea",minlen="3",penwidth="2"];
+	n146->n189[color="#e437ea",minlen="3",penwidth="2"];
+	n150->n229[color="#e437ea",minlen="3",penwidth="2"];
+	n154->n201[color="#e437ea",minlen="3",penwidth="2"];
+	n158->n125[color="#e437ea",minlen="3",penwidth="2"];
+	n158->n93[color="#e437ea",minlen="3",penwidth="2"];
+	n166->n85[color="#e437ea",minlen="3",penwidth="2"];
+	n166->n133[color="#e437ea",minlen="3",penwidth="2"];
+	n162->n165[color="#e437ea",minlen="3",penwidth="2"];
+	n170->n89[color="#e437ea",minlen="3",penwidth="2"];
+	n170->n37[color="#e437ea",minlen="3",penwidth="2"];
+	n170->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n174->n97[color="#e437ea",minlen="3",penwidth="2"];
+	n178->n5[color="#e437ea",minlen="3",penwidth="2"];
+	n182->n121[color="#e437ea",minlen="3",penwidth="2"];
+	n182->n117[color="#e437ea",minlen="3",penwidth="2"];
+	n182->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n186->n129[color="#e437ea",minlen="3",penwidth="2"];
+	n186->n49[color="#e437ea",minlen="3",penwidth="2"];
+	n186->n53[color="#e437ea",minlen="3",penwidth="2"];
+	n190->n149[color="#e437ea",minlen="3",penwidth="2"];
+	n194->n65[color="#e437ea",minlen="3",penwidth="2"];
+	n194->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n202->n197[color="#e437ea",minlen="3",penwidth="2"];
+	n202->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n206->n41[color="#e437ea",minlen="3",penwidth="2"];
+	n206->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n210->n9[color="#e437ea",minlen="3",penwidth="2"];
+	n214->n77[color="#e437ea",minlen="3",penwidth="2"];
+	n214->n101[color="#e437ea",minlen="3",penwidth="2"];
+	n218->n113[color="#e437ea",minlen="3",penwidth="2"];
+	n218->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n218->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n222->n17[color="#e437ea",minlen="3",penwidth="2"];
+	n222->n53[color="#e437ea",minlen="3",penwidth="2"];
+	n226->n145[color="#e437ea",minlen="3",penwidth="2"];
+	n230->n61[color="#e437ea",minlen="3",penwidth="2"];
+	n234->n25[color="#e437ea",minlen="3",penwidth="2"];
+	n234->n45[color="#e437ea",minlen="3",penwidth="2"];
+	n242->n237[color="#e437ea",minlen="3",penwidth="2"];
+	n242->n57[color="#e437ea",minlen="3",penwidth="2"];
+	n246->n21[color="#e437ea",minlen="3",penwidth="2"];
+	n246->n53[color="#e437ea",minlen="3",penwidth="2"];
+	
+}
