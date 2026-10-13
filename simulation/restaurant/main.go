@@ -1,13 +1,15 @@
-// This file holds the program: it prints a banner, exports the diagram when
-// asked, and then runs one day in the restaurant and prints the bookkeeper's
-// report.
+// This file holds the program: it builds the restaurant, exports the diagram
+// when asked, and otherwise lets a whole day pass minute by minute and prints
+// the bookkeeper's report.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/hovsep/fmesh-examples/internal"
+	"github.com/hovsep/fmesh/component"
 )
 
 func main() {
@@ -31,13 +33,27 @@ func main() {
 		return
 	}
 
-	report, err := runDay()
-	if err != nil {
-		fmt.Println("Simulation failed:", err)
-		os.Exit(1)
+	// The clock: every minute, each component with a "tick" input hears the
+	// minute, then the mesh runs until all signals have been handled.
+	// Components keep their state between runs, so the day builds up.
+	for minute := range openingMinutes {
+		err := fm.Components().ForEach(func(c *component.Component) error {
+			if tick := c.InputByName("tick"); tick != nil {
+				return tick.PutPayloads(minute)
+			}
+			return nil
+		})
+		if err == nil {
+			_, err = fm.Run(context.Background())
+		}
+		if err != nil {
+			fmt.Printf("Simulation failed at minute %d: %v\n", minute, err)
+			os.Exit(1)
+		}
 	}
+
 	fmt.Printf("  Host policy    : %s\n", fm.ComponentByName("host").Meta().ValueOrDefault("policy", "?"))
 	fmt.Printf("  Tables         : %4d\n", len(tableSeats))
-	fmt.Print(report)
+	fmt.Print(readReport(fm))
 	fmt.Println("=== Simulation Complete ===")
 }

@@ -2,23 +2,40 @@
 package main
 
 import (
+	"context"
 	"testing"
 
+	"github.com/hovsep/fmesh/component"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// runDay does what main does without the printing: builds the restaurant,
+// runs the mesh once per minute for the whole day and returns the report.
+func runDay(t *testing.T) Report {
+	t.Helper()
+	fm, err := newRestaurant()
+	require.NoError(t, err)
+	for minute := range openingMinutes {
+		err := fm.Components().ForEach(func(c *component.Component) error {
+			if tick := c.InputByName("tick"); tick != nil {
+				return tick.PutPayloads(minute)
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		_, err = fm.Run(context.Background())
+		require.NoError(t, err, "minute %d", minute)
+	}
+	return readReport(fm)
+}
+
 func TestADayIsDeterministic(t *testing.T) {
-	first, err := runDay()
-	require.NoError(t, err)
-	second, err := runDay()
-	require.NoError(t, err)
-	assert.Equal(t, first, second)
+	assert.Equal(t, runDay(t), runDay(t))
 }
 
 func TestADayAddsUp(t *testing.T) {
-	report, err := runDay()
-	require.NoError(t, err)
+	report := runDay(t)
 
 	assert.Equal(t, openingMinutes, report.Minutes)
 	assert.Equal(t, len(tableSeats), report.Tables)
