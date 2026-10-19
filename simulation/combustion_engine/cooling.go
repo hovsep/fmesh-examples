@@ -82,16 +82,14 @@ func newThermostat() (*component.Component, error) {
 }
 
 // newRadiator gives the coolant's heat to the air: more with more coolant
-// through it, much more with the fan blowing, less when the AC condenser in
-// front of it heats that air first.
+// through it, much more with the fan blowing.
 func newRadiator() (*component.Component, error) {
-	return part("radiator", "coolant → air heat exchanger, with the AC condenser in front",
-		[]string{"coolant"}, []string{"airflow", "condenser"}, []string{"cooling"},
-		map[string]any{"airflow": 0.0, "condenser": 0.0, "kw": 0.0, "outlet": ambient},
+	return part("radiator", "coolant → air heat exchanger",
+		[]string{"coolant"}, []string{"airflow"}, []string{"cooling"},
+		map[string]any{"airflow": 0.0, "kw": 0.0, "outlet": ambient},
 		func(_ context.Context, this *component.Component) error {
 			coolant := in[Coolant](this, "coolant")
-			air := ambient + 8*get(this, "condenser", 0.0)
-			kw := max(0, 1.1*(coolant.Temp-air)*(0.2+0.9*get(this, "airflow", 0.0))*min(1.2, coolant.Flow))
+			kw := max(0, 1.1*(coolant.Temp-ambient)*(0.2+0.9*get(this, "airflow", 0.0))*min(1.2, coolant.Flow))
 			this.State().Set("kw", kw)
 			this.State().Set("outlet", coolant.Temp-kw/max(coolant.Flow*20, 1))
 			return this.OutputByName("cooling").PutSignals(signal.New(kw * coolant.DT))
@@ -140,26 +138,5 @@ func newOilPump() (*component.Component, error) {
 			pressure := 4.5 * (1 - math.Exp(-rpm/900))
 			this.State().Set("pressure", pressure)
 			return emit(this, map[string]any{"pressure": pressure, "torque": -(0.3 + 0.0004*rpm)})
-		})
-}
-
-// newACCompressor pumps refrigerant while its magnetic clutch has power.
-// That costs the engine torque, and the condenser heats the radiator's air.
-func newACCompressor() (*component.Component, error) {
-	return part("ac-compressor", "belt-driven compressor with a magnetic clutch",
-		[]string{"drive", "power"}, nil, []string{"drag", "condenser"},
-		map[string]any{"engaged": false, "pressure": 0.0},
-		func(_ context.Context, this *component.Component) error {
-			drive := in[Drive](this, "drive")
-			engaged := in[float64](this, "power") >= minVolts
-			drag, condenser, target := -0.2, 0.0, 2.0
-			if engaged {
-				drag, condenser, target = -(5 + 0.001*drive.RPM), 1.0, min(16, 6+drive.RPM/200)
-			}
-			pressure := get(this, "pressure", 0.0)
-			pressure += (target - pressure) * 0.05
-			this.State().Set("engaged", engaged)
-			this.State().Set("pressure", pressure)
-			return emit(this, map[string]any{"drag": drag, "condenser": condenser})
 		})
 }

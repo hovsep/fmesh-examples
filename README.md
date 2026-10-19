@@ -60,10 +60,10 @@ Examples are grouped by what they teach, not by what they compute. Start at the 
 | Example | Description |
 |---------|-------------|
 | [Electric Circuit](./simulation/electric_circuit) | A supply/demand feedback loop with degrading state |
-| [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine you drive from the browser, part by part: 41 components from the valves to the fuse box, with the crankshaft driving the next stroke |
+| [Combustion Engine](./simulation/combustion_engine) | A four-cylinder engine you drive from the browser, part by part: 39 components from the valves to the fuse box, with the crankshaft driving the next stroke |
 | [Basic CAN Bus](./simulation/can_bus/basic) | One bus fanning every frame out to all connected ECUs |
 | [Advanced CAN Bus](./simulation/can_bus/advanced) | Full CAN protocol with ISO-TP, arbitration and diagnostics |
-| [Elevator](./simulation/elevator) | Two elevators down to the last button, LED, door lock and brake: 123 components, played in the browser, every click a signal into the mesh |
+| [Elevator](./simulation/elevator) | Two elevators down to the last button, LED, door lock and brake: 119 components, played in the browser, every click a signal into the mesh |
 | [Life](./simulation/life) | A step simulation of human physiology inside a habitat |
 | [Restaurant](./simulation/restaurant) | One day in a restaurant, one mesh run per minute: parties arrive, wait, eat and leave; swap the host or add tables and run the day again to see what the owner's choices are worth |
 
@@ -75,6 +75,18 @@ These share [`simulation/sim`](./simulation/sim) — a small library for buildin
 |---------|-------------|
 | [Graphviz](./graphics/graphviz) | Exporting mesh topology to DOT/SVG, with activated components highlighted |
 | [Ray Tracer](./graphics/ray_tracer) | Wavefront 3D ray tracer: parallel tile bands and a reflection cycle |
+
+---
+
+## Testing
+
+`go test ./...` runs every example's tests, including the elevator's and the engine's HTTP servers (fast: no browser, no real time). The two browser demos also have end-to-end tests in [`e2e/`](./e2e), a separate module that builds each demo, runs it on a free port and drives it in the Google Chrome installed on your machine through [playwright-go](https://github.com/playwright-community/playwright-go) (the Playwright driver is downloaded once, into your cache). They are meant to be run one suite at a time:
+
+```bash
+make e2e-elevator
+make e2e-engine
+E2E_HEADFUL=1 make e2e-engine   # watch the browser
+```
 
 ---
 

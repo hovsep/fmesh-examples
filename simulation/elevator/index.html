@@ -188,8 +188,6 @@ function drawShaft(c) {
     g.beginPath(); g.moveTo(sx + 76 + dx, 125); g.lineTo(sx + 76 + dx, top); g.stroke();
     g.beginPath(); g.moveTo(sx + 144 + dx, 125); g.lineTo(sx + 153 + dx, cwTop); g.stroke();
   }
-  // governor rope, tied to the car
-  g.strokeStyle = '#5a6476'; g.lineWidth = 1; g.beginPath(); g.moveTo(sx + 178, 80); g.lineTo(sx + 178, FLOOR1 + 40); g.stroke();
   g.fillStyle = '#7f8a9d'; g.fillRect(sx + 134, top + 30, 46, 3);
   drawCar(c, sx + 18, top, 116, 86);
 }
@@ -198,7 +196,6 @@ function drawCar(c, x, y, w, h) {
   const light = part('car-' + c + '-light').on !== false;
   const opening = num('door-operator-' + c, 'opening', 0);
   const blocked = part('light-curtain-' + c).blocked;
-  const clamped = part('safety-gear-' + c).engaged;
   // frame and sling
   box(x - 4, y - 8, w + 8, h + 12, '#4b5568', 4);
   g.fillStyle = '#6b7689'; g.fillRect(x + w / 2 - 14, y - 12, 28, 6);
@@ -224,7 +221,6 @@ function drawCar(c, x, y, w, h) {
   g.fillStyle = 'rgba(150,165,185,0.55)';
   g.fillRect(x + 4 - slide, y + 30, half, h - 38); g.fillRect(x + 4 + half + slide, y + 30, half, h - 38);
   g.restore();
-  if (clamped) { text('SAFETY GEAR', x + w / 2, y - 18, COL.red, 11, 'center', '800'); }
 }
 
 function drawPerson(x, yFeet, light) {
@@ -265,17 +261,17 @@ function drawLandings(c) {
   }
 }
 
-// The machine room above each shaft: drive, encoder, brake, motor, sheave
-// and governor, each drawn from its own part's report.
+// The machine room above each shaft: drive, encoder, brake, motor and
+// sheave, each drawn from its own part's report.
 function drawMachine(c) {
   const sx = SHAFT[c], y = 125;
-  const drive = part('drive-' + c), brake = part('brake-' + c), gov = part('governor-' + c);
+  const drive = part('drive-' + c), brake = part('brake-' + c);
   // drive cabinet
   box(sx - 95, 52, 50, 110, '#36415a', 4, '#55617a');
   box(sx - 90, 60, 40, 26, '#08110c', 2);
   led((drive.hz || 0).toFixed(0) + 'Hz', sx - 70, 73, 11, COL.green);
   const bar = Math.min(1, (drive.hz || 0) / 60);
-  box(sx - 90, 94, 40, 6, '#1a2030', 2); box(sx - 90, 94, 40 * bar, 6, drive.test ? COL.red : COL.cyan, 2);
+  box(sx - 90, 94, 40, 6, '#1a2030', 2); box(sx - 90, 94, 40 * bar, 6, COL.cyan, 2);
   circle(sx - 80, 114, 4, drive.enabled === false ? COL.red : COL.green);
   text('DRIVE', sx - 70, 148, COL.dim, 10, 'center', '700');
   // power cable
@@ -306,12 +302,6 @@ function drawMachine(c) {
     g.beginPath(); g.moveTo(sx + 110, y); g.lineTo(sx + 110 + 26 * Math.cos(t), y + 26 * Math.sin(t)); g.stroke();
   }
   circle(sx + 110, y, 6, '#c3ccd9');
-  // overspeed governor
-  const gt = gov.tripped;
-  circle(sx + 178, 72, 13, gt ? '#5b1d25' : '#4a5366', gt ? COL.red : '#2a3242', 2);
-  g.strokeStyle = gt ? COL.red : '#aab4c4'; g.lineWidth = 2;
-  for (let i = 0; i < 2; i++) { const t = a * 2 + i * Math.PI; g.beginPath(); g.moveTo(sx + 178, 72); g.lineTo(sx + 178 + 11 * Math.cos(t), 72 + 11 * Math.sin(t)); g.stroke(); }
-  text('GOVERNOR', sx + 178, 50, gt ? COL.red : COL.dim, 9, 'center', '700');
   text('SHAFT ' + c, sx + 110, 42, COL.text, 12, 'center', '800');
 }
 
@@ -350,10 +340,10 @@ function drawCOP(c, x, y) {
 }
 
 function drawDiag(c, x, y) {
-  const w = 235, h = 320;
+  const w = 235, h = 240;
   box(x, y, w, h, '#151b28', 12, '#2a3346');
   text('MACHINE & SAFETY ' + c, x + 14, y + 18, COL.text, 12, 'left', '800');
-  const d = part('drive-' + c), car = part('car-' + c), enc = part('encoder-' + c), gov = part('governor-' + c);
+  const d = part('drive-' + c), car = part('car-' + c), enc = part('encoder-' + c);
   const rows = [
     ['drive', `${(d.ref || 0).toFixed(2)} → ${(d.out || 0).toFixed(2)} m/s`],
     ['motor', `${(part('motor-' + c).rpm || 0).toFixed(1)} rpm`],
@@ -361,35 +351,24 @@ function drawDiag(c, x, y) {
     ['brake', part('brake-' + c).released ? 'released' : 'applied'],
     ['car', `${(car.pos || 0).toFixed(3)} m  ${(car.speed || 0).toFixed(2)} m/s`],
     ['level', part('position-sensor-' + c).level ? 'yes' : 'no'],
-    ['governor', gov.tripped ? 'TRIPPED' : `${Math.abs(gov.rpm || 0).toFixed(0)} rpm`],
-    ['safety gear', part('safety-gear-' + c).engaged ? 'ENGAGED' : 'off'],
   ];
   rows.forEach(([k_, v], i) => {
     text(k_, x + 14, y + 42 + i * 19, COL.dim, 11);
-    text(v, x + w - 14, y + 42 + i * 19, /TRIPPED|ENGAGED/.test(v) ? COL.red : COL.text, 11, 'right', '600');
+    text(v, x + w - 14, y + 42 + i * 19, COL.text, 11, 'right', '600');
   });
   // the safety chain: every contact a lamp, in series
   const chain = part('safety-chain-' + c), open = new Set(chain.open || []);
-  const yy = y + 204;
+  const yy = y + 166;
   text('safety chain', x + 14, yy, COL.dim, 11);
   text(chain.ok === false ? 'OPEN' : 'closed', x + w - 14, yy, chain.ok === false ? COL.amber : COL.green, 11, 'right', '700');
-  const contacts = ['car door', ...[1, 2, 3, 4, 5, 6].map(f => 'landing door ' + f), 'top limit', 'bottom limit', 'governor'];
-  const labels = ['car', '1', '2', '3', '4', '5', '6', 'top', 'bot', 'gov'];
+  const contacts = ['car door', ...[1, 2, 3, 4, 5, 6].map(f => 'landing door ' + f), 'top limit', 'bottom limit'];
+  const labels = ['car', '1', '2', '3', '4', '5', '6', 'top', 'bot'];
   contacts.forEach((ct, i) => {
-    const cx = x + 22 + i * 21.5, cy = yy + 22, ok = !open.has(ct);
+    const cx = x + 24 + i * 24, cy = yy + 22, ok = !open.has(ct);
     if (i > 0) { g.strokeStyle = '#3a4356'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 16, cy); g.lineTo(cx - 6, cy); g.stroke(); }
     glow(ok ? COL.green : COL.amber, ok ? 0 : 8, () => circle(cx, cy, 5, ok ? COL.green : COL.amber));
     text(labels[i], cx, cy + 14, COL.dim, 8.5, 'center');
   });
-  // the technician's switches
-  techButton(x + 14, y + h - 46, 100, 'overspeed test', 'drive-' + c, 'test', d.test);
-  techButton(x + w - 114, y + h - 46, 100, 'reset governor', 'governor-' + c, 'reset', false);
-}
-function techButton(x, y, w, label, p, port, active) {
-  const hov = hover && hover.part === p && hover.port === port;
-  box(x, y, w, 32, active ? '#5b1d25' : hov ? '#3a4560' : '#262f42', 8, '#3d4860');
-  text(label, x + w / 2, y + 16, active ? COL.red : COL.text, 11, 'center', '600');
-  hit(x, y, w, 32, p, port);
 }
 
 function drawFooter() {

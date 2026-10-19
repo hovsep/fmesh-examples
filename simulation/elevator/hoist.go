@@ -14,7 +14,7 @@ import (
 //
 //	controller → drive → motor → encoder, sheave → car, counterweight
 //	controller → brake → motor
-//	car → position sensor, governor, limit switches → controller, safety chain
+//	car → position sensor, limit switches → controller, safety chain
 //
 // Each part acts on one input (its trigger) and only remembers the others,
 // so it moves once per tick however many cycles the wave takes.
@@ -24,25 +24,20 @@ const (
 	portRef      = "ref"      // controller → drive: wanted speed, m/s
 	portFeedback = "feedback" // encoder → drive
 	portChain    = "chain"    // safety chain → drive, brake, controller: true while every contact is closed
-	portTest     = "test"     // UI → drive: overspeed test
 	portPower    = "power"    // drive → motor
 	portBrake    = "brake"    // brake → motor, controller: released or not
 	portLift     = "lift"     // controller → brake: lift it or let it drop
 	portShaft    = "shaft"    // motor → encoder, sheave: shaft speed as rope metres per second
 	portSpeed    = "speed"    // encoder → drive, controller
 	portRope     = "rope"     // sheave → car, counterweight
-	portClamp    = "clamp"    // safety gear → car
-	portPosition = "position" // car → sensors, governor, landing doors
+	portPosition = "position" // car → sensors, landing doors
 	portReading  = "reading"  // position sensor → controller
-	portContact  = "contact"  // any safety contact → safety chain, safety gear
-	portReset    = "reset"    // UI → governor
+	portContact  = "contact"  // any safety contact → safety chain
 )
 
 const (
-	driveAccel    = 1.0  // m/s², the steepest ramp the drive allows
-	brakeLiftTime = 0.3  // s for the brake to lift clear
-	overspeed     = 1.15 // the governor trips at this share of rated speed
-	testSpeed     = 1.35 // the overspeed test pushes the drive this far past rated
+	driveAccel    = 1.0 // m/s², the steepest ramp the drive allows
+	brakeLiftTime = 0.3 // s for the brake to lift clear
 )
 
 // Motion is where the car is and how fast it goes.
@@ -66,7 +61,6 @@ type DriveState struct {
 	Actual  float64 `json:"actual"`
 	Hz      float64 `json:"hz"`
 	Enabled bool    `json:"enabled"`
-	Test    bool    `json:"test"`
 }
 
 // newDrive is the inverter: it ramps the motor towards the speed the
@@ -75,47 +69,37 @@ type DriveState struct {
 func newDrive(c string) (*component.Component, error) {
 	return component.New("drive-"+c,
 		component.WithDescription("inverter: ramps the motor to the requested speed, cuts power when the safety chain opens"),
-		component.WithInputs(portRef, portFeedback, portChain, portTest),
+		component.WithInputs(portRef, portFeedback, portChain),
 		component.WithOutputs(portPower, portTelemetry),
 		component.WithInitialState(func(s component.State) {
 			s.Set("out", 0.0)
 			s.Set("actual", 0.0)
 			s.Set("chain", true)
-			s.Set("test", false)
 		}),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
 			out := this.State().Get("out").(float64)
 			actual := latest(this.InputByName(portFeedback), this.State().Get("actual").(float64))
 			chain := latest(this.InputByName(portChain), this.State().Get("chain").(bool))
-			test := this.State().Get("test").(bool) || this.InputByName(portTest).HasSignals()
-			if !chain {
-				test = false
-			}
 			this.State().Set("actual", actual)
 			this.State().Set("chain", chain)
-			this.State().Set("test", test)
 
 			if !this.InputByName(portRef).HasSignals() {
 				return nil
 			}
 			ref := latest(this.InputByName(portRef), 0.0)
-			want := ref
-			if test && ref != 0 {
-				want = math.Copysign(testSpeed*ratedSpeed, ref)
-			}
 			switch {
 			case !chain:
 				out = 0
-			case want > out:
-				out = min(want, out+driveAccel*dt)
+			case ref > out:
+				out = min(ref, out+driveAccel*dt)
 			default:
-				out = max(want, out-driveAccel*dt)
+				out = max(ref, out-driveAccel*dt)
 			}
 			this.State().Set("out", out)
 			if err := this.OutputByName(portPower).PutSignals(signal.New(out)); err != nil {
 				return err
 			}
-			return report(this, DriveState{Ref: ref, Out: out, Actual: actual, Hz: math.Abs(out) / ratedSpeed * 50, Enabled: chain, Test: test})
+			return report(this, DriveState{Ref: ref, Out: out, Actual: actual, Hz: math.Abs(out) / ratedSpeed * 50, Enabled: chain})
 		}),
 	)
 }
@@ -246,37 +230,25 @@ func newSheave(c string) (*component.Component, error) {
 // CarState is the car itself.
 type CarState struct {
 	Motion
-	Clamped bool `json:"clamped"`
 }
 
 // newCar is the car frame hanging on the ropes: it goes where the ropes
-// take it, unless the safety gear has gripped the rails.
+// take it.
 func newCar(c string, start int) (*component.Component, error) {
 	return component.New("car-"+c,
-		component.WithDescription("car frame on the ropes: moves with them unless the safety gear grips the rails"),
-		component.WithInputs(portRope, portClamp),
+		component.WithDescription("car frame on the ropes: moves with them"),
+		component.WithInputs(portRope),
 		component.WithOutputs(portPosition, portTelemetry),
-		component.WithInitialState(func(s component.State) {
-			s.Set("pos", floorPos(start))
-			s.Set("clamped", false)
-		}),
+		component.WithInitialState(func(s component.State) { s.Set("pos", floorPos(start)) }),
 		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			clamped := latest(this.InputByName(portClamp), this.State().Get("clamped").(bool))
-			this.State().Set("clamped", clamped)
-			if !this.InputByName(portRope).HasSignals() {
-				return nil
-			}
 			speed := latest(this.InputByName(portRope), 0.0)
-			if clamped {
-				speed = 0
-			}
 			pos := this.State().Get("pos").(float64) + speed*dt
 			this.State().Set("pos", pos)
 			m := Motion{Pos: pos, Speed: speed}
 			if err := this.OutputByName(portPosition).PutSignals(signal.New(m)); err != nil {
 				return err
 			}
-			return report(this, CarState{Motion: m, Clamped: clamped})
+			return report(this, CarState{Motion: m})
 		}),
 	)
 }
@@ -298,60 +270,6 @@ func newCounterweight(c string, start int) (*component.Component, error) {
 			pos := this.State().Get("pos").(float64) - latest(this.InputByName(portRope), 0.0)*dt
 			this.State().Set("pos", pos)
 			return report(this, PosState{Pos: pos})
-		}),
-	)
-}
-
-// GovernorState is the overspeed governor.
-type GovernorState struct {
-	RPM     float64 `json:"rpm"`
-	Tripped bool    `json:"tripped"`
-}
-
-// newGovernor is the overspeed governor, turned by its own rope tied to the
-// car: past the trip speed it opens its contact in the safety chain and
-// sets off the safety gear, until a technician resets it.
-func newGovernor(c string) (*component.Component, error) {
-	return component.New("governor-"+c,
-		component.WithDescription("overspeed governor: trips the safety chain and the safety gear past the trip speed"),
-		component.WithInputs(portPosition, portReset),
-		component.WithOutputs(portContact, portTelemetry),
-		component.WithInitialState(func(s component.State) { s.Set("tripped", false) }),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			tripped := this.State().Get("tripped").(bool)
-			if this.InputByName(portReset).HasSignals() {
-				tripped = false
-			}
-			m := latest(this.InputByName(portPosition), Motion{})
-			if math.Abs(m.Speed) > overspeed*ratedSpeed {
-				tripped = true
-			}
-			this.State().Set("tripped", tripped)
-			if err := this.OutputByName(portContact).PutSignals(signal.New(Contact{Name: "governor", Closed: !tripped})); err != nil {
-				return err
-			}
-			return report(this, GovernorState{RPM: rpm(m.Speed) * 2, Tripped: tripped})
-		}),
-	)
-}
-
-// EngagedState is the safety gear.
-type EngagedState struct {
-	Engaged bool `json:"engaged"`
-}
-
-// newSafetyGear grips the guide rails when the governor trips.
-func newSafetyGear(c string) (*component.Component, error) {
-	return component.New("safety-gear-"+c,
-		component.WithDescription("safety gear: grips the guide rails when the governor trips"),
-		component.WithInputs(portContact),
-		component.WithOutputs(portClamp, portTelemetry),
-		component.WithActivationFunc(func(_ context.Context, this *component.Component) error {
-			engaged := !latest(this.InputByName(portContact), Contact{Closed: true}).Closed
-			if err := this.OutputByName(portClamp).PutSignals(signal.New(engaged)); err != nil {
-				return err
-			}
-			return report(this, EngagedState{Engaged: engaged})
 		}),
 	)
 }

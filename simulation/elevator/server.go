@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -18,18 +20,22 @@ var page []byte
 // building runs the mesh in real time and fans every frame out to the
 // browsers watching it.
 type building struct {
-	fm *fmesh.FMesh
+	fm   *fmesh.FMesh
+	tick time.Duration // wall-clock time between steps; tests shorten it
 
 	mu       sync.Mutex
 	inputs   []Input
 	watchers map[chan []byte]bool
 }
 
-// serve runs the building and serves the page that shows it.
-func serve(fm *fmesh.FMesh, addr string, demo bool) error {
-	b := &building{fm: fm, watchers: map[chan []byte]bool{}}
-	go b.run(demo)
+// newBuilding wraps the mesh for the page. Nothing moves until run is
+// started on its own goroutine.
+func newBuilding(fm *fmesh.FMesh) *building {
+	return &building{fm: fm, tick: time.Duration(dt * float64(time.Second)), watchers: map[chan []byte]bool{}}
+}
 
+// handler is the page and its two endpoints.
+func (b *building) handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -37,18 +43,34 @@ func serve(fm *fmesh.FMesh, addr string, demo bool) error {
 	})
 	mux.HandleFunc("GET /events", b.events)
 	mux.HandleFunc("POST /press", b.press)
-
-	fmt.Printf("The building is open: http://%s\n", addr)
-	return http.ListenAndServe(addr, mux)
+	return mux
 }
 
-// run is the building's life: one step of the mesh every 50 ms.
-func (b *building) run(demo bool) {
+// serve runs the building and serves the page that shows it at addr
+// (":0" picks a free port).
+func serve(fm *fmesh.FMesh, addr string, demo bool) error {
+	b := newBuilding(fm)
+	go b.run(context.Background(), demo)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("The building is open: http://%s\n", ln.Addr())
+	return (&http.Server{Handler: b.handler(), ReadHeaderTimeout: 5 * time.Second}).Serve(ln)
+}
+
+// run is the building's life: one step of the mesh every 50 ms, until ctx ends.
+func (b *building) run(ctx context.Context, demo bool) {
 	visitors := rand.New(rand.NewPCG(1, 2))
-	ticker := time.NewTicker(time.Duration(dt * float64(time.Second)))
+	ticker := time.NewTicker(b.tick)
 	defer ticker.Stop()
 	var frame Frame
-	for range ticker.C {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
 		b.mu.Lock()
 		inputs := b.inputs
 		b.inputs = nil
@@ -114,7 +136,7 @@ func (b *building) events(w http.ResponseWriter, r *http.Request) {
 // press takes one click from the page: {"part": "hall-up-3", "port": "press"}.
 func (b *building) press(w http.ResponseWriter, r *http.Request) {
 	var in Input
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

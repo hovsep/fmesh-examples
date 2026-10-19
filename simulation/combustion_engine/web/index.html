@@ -26,10 +26,6 @@
   button.gas { min-width: 110px; }
   button.gas.held { background: #1a2b1f; border-color: var(--ok); color: var(--ok); }
   kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); background: #0c0f13; color: var(--muted); margin-right: 4px; }
-  label.hand { display: flex; align-items: center; gap: 8px; color: var(--muted); }
-  input[type=range] { width: 160px; accent-color: var(--accent); }
-  .group { display: flex; gap: 6px; align-items: center; }
-  .sep { width: 1px; height: 28px; background: var(--line); margin: 0 4px; }
   footer { color: var(--muted); margin-top: 10px; font-size: 13px; }
 </style>
 </head>
@@ -44,21 +40,9 @@
   <div class="controls">
     <button id="start" class="start"><kbd>I</kbd>Start</button>
     <button id="gas" class="gas"><kbd>↑</kbd><kbd>W</kbd>Gas</button>
-    <button id="floor" class="gas"><kbd>Space</kbd>Floor it</button>
-    <label class="hand">Hand throttle <input id="hand" type="range" min="0" max="100" value="0"></label>
-    <span class="sep"></span>
-    <button id="ac"><kbd>A</kbd>A/C</button>
-    <button id="lights"><kbd>L</kbd>Lights</button>
     <button id="refuel"><kbd>F</kbd>Refuel</button>
-    <span class="sep"></span>
-    <span class="group">
-      <button data-scale="1"><kbd>1</kbd>Real time</button>
-      <button data-scale="0.25"><kbd>2</kbd>¼ speed</button>
-      <button data-scale="0.04"><kbd>3</kbd>Slow motion</button>
-    </span>
-    <button id="sound"><kbd>M</kbd>Sound</button>
   </div>
-  <footer>Hold <kbd>↑</kbd>/<kbd>W</kbd> to press the pedal, <kbd>↓</kbd>/<kbd>S</kbd> to lift off faster; it springs back when you let go. The hand throttle stays where you leave it.</footer>
+  <footer>Hold <kbd>↑</kbd>/<kbd>W</kbd> (or the Gas button) to press the pedal; it springs back when you let go.</footer>
 </main>
 <script>
 "use strict";
@@ -88,35 +72,25 @@ function connect() {
 connect();
 
 // ---------- the driver ----------
-let foot = 0, hand = 0, footUp = false, footDown = false, floored = false, lastSent = -1, sentAt = 0;
-function pedal() { return floored ? 1 : Math.max(foot, hand); }
+let foot = 0, footUp = false, lastSent = -1, sentAt = 0;
 function tickPedal(dt) {
   if (footUp) foot = Math.min(1, foot + 1.1 * dt);
-  else foot = Math.max(0, foot - (footDown ? 4 : 1.6) * dt);
-  const p = Math.round(pedal() * 100) / 100, now = performance.now();
+  else foot = Math.max(0, foot - 1.6 * dt);
+  const p = Math.round(foot * 100) / 100, now = performance.now();
   if (p !== lastSent && now - sentAt > 40) { lastSent = p; sentAt = now; send({ pedal: p }); }
 }
 const P = (s, k, d) => (snap && snap.parts[s] && snap.parts[s][k] !== undefined) ? snap.parts[s][k] : d;
 function running() { return snap && snap.running; }
 function toggleStart() { send({ ignition: !(snap && snap.driver.ignition) }); }
-function toggle(k) { if (snap) send({ [k]: !snap.driver[k] }); }
-function setScale(s) { send({ scale: s }); }
 
-const keys = {
-  ArrowUp: (d) => footUp = d, KeyW: (d) => footUp = d,
-  ArrowDown: (d) => footDown = d, KeyS: (d) => footDown = d,
-  Space: (d) => floored = d,
-};
-const presses = {
-  KeyI: toggleStart, KeyA: () => toggle("ac"), KeyL: () => toggle("lights"), KeyF: () => send({ refuel: true }),
-  Digit1: () => setScale(1), Digit2: () => setScale(0.25), Digit3: () => setScale(0.04), KeyM: toggleSound,
-};
+const keys = { ArrowUp: (d) => footUp = d, KeyW: (d) => footUp = d };
+const presses = { KeyI: toggleStart, KeyF: () => send({ refuel: true }) };
 addEventListener("keydown", (e) => {
   if (keys[e.code]) { keys[e.code](true); e.preventDefault(); }
   else if (presses[e.code] && !e.repeat) { presses[e.code](); e.preventDefault(); }
 });
 addEventListener("keyup", (e) => { if (keys[e.code]) { keys[e.code](false); e.preventDefault(); } });
-addEventListener("blur", () => { footUp = footDown = floored = false; });
+addEventListener("blur", () => { footUp = false; });
 
 function hold(id, set) {
   const b = document.getElementById(id);
@@ -126,14 +100,8 @@ function hold(id, set) {
   b.addEventListener("pointerup", off); b.addEventListener("pointercancel", off); b.addEventListener("lostpointercapture", off);
 }
 hold("gas", (d) => footUp = d);
-hold("floor", (d) => floored = d);
-document.getElementById("hand").addEventListener("input", (e) => { hand = e.target.value / 100; });
 document.getElementById("start").onclick = toggleStart;
-document.getElementById("ac").onclick = () => toggle("ac");
-document.getElementById("lights").onclick = () => toggle("lights");
 document.getElementById("refuel").onclick = () => send({ refuel: true });
-document.getElementById("sound").onclick = toggleSound;
-document.querySelectorAll("[data-scale]").forEach((b) => b.onclick = () => setScale(+b.dataset.scale));
 
 function updateButtons() {
   const s = snap, st = document.getElementById("status");
@@ -143,32 +111,7 @@ function updateButtons() {
   const start = document.getElementById("start");
   start.classList.toggle("running", s.driver.ignition);
   start.lastChild.textContent = s.driver.ignition ? "Stop" : "Start";
-  document.getElementById("ac").classList.toggle("on", s.driver.ac);
-  document.getElementById("lights").classList.toggle("on", s.driver.lights);
   document.getElementById("refuel").classList.toggle("on", s.driver.refuel);
-  document.querySelectorAll("[data-scale]").forEach((b) => b.classList.toggle("on", Math.abs(+b.dataset.scale - s.scale) < 1e-6));
-}
-
-// ---------- sound: a sawtooth at the firing frequency ----------
-let audio = null;
-function toggleSound() {
-  const b = document.getElementById("sound");
-  if (audio) { audio.ctx.close(); audio = null; b.classList.remove("on"); return; }
-  const ac = new (window.AudioContext || window.webkitAudioContext)();
-  const o1 = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
-  o1.type = "sawtooth"; o2.type = "square"; f.type = "lowpass"; g.gain.value = 0;
-  o1.connect(f); o2.connect(f); f.connect(g); g.connect(ac.destination); o1.start(); o2.start();
-  audio = { ctx: ac, o1, o2, f, g }; b.classList.add("on");
-}
-function tickSound() {
-  if (!audio || !snap) return;
-  const rpm = (P("crankshaft", "crank", {}).rpm || 0) * snap.scale, t = audio.ctx.currentTime;
-  const firing = running() && ["running", "rev limit", "overheat"].includes(P("ecu", "mode", ""));
-  const hz = Math.max(20, rpm / 60 * 2);
-  audio.o1.frequency.setTargetAtTime(hz, t, 0.03);
-  audio.o2.frequency.setTargetAtTime(hz / 2, t, 0.03);
-  audio.f.frequency.setTargetAtTime(200 + 1800 * P("throttle-body", "opening", 0), t, 0.05);
-  audio.g.gain.setTargetAtTime(running() && rpm > 30 ? (firing ? 0.05 + 0.08 * pedal() : 0.03) : 0, t, 0.05);
 }
 
 // ---------- drawing helpers ----------
@@ -228,9 +171,18 @@ function wheel(x, y, r, angle, o = {}) {
 // above that it skips whole cycles (720°), which look the same, so the
 // pistons, valves and sparks always stay in step with each other.
 const MAX_VISUAL_RPM = 720;
+let visRpm = 0, frameDt = 0; // the crank speed being drawn and the last frame's length
+// turn advances a wheel's drawn angle at ratio times the crank speed, but by no
+// more than 0.4 of its spoke period per frame: a wheel that turns faster than
+// that on a 60 Hz screen looks still or backwards (the wagon-wheel effect).
+function turn(key, ratio, spokes) {
+  const step = Math.min(ratio * visRpm / 60 * 2 * Math.PI * frameDt, 0.4 * 2 * Math.PI / spokes);
+  spin[key] = ((spin[key] || 0) + step) % (2 * Math.PI);
+  return spin[key];
+}
 function advanceAngle(dt) {
   const crank = P("crankshaft", "crank", { stroke: 0, rpm: 0 });
-  const rpm = crank.rpm * (snap ? snap.scale : 1);
+  const rpm = crank.rpm;
   const since = (performance.now() - snapAt) / 1000;
   // The parts' states are those of the stroke before the one just announced.
   const target = Math.max(0, crank.stroke - 1) * 180 + (running() ? Math.min(179, since * rpm * 6) : 0);
@@ -238,6 +190,7 @@ function advanceAngle(dt) {
   if (target - dispAngle > 720) dispAngle += Math.floor((target - dispAngle) / 720) * 720;
   dispAngle += Math.min(target - dispAngle, Math.max(MAX_VISUAL_RPM * 6 * dt, (target - dispAngle) * 0.0));
   const visualRpm = Math.min(rpm, MAX_VISUAL_RPM);
+  visRpm = visualRpm;
   return { stroke: Math.floor(dispAngle / 180), f: (dispAngle % 180) / 180, rpm: crank.rpm, visualRpm };
 }
 function phaseOf(i, n) { // the same rule as phase() in common.go
@@ -349,9 +302,8 @@ function drawEngine(a) {
     ctx.fillStyle = "#6b7684"; ctx.fillRect(-12, -CRANK_R, 24, CRANK_R); ctx.beginPath(); ctx.arc(0, -CRANK_R, 10, 0, 7); ctx.fill();
     ctx.restore();
   }
-  const crankRot = dispAngle * Math.PI / 180;
   // flywheel with the starter beside it
-  ctx.save(); ctx.translate(140, CRANK_Y); ctx.rotate(crankRot);
+  ctx.save(); ctx.translate(140, CRANK_Y); ctx.rotate(turn("flywheel", 1, 4));
   ctx.fillStyle = "#2d353f"; ctx.beginPath(); ctx.arc(0, 0, 70, 0, 7); ctx.fill();
   ctx.strokeStyle = "#5a6573"; ctx.lineWidth = 6; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(0, 0, 67, 0, 7); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = "#47515d"; for (let k = 0; k < 4; k++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.arc(36, 0, 9, 0, 7); ctx.fill(); }
@@ -360,7 +312,8 @@ function drawEngine(a) {
   const engaged = P("starter", "engaged", false);
   rr(40, 470, 64, 34, 8); ctx.fillStyle = engaged ? "#3b3218" : "#262d35"; ctx.fill();
   ctx.strokeStyle = engaged ? "#ffb547" : "#3d4856"; ctx.lineWidth = 2; ctx.stroke();
-  wheel(engaged ? 92 : 84, 487 - (engaged ? 6 : 0), 9, crankRot * 8, { rim: engaged ? "#ffb547" : "#4b5664", spokes: 4 });
+  // The pinion only turns while it is thrown into the flywheel's ring gear.
+  wheel(engaged ? 92 : 84, 487 - (engaged ? 6 : 0), 9, engaged ? turn("starter", 10, 4) : (spin.starter || 0), { rim: engaged ? "#ffb547" : "#4b5664", spokes: 4 });
   if (engaged) glow(72, 487, 40, "rgba(255,181,71,ALPHA)", .3);
   label("starter", 46, 520, { color: engaged ? "#ffb547" : undefined });
 
@@ -368,7 +321,7 @@ function drawEngine(a) {
   const oilP = P("oil-pump", "pressure", 0);
   rr(200, 470, 480, 54, 10); ctx.fillStyle = "#1a1f26"; ctx.fill();
   ctx.fillStyle = "#6b4f17"; rr(204, 494, 472, 26, 8); ctx.fill();
-  wheel(440, 500, 14, crankRot, { fill: "#4e3c15", rim: "#b48a2c", spokes: 6 });
+  wheel(440, 500, 14, turn("oil", 1, 6), { fill: "#4e3c15", rim: "#b48a2c", spokes: 6 });
   pipe([[440, 486], [440, CRANK_Y + 10]], 4, oilP > 0.5 ? "#d4a640" : "#5c4a20", oilP > .5 ? [3, 6] : null, dispAngle * .5);
   label("oil pump · " + oilP.toFixed(1) + " bar", 462, 488, { color: "#d4a640" });
 
@@ -379,7 +332,7 @@ function drawEngine(a) {
   label("water jacket " + blockT.toFixed(0) + "°C", 186, 376, { color: tempColor(blockT) });
 
   // Crank pulley at the front, driving the belt.
-  wheel(735, CRANK_Y, 20, crankRot, { spokes: 3 });
+  wheel(735, CRANK_Y, 20, turn("crank-end", 1, 3), { spokes: 3 });
 }
 
 function drawValve(x, lift, color, camDeg) {
@@ -393,10 +346,9 @@ function drawValve(x, lift, color, camDeg) {
 
 // ---------- belt, cooling and the electrics ----------
 function drawFront(a, dt) {
-  const vis = a.visualRpm, crankRpm = a.rpm;
-  const turn = (key, ratio) => { spin[key] = ((spin[key] || 0) + ratio * vis / 60 * 2 * Math.PI * dt) % (2 * Math.PI); return spin[key]; };
-  const C = [880, 460, 34], A = [840, 270, 22], Wp = [960, 330, 27], K = [1010, 470, 30], T = [905, 370, 12];
-  const pulleys = [C, A, Wp, K];
+  const vis = a.visualRpm;
+  const C = [880, 460, 34], A = [840, 270, 22], Wp = [960, 330, 27], T = [905, 370, 12];
+  const pulleys = [C, A, Wp];
   // belt: the convex hull around the pulleys
   const pts = [];
   pulleys.forEach(([x, y, r]) => { for (let k = 0; k < 32; k++) pts.push([x + (r + 4) * Math.cos(k / 32 * 2 * Math.PI), y + (r + 4) * Math.sin(k / 32 * 2 * Math.PI)]); });
@@ -406,20 +358,15 @@ function drawFront(a, dt) {
   label("accessory belt", 830, 540);
 
   const altA = P("alternator", "amps", 0);
-  wheel(A[0], A[1], A[2], turn("alt", 2.8), { spokes: 5 });
+  wheel(A[0], A[1], A[2], turn("alt", 2.8, 5), { spokes: 5 });
   rr(A[0] - 52, A[1] - 36, 32, 72, 8); ctx.fillStyle = "#2a323c"; ctx.fill();
   label("alternator", A[0] - 60, A[1] - 44); text(altA.toFixed(0) + " A", A[0] - 50, A[1] + 52, { color: altA > 5 ? "#4fd18b" : "#8b95a3", weight: 700 });
 
-  wheel(Wp[0], Wp[1], Wp[2], turn("wp", 1.1), { spokes: 6, spoke: "#4aa8ff" });
+  wheel(Wp[0], Wp[1], Wp[2], turn("wp", 1.1, 6), { spokes: 6, spoke: "#4aa8ff" });
   label("water pump", Wp[0] - 30, Wp[1] - 36);
-  wheel(T[0], T[1], T[2], turn("t", 2.6), { spokes: 2 });
+  wheel(T[0], T[1], T[2], turn("t", 2.6, 2), { spokes: 2 });
 
-  const acOn = P("ac-compressor", "engaged", false);
-  wheel(K[0], K[1], K[2], acOn ? turn("ac", 1.3) : (spin.ac || 0), { spokes: 4, rim: acOn ? "#5fd4ff" : "#4b5664" });
-  wheel(K[0], K[1], K[2] - 12, turn("acp", 1.3), { spokes: 3, fill: "#20262d" });
-  if (acOn) glow(K[0], K[1], 50, "rgba(95,212,255,ALPHA)", .25);
-  label("A/C compressor " + (acOn ? "on" : "off"), K[0] - 46, K[1] + 46, { color: acOn ? "#5fd4ff" : undefined });
-  wheel(C[0], C[1], C[2], turn("crank", 1), { spokes: 3 });
+  wheel(C[0], C[1], C[2], turn("crank", 1, 3), { spokes: 3 });
   label("crank pulley", C[0] - 34, C[1] + 50);
 
   // Radiator, thermostat, hoses and fan.
@@ -451,12 +398,12 @@ function drawFront(a, dt) {
   // coolant temperature sensor on the head
   ctx.fillStyle = tempColor(P("coolant-temp-sensor", "value", 20)); ctx.beginPath(); ctx.arc(742, 120, 7, 0, 7); ctx.fill();
 
-  // Fuel tank and pump, battery, fuse box, headlights along the bottom.
+  // Fuel tank and pump, battery and fuse box along the bottom.
   const liters = P("fuel-tank", "liters", 0), cap = P("fuel-tank", "capacity", 45);
   const pumpOn = P("fuel-pump", "on", false), pumpP = P("fuel-pump", "pressure", 0);
   rr(800, 570, 150, 70, 10); ctx.fillStyle = "#1a1f26"; ctx.fill(); ctx.strokeStyle = "#3d4856"; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = liters / cap < .1 ? "#b8792c" : "#a8953c"; ctx.fillRect(804, 636 - 62 * liters / cap, 142, 62 * liters / cap);
-  wheel(925, 615, 11, pumpOn ? turn("fp", 3) : (spin.fp || 0), { spokes: 3, rim: pumpOn ? "#d9c34a" : "#4b5664" });
+  wheel(925, 615, 11, pumpOn ? turn("fp", 3, 3) : (spin.fp || 0), { spokes: 3, rim: pumpOn ? "#d9c34a" : "#4b5664" });
   label("fuel tank " + liters.toFixed(1) + " L", 806, 562); text("pump " + pumpP.toFixed(1) + " bar", 812, 604, { color: pumpOn ? "#d9c34a" : "#777" });
 
 
@@ -468,19 +415,14 @@ function drawFront(a, dt) {
   text((amps >= 0 ? "+" : "") + amps.toFixed(0) + " A", 990, 617, { color: amps >= 0 ? "#4fd18b" : "#ffb547" });
   label("battery " + Math.round(soc * 100) + "%", 982, 560);
 
-  const on = P("fuse-box", "on", {}) || {}, circuits = ["ignition", "starter", "fuel-pump", "cooling-fan", "ac-compressor", "headlights"];
+  const on = P("fuse-box", "on", {}) || {}, circuits = ["ignition", "starter", "fuel-pump", "cooling-fan"];
   rr(1100, 572, 160, 66, 8); ctx.fillStyle = "#20262d"; ctx.fill(); ctx.strokeStyle = "#3d4856"; ctx.stroke();
   circuits.forEach((c, k) => {
-    const x = 1110 + (k % 3) * 50, y = 584 + Math.floor(k / 3) * 28;
+    const x = 1110 + (k % 2) * 76, y = 584 + Math.floor(k / 2) * 28;
     ctx.fillStyle = on[c] ? "#4fd18b" : "#3a424c"; ctx.beginPath(); ctx.arc(x + 4, y + 2, 4, 0, 7); ctx.fill();
-    text(c.replace("cooling-", "").replace("ac-compressor", "a/c").replace("fuel-pump", "fuel").replace("headlights", "lights").replace("ignition", "ign"), x + 11, y + 6, { size: 10, color: on[c] ? "#e6e9ee" : "#6b7583" });
+    text(c.replace("cooling-", "").replace("fuel-pump", "fuel").replace("ignition", "ign"), x + 11, y + 6, { size: 10, color: on[c] ? "#e6e9ee" : "#6b7583" });
   });
   label("fuse box · " + P("fuse-box", "load", 0).toFixed(0) + " A", 1102, 560);
-
-  const bright = P("headlights", "brightness", 0);
-  if (bright > 0) { glow(1240, 470, 90, "rgba(255,248,210,ALPHA)", .45 * bright); }
-  ctx.fillStyle = bright > 0 ? mix([90, 90, 80], [255, 250, 220], bright) : "#3a424c"; ctx.beginPath(); ctx.arc(1240, 470, 16, 0, 7); ctx.fill();
-  label("lights", 1222, 500);
 }
 
 function convexHull(points) {
@@ -553,18 +495,17 @@ function drawCluster() {
   const lamps = [
     ["CHECK", status.checkEngine, "rgb(255,181,71)"], ["OIL", running() && oil < .5, "rgb(255,93,93)"],
     ["BATT", volts < 12.2 && running(), "rgb(255,93,93)"], ["TEMP", coolant > 110, "rgb(255,93,93)"],
-    ["FAN", P("cooling-fan", "on", false), "rgb(79,209,139)"], ["A/C", P("ac-compressor", "engaged", false), "rgb(95,212,255)"],
-    ["LOW FUEL", fuel < .1, "rgb(255,181,71)"], ["LIGHTS", P("headlights", "on", false), "rgb(79,209,139)"],
+    ["FAN", P("cooling-fan", "on", false), "rgb(79,209,139)"], ["LOW FUEL", fuel < .1, "rgb(255,181,71)"],
     ["STARTER", P("starter", "engaged", false), "rgb(255,181,71)"], ["REV LIMIT", mode === "rev limit", "rgb(255,93,93)"],
   ];
-  lamps.forEach(([n, on, col], k) => lamp(30 + k * 92, y0 + 168 - 20, n, !!on, col));
+  lamps.forEach(([n, on, col], k) => lamp(30 + k * 112, y0 + 168 - 20, n, !!on, col));
   text("mode: " + (running() ? mode : "stopped"), 960, y0 + 166, { color: "#e6e9ee", weight: 700, size: 13 });
 }
 
 // ---------- the frame ----------
 function frame(now) {
   const dt = Math.min(0.1, (now - lastFrame) / 1000); lastFrame = now;
-  tickPedal(dt); tickSound();
+  tickPedal(dt); frameDt = dt;
   const scale = Math.min(canvas.clientWidth / W, 4) * (window.devicePixelRatio || 1);
   const w = Math.round(W * scale), h = Math.round(H * scale);
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -574,7 +515,6 @@ function frame(now) {
     const a = advanceAngle(dt);
     drawEngine(a); drawFront(a, dt); drawCluster();
     text(`stroke ${Math.max(0, P("crankshaft", "crank", {}).stroke || 0)} · ${snap.cyclesPerStroke.toFixed(1)} mesh cycles per stroke`, 1262, 18, { align: "right", size: 11, color: "#6b7583" });
-    if (snap.scale < 1) text(snap.scale >= .25 ? "¼ speed" : "slow motion", 20, 640, { color: "#ffb547", weight: 700, size: 13 });
   }
   requestAnimationFrame(frame);
 }

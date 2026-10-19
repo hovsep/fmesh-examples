@@ -164,20 +164,3 @@ func TestHotEngineRunsTheFanAndTheThermostat(t *testing.T) {
 	assert.Positive(t, state[float64](tr.fm, "thermostat", "opening"))
 	assert.Less(t, peak, overheatAt, "the fan keeps it from overheating")
 }
-
-func TestACLoadsTheEngine(t *testing.T) {
-	tr := newTrip(t, map[string]map[string]any{"engine-block": {"temp": 85.0}})
-	var engaged bool
-	tr.run(t, func(stroke int, d *DriverInput) {
-		d.AC = stroke >= 400
-		d.Lights = stroke >= 400
-		engaged = engaged || state[bool](tr.fm, "ac-compressor", "engaged")
-		if stroke >= 1200 {
-			d.Ignition = false
-		}
-	})
-	t.Logf("idle without AC %.0f, with AC %.0f", avg(tr.rpm[200:400]), avg(tr.rpm[1000:1200]))
-	assert.True(t, engaged)
-	assert.InDelta(t, idleRPM+100, avg(tr.rpm[1000:1200]), 120, "the ECU raises the idle for the compressor")
-	assert.True(t, state[bool](tr.fm, "headlights", "on"))
-}

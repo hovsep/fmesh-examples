@@ -1,4 +1,4 @@
-.PHONY: help build graph clean
+.PHONY: help build graph clean test e2e-elevator e2e-engine
 
 # Find all examples (directories containing main.go)
 EXAMPLES := $(shell find . -name "main.go" -type f | grep -v tools | sed 's|/main.go$$||' | sed 's|^\./||' | sort)
@@ -27,3 +27,9 @@ clean: ## Clean build artifacts
 test: ## Run tests
 	go test ./...
 	@echo "✓ Tests finished"
+
+e2e-elevator: ## Drive the elevator in a real Chrome (serial, ~1.5 min)
+	cd e2e && go test -count=1 -v -run Elevator .
+
+e2e-engine: ## Drive the combustion engine in a real Chrome (serial, ~1 min)
+	cd e2e && go test -count=1 -v -run Engine .
