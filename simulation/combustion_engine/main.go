@@ -12,9 +12,9 @@ import (
 	"github.com/hovsep/fmesh/port"
 )
 
-// A four-cylinder petrol engine, part by part: 41 components, from the
-// valves and the injectors to the fan, the fuse box and the headlights, each
-// keeping its own physics, wired the way the real parts are.
+// A four-cylinder petrol engine, part by part: 39 components, from the
+// valves and the injectors to the fan and the fuse box, each keeping its
+// own physics, wired the way the real parts are.
 //
 // One trip around the mesh is one stroke, half a turn of the crankshaft, and
 // nobody drives it from outside: the crankshaft's turn is what starts the
@@ -53,7 +53,6 @@ func main() {
 	fm.ComponentByName("engine-block").State().Set("temp", *coolant)
 
 	fmt.Printf("=== Internal Combustion Engine: %d parts ===\n", fm.Components().Len())
-	fmt.Printf("Open http://%s in a browser. Ctrl+C to quit.\n", *addr)
 	if err := serve(*addr, fm, driver); err != nil {
 		fmt.Println("Server failed:", err)
 		os.Exit(1)
@@ -75,10 +74,10 @@ func getMesh(driver *Driver) (*fmesh.FMesh, error) {
 
 	parts := []func() (*component.Component, error){
 		newCrankshaft, newCamshaft, newAccessoryBelt,
-		newStarter, newAlternator, newBattery, newFuseBox, newIgnitionCoil, newHeadlights,
+		newStarter, newAlternator, newBattery, newFuseBox, newIgnitionCoil,
 		newFuelTank, newFuelPump, newFuelRail,
 		newAirFilter, newThrottleBody, newIntakeManifold, newExhaustManifold, newLambdaSensor,
-		newOilPump, newWaterPump, newEngineBlock, newThermostat, newRadiator, newCoolingFan, newACCompressor,
+		newOilPump, newWaterPump, newEngineBlock, newThermostat, newRadiator, newCoolingFan,
 		newECU, newInstrumentCluster,
 		func() (*component.Component, error) { return newCockpit(driver) },
 		func() (*component.Component, error) {
@@ -122,12 +121,10 @@ func flows() [][2]string {
 		{"crankshaft.crank", "intake-manifold.crank"},
 		{"accessory-belt.drive-alternator", "alternator.drive"},
 		{"accessory-belt.drive-water-pump", "water-pump.drive"},
-		{"accessory-belt.drive-ac-compressor", "ac-compressor.drive"},
 
 		// The driver: the cockpit reads the pedal and the switches.
 		{"cockpit.controls", "ecu.controls"},
 		{"cockpit.ignition", "fuse-box.ignition"},
-		{"cockpit.lights", "fuse-box.headlights"},
 		{"cockpit.refuel", "fuel-tank.refuel"},
 
 		// Control: the ECU decides, the parts act.
@@ -141,7 +138,6 @@ func flows() [][2]string {
 		{"oil-pump.torque", "crankshaft.oil-pump"},
 		{"alternator.drag", "accessory-belt.drag-alternator"},
 		{"water-pump.drag", "accessory-belt.drag-water-pump"},
-		{"ac-compressor.drag", "accessory-belt.drag-ac-compressor"},
 		{"accessory-belt.torque", "crankshaft.belt"},
 
 		// Current: the ECU switches the relays, the fuse box tells the battery
@@ -153,8 +149,6 @@ func flows() [][2]string {
 		{"fuse-box.fuel-pump", "fuel-pump.power"},
 		{"fuse-box.ignition", "ignition-coil.power"},
 		{"fuse-box.cooling-fan", "cooling-fan.power"},
-		{"fuse-box.ac-compressor", "ac-compressor.power"},
-		{"fuse-box.headlights", "headlights.power"},
 
 		// Fuel: tank → pump → rail → the injector of the cylinder on intake.
 		{"fuel-tank.fuel", "fuel-pump.fuel"},
@@ -173,7 +167,6 @@ func flows() [][2]string {
 		{"thermostat.coolant", "radiator.coolant"},
 		{"radiator.cooling", "engine-block.cooling"},
 		{"cooling-fan.airflow", "radiator.airflow"},
-		{"ac-compressor.condenser", "radiator.condenser"},
 
 		// Oil: pump → bearings, and its pressure sender.
 		{"oil-pump.pressure", "crankshaft.oil"},
@@ -194,7 +187,7 @@ func flows() [][2]string {
 		{"lambda-sensor.reading", "instrument-cluster.lambda"},
 		{"intake-manifold.map", "instrument-cluster.map"},
 	}
-	for _, relay := range []string{"starter", "fuel-pump", "cooling-fan", "ac-compressor"} {
+	for _, relay := range []string{"starter", "fuel-pump", "cooling-fan"} {
 		f = append(f, [2]string{"ecu." + relay, "fuse-box." + relay})
 	}
 	for i := 1; i <= cylinders; i++ {

@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -26,7 +27,6 @@ var page []byte
 type snapshot struct {
 	Running         bool            `json:"running"`
 	Reason          string          `json:"reason"` // why it stopped
-	Scale           float64         `json:"scale"`  // simulated seconds per real second
 	Driver          DriverInput     `json:"driver"`
 	FiringOrder     [cylinders]int  `json:"firingOrder"`
 	CyclesPerStroke float64         `json:"cyclesPerStroke"` // mesh cycles each trip around the engine takes
@@ -37,28 +37,33 @@ type server struct {
 	fm     *fmesh.FMesh
 	driver *Driver
 	start  chan struct{}
+	sleep  func(time.Duration) // how a stroke waits for the wall clock; tests make it a no-op
 
 	mu        sync.Mutex
 	running   bool
 	reason    string
-	scale     float64
 	parts     []byte // every part's state, as of the last stroke published
 	perStroke float64
 	latest    []byte
 	listeners map[chan []byte]struct{}
 }
 
-func serve(addr string, fm *fmesh.FMesh, driver *Driver) error {
+// newServer wraps the engine for the page. It is not running yet: call
+// runEngine on its own goroutine and serve handler.
+func newServer(fm *fmesh.FMesh, driver *Driver) *server {
 	s := &server{
 		fm: fm, driver: driver,
 		start:     make(chan struct{}, 1),
-		scale:     1,
+		sleep:     time.Sleep,
 		reason:    "press Start",
 		listeners: map[chan []byte]struct{}{},
 	}
 	s.publish()
-	go s.runEngine()
+	return s
+}
 
+// handler is the page and its two endpoints.
+func (s *server) handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -66,7 +71,19 @@ func serve(addr string, fm *fmesh.FMesh, driver *Driver) error {
 	})
 	mux.HandleFunc("GET /events", s.events)
 	mux.HandleFunc("POST /control", s.control)
-	return (&http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}).ListenAndServe()
+	return mux
+}
+
+// serve runs the engine and serves its page at addr (":0" picks a free port).
+func serve(addr string, fm *fmesh.FMesh, driver *Driver) error {
+	s := newServer(fm, driver)
+	go s.runEngine()
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Open http://%s in a browser. Ctrl+C to quit.\n", ln.Addr())
+	return (&http.Server{Handler: s.handler(), ReadHeaderTimeout: 5 * time.Second}).Serve(ln)
 }
 
 // runEngine turns the key whenever Start is pressed and lets the mesh run
@@ -78,7 +95,6 @@ func (s *server) runEngine() {
 		lastPublish time.Time
 		simulated   float64 // seconds since the pacing clock was set
 		clockStart  time.Time
-		clockScale  float64
 	)
 	s.fm.SetupHooks(func(h *fmesh.Hooks) {
 		h.AfterCycle(func(context.Context, *fmesh.CycleContext) error {
@@ -94,16 +110,15 @@ func (s *server) runEngine() {
 			}
 			lastStroke, cycles = crank.Stroke, 0
 
-			// Keep simulated time in step with the wall clock (times the scale).
-			scale := s.timeScale()
-			if scale != clockScale || clockStart.IsZero() {
-				clockStart, clockScale, simulated = time.Now(), scale, 0
+			// Keep simulated time in step with the wall clock.
+			if clockStart.IsZero() {
+				clockStart, simulated = time.Now(), 0
 			}
 			simulated += crank.DT
-			wait := time.Until(clockStart.Add(time.Duration(simulated / scale * float64(time.Second))))
+			wait := time.Until(clockStart.Add(time.Duration(simulated * float64(time.Second))))
 			switch {
 			case wait > 0:
-				time.Sleep(wait)
+				s.sleep(wait)
 			case wait < -200*time.Millisecond:
 				clockStart, simulated = time.Now(), 0 // fell behind: do not try to catch up
 			}
@@ -117,9 +132,6 @@ func (s *server) runEngine() {
 	})
 
 	for range s.start {
-		s.mu.Lock()
-		s.running, s.reason = true, ""
-		s.mu.Unlock()
 		clockStart = time.Time{}
 
 		err := s.fm.ComponentByName("crankshaft").InputByName("key").PutSignals(signal.New("start"))
@@ -159,12 +171,6 @@ func state[T any](fm *fmesh.FMesh, componentName, key string) T {
 	return v
 }
 
-func (s *server) timeScale() float64 {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.scale
-}
-
 // publish sends every part's state to every open page. It runs on the
 // mesh's goroutine, between cycles, or while the mesh is not running, so it
 // never reads a state that a part is writing.
@@ -189,7 +195,7 @@ func (s *server) broadcast() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data, err := json.Marshal(snapshot{
-		Running: s.running, Reason: s.reason, Scale: s.scale,
+		Running: s.running, Reason: s.reason,
 		Driver: s.driver.peek(), FiringOrder: firingOrder, CyclesPerStroke: s.perStroke, Parts: s.parts,
 	})
 	if err != nil {
@@ -245,10 +251,7 @@ func (s *server) control(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Pedal    *float64 `json:"pedal"`
 		Ignition *bool    `json:"ignition"`
-		AC       *bool    `json:"ac"`
-		Lights   *bool    `json:"lights"`
 		Refuel   bool     `json:"refuel"`
-		Scale    *float64 `json:"scale"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -261,29 +264,23 @@ func (s *server) control(w http.ResponseWriter, r *http.Request) {
 		if req.Ignition != nil {
 			d.Ignition = *req.Ignition
 		}
-		if req.AC != nil {
-			d.AC = *req.AC
-		}
-		if req.Lights != nil {
-			d.Lights = *req.Lights
-		}
 		d.Refuel = d.Refuel || req.Refuel
 	})
 
+	// Turning the key on a still engine starts it. The engine counts as
+	// running from this moment, so a second press cannot queue a second
+	// start that would turn the key again after the engine stops.
 	s.mu.Lock()
-	if req.Scale != nil {
-		s.scale = clamp(*req.Scale, 0.01, 1)
+	starting := req.Ignition != nil && *req.Ignition && !s.running
+	if starting {
+		s.running, s.reason = true, ""
 	}
 	running := s.running
 	s.mu.Unlock()
-
-	if req.Ignition != nil && *req.Ignition && !running {
-		select {
-		case s.start <- struct{}{}:
-		default: // already starting
-		}
+	if starting {
+		s.start <- struct{}{}
 	}
-	if !running {
+	if !running || starting {
 		s.broadcast() // show the switch move even while the mesh is still
 	}
 	w.WriteHeader(http.StatusNoContent)

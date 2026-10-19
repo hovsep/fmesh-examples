@@ -193,19 +193,19 @@ func newCylinder(i int) (*component.Component, error) {
 }
 
 // Pulley ratios on the accessory belt: the small alternator pulley spins fastest.
-var pulleys = map[string]float64{"alternator": 2.8, "water-pump": 1.1, "ac-compressor": 1.3}
+var pulleys = map[string]float64{"alternator": 2.8, "water-pump": 1.1}
 
-// newAccessoryBelt carries rotation from the crankshaft to the alternator,
-// the water pump and the AC compressor, and their drag back. It works in
-// two beats of one stroke: the crank turns it, then the accessories answer.
+// newAccessoryBelt carries rotation from the crankshaft to the alternator
+// and the water pump, and their drag back. It works in two beats of one
+// stroke: the crank turns it, then the accessories answer.
 func newAccessoryBelt() (*component.Component, error) {
 	var drives, drags []string
-	for _, name := range []string{"alternator", "water-pump", "ac-compressor"} {
+	for _, name := range []string{"alternator", "water-pump"} {
 		drives = append(drives, "drive-"+name)
 		drags = append(drags, "drag-"+name)
 	}
 	return component.New("accessory-belt",
-		component.WithDescription("crank pulley → alternator, water pump, AC compressor; their drag back"),
+		component.WithDescription("crank pulley → alternator, water pump; their drag back"),
 		component.WithInputs(append(drags, "crank")...),
 		component.WithOutputs(append(drives, "torque")...),
 		component.WithInitialState(func(s component.State) { s.Set("rpm", 0.0) }),

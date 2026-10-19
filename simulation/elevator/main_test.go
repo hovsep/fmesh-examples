@@ -107,23 +107,6 @@ func TestTheLightCurtainReopensTheDoors(t *testing.T) {
 	s.until("the doors to close at last", func(fr Frame) bool { return fr["controller-A"].(ControllerState).Mode == modeParked })
 }
 
-func TestOverspeedTripsTheGovernor(t *testing.T) {
-	s := newSim(t)
-	s.press(press("car-A-button-6"))
-	s.until("car A to run", func(fr Frame) bool { return fr["car-A"].(CarState).Speed > 1 })
-	s.press(Input{Part: "drive-A", Port: portTest})
-
-	s.until("the governor to trip", func(fr Frame) bool { return fr["governor-A"].(GovernorState).Tripped })
-	s.until("the car to stop", func(fr Frame) bool { return fr["car-A"].(CarState).Speed == 0 })
-	assert.True(t, s.frame["safety-gear-A"].(EngagedState).Engaged)
-	assert.Equal(t, modeHalted, s.ctl("A").Mode)
-	assert.Contains(t, s.frame["safety-chain-A"].(ChainState).Open, "governor")
-	assert.Less(t, s.car("A").Pos, floorPos(6), "it stops between floors")
-
-	s.press(Input{Part: "governor-A", Port: portReset})
-	s.until("car A to carry on to 6", s.doorsOpenAt("A", 6))
-}
-
 func TestTheLightGoesOutInAnIdleCar(t *testing.T) {
 	s := newSim(t)
 	s.until("the light to go out", func(fr Frame) bool { l, ok := fr["car-A-light"].(LampState); return ok && !l.On })

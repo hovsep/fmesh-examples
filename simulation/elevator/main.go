@@ -54,15 +54,15 @@ func main() {
 	}
 }
 
-// Input is something done to the building from outside: a button pressed,
-// someone stepping through a doorway, a technician's switch.
+// Input is something done to the building from outside: a button pressed
+// or someone stepping through a doorway.
 type Input struct {
 	Part string `json:"part"`
 	Port string `json:"port"`
 }
 
 // uiPorts are the only inputs a visitor can reach.
-var uiPorts = map[string]bool{portPress: true, portBlock: true, portTest: true, portReset: true}
+var uiPorts = map[string]bool{portPress: true, portBlock: true}
 
 // target finds the port an input goes to.
 func target(fm *fmesh.FMesh, in Input) (*port.Port, error) {
@@ -226,8 +226,6 @@ func buildCab(m *mesh, c string, clock, dispatcher *component.Component) {
 	sheave := m.add(newSheave(c))
 	car := m.add(newCar(c, start))
 	counterweight := m.add(newCounterweight(c, start))
-	governor := m.add(newGovernor(c))
-	gear := m.add(newSafetyGear(c))
 	sensor := m.add(newPositionSensor(c))
 	top := m.add(newLimitSwitch(c, "top", func(pos float64) bool { return pos > travel+0.3 }))
 	bottom := m.add(newLimitSwitch(c, "bottom", func(pos float64) bool { return pos < -0.3 }))
@@ -239,10 +237,8 @@ func buildCab(m *mesh, c string, clock, dispatcher *component.Component) {
 	m.pipe(motor, portShaft, encoder, sheave)
 	m.pipeTo(encoder, portSpeed, portFeedback, drive)
 	m.pipe(sheave, portRope, car, counterweight)
-	m.pipe(gear, portClamp, car)
-	m.pipe(car, portPosition, sensor, governor, top, bottom)
+	m.pipe(car, portPosition, sensor, top, bottom)
 	m.pipe(sensor, portReading, controller)
-	m.pipe(governor, portContact, gear)
 
 	// The doors.
 	operator := m.add(newDoorOperator(c))
@@ -253,13 +249,12 @@ func buildCab(m *mesh, c string, clock, dispatcher *component.Component) {
 	m.pipe(curtain, portBeam, controller)
 
 	// The safety chain runs through every contact of the shaft.
-	contacts := []string{"car door", "governor", "top limit", "bottom limit"}
+	contacts := []string{"car door", "top limit", "bottom limit"}
 	for f := 1; f <= floors; f++ {
 		contacts = append(contacts, landingContact(f))
 	}
 	chain := m.add(newSafetyChain(c, contacts))
 	m.pipe(operator, portContact, chain)
-	m.pipe(governor, portContact, chain)
 	m.pipe(top, portContact, chain)
 	m.pipe(bottom, portContact, chain)
 	m.pipe(chain, portChain, drive, brake, controller)

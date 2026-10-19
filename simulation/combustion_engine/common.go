@@ -32,11 +32,10 @@ type Current struct {
 	DT   float64 `json:"dt"`
 }
 
-// Controls is what the cockpit tells the ECU: the pedal and the switches it reads.
+// Controls is what the cockpit tells the ECU: the pedal and the ignition switch.
 type Controls struct {
 	Pedal    float64 `json:"pedal"` // 0..1
 	Ignition bool    `json:"ignition"`
-	AC       bool    `json:"ac"`
 }
 
 // Air is what the throttle body lets through to the intake manifold.

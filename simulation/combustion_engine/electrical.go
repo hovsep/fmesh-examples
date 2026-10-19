@@ -20,16 +20,14 @@ const (
 
 // circuits is every switched circuit in the fuse box, and what it draws when on.
 var circuits = map[string]float64{
-	"ignition":      9, // the ECU and the ignition coil
-	"starter":       140,
-	"fuel-pump":     6,
-	"cooling-fan":   16,
-	"ac-compressor": 4, // the magnetic clutch
-	"headlights":    9,
+	"ignition":    9, // the ECU and the ignition coil
+	"starter":     140,
+	"fuel-pump":   6,
+	"cooling-fan": 16,
 }
 
 // circuitNames lists the circuits in a fixed order.
-var circuitNames = []string{"ignition", "starter", "fuel-pump", "cooling-fan", "ac-compressor", "headlights"}
+var circuitNames = []string{"ignition", "starter", "fuel-pump", "cooling-fan"}
 
 // newFuseBox works in two beats of a stroke. First the switches arrive and
 // it tells the battery the load; then the battery's voltage arrives and it
@@ -158,19 +156,5 @@ func newIgnitionCoil() (*component.Component, error) {
 			}
 			this.State().Set("fired", target)
 			return toEachCylinder(this, "spark", func(i int) any { return i == target })
-		})
-}
-
-// newHeadlights are a pure electrical load: switch them on and the
-// alternator has to work harder. They dim when the voltage drops.
-func newHeadlights() (*component.Component, error) {
-	return part("headlights", "two 55 W lamps: a load on the alternator",
-		[]string{"power"}, nil, nil,
-		map[string]any{"on": false, "brightness": 0.0},
-		func(_ context.Context, this *component.Component) error {
-			volts := in[float64](this, "power")
-			this.State().Set("on", volts > 0)
-			this.State().Set("brightness", clamp((volts-minVolts)/4.5, 0, 1))
-			return nil
 		})
 }
